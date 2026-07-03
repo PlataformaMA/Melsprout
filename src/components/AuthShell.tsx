@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Octi } from "./Octi";
 
 // Marco visual de marca para las pantallas de login / registro / recuperar.
 export function AuthShell({
@@ -34,14 +35,11 @@ export function AuthShell({
         </Link>
 
         <div className="relative z-10 max-w-sm">
-          <h1 className="font-display text-[34px] font-extrabold leading-[1.15]">
+          <Octi size={190} />
+          <h1 className="mt-6 font-display text-[30px] font-extrabold leading-[1.15]">
             Conviértete en creador de contenido, paso a paso.
           </h1>
-          <p className="mt-4 text-white/70 text-[15px] leading-relaxed">
-            Un solo camino: aprende con clases cortas, practica con retos reales,
-            gana puntos por tu constancia y certifícate.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-2 text-xs">
+          <div className="mt-6 flex flex-wrap gap-2 text-xs">
             {["🎯 Un solo camino", "🔥 Racha diaria", "🏆 Diploma verificable"].map(
               (t) => (
                 <span
@@ -74,6 +72,11 @@ export function AuthShell({
               Mel<span className="text-accent">sprout</span>
             </span>
           </Link>
+
+          {/* Octi compacto solo en celular */}
+          <div className="lg:hidden flex justify-center mb-6">
+            <Octi size={110} conBurbuja={false} />
+          </div>
 
           <h2 className="font-display text-2xl font-extrabold text-text">
             {titulo}

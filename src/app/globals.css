@@ -55,3 +55,40 @@ body {
   font-family: var(--font-display);
   letter-spacing: -0.02em;
 }
+
+/* 🐙 Animaciones de Octi */
+@keyframes octi-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+.octi-float {
+  animation: octi-float 3.2s ease-in-out infinite;
+}
+
+@keyframes octi-blink {
+  0%,
+  90%,
+  100% {
+    transform: scaleY(1);
+  }
+  94% {
+    transform: scaleY(0.1);
+  }
+}
+.octi-eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: octi-blink 4.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .octi-float,
+  .octi-eyes {
+    animation: none;
+  }
+}
