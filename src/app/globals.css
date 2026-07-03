@@ -1,26 +1,57 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ===== Sistema de diseño Melsprout (del briefing v1.0) ===== */
+@theme {
+  --color-bg: #f7f7f8;
+  --color-surface: #ffffff;
+  --color-text: #18181b;
+  --color-sub: #71717a;
+  --color-hint: #a1a1aa;
+  --color-border: #e4e4e7;
+
+  --color-accent: #7c3aed;
+  --color-accent-soft: #ede9fe;
+  --color-green: #059669;
+  --color-green-soft: #d1fae5;
+  --color-amber: #d97706;
+  --color-amber-soft: #fef3c7;
+  --color-pink: #db2777;
+  --color-pink-soft: #fce7f3;
+  --color-blue: #2563eb;
+  --color-blue-soft: #dbeafe;
+  --color-teal: #0d9488;
+  --color-teal-soft: #ccfbf1;
+
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-jakarta), var(--font-inter), sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+/* Utilidad de fuente display para títulos */
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
 }
