@@ -19,12 +19,15 @@ export function Octi({
   size = 180,
   conBurbuja = true,
   mensaje,
+  celebrando = false,
 }: {
   size?: number;
   conBurbuja?: boolean;
   // Si se pasa `mensaje`, Octi dice ESE texto (controlado por el padre).
   // Si no, rota frases motivacionales solo.
   mensaje?: string;
+  // Cuando es true, Octi salta de alegría en vez de flotar.
+  celebrando?: boolean;
 }) {
   const [i, setI] = useState(0);
   const controlado = mensaje !== undefined;
@@ -54,12 +57,12 @@ export function Octi({
           <span className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-3 h-3 bg-white rotate-45" />
         </div>
       )}
-      <OctiSVG size={size} />
+      <OctiSVG size={size} anim={celebrando ? "octi-bounce" : "octi-float"} />
     </div>
   );
 }
 
-function OctiSVG({ size }: { size: number }) {
+function OctiSVG({ size, anim = "octi-float" }: { size: number; anim?: string }) {
   return (
     <svg
       width={size}
@@ -67,7 +70,7 @@ function OctiSVG({ size }: { size: number }) {
       viewBox="0 0 200 200"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className="octi-float"
+      className={anim}
       role="img"
       aria-label="Octi, la mascota pulpito de Melsprout"
     >

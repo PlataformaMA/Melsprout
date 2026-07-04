@@ -117,11 +117,79 @@ body {
   animation: octi-fade 0.28s ease both;
 }
 
+/* Transición al cambiar de paso en el onboarding */
+@keyframes onb-slide {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.onb-slide {
+  animation: onb-slide 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* Rebote alegre de Octi al celebrar */
+@keyframes octi-bounce {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  25% {
+    transform: translateY(-18px) rotate(-4deg);
+  }
+  50% {
+    transform: translateY(0) rotate(0);
+  }
+  75% {
+    transform: translateY(-9px) rotate(4deg);
+  }
+}
+.octi-bounce {
+  animation: octi-bounce 1s ease-in-out infinite;
+}
+
+/* Aparición con "pop" de tarjetas y elementos */
+@keyframes onb-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.onb-pop-in {
+  animation: onb-pop-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1.15) both;
+}
+
+/* Blobs de fondo que flotan suave */
+@keyframes onb-blob {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(20px, -24px) scale(1.08);
+  }
+}
+.onb-blob {
+  animation: onb-blob 9s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .octi-float,
   .octi-eyes,
   .octi-pop,
-  .octi-fade {
+  .octi-fade,
+  .onb-slide,
+  .octi-bounce,
+  .onb-pop-in,
+  .onb-blob {
     animation: none;
   }
 }
