@@ -8,6 +8,12 @@ export type Perfil = {
   id: string;
   full_name: string | null;
   avatar_url: string | null;
+  cover_url: string | null;
+  headline: string | null;
+  bio: string | null;
+  ciudad: string | null;
+  especialidades: string[];
+  abierto_colab: boolean;
   pais: string | null;
   fecha_nacimiento: string | null;
   whatsapp: string | null;
@@ -104,6 +110,11 @@ export async function guardarOnboarding(
 // Editar el perfil (desde la página "Mi perfil"). No toca XP/gemas/racha.
 export type EdicionPerfil = {
   full_name: string;
+  headline?: string;
+  bio?: string;
+  ciudad?: string;
+  abierto_colab?: boolean;
+  redes?: Record<string, string>;
   pais?: string;
   fecha_nacimiento?: string;
   whatsapp?: string;
@@ -113,6 +124,12 @@ export type EdicionPerfil = {
   plataforma_principal?: string;
   tamano_audiencia?: string;
 };
+
+// Limpia un @ de red social: sin espacios, sin @, sin URL.
+function limpiarHandle(v?: string): string {
+  if (!v) return "";
+  return v.trim().replace(/^@+/, "").replace(/\s+/g, "").slice(0, 40);
+}
 
 export async function actualizarPerfil(
   datos: EdicionPerfil
@@ -126,10 +143,21 @@ export async function actualizarPerfil(
   if (!datos.full_name || datos.full_name.trim().length < 2)
     return { error: "Escribe tu nombre." };
 
+  const redes: Record<string, string> = {};
+  for (const k of ["instagram", "tiktok", "youtube"]) {
+    const h = limpiarHandle(datos.redes?.[k]);
+    if (h) redes[k] = h;
+  }
+
   const { error } = await supabase
     .from("profiles")
     .update({
       full_name: datos.full_name.trim(),
+      headline: datos.headline?.trim().slice(0, 80) || null,
+      bio: datos.bio?.trim().slice(0, 400) || null,
+      ciudad: datos.ciudad?.trim().slice(0, 60) || null,
+      abierto_colab: datos.abierto_colab ?? true,
+      redes,
       pais: datos.pais || null,
       fecha_nacimiento: datos.fecha_nacimiento || null,
       whatsapp: datos.whatsapp || null,
@@ -146,10 +174,11 @@ export async function actualizarPerfil(
   return { ok: true };
 }
 
-// Subir foto de perfil. Recibe la imagen ya reducida (dataURL) desde el navegador,
-// la sube al bucket "avatars" con la llave de servidor y guarda la URL.
-export async function subirAvatar(
-  dataUrl: string
+// Sube una imagen (avatar o portada) al bucket "avatars" con la llave de
+// servidor y guarda su URL en el perfil. La imagen llega ya reducida del navegador.
+async function subirImagen(
+  dataUrl: string,
+  tipo: "avatar" | "cover"
 ): Promise<{ url: string } | { error: string }> {
   const supabase = await createClient();
   const {
@@ -161,10 +190,10 @@ export async function subirAvatar(
   if (!m) return { error: "Formato de imagen no válido." };
   const contentType = m[1];
   const buffer = Buffer.from(m[2], "base64");
-  if (buffer.length > 2_000_000) return { error: "La imagen es muy grande." };
+  if (buffer.length > 3_000_000) return { error: "La imagen es muy grande." };
 
   const ext = contentType.split("/")[1];
-  const path = `${user.id}/avatar.${ext}`;
+  const path = `${user.id}/${tipo}.${ext}`;
 
   const admin = createAdminClient();
   const { error: upErr } = await admin.storage
@@ -173,15 +202,22 @@ export async function subirAvatar(
   if (upErr) return { error: "No se pudo subir la imagen." };
 
   const { data: pub } = admin.storage.from("avatars").getPublicUrl(path);
-  // Cache-busting para que se vea la nueva foto al instante.
-  const url = `${pub.publicUrl}?v=${Date.now()}`;
+  const url = `${pub.publicUrl}?v=${Date.now()}`; // anti-caché
 
+  const columna = tipo === "avatar" ? "avatar_url" : "cover_url";
   const { error: dbErr } = await supabase
     .from("profiles")
-    .update({ avatar_url: url })
+    .update({ [columna]: url })
     .eq("id", user.id);
-  if (dbErr) return { error: "No se pudo guardar la foto." };
+  if (dbErr) return { error: "No se pudo guardar la imagen." };
 
   revalidatePath("/", "layout");
   return { url };
+}
+
+export async function subirAvatar(dataUrl: string) {
+  return subirImagen(dataUrl, "avatar");
+}
+export async function subirCover(dataUrl: string) {
+  return subirImagen(dataUrl, "cover");
 }

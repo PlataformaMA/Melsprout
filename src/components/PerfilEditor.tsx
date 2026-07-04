@@ -9,12 +9,19 @@ import {
 } from "@/lib/catalogos";
 import { nivelPorXP } from "@/lib/data";
 import { AvatarUploader } from "@/components/AvatarUploader";
+import { CoverUploader } from "@/components/CoverUploader";
 
 function fechaBonita(f: string | null): string {
   if (!f) return "—";
   const [y, m, d] = f.split("-");
   return d && m && y ? `${d}/${m}/${y}` : f;
 }
+
+const REDES: { key: string; nombre: string; emoji: string; base: string }[] = [
+  { key: "instagram", nombre: "Instagram", emoji: "📸", base: "https://instagram.com/" },
+  { key: "tiktok", nombre: "TikTok", emoji: "🎵", base: "https://tiktok.com/@" },
+  { key: "youtube", nombre: "YouTube", emoji: "▶️", base: "https://youtube.com/@" },
+];
 
 export function PerfilEditor({
   perfil, email, emailConfirmado,
@@ -27,6 +34,13 @@ export function PerfilEditor({
   const [error, setError] = useState("");
 
   const [nombre, setNombre] = useState(perfil.full_name ?? "");
+  const [headline, setHeadline] = useState(perfil.headline ?? "");
+  const [bio, setBio] = useState(perfil.bio ?? "");
+  const [ciudad, setCiudad] = useState(perfil.ciudad ?? "");
+  const [abiertoColab, setAbiertoColab] = useState(perfil.abierto_colab);
+  const [ig, setIg] = useState(perfil.redes?.instagram ?? "");
+  const [tiktok, setTiktok] = useState(perfil.redes?.tiktok ?? "");
+  const [youtube, setYoutube] = useState(perfil.redes?.youtube ?? "");
   const [pais, setPais] = useState(perfil.pais ?? "México");
   const [nacimiento, setNacimiento] = useState(perfil.fecha_nacimiento ?? "");
   const [whatsapp, setWhatsapp] = useState(perfil.whatsapp ?? "");
@@ -37,16 +51,25 @@ export function PerfilEditor({
   const [audiencia, setAudiencia] = useState(perfil.tamano_audiencia ?? "");
 
   const nivel = nivelPorXP(perfil.xp);
+  const tieneRedes = REDES.some((r) => perfil.redes?.[r.key]);
+
+  // "Completa tu perfil" — porcentaje
+  const items = [
+    !!perfil.avatar_url, !!perfil.cover_url, !!perfil.headline, !!perfil.bio,
+    !!perfil.ciudad, tieneRedes, !!perfil.nicho, !!perfil.objetivo, !!perfil.plataforma_principal,
+  ];
+  const pct = Math.round((items.filter(Boolean).length / items.length) * 100);
 
   function guardar() {
     setError("");
     startTransition(async () => {
       const r = await actualizarPerfil({
-        full_name: nombre, pais, fecha_nacimiento: nacimiento || undefined,
+        full_name: nombre, headline, bio, ciudad, abierto_colab: abiertoColab,
+        redes: { instagram: ig, tiktok, youtube },
+        pais, fecha_nacimiento: nacimiento || undefined,
         whatsapp: whatsapp || undefined, whatsapp_optin: waOptin,
         nicho: nicho || undefined, objetivo: objetivo || undefined,
-        plataforma_principal: plataforma || undefined,
-        tamano_audiencia: audiencia || undefined,
+        plataforma_principal: plataforma || undefined, tamano_audiencia: audiencia || undefined,
       });
       if ("error" in r) setError(r.error);
       else { setEditando(false); router.refresh(); }
@@ -54,30 +77,41 @@ export function PerfilEditor({
   }
 
   function cancelar() {
-    setNombre(perfil.full_name ?? ""); setPais(perfil.pais ?? "México");
-    setNacimiento(perfil.fecha_nacimiento ?? ""); setWhatsapp(perfil.whatsapp ?? "");
-    setWaOptin(perfil.whatsapp_optin); setNicho(perfil.nicho ?? "");
-    setObjetivo(perfil.objetivo ?? ""); setPlataforma(perfil.plataforma_principal ?? "");
-    setAudiencia(perfil.tamano_audiencia ?? ""); setError(""); setEditando(false);
+    setNombre(perfil.full_name ?? ""); setHeadline(perfil.headline ?? "");
+    setBio(perfil.bio ?? ""); setCiudad(perfil.ciudad ?? "");
+    setAbiertoColab(perfil.abierto_colab);
+    setIg(perfil.redes?.instagram ?? ""); setTiktok(perfil.redes?.tiktok ?? "");
+    setYoutube(perfil.redes?.youtube ?? "");
+    setPais(perfil.pais ?? "México"); setNacimiento(perfil.fecha_nacimiento ?? "");
+    setWhatsapp(perfil.whatsapp ?? ""); setWaOptin(perfil.whatsapp_optin);
+    setNicho(perfil.nicho ?? ""); setObjetivo(perfil.objetivo ?? "");
+    setPlataforma(perfil.plataforma_principal ?? ""); setAudiencia(perfil.tamano_audiencia ?? "");
+    setError(""); setEditando(false);
   }
 
   return (
     <div>
-      {/* ===== Cabecera bonita ===== */}
+      {/* ===== Cabecera estilo LinkedIn ===== */}
       <div className="bg-surface border border-border rounded-3xl overflow-hidden shadow-sm">
-        <div className="h-24 relative" style={{ background: "linear-gradient(120deg,#7C3AED,#DB2777)" }}>
-          <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "radial-gradient(circle at 20% 30%, #fff3 0 20%, transparent 20%), radial-gradient(circle at 80% 60%, #fff2 0 15%, transparent 15%)" }} />
-        </div>
+        <CoverUploader coverUrl={perfil.cover_url} />
         <div className="px-6 pb-6">
-          <div className="-mt-12 mb-3">
-            <AvatarUploader
-              avatarUrl={perfil.avatar_url}
-              nombre={perfil.full_name ?? ""}
-              size={96}
-            />
+          <div className="flex items-start justify-between -mt-12">
+            <AvatarUploader avatarUrl={perfil.avatar_url} nombre={perfil.full_name ?? ""} size={96} />
+            {/* Redes sociales */}
+            {tieneRedes && (
+              <div className="flex gap-2 mt-14">
+                {REDES.filter((r) => perfil.redes?.[r.key]).map((r) => (
+                  <a key={r.key} href={r.base + perfil.redes[r.key]} target="_blank" rel="noopener noreferrer"
+                    title={`@${perfil.redes[r.key]}`}
+                    className="w-9 h-9 rounded-full bg-bg border border-border grid place-items-center text-base hover:scale-110 transition">
+                    {r.emoji}
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap mb-2">
+          <div className="flex items-center gap-2 flex-wrap mb-2 mt-3">
             <span className="text-[11px] font-bold text-accent bg-accent-soft rounded-full px-2.5 py-1">
               Nivel {nivel.actual.nivel} · {nivel.actual.nombre}
             </span>
@@ -86,17 +120,22 @@ export function PerfilEditor({
                 {emojiNicho(perfil.nicho)} {perfil.nicho}
               </span>
             )}
+            {perfil.abierto_colab && (
+              <span className="text-[11px] font-bold text-green bg-green-soft rounded-full px-2.5 py-1">
+                🤝 Abierta a colaboraciones
+              </span>
+            )}
           </div>
 
-          <h1 className="font-display text-2xl font-extrabold">
-            {perfil.full_name ?? "Creador"}
-          </h1>
-          <p className="text-sub text-sm mt-0.5">
-            {perfil.objetivo ? `${emojiObjetivo(perfil.objetivo)} ${perfil.objetivo}` : "Creador de contenido"}
-            {perfil.pais ? ` · ${perfil.pais}` : ""}
+          <h1 className="font-display text-2xl font-extrabold">{perfil.full_name ?? "Creador"}</h1>
+          <p className="text-text text-sm mt-0.5 font-medium">
+            {perfil.headline ||
+              (perfil.objetivo ? `${emojiObjetivo(perfil.objetivo)} ${perfil.objetivo}` : "Creador de contenido")}
+          </p>
+          <p className="text-sub text-[13px] mt-0.5">
+            {[perfil.ciudad, perfil.pais].filter(Boolean).join(", ") || perfil.pais}
           </p>
 
-          {/* Barra de progreso al siguiente nivel */}
           {nivel.siguiente && (
             <div className="mt-4">
               <div className="h-2 rounded-full bg-bg overflow-hidden">
@@ -111,6 +150,22 @@ export function PerfilEditor({
         </div>
       </div>
 
+      {/* ===== Completa tu perfil ===== */}
+      {pct < 100 && !editando && (
+        <div className="bg-accent-soft border border-accent/20 rounded-2xl p-4 mt-4">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-sm text-[#4C1D95]">¡Completa tu perfil! {pct}%</span>
+            <button onClick={() => setEditando(true)} className="text-[13px] font-bold text-accent">Completar →</button>
+          </div>
+          <div className="h-2 rounded-full bg-white/70 overflow-hidden mt-2">
+            <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${pct}%` }} />
+          </div>
+          <p className="text-[12px] text-[#5B21B6] mt-1.5">
+            Un perfil completo te ayuda a que las marcas te encuentren. 🚀
+          </p>
+        </div>
+      )}
+
       {/* ===== Estadísticas ===== */}
       <div className="grid grid-cols-4 gap-3 mt-4">
         <Stat valor={`${nivel.actual.nivel}`} label="Nivel" />
@@ -119,7 +174,34 @@ export function PerfilEditor({
         <Stat valor={`${perfil.racha}`} label="🔥 Racha" />
       </div>
 
-      {/* ===== Info / edición ===== */}
+      {/* ===== Sobre mí ===== */}
+      {perfil.bio && !editando && (
+        <div className="bg-surface border border-border rounded-3xl p-6 mt-4">
+          <h2 className="font-display text-lg font-extrabold mb-2">Sobre mí</h2>
+          <p className="text-sub text-sm leading-relaxed whitespace-pre-line">{perfil.bio}</p>
+        </div>
+      )}
+
+      {/* ===== Conectar métricas (Fase 2) ===== */}
+      {!editando && (
+        <div className="bg-surface border border-border rounded-3xl p-6 mt-4">
+          <h2 className="font-display text-lg font-extrabold">Conecta tus redes</h2>
+          <p className="text-sub text-[13px] mt-1">
+            Muy pronto podrás conectar tus cuentas para mostrar tus métricas reales en tu media kit. ✨
+          </p>
+          <div className="flex flex-wrap gap-2 mt-3">
+            {["📸 Instagram", "🎵 TikTok", "▶️ YouTube"].map((t) => (
+              <button key={t} disabled
+                className="text-[13px] font-semibold border border-border rounded-xl px-3.5 py-2 text-hint bg-bg cursor-not-allowed">
+                Conectar {t}
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] text-hint mt-2">🔒 Disponible en la Fase 2 (métricas y media kit para marcas).</p>
+        </div>
+      )}
+
+      {/* ===== Mi información / edición ===== */}
       <div className="bg-surface border border-border rounded-3xl p-6 mt-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-display text-lg font-extrabold">Mi información</h2>
@@ -134,8 +216,9 @@ export function PerfilEditor({
         {!editando ? (
           <div className="space-y-1">
             <Row label="Nombre" valor={perfil.full_name ?? "—"} />
+            <Row label="Headline" valor={perfil.headline ?? "—"} />
             <Row label="Correo" valor={email + (emailConfirmado ? " ✅" : " ⏳")} />
-            <Row label="País" valor={perfil.pais ?? "—"} />
+            <Row label="Ciudad" valor={[perfil.ciudad, perfil.pais].filter(Boolean).join(", ") || "—"} />
             <Row label="Nicho" valor={perfil.nicho ? `${emojiNicho(perfil.nicho)} ${perfil.nicho}` : "—"} />
             <Row label="Objetivo" valor={perfil.objetivo ? `${emojiObjetivo(perfil.objetivo)} ${perfil.objetivo}` : "—"} />
             <Row label="Plataforma" valor={perfil.plataforma_principal ? `${emojiPlataforma(perfil.plataforma_principal)} ${perfil.plataforma_principal}` : "—"} />
@@ -146,21 +229,49 @@ export function PerfilEditor({
         ) : (
           <div className="space-y-5">
             <Field label="Nombre completo">
-              <input value={nombre} onChange={(e) => setNombre(e.target.value)}
-                className="w-full rounded-xl border-2 border-border bg-white px-3.5 py-2.5 text-sm outline-none focus:border-accent transition" />
+              <Input value={nombre} onChange={setNombre} />
             </Field>
-            <Field label="País">
-              <select value={pais} onChange={(e) => setPais(e.target.value)}
-                className="w-full rounded-xl border-2 border-border bg-white px-3.5 py-2.5 text-sm outline-none focus:border-accent transition">
-                {PAISES.map((p) => <option key={p} value={p}>{p}</option>)}
-              </select>
+            <Field label="Headline (tu título)">
+              <Input value={headline} onChange={setHeadline} placeholder="Ej. Creadora de contenido de Moda 👗" />
             </Field>
+            <Field label="Sobre mí (bio)">
+              <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} maxLength={400}
+                placeholder="Cuéntale al mundo quién eres y qué creas…"
+                className="w-full rounded-xl border-2 border-border bg-white px-3.5 py-2.5 text-sm outline-none focus:border-accent transition resize-none" />
+              <p className="text-[11px] text-hint mt-1 text-right">{bio.length}/400</p>
+            </Field>
+            <Field label="Ciudad">
+              <Input value={ciudad} onChange={setCiudad} placeholder="Ej. Ciudad de México" />
+            </Field>
+
+            <Field label="Redes sociales">
+              <div className="space-y-2">
+                {[
+                  { emoji: "📸", ph: "tu_usuario_ig", v: ig, set: setIg },
+                  { emoji: "🎵", ph: "tu_usuario_tiktok", v: tiktok, set: setTiktok },
+                  { emoji: "▶️", ph: "tu_canal_yt", v: youtube, set: setYoutube },
+                ].map((r, idx) => (
+                  <div key={idx} className="flex items-center gap-2 rounded-xl border-2 border-border bg-white px-3 focus-within:border-accent transition">
+                    <span className="text-lg">{r.emoji}</span>
+                    <span className="text-sub text-sm">@</span>
+                    <input value={r.v} onChange={(e) => r.set(e.target.value)} placeholder={r.ph}
+                      className="flex-1 bg-transparent py-2.5 text-sm outline-none" />
+                  </div>
+                ))}
+              </div>
+            </Field>
+
+            <label className="flex items-center justify-between bg-bg rounded-xl px-4 py-3 cursor-pointer">
+              <span className="text-sm font-medium text-text">🤝 Abierta a colaboraciones</span>
+              <input type="checkbox" checked={abiertoColab} onChange={(e) => setAbiertoColab(e.target.checked)}
+                className="w-5 h-5 accent-[#7c3aed]" />
+            </label>
+
             <Field label="Nicho">
               <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                 {NICHOS.map((n) => (
                   <Chip key={n.id} activa={nicho === n.id} onClick={() => setNicho(n.id)} col>
-                    <span className="text-xl">{n.emoji}</span>
-                    <span className="text-[11px]">{n.id}</span>
+                    <span className="text-xl">{n.emoji}</span><span className="text-[11px]">{n.id}</span>
                   </Chip>
                 ))}
               </div>
@@ -192,6 +303,12 @@ export function PerfilEditor({
                 ))}
               </div>
             </Field>
+            <Field label="País">
+              <select value={pais} onChange={(e) => setPais(e.target.value)}
+                className="w-full rounded-xl border-2 border-border bg-white px-3.5 py-2.5 text-sm outline-none focus:border-accent transition">
+                {PAISES.map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </Field>
             <Field label="Fecha de nacimiento">
               <input type="date" value={nacimiento} onChange={(e) => setNacimiento(e.target.value)}
                 className="w-full rounded-xl border-2 border-border bg-white px-3.5 py-2.5 text-sm outline-none focus:border-accent transition" />
@@ -208,9 +325,9 @@ export function PerfilEditor({
 
             {error && <p className="text-[13px] text-pink bg-pink-soft rounded-lg px-3 py-2.5">{error}</p>}
 
-            <div className="flex gap-3 pt-1">
+            <div className="flex gap-3 pt-1 sticky bottom-0">
               <button onClick={cancelar} disabled={pendiente}
-                className="flex-1 border border-border text-text font-semibold text-sm rounded-xl py-2.5 hover:bg-bg transition disabled:opacity-60">
+                className="flex-1 border border-border bg-surface text-text font-semibold text-sm rounded-xl py-2.5 hover:bg-bg transition disabled:opacity-60">
                 Cancelar
               </button>
               <button onClick={guardar} disabled={pendiente}
@@ -236,9 +353,9 @@ function Stat({ valor, label }: { valor: string; label: string }) {
 
 function Row({ label, valor }: { label: string; valor: string }) {
   return (
-    <div className="flex items-center justify-between py-2.5 border-b border-border last:border-0">
-      <span className="text-sub text-sm">{label}</span>
-      <span className="text-text text-sm font-medium text-right max-w-[60%] break-words">{valor}</span>
+    <div className="flex items-center justify-between py-2.5 border-b border-border last:border-0 gap-4">
+      <span className="text-sub text-sm shrink-0">{label}</span>
+      <span className="text-text text-sm font-medium text-right break-words">{valor}</span>
     </div>
   );
 }
@@ -249,6 +366,17 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="text-[13px] font-bold text-text block mb-2">{label}</span>
       {children}
     </div>
+  );
+}
+
+function Input({
+  value, onChange, placeholder,
+}: {
+  value: string; onChange: (v: string) => void; placeholder?: string;
+}) {
+  return (
+    <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
+      className="w-full rounded-xl border-2 border-border bg-white px-3.5 py-2.5 text-sm outline-none focus:border-accent transition" />
   );
 }
 
