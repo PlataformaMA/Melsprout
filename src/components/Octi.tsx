@@ -18,33 +18,38 @@ const FRASES = [
 export function Octi({
   size = 180,
   conBurbuja = true,
+  mensaje,
 }: {
   size?: number;
   conBurbuja?: boolean;
+  // Si se pasa `mensaje`, Octi dice ESE texto (controlado por el padre).
+  // Si no, rota frases motivacionales solo.
+  mensaje?: string;
 }) {
   const [i, setI] = useState(0);
-  const [visible, setVisible] = useState(true);
+  const controlado = mensaje !== undefined;
 
+  // Modo rotación (auth): cambia de frase sola.
   useEffect(() => {
-    if (!conBurbuja) return;
+    if (controlado || !conBurbuja) return;
     const t = setInterval(() => {
-      setVisible(false);
-      setTimeout(() => {
-        setI((n) => (n + 1) % FRASES.length);
-        setVisible(true);
-      }, 350);
+      setI((n) => (n + 1) % FRASES.length);
     }, 4500);
     return () => clearInterval(t);
-  }, [conBurbuja]);
+  }, [controlado, conBurbuja]);
+
+  const texto = controlado ? mensaje : FRASES[i];
+  const mostrarBurbuja = controlado ? !!mensaje : conBurbuja;
+
+  const claseBurbuja =
+    "relative bg-white text-[#3C1A6B] rounded-2xl px-4 py-3 text-[13.5px] font-medium leading-snug shadow-lg max-w-[280px] text-center octi-fade";
 
   return (
     <div className="flex flex-col items-center gap-4 select-none">
-      {conBurbuja && (
-        <div
-          className="relative bg-white text-[#3C1A6B] rounded-2xl px-4 py-3 text-[13.5px] font-medium leading-snug shadow-lg max-w-[260px] text-center transition-opacity duration-300"
-          style={{ opacity: visible ? 1 : 0 }}
-        >
-          {FRASES[i]}
+      {mostrarBurbuja && (
+        // key={texto}: al cambiar el mensaje, se re-monta y reproduce el fundido.
+        <div key={texto} className={claseBurbuja}>
+          {texto}
           {/* pico de la burbuja */}
           <span className="absolute left-1/2 -translate-x-1/2 -bottom-1.5 w-3 h-3 bg-white rotate-45" />
         </div>

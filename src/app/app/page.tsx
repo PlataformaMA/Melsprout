@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { cerrarSesion } from "@/lib/auth-actions";
 import { estadoMFA } from "@/lib/mfa-actions";
+import { getPerfil } from "@/lib/perfil-actions";
 
 export default async function AppHome() {
   const supabase = await createClient();
@@ -13,9 +14,14 @@ export default async function AppHome() {
   // Doble candado: además del proxy, verificamos aquí en el servidor.
   if (!user) redirect("/login");
 
+  // Si aún no completó el onboarding, lo mandamos allá primero.
+  const perfil = await getPerfil();
+  if (perfil && !perfil.onboarding_completo) redirect("/onboarding");
+
   const mfa = await estadoMFA();
 
   const nombre =
+    perfil?.full_name ??
     (user.user_metadata?.full_name as string | undefined) ??
     user.email?.split("@")[0] ??
     "creador";

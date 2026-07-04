@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SUPABASE_ANON_KEY, SUPABASE_CONFIGURADO, SUPABASE_URL } from "./env";
 
 // Rutas que requieren haber iniciado sesión.
-const RUTAS_PROTEGIDAS = ["/app"];
+const RUTAS_PROTEGIDAS = ["/app", "/onboarding"];
 // Rutas de autenticación (si ya iniciaste sesión, no deberías verlas).
 const RUTAS_AUTH = ["/login", "/registro"];
 
