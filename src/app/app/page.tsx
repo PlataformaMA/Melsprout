@@ -39,11 +39,19 @@ export default async function AppHome() {
               Mel<span className="text-accent">sprout</span>
             </span>
           </div>
-          <form action={cerrarSesion}>
-            <button className="text-[13px] font-medium text-sub hover:text-text transition">
-              Cerrar sesión
-            </button>
-          </form>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/app/perfil"
+              className="text-[13px] font-medium text-sub hover:text-text transition"
+            >
+              Mi perfil
+            </Link>
+            <form action={cerrarSesion}>
+              <button className="text-[13px] font-medium text-sub hover:text-text transition">
+                Cerrar sesión
+              </button>
+            </form>
+          </div>
         </div>
       </header>
 

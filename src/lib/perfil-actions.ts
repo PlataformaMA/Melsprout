@@ -99,3 +99,48 @@ export async function guardarOnboarding(
   revalidatePath("/", "layout");
   return { ok: true, xp: nuevoXP };
 }
+
+// Editar el perfil (desde la página "Mi perfil"). No toca XP/gemas/racha.
+export type EdicionPerfil = {
+  full_name: string;
+  pais?: string;
+  fecha_nacimiento?: string;
+  whatsapp?: string;
+  whatsapp_optin?: boolean;
+  nicho?: string;
+  objetivo?: string;
+  plataforma_principal?: string;
+  tamano_audiencia?: string;
+};
+
+export async function actualizarPerfil(
+  datos: EdicionPerfil
+): Promise<{ ok: true } | { error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Inicia sesión de nuevo." };
+
+  if (!datos.full_name || datos.full_name.trim().length < 2)
+    return { error: "Escribe tu nombre." };
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      full_name: datos.full_name.trim(),
+      pais: datos.pais || null,
+      fecha_nacimiento: datos.fecha_nacimiento || null,
+      whatsapp: datos.whatsapp || null,
+      whatsapp_optin: !!datos.whatsapp_optin,
+      nicho: datos.nicho || null,
+      objetivo: datos.objetivo || null,
+      plataforma_principal: datos.plataforma_principal || null,
+      tamano_audiencia: datos.tamano_audiencia || null,
+    })
+    .eq("id", user.id);
+
+  if (error) return { error: "No se pudo guardar. Inténtalo de nuevo." };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
