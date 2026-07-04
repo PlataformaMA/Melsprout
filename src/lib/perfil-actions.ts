@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export type Perfil = {
   id: string;
@@ -143,4 +144,44 @@ export async function actualizarPerfil(
   if (error) return { error: "No se pudo guardar. Inténtalo de nuevo." };
   revalidatePath("/", "layout");
   return { ok: true };
+}
+
+// Subir foto de perfil. Recibe la imagen ya reducida (dataURL) desde el navegador,
+// la sube al bucket "avatars" con la llave de servidor y guarda la URL.
+export async function subirAvatar(
+  dataUrl: string
+): Promise<{ url: string } | { error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Inicia sesión de nuevo." };
+
+  const m = dataUrl.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);
+  if (!m) return { error: "Formato de imagen no válido." };
+  const contentType = m[1];
+  const buffer = Buffer.from(m[2], "base64");
+  if (buffer.length > 2_000_000) return { error: "La imagen es muy grande." };
+
+  const ext = contentType.split("/")[1];
+  const path = `${user.id}/avatar.${ext}`;
+
+  const admin = createAdminClient();
+  const { error: upErr } = await admin.storage
+    .from("avatars")
+    .upload(path, buffer, { contentType, upsert: true });
+  if (upErr) return { error: "No se pudo subir la imagen." };
+
+  const { data: pub } = admin.storage.from("avatars").getPublicUrl(path);
+  // Cache-busting para que se vea la nueva foto al instante.
+  const url = `${pub.publicUrl}?v=${Date.now()}`;
+
+  const { error: dbErr } = await supabase
+    .from("profiles")
+    .update({ avatar_url: url })
+    .eq("id", user.id);
+  if (dbErr) return { error: "No se pudo guardar la foto." };
+
+  revalidatePath("/", "layout");
+  return { url };
 }

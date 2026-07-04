@@ -8,11 +8,8 @@ import {
   emojiNicho, emojiObjetivo, emojiPlataforma,
 } from "@/lib/catalogos";
 import { nivelPorXP } from "@/lib/data";
+import { AvatarUploader } from "@/components/AvatarUploader";
 
-function iniciales(nombre: string | null): string {
-  if (!nombre) return "🐙";
-  return nombre.trim().split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("");
-}
 function fechaBonita(f: string | null): string {
   if (!f) return "—";
   const [y, m, d] = f.split("-");
@@ -68,30 +65,30 @@ export function PerfilEditor({
     <div>
       {/* ===== Cabecera bonita ===== */}
       <div className="bg-surface border border-border rounded-3xl overflow-hidden shadow-sm">
-        <div className="h-28 relative" style={{ background: "linear-gradient(120deg,#7C3AED,#DB2777)" }}>
+        <div className="h-24 relative" style={{ background: "linear-gradient(120deg,#7C3AED,#DB2777)" }}>
           <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "radial-gradient(circle at 20% 30%, #fff3 0 20%, transparent 20%), radial-gradient(circle at 80% 60%, #fff2 0 15%, transparent 15%)" }} />
         </div>
         <div className="px-6 pb-6">
-          <div className="flex items-end gap-4 -mt-12">
-            <div className="w-24 h-24 rounded-full grid place-items-center text-white font-display font-extrabold text-2xl border-4 border-surface shadow-lg shrink-0"
-              style={{ background: "linear-gradient(135deg,#A78BFA,#7C3AED)" }}>
-              {iniciales(perfil.full_name)}
-            </div>
-            <div className="flex-1 pb-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[11px] font-bold text-accent bg-accent-soft rounded-full px-2.5 py-1">
-                  Nivel {nivel.actual.nivel} · {nivel.actual.nombre}
-                </span>
-                {perfil.nicho && (
-                  <span className="text-[11px] font-bold text-text bg-bg rounded-full px-2.5 py-1">
-                    {emojiNicho(perfil.nicho)} {perfil.nicho}
-                  </span>
-                )}
-              </div>
-            </div>
+          <div className="-mt-12 mb-3">
+            <AvatarUploader
+              avatarUrl={perfil.avatar_url}
+              nombre={perfil.full_name ?? ""}
+              size={96}
+            />
           </div>
 
-          <h1 className="font-display text-2xl font-extrabold mt-3">
+          <div className="flex items-center gap-2 flex-wrap mb-2">
+            <span className="text-[11px] font-bold text-accent bg-accent-soft rounded-full px-2.5 py-1">
+              Nivel {nivel.actual.nivel} · {nivel.actual.nombre}
+            </span>
+            {perfil.nicho && (
+              <span className="text-[11px] font-bold text-text bg-bg rounded-full px-2.5 py-1">
+                {emojiNicho(perfil.nicho)} {perfil.nicho}
+              </span>
+            )}
+          </div>
+
+          <h1 className="font-display text-2xl font-extrabold">
             {perfil.full_name ?? "Creador"}
           </h1>
           <p className="text-sub text-sm mt-0.5">
