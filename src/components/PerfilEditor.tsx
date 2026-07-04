@@ -128,12 +128,15 @@ export function PerfilEditor({
           </div>
 
           <h1 className="font-display text-2xl font-extrabold">{perfil.full_name ?? "Creador"}</h1>
-          <p className="text-text text-sm mt-0.5 font-medium">
-            {perfil.headline ||
-              (perfil.objetivo ? `${emojiObjetivo(perfil.objetivo)} ${perfil.objetivo}` : "Creador de contenido")}
-          </p>
+          {perfil.headline ? (
+            <p className="text-text text-sm mt-0.5 font-medium">{perfil.headline}</p>
+          ) : (
+            <button onClick={() => setEditando(true)} className="text-accent text-sm mt-0.5 font-semibold hover:underline">
+              + Agrega tu headline
+            </button>
+          )}
           <p className="text-sub text-[13px] mt-0.5">
-            {[perfil.ciudad, perfil.pais].filter(Boolean).join(", ") || perfil.pais}
+            {[perfil.ciudad, perfil.pais].filter(Boolean).join(", ") || perfil.pais || "Agrega tu ciudad"}
           </p>
 
           {nivel.siguiente && (
@@ -174,11 +177,20 @@ export function PerfilEditor({
         <Stat valor={`${perfil.racha}`} label="🔥 Racha" />
       </div>
 
-      {/* ===== Sobre mí ===== */}
-      {perfil.bio && !editando && (
+      {/* ===== Sobre mí (siempre visible) ===== */}
+      {!editando && (
         <div className="bg-surface border border-border rounded-3xl p-6 mt-4">
-          <h2 className="font-display text-lg font-extrabold mb-2">Sobre mí</h2>
-          <p className="text-sub text-sm leading-relaxed whitespace-pre-line">{perfil.bio}</p>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-display text-lg font-extrabold">Sobre mí</h2>
+            <button onClick={() => setEditando(true)} className="text-[13px] font-semibold text-accent">
+              {perfil.bio ? "Editar" : "+ Agregar"}
+            </button>
+          </div>
+          {perfil.bio ? (
+            <p className="text-sub text-sm leading-relaxed whitespace-pre-line">{perfil.bio}</p>
+          ) : (
+            <p className="text-hint text-sm">Cuéntale al mundo quién eres y qué creas. ✍️</p>
+          )}
         </div>
       )}
 
@@ -225,6 +237,10 @@ export function PerfilEditor({
             <Row label="Audiencia" valor={perfil.tamano_audiencia ?? "—"} />
             <Row label="Nacimiento" valor={fechaBonita(perfil.fecha_nacimiento)} />
             <Row label="WhatsApp" valor={perfil.whatsapp ?? "—"} />
+            <Row label="Instagram" valor={perfil.redes?.instagram ? "@" + perfil.redes.instagram : "—"} />
+            <Row label="TikTok" valor={perfil.redes?.tiktok ? "@" + perfil.redes.tiktok : "—"} />
+            <Row label="YouTube" valor={perfil.redes?.youtube ? "@" + perfil.redes.youtube : "—"} />
+            <Row label="Colaboraciones" valor={perfil.abierto_colab ? "Abierta 🤝" : "Cerrada"} />
           </div>
         ) : (
           <div className="space-y-5">
