@@ -168,6 +168,22 @@ body {
 }
 
 /* Blobs de fondo que flotan suave */
+/* Pulso del nodo activo en la ruta */
+@keyframes ruta-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 16px rgba(124, 58, 237, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(124, 58, 237, 0);
+  }
+}
+.ruta-pulse {
+  animation: ruta-pulse 2s ease-out infinite;
+}
+
 @keyframes onb-blob {
   0%,
   100% {
@@ -189,7 +205,8 @@ body {
   .onb-slide,
   .octi-bounce,
   .onb-pop-in,
-  .onb-blob {
+  .onb-blob,
+  .ruta-pulse {
     animation: none;
   }
 }

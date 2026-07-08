@@ -56,6 +56,20 @@ export default async function AppHome() {
       </header>
 
       <div className="max-w-3xl mx-auto px-6 py-12">
+        {/* Acceso destacado a la Ruta de Aprendizaje */}
+        <Link
+          href="/app/ruta"
+          className="group flex items-center gap-4 rounded-2xl p-6 mb-4 text-white shadow-lg shadow-accent/20 hover:brightness-105 transition"
+          style={{ background: "linear-gradient(120deg,#6D28D9,#7C3AED,#A78BFA)" }}
+        >
+          <div className="text-4xl">🗺️</div>
+          <div className="flex-1">
+            <div className="font-display text-lg font-extrabold">Tu ruta de aprendizaje</div>
+            <div className="text-white/80 text-sm">Continúa tu camino de creador 🐙</div>
+          </div>
+          <span className="text-2xl group-hover:translate-x-1 transition">→</span>
+        </Link>
+
         <div className="bg-surface border border-border rounded-2xl p-8">
           <div className="inline-flex items-center gap-2 text-[12px] font-semibold text-green bg-green-soft rounded-full px-3 py-1">
             <span className="w-1.5 h-1.5 rounded-full bg-green" /> Sesión segura activa
