@@ -198,35 +198,44 @@ export function PerfilEditor({
       {/* ===== Redes y métricas ===== */}
       {!editando && (
         <div className="bg-surface border border-border rounded-3xl p-6 mt-4">
-          <h2 className="font-display text-lg font-extrabold">Redes y métricas</h2>
-          {perfil.metricas?.instagram?.username ? (
-            <div className="mt-3 flex items-center gap-4 bg-bg rounded-2xl p-4">
-              <div className="w-11 h-11 rounded-full grid place-items-center text-xl"
-                style={{ background: "linear-gradient(135deg,#F58529,#DD2A7B,#8134AF)" }}>📸</div>
-              <div className="flex-1">
-                <div className="font-bold text-sm text-text">@{perfil.metricas.instagram.username}</div>
-                <div className="text-[12px] text-sub">Instagram conectado ✅</div>
-              </div>
-              {typeof perfil.metricas.instagram.followers === "number" && (
-                <div className="text-right">
-                  <div className="font-display text-xl font-extrabold text-accent">
-                    {perfil.metricas.instagram.followers.toLocaleString()}
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-display text-lg font-extrabold">Redes y métricas</h2>
+            <Link href="/app/perfil/completar?paso=conectar" className="text-[13px] font-semibold text-accent">
+              Conectar →
+            </Link>
+          </div>
+          <div className="space-y-2">
+            {[
+              { key: "instagram", nombre: "Instagram", emoji: "📸", color: "#E1306C" },
+              { key: "tiktok", nombre: "TikTok", emoji: "🎵", color: "#111827" },
+              { key: "youtube", nombre: "YouTube", emoji: "▶️", color: "#FF0000" },
+            ].map((p) => {
+              const m = perfil.metricas?.[p.key];
+              return (
+                <div key={p.key} className="flex items-center gap-3 bg-bg rounded-2xl p-3">
+                  <div className="w-10 h-10 rounded-full grid place-items-center text-base text-white shrink-0" style={{ background: p.color }}>
+                    {p.emoji}
                   </div>
-                  <div className="text-[11px] text-sub">seguidores</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-sm text-text">{p.nombre}</div>
+                    <div className="text-[12px] text-sub truncate">
+                      {m?.username ? `@${m.username}` : "Sin conectar"}
+                    </div>
+                  </div>
+                  {m?.username && typeof m.followers === "number" ? (
+                    <div className="text-right shrink-0">
+                      <div className="font-display text-lg font-extrabold text-accent">
+                        {m.followers.toLocaleString()}
+                      </div>
+                      <div className="text-[10px] text-sub">seguidores</div>
+                    </div>
+                  ) : m?.username ? (
+                    <span className="text-green text-sm">✅</span>
+                  ) : null}
                 </div>
-              )}
-            </div>
-          ) : (
-            <>
-              <p className="text-sub text-[13px] mt-1">
-                Conecta tu Instagram profesional para mostrar tus seguidores reales en tu media kit. ✨
-              </p>
-              <Link href="/app/perfil/completar?paso=instagram"
-                className="inline-flex items-center gap-2 mt-3 bg-[#E1306C] text-white font-bold text-sm rounded-xl px-4 py-2.5 hover:brightness-110 transition">
-                📸 Conectar Instagram
-              </Link>
-            </>
-          )}
+              );
+            })}
+          </div>
         </div>
       )}
 

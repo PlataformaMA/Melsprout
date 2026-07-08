@@ -1,21 +1,16 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { buildAuthUrl, INSTAGRAM_CONFIGURADO } from "@/lib/instagram";
+import { buildAuthUrl, TIKTOK_CONFIGURADO } from "@/lib/tiktok";
 
-// Inicia la conexión con Instagram: manda al usuario a autorizar en Instagram.
 export async function GET(request: Request) {
   const { origin } = new URL(request.url);
   const destino = `${origin}/app/perfil/completar?paso=conectar`;
-
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.redirect(`${origin}/login`);
-
-  if (!INSTAGRAM_CONFIGURADO) {
-    return NextResponse.redirect(`${destino}&r=instagram_noconfig`);
-  }
-
+  if (!TIKTOK_CONFIGURADO)
+    return NextResponse.redirect(`${destino}&r=tiktok_noconfig`);
   return NextResponse.redirect(buildAuthUrl(origin, user.id));
 }

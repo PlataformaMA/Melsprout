@@ -7,7 +7,7 @@ import { AvatarUploader } from "@/components/AvatarUploader";
 import { CoverUploader } from "@/components/CoverUploader";
 import { guardarCampos, type Perfil } from "@/lib/perfil-actions";
 
-const STEPS = ["foto", "portada", "headline", "bio", "ciudad", "redes", "instagram"] as const;
+const STEPS = ["foto", "portada", "headline", "bio", "ciudad", "redes", "conectar"] as const;
 type Step = (typeof STEPS)[number];
 
 const MENSAJES: Record<Step, string> = {
@@ -15,15 +15,24 @@ const MENSAJES: Record<Step, string> = {
   portada: "Una portada le da personalidad a tu media kit. 🎨",
   headline: "Tu headline dice quién eres en una frase. ✍️",
   bio: "Cuéntale al mundo tu historia. Las marcas leen esto. 💜",
-  ciudad: "¿De dónde creas? Ayuda a conectar con tu audiencia local. 🌎",
-  redes: "Suma tus redes para que te encuentren en todos lados. 🌐",
-  instagram: "¡Lo mejor! Conecta Instagram y muestra tus seguidores reales. 🚀",
+  ciudad: "¿De dónde creas? Conecta con tu audiencia local. 🌎",
+  redes: "Suma tus @ para que te encuentren en todos lados. 🌐",
+  conectar: "¡Lo mejor! Conecta tus redes y muestra tus seguidores reales. 🚀",
 };
 
+const PLATAFORMAS = [
+  { key: "instagram", nombre: "Instagram", emoji: "📸", color: "#E1306C", connect: "/api/instagram/connect" },
+  { key: "tiktok", nombre: "TikTok", emoji: "🎵", color: "#111827", connect: "/api/tiktok/connect" },
+  { key: "youtube", nombre: "YouTube", emoji: "▶️", color: "#FF0000", connect: "/api/youtube/connect" },
+] as const;
+
 export function CompletarPerfil({
-  perfil, pasoInicial, ig, igConfigurado,
+  perfil, pasoInicial, resultado, configurado,
 }: {
-  perfil: Perfil; pasoInicial?: string; ig?: string; igConfigurado: boolean;
+  perfil: Perfil;
+  pasoInicial?: string;
+  resultado?: string;
+  configurado: { instagram: boolean; tiktok: boolean; youtube: boolean };
 }) {
   const router = useRouter();
   const [pendiente, startTransition] = useTransition();
@@ -39,20 +48,16 @@ export function CompletarPerfil({
 
   const terminado = idx >= STEPS.length;
   const step = STEPS[idx];
-  const igData = perfil.metricas?.instagram;
 
   function avanzar() {
     setIdx((n) => n + 1);
   }
-
   function continuar() {
-    // Guarda lo del paso actual y avanza.
     startTransition(async () => {
       if (step === "headline") await guardarCampos({ headline });
       else if (step === "bio") await guardarCampos({ bio });
       else if (step === "ciudad") await guardarCampos({ ciudad });
-      else if (step === "redes")
-        await guardarCampos({ redes: { instagram: insta, tiktok, youtube } });
+      else if (step === "redes") await guardarCampos({ redes: { instagram: insta, tiktok, youtube } });
       avanzar();
     });
   }
@@ -68,8 +73,7 @@ export function CompletarPerfil({
           </p>
           <button
             onClick={() => { router.replace("/app/perfil"); router.refresh(); }}
-            className="mt-8 bg-accent text-white font-bold rounded-2xl px-8 py-4 shadow-lg shadow-accent/30 hover:brightness-110 hover:scale-[1.03] active:scale-95 transition"
-          >
+            className="mt-8 bg-accent text-white font-bold rounded-2xl px-8 py-4 shadow-lg shadow-accent/30 hover:brightness-110 hover:scale-[1.03] active:scale-95 transition">
             Ver mi perfil →
           </button>
         </div>
@@ -79,7 +83,6 @@ export function CompletarPerfil({
 
   return (
     <Marco>
-      {/* Progreso */}
       <div className="px-6 pt-6 max-w-xl mx-auto w-full">
         <div className="flex items-center gap-1.5">
           {STEPS.map((_, n) => (
@@ -164,56 +167,61 @@ export function CompletarPerfil({
               </Bloque>
             )}
 
-            {step === "instagram" && (
-              <Bloque titulo="Conecta Instagram">
-                {igData?.username ? (
-                  <div className="text-center py-2">
-                    <div className="inline-flex items-center gap-2 bg-green-soft text-green rounded-full px-4 py-2 font-bold text-sm">
-                      ✅ Conectado: @{igData.username}
-                    </div>
-                    {typeof igData.followers === "number" && (
-                      <p className="mt-3 font-display text-3xl font-extrabold text-accent">
-                        {igData.followers.toLocaleString()}
-                        <span className="text-sm text-sub font-medium"> seguidores</span>
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <p className="text-sub text-sm mb-4">
-                      Conecta tu cuenta profesional de Instagram para mostrar tus seguidores reales en tu media kit.
-                    </p>
-                    {igConfigurado ? (
-                      <a href="/api/instagram/connect"
-                        className="inline-flex items-center gap-2 bg-[#E1306C] text-white font-bold rounded-2xl px-6 py-3.5 shadow-lg hover:brightness-110 transition">
-                        📸 Conectar Instagram
-                      </a>
-                    ) : (
-                      <div className="bg-amber-soft text-amber rounded-xl px-4 py-3 text-[13px]">
-                        La conexión de Instagram se está terminando de configurar. ¡Muy pronto disponible! 🔧
+            {step === "conectar" && (
+              <Bloque titulo="Conecta y trae tus métricas">
+                <p className="text-center text-sub text-[13px] mb-4">
+                  Conecta tus cuentas profesionales para mostrar tus seguidores reales. ✅
+                </p>
+                <div className="space-y-3">
+                  {PLATAFORMAS.map((p) => {
+                    const metric = perfil.metricas?.[p.key];
+                    const conf = configurado[p.key as keyof typeof configurado];
+                    const err = resultado === `${p.key}_err`;
+                    return (
+                      <div key={p.key} className="flex items-center gap-3 bg-bg rounded-2xl p-3.5">
+                        <div className="w-10 h-10 rounded-full grid place-items-center text-lg text-white" style={{ background: p.color }}>
+                          {p.emoji}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-sm text-text">{p.nombre}</div>
+                          {metric?.username ? (
+                            <div className="text-[12px] text-sub truncate">
+                              @{metric.username}
+                              {typeof metric.followers === "number" && ` · ${metric.followers.toLocaleString()} seguidores`}
+                            </div>
+                          ) : err ? (
+                            <div className="text-[12px] text-pink">No se pudo conectar. Reintenta.</div>
+                          ) : (
+                            <div className="text-[12px] text-hint">Sin conectar</div>
+                          )}
+                        </div>
+                        {metric?.username ? (
+                          <span className="text-green text-sm font-bold">✅</span>
+                        ) : conf ? (
+                          <a href={p.connect}
+                            className="text-white text-[13px] font-bold rounded-xl px-3.5 py-2 hover:brightness-110 transition shrink-0"
+                            style={{ background: p.color }}>
+                            Conectar
+                          </a>
+                        ) : (
+                          <span className="text-[11px] text-hint shrink-0">Pronto</span>
+                        )}
                       </div>
-                    )}
-                    {ig === "err" && (
-                      <p className="text-pink text-[13px] mt-3">No se pudo conectar. Inténtalo de nuevo.</p>
-                    )}
-                    {ig === "noconfig" && (
-                      <p className="text-hint text-[12px] mt-3">Aún falta configurar Instagram del lado del servidor.</p>
-                    )}
-                  </div>
-                )}
+                    );
+                  })}
+                </div>
               </Bloque>
             )}
           </div>
         </div>
 
-        {/* Navegación */}
         <div className="mt-6 flex items-center gap-3">
           <button onClick={avanzar} disabled={pendiente}
             className="text-sm font-semibold text-sub hover:text-text px-5 py-3.5">
             Saltar
           </button>
           <button
-            onClick={step === "foto" || step === "portada" || step === "instagram" ? avanzar : continuar}
+            onClick={step === "foto" || step === "portada" || step === "conectar" ? avanzar : continuar}
             disabled={pendiente}
             className="flex-1 bg-accent text-white font-bold text-sm rounded-2xl py-3.5 shadow-lg shadow-accent/25 hover:brightness-110 active:scale-95 disabled:opacity-60 transition">
             {pendiente ? "Guardando…" : idx === STEPS.length - 1 ? "Terminar 🎉" : "Continuar"}

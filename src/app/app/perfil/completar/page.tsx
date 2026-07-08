@@ -2,12 +2,14 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getPerfil } from "@/lib/perfil-actions";
 import { INSTAGRAM_CONFIGURADO } from "@/lib/instagram";
+import { TIKTOK_CONFIGURADO } from "@/lib/tiktok";
+import { YOUTUBE_CONFIGURADO } from "@/lib/youtube";
 import { CompletarPerfil } from "@/components/CompletarPerfil";
 
 export default async function CompletarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ paso?: string; ig?: string }>;
+  searchParams: Promise<{ paso?: string; r?: string }>;
 }) {
   const sp = await searchParams;
   const supabase = await createClient();
@@ -24,8 +26,12 @@ export default async function CompletarPage({
     <CompletarPerfil
       perfil={perfil}
       pasoInicial={sp.paso}
-      ig={sp.ig}
-      igConfigurado={INSTAGRAM_CONFIGURADO}
+      resultado={sp.r}
+      configurado={{
+        instagram: INSTAGRAM_CONFIGURADO,
+        tiktok: TIKTOK_CONFIGURADO,
+        youtube: YOUTUBE_CONFIGURADO,
+      }}
     />
   );
 }
