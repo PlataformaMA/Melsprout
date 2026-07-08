@@ -168,6 +168,62 @@ body {
 }
 
 /* Blobs de fondo que flotan suave */
+/* Burbujas que suben (ambiente marino) */
+@keyframes burbuja-sube {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.6;
+  }
+  90% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(-110vh) translateX(20px);
+    opacity: 0;
+  }
+}
+.burbuja {
+  position: absolute;
+  bottom: -40px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.15));
+  animation: burbuja-sube linear infinite;
+  pointer-events: none;
+}
+
+/* Vaivén suave (algas, peces) */
+@keyframes mar-vaiven {
+  0%,
+  100% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(4deg);
+  }
+}
+.mar-vaiven {
+  animation: mar-vaiven 4s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+@keyframes mar-nada {
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(24px) scaleX(1);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+.mar-nada {
+  animation: mar-nada 6s ease-in-out infinite;
+}
+
 /* Pulso del nodo activo en la ruta */
 @keyframes ruta-pulse {
   0% {

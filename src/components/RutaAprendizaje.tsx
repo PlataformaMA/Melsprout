@@ -1,8 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Octi } from "@/components/Octi";
+import { cerrarSesion } from "@/lib/auth-actions";
 import { ETAPA_1, TOTAL_CLASES, nivelPorXP, type Clase } from "@/lib/data";
+
+// Burbujas fijas (para evitar problemas de hidratación con valores aleatorios).
+const BURBUJAS = [
+  { left: "12%", size: "10px", dur: "9s", delay: "0s" },
+  { left: "26%", size: "6px", dur: "7s", delay: "1.5s" },
+  { left: "44%", size: "14px", dur: "11s", delay: "0.5s" },
+  { left: "58%", size: "8px", dur: "8s", delay: "2.5s" },
+  { left: "72%", size: "12px", dur: "10s", delay: "1s" },
+  { left: "85%", size: "7px", dur: "7.5s", delay: "3s" },
+  { left: "34%", size: "9px", dur: "9.5s", delay: "4s" },
+  { left: "66%", size: "5px", dur: "6.5s", delay: "2s" },
+];
 
 // TEMPORAL: progreso simulado hasta construir el reproductor (Módulo 05).
 const CLASES_COMPLETADAS = 1;
@@ -58,13 +72,17 @@ export function RutaAprendizaje({
       {/* ===== Nav izquierda (íconos) ===== */}
       <aside className="hidden md:flex flex-col items-center gap-2 w-16 py-6 bg-surface/70 backdrop-blur border-r border-border sticky top-0 h-screen">
         <div className="w-9 h-9 rounded-xl bg-accent grid place-items-center font-display font-extrabold text-white mb-4">M</div>
-        <NavIcon href="/app" label="Inicio">🏠</NavIcon>
-        <NavIcon href="/app/ruta" label="Ruta" activo>🗺️</NavIcon>
-        <NavIcon href="/app" label="Retos">🎯</NavIcon>
-        <NavIcon href="/app" label="Ranking">🏆</NavIcon>
-        <NavIcon href="/app" label="Comunidad">💬</NavIcon>
-        <div className="mt-auto">
+        <NavIcon href="/app/ruta" label="Inicio" activo>🏠</NavIcon>
+        <NavIcon href="/app/ruta" label="Retos">🎯</NavIcon>
+        <NavIcon href="/app/ruta" label="Ranking">🏆</NavIcon>
+        <NavIcon href="/app/ruta" label="Comunidad">💬</NavIcon>
+        <div className="mt-auto flex flex-col items-center gap-2">
           <NavIcon href="/app/perfil" label="Perfil">👤</NavIcon>
+          <form action={cerrarSesion}>
+            <button title="Cerrar sesión" className="w-11 h-11 grid place-items-center rounded-xl text-xl hover:bg-bg transition">
+              🚪
+            </button>
+          </form>
         </div>
       </aside>
 
@@ -106,12 +124,23 @@ export function RutaAprendizaje({
             </div>
           </div>
 
-          {/* El mapa serpenteante */}
-          <div className="relative mx-auto mt-4" style={{ width: W, maxWidth: "100%", height: altura }}>
+          {/* El mapa serpenteante — FONDO SUBMARINO */}
+          <div className="relative mx-auto mt-4 rounded-3xl overflow-hidden shadow-lg"
+            style={{ width: W, maxWidth: "100%", height: altura, background: "linear-gradient(180deg,#7DD3FC 0%,#38BDF8 30%,#0EA5E9 62%,#075985 100%)" }}>
+
+            {/* Rayos de luz */}
+            <div className="absolute inset-0 opacity-25 pointer-events-none" style={{
+              backgroundImage: "linear-gradient(105deg, transparent 32%, rgba(255,255,255,.5) 44%, transparent 52%), linear-gradient(75deg, transparent 60%, rgba(255,255,255,.35) 70%, transparent 76%)",
+            }} />
+
+            {/* Burbujas subiendo */}
+            {BURBUJAS.map((b, i) => (
+              <span key={i} className="burbuja" style={{ left: b.left, width: b.size, height: b.size, animationDuration: b.dur, animationDelay: b.delay }} />
+            ))}
+
             {/* Camino (SVG punteado) */}
             <svg viewBox={`0 0 ${W} ${altura}`} className="absolute inset-0 w-full h-full" fill="none" preserveAspectRatio="xMidYMin meet">
-              <path d={construirPath(puntos)} stroke="#C7BEF5" strokeWidth="7" strokeLinecap="round" strokeDasharray="2 20" opacity="0.9" />
-              {/* Decoración marina */}
+              <path d={construirPath(puntos)} stroke="rgba(255,255,255,0.85)" strokeWidth="7" strokeLinecap="round" strokeDasharray="1 22" />
               <Decoraciones altura={altura} />
             </svg>
 
@@ -122,15 +151,20 @@ export function RutaAprendizaje({
 
             {/* Trofeo final */}
             <div className="absolute" style={{ left: trofeoX, top: trofeoY, transform: "translate(-50%,-50%)" }}>
-              <div className="w-[68px] h-[68px] rounded-full bg-white border-4 border-amber-soft grid place-items-center text-3xl shadow-lg opacity-70">
+              <div className="w-[68px] h-[68px] rounded-full bg-white/90 border-4 border-amber grid place-items-center text-3xl shadow-lg">
                 🏆
               </div>
-              <div className="text-center text-[11px] font-bold text-amber mt-1 w-24 -ml-3">Diploma Creador+</div>
+              <div className="text-center text-[11px] font-bold text-white mt-1 w-24 -ml-3 drop-shadow">Diploma Creador+</div>
             </div>
 
-            {/* Octi guía */}
-            <div className="absolute" style={{ left: 8, top: nodos[completadas]?.y ?? TOP + 40 }}>
-              <Octi size={120} mensaje="¡Vas genial! 🐙 Toca el nodo morado para tu clase de hoy." />
+            {/* Fondo de arena */}
+            <div className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none" style={{ background: "linear-gradient(180deg, transparent, #FCD9A5 85%)" }} />
+            <div className="absolute bottom-1 left-6 text-3xl mar-vaiven">🪸</div>
+            <div className="absolute bottom-2 right-8 text-2xl mar-vaiven" style={{ animationDelay: "1s" }}>🌿</div>
+
+            {/* Octi guía interactivo */}
+            <div className="absolute" style={{ left: 4, top: nodos[completadas]?.y ?? TOP + 40 }}>
+              <OctiInteractivo nombre={nombre} />
             </div>
           </div>
         </div>
@@ -199,16 +233,41 @@ function NodoClase({ nodo }: { nodo: Nodo }) {
 }
 
 function Decoraciones({ altura }: { altura: number }) {
+  // Vida marina distribuida a lo largo del recorrido.
   return (
-    <g opacity="0.9">
-      {/* corales y algas */}
-      <text x="30" y={altura - 30} fontSize="34">🪸</text>
-      <text x={W - 60} y={altura - 60} fontSize="30">🌿</text>
-      <text x="24" y="180" fontSize="26">🫧</text>
-      <text x={W - 44} y="120" fontSize="22">🫧</text>
-      <text x={W - 70} y={altura / 2} fontSize="30">🐚</text>
-      <text x="28" y={altura / 2 + 120} fontSize="24">🫧</text>
+    <g>
+      <text x="18" y="150" fontSize="26">🐠</text>
+      <text x={W - 52} y="230" fontSize="24">🐟</text>
+      <text x="26" y={altura * 0.35} fontSize="28">🌿</text>
+      <text x={W - 46} y={altura * 0.42} fontSize="26">🐚</text>
+      <text x="16" y={altura * 0.55} fontSize="24">🐡</text>
+      <text x={W - 40} y={altura * 0.62} fontSize="30">🌿</text>
+      <text x="30" y={altura * 0.75} fontSize="26">🐠</text>
+      <text x={W - 56} y={altura * 0.8} fontSize="24">⭐</text>
+      <text x={W / 2 - 10} y={altura * 0.9} fontSize="22">🐟</text>
     </g>
+  );
+}
+
+function OctiInteractivo({ nombre }: { nombre: string }) {
+  const primer = nombre.split(" ")[0];
+  const MENSAJES = [
+    `¡Hola, ${primer}! 🐙 Continuemos tu camino.`,
+    "Toca el nodo morado para empezar tu clase de hoy. ▶",
+    "Una clase al día y en 90 días serás otro creador. 🚀",
+    "¡No dejes que se apague tu racha! 🔥",
+    "Publicar constante le gana al talento. Siempre.",
+    "Estoy aquí para nadar contigo en cada ola. 🌊",
+  ];
+  const [i, setI] = useState(0);
+  return (
+    <button
+      onClick={() => setI((n) => (n + 1) % MENSAJES.length)}
+      className="text-left hover:scale-[1.04] active:scale-95 transition"
+      title="Tócame 🐙"
+    >
+      <Octi size={120} mensaje={MENSAJES[i]} />
+    </button>
   );
 }
 
