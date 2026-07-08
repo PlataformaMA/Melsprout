@@ -83,8 +83,14 @@ export default function RegistroPage() {
           />
           <span>
             Acepto los{" "}
-            <span className="text-accent">términos</span> y el{" "}
-            <span className="text-accent">aviso de privacidad</span>.
+            <a href="/terminos" target="_blank" rel="noopener noreferrer" className="text-accent font-medium underline">
+              Términos y Condiciones
+            </a>{" "}
+            y el{" "}
+            <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="text-accent font-medium underline">
+              Aviso de Privacidad
+            </a>
+            .
           </span>
         </label>
 
