@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { actualizarPerfil, type Perfil } from "@/lib/perfil-actions";
@@ -158,7 +159,7 @@ export function PerfilEditor({
         <div className="bg-accent-soft border border-accent/20 rounded-2xl p-4 mt-4">
           <div className="flex items-center justify-between">
             <span className="font-bold text-sm text-[#4C1D95]">¡Completa tu perfil! {pct}%</span>
-            <button onClick={() => setEditando(true)} className="text-[13px] font-bold text-accent">Completar →</button>
+            <Link href="/app/perfil/completar" className="text-[13px] font-bold text-accent">Completar →</Link>
           </div>
           <div className="h-2 rounded-full bg-white/70 overflow-hidden mt-2">
             <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${pct}%` }} />
@@ -194,22 +195,38 @@ export function PerfilEditor({
         </div>
       )}
 
-      {/* ===== Conectar métricas (Fase 2) ===== */}
+      {/* ===== Redes y métricas ===== */}
       {!editando && (
         <div className="bg-surface border border-border rounded-3xl p-6 mt-4">
-          <h2 className="font-display text-lg font-extrabold">Conecta tus redes</h2>
-          <p className="text-sub text-[13px] mt-1">
-            Muy pronto podrás conectar tus cuentas para mostrar tus métricas reales en tu media kit. ✨
-          </p>
-          <div className="flex flex-wrap gap-2 mt-3">
-            {["📸 Instagram", "🎵 TikTok", "▶️ YouTube"].map((t) => (
-              <button key={t} disabled
-                className="text-[13px] font-semibold border border-border rounded-xl px-3.5 py-2 text-hint bg-bg cursor-not-allowed">
-                Conectar {t}
-              </button>
-            ))}
-          </div>
-          <p className="text-[11px] text-hint mt-2">🔒 Disponible en la Fase 2 (métricas y media kit para marcas).</p>
+          <h2 className="font-display text-lg font-extrabold">Redes y métricas</h2>
+          {perfil.metricas?.instagram?.username ? (
+            <div className="mt-3 flex items-center gap-4 bg-bg rounded-2xl p-4">
+              <div className="w-11 h-11 rounded-full grid place-items-center text-xl"
+                style={{ background: "linear-gradient(135deg,#F58529,#DD2A7B,#8134AF)" }}>📸</div>
+              <div className="flex-1">
+                <div className="font-bold text-sm text-text">@{perfil.metricas.instagram.username}</div>
+                <div className="text-[12px] text-sub">Instagram conectado ✅</div>
+              </div>
+              {typeof perfil.metricas.instagram.followers === "number" && (
+                <div className="text-right">
+                  <div className="font-display text-xl font-extrabold text-accent">
+                    {perfil.metricas.instagram.followers.toLocaleString()}
+                  </div>
+                  <div className="text-[11px] text-sub">seguidores</div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              <p className="text-sub text-[13px] mt-1">
+                Conecta tu Instagram profesional para mostrar tus seguidores reales en tu media kit. ✨
+              </p>
+              <Link href="/app/perfil/completar?paso=instagram"
+                className="inline-flex items-center gap-2 mt-3 bg-[#E1306C] text-white font-bold text-sm rounded-xl px-4 py-2.5 hover:brightness-110 transition">
+                📸 Conectar Instagram
+              </Link>
+            </>
+          )}
         </div>
       )}
 

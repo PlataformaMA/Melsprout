@@ -1,0 +1,245 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Octi } from "@/components/Octi";
+import { AvatarUploader } from "@/components/AvatarUploader";
+import { CoverUploader } from "@/components/CoverUploader";
+import { guardarCampos, type Perfil } from "@/lib/perfil-actions";
+
+const STEPS = ["foto", "portada", "headline", "bio", "ciudad", "redes", "instagram"] as const;
+type Step = (typeof STEPS)[number];
+
+const MENSAJES: Record<Step, string> = {
+  foto: "¡Ponle cara a tu perfil! 📸 Una buena foto genera confianza.",
+  portada: "Una portada le da personalidad a tu media kit. 🎨",
+  headline: "Tu headline dice quién eres en una frase. ✍️",
+  bio: "Cuéntale al mundo tu historia. Las marcas leen esto. 💜",
+  ciudad: "¿De dónde creas? Ayuda a conectar con tu audiencia local. 🌎",
+  redes: "Suma tus redes para que te encuentren en todos lados. 🌐",
+  instagram: "¡Lo mejor! Conecta Instagram y muestra tus seguidores reales. 🚀",
+};
+
+export function CompletarPerfil({
+  perfil, pasoInicial, ig, igConfigurado,
+}: {
+  perfil: Perfil; pasoInicial?: string; ig?: string; igConfigurado: boolean;
+}) {
+  const router = useRouter();
+  const [pendiente, startTransition] = useTransition();
+  const inicial = pasoInicial ? STEPS.indexOf(pasoInicial as Step) : 0;
+  const [idx, setIdx] = useState(inicial >= 0 ? inicial : 0);
+
+  const [headline, setHeadline] = useState(perfil.headline ?? "");
+  const [bio, setBio] = useState(perfil.bio ?? "");
+  const [ciudad, setCiudad] = useState(perfil.ciudad ?? "");
+  const [insta, setInsta] = useState(perfil.redes?.instagram ?? "");
+  const [tiktok, setTiktok] = useState(perfil.redes?.tiktok ?? "");
+  const [youtube, setYoutube] = useState(perfil.redes?.youtube ?? "");
+
+  const terminado = idx >= STEPS.length;
+  const step = STEPS[idx];
+  const igData = perfil.metricas?.instagram;
+
+  function avanzar() {
+    setIdx((n) => n + 1);
+  }
+
+  function continuar() {
+    // Guarda lo del paso actual y avanza.
+    startTransition(async () => {
+      if (step === "headline") await guardarCampos({ headline });
+      else if (step === "bio") await guardarCampos({ bio });
+      else if (step === "ciudad") await guardarCampos({ ciudad });
+      else if (step === "redes")
+        await guardarCampos({ redes: { instagram: insta, tiktok, youtube } });
+      avanzar();
+    });
+  }
+
+  if (terminado) {
+    return (
+      <Marco>
+        <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
+          <Octi size={170} celebrando conBurbuja={false} />
+          <h1 className="font-display text-3xl font-extrabold mt-6">¡Perfil listo! 🎉</h1>
+          <p className="text-sub mt-2 max-w-sm">
+            Tu media kit se ve increíble. Las marcas ya te pueden conocer mejor.
+          </p>
+          <button
+            onClick={() => { router.replace("/app/perfil"); router.refresh(); }}
+            className="mt-8 bg-accent text-white font-bold rounded-2xl px-8 py-4 shadow-lg shadow-accent/30 hover:brightness-110 hover:scale-[1.03] active:scale-95 transition"
+          >
+            Ver mi perfil →
+          </button>
+        </div>
+      </Marco>
+    );
+  }
+
+  return (
+    <Marco>
+      {/* Progreso */}
+      <div className="px-6 pt-6 max-w-xl mx-auto w-full">
+        <div className="flex items-center gap-1.5">
+          {STEPS.map((_, n) => (
+            <div key={n} className="h-2 flex-1 rounded-full bg-white/60 overflow-hidden">
+              <div className="h-full bg-accent rounded-full transition-all duration-500"
+                style={{ width: n < idx ? "100%" : n === idx ? "50%" : "0%" }} />
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center justify-between mt-2">
+          <p className="text-[11px] text-sub font-bold tracking-wide">PASO {idx + 1} DE {STEPS.length}</p>
+          <button onClick={() => { router.replace("/app/perfil"); router.refresh(); }}
+            className="text-[12px] text-hint hover:text-sub">Salir</button>
+        </div>
+      </div>
+
+      <div className="flex-1 max-w-xl mx-auto w-full px-6 py-6 flex flex-col">
+        <div className="flex justify-center mb-3">
+          <Octi size={116} mensaje={MENSAJES[step]} />
+        </div>
+
+        <div key={step} className="onb-slide flex-1">
+          <div className="bg-white/85 backdrop-blur rounded-3xl border border-white shadow-xl shadow-accent/5 p-6">
+            {step === "foto" && (
+              <Bloque titulo="Sube tu foto de perfil">
+                <div className="flex justify-center py-2">
+                  <AvatarUploader avatarUrl={perfil.avatar_url} nombre={perfil.full_name ?? ""} size={120} />
+                </div>
+                <p className="text-center text-[12px] text-hint">Toca la cámara para elegir tu foto.</p>
+              </Bloque>
+            )}
+
+            {step === "portada" && (
+              <Bloque titulo="Agrega una portada">
+                <div className="rounded-2xl overflow-hidden border border-border">
+                  <CoverUploader coverUrl={perfil.cover_url} />
+                </div>
+                <p className="text-center text-[12px] text-hint mt-2">Toca el botón Portada para subir tu banner.</p>
+              </Bloque>
+            )}
+
+            {step === "headline" && (
+              <Bloque titulo="¿Cuál es tu título?">
+                <input value={headline} onChange={(e) => setHeadline(e.target.value)} maxLength={80}
+                  placeholder="Ej. Creadora de contenido de Moda 👗"
+                  className="w-full rounded-xl border-2 border-border bg-white px-3.5 py-3 text-sm outline-none focus:border-accent transition" />
+              </Bloque>
+            )}
+
+            {step === "bio" && (
+              <Bloque titulo="Cuéntanos sobre ti">
+                <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={4} maxLength={400}
+                  placeholder="Quién eres, qué creas, qué te hace única…"
+                  className="w-full rounded-xl border-2 border-border bg-white px-3.5 py-3 text-sm outline-none focus:border-accent transition resize-none" />
+                <p className="text-[11px] text-hint mt-1 text-right">{bio.length}/400</p>
+              </Bloque>
+            )}
+
+            {step === "ciudad" && (
+              <Bloque titulo="¿De qué ciudad eres?">
+                <input value={ciudad} onChange={(e) => setCiudad(e.target.value)} maxLength={60}
+                  placeholder="Ej. Ciudad de México"
+                  className="w-full rounded-xl border-2 border-border bg-white px-3.5 py-3 text-sm outline-none focus:border-accent transition" />
+              </Bloque>
+            )}
+
+            {step === "redes" && (
+              <Bloque titulo="Tus redes sociales">
+                <div className="space-y-2">
+                  {[
+                    { emoji: "📸", ph: "usuario_ig", v: insta, set: setInsta },
+                    { emoji: "🎵", ph: "usuario_tiktok", v: tiktok, set: setTiktok },
+                    { emoji: "▶️", ph: "canal_youtube", v: youtube, set: setYoutube },
+                  ].map((r, i) => (
+                    <div key={i} className="flex items-center gap-2 rounded-xl border-2 border-border bg-white px-3 focus-within:border-accent transition">
+                      <span className="text-lg">{r.emoji}</span><span className="text-sub text-sm">@</span>
+                      <input value={r.v} onChange={(e) => r.set(e.target.value)} placeholder={r.ph}
+                        className="flex-1 bg-transparent py-3 text-sm outline-none" />
+                    </div>
+                  ))}
+                </div>
+              </Bloque>
+            )}
+
+            {step === "instagram" && (
+              <Bloque titulo="Conecta Instagram">
+                {igData?.username ? (
+                  <div className="text-center py-2">
+                    <div className="inline-flex items-center gap-2 bg-green-soft text-green rounded-full px-4 py-2 font-bold text-sm">
+                      ✅ Conectado: @{igData.username}
+                    </div>
+                    {typeof igData.followers === "number" && (
+                      <p className="mt-3 font-display text-3xl font-extrabold text-accent">
+                        {igData.followers.toLocaleString()}
+                        <span className="text-sm text-sub font-medium"> seguidores</span>
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <p className="text-sub text-sm mb-4">
+                      Conecta tu cuenta profesional de Instagram para mostrar tus seguidores reales en tu media kit.
+                    </p>
+                    {igConfigurado ? (
+                      <a href="/api/instagram/connect"
+                        className="inline-flex items-center gap-2 bg-[#E1306C] text-white font-bold rounded-2xl px-6 py-3.5 shadow-lg hover:brightness-110 transition">
+                        📸 Conectar Instagram
+                      </a>
+                    ) : (
+                      <div className="bg-amber-soft text-amber rounded-xl px-4 py-3 text-[13px]">
+                        La conexión de Instagram se está terminando de configurar. ¡Muy pronto disponible! 🔧
+                      </div>
+                    )}
+                    {ig === "err" && (
+                      <p className="text-pink text-[13px] mt-3">No se pudo conectar. Inténtalo de nuevo.</p>
+                    )}
+                    {ig === "noconfig" && (
+                      <p className="text-hint text-[12px] mt-3">Aún falta configurar Instagram del lado del servidor.</p>
+                    )}
+                  </div>
+                )}
+              </Bloque>
+            )}
+          </div>
+        </div>
+
+        {/* Navegación */}
+        <div className="mt-6 flex items-center gap-3">
+          <button onClick={avanzar} disabled={pendiente}
+            className="text-sm font-semibold text-sub hover:text-text px-5 py-3.5">
+            Saltar
+          </button>
+          <button
+            onClick={step === "foto" || step === "portada" || step === "instagram" ? avanzar : continuar}
+            disabled={pendiente}
+            className="flex-1 bg-accent text-white font-bold text-sm rounded-2xl py-3.5 shadow-lg shadow-accent/25 hover:brightness-110 active:scale-95 disabled:opacity-60 transition">
+            {pendiente ? "Guardando…" : idx === STEPS.length - 1 ? "Terminar 🎉" : "Continuar"}
+          </button>
+        </div>
+      </div>
+    </Marco>
+  );
+}
+
+function Marco({ children }: { children: React.ReactNode }) {
+  return (
+    <main className="min-h-screen relative overflow-hidden flex flex-col">
+      <div className="fixed inset-0 -z-10 bg-gradient-to-br from-accent-soft via-bg to-pink-soft" />
+      <div className="fixed -z-10 top-[-120px] left-[-100px] w-[360px] h-[360px] rounded-full bg-accent/20 blur-3xl onb-blob" />
+      <div className="fixed -z-10 bottom-[-140px] right-[-120px] w-[400px] h-[400px] rounded-full bg-pink/20 blur-3xl onb-blob" style={{ animationDelay: "2s" }} />
+      {children}
+    </main>
+  );
+}
+
+function Bloque({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h1 className="font-display text-2xl font-extrabold text-center mb-4">{titulo}</h1>
+      {children}
+    </div>
+  );
+}

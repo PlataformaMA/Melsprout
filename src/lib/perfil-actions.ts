@@ -23,6 +23,7 @@ export type Perfil = {
   plataforma_principal: string | null;
   tamano_audiencia: string | null;
   redes: Record<string, string>;
+  metricas: Record<string, { followers?: number; username?: string; updated_at?: string }>;
   onboarding_completo: boolean;
   etapa: string;
   xp: number;
@@ -220,4 +221,41 @@ export async function subirAvatar(dataUrl: string) {
 }
 export async function subirCover(dataUrl: string) {
   return subirImagen(dataUrl, "cover");
+}
+
+// Guardado incremental para el flujo de completar perfil.
+// Solo actualiza los campos enviados (uno o varios por paso).
+export async function guardarCampos(campos: {
+  headline?: string;
+  bio?: string;
+  ciudad?: string;
+  redes?: Record<string, string>;
+}): Promise<{ ok: true } | { error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Inicia sesión de nuevo." };
+
+  const update: Record<string, unknown> = {};
+  if (campos.headline !== undefined)
+    update.headline = campos.headline.trim().slice(0, 80) || null;
+  if (campos.bio !== undefined)
+    update.bio = campos.bio.trim().slice(0, 400) || null;
+  if (campos.ciudad !== undefined)
+    update.ciudad = campos.ciudad.trim().slice(0, 60) || null;
+  if (campos.redes !== undefined) {
+    const redes: Record<string, string> = {};
+    for (const k of ["instagram", "tiktok", "youtube"]) {
+      const h = limpiarHandle(campos.redes[k]);
+      if (h) redes[k] = h;
+    }
+    update.redes = redes;
+  }
+  if (Object.keys(update).length === 0) return { ok: true };
+
+  const { error } = await supabase.from("profiles").update(update).eq("id", user.id);
+  if (error) return { error: "No se pudo guardar." };
+  revalidatePath("/", "layout");
+  return { ok: true };
 }
