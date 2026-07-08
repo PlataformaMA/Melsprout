@@ -61,7 +61,7 @@ export function CoverUploader({ coverUrl }: { coverUrl: string | null }) {
       style={
         preview
           ? { backgroundImage: `url(${preview})` }
-          : { background: "linear-gradient(120deg,#7C3AED,#DB2777)" }
+          : { background: "linear-gradient(120deg,#5B21B6 0%,#7C3AED 55%,#A78BFA 100%)" }
       }
     >
       {!preview && (
