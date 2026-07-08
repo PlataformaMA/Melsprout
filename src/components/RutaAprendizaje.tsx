@@ -6,21 +6,14 @@ import { Octi } from "@/components/Octi";
 import { cerrarSesion } from "@/lib/auth-actions";
 import { ETAPA_1, TOTAL_CLASES, nivelPorXP, type Clase } from "@/lib/data";
 
-const BURBUJAS = [
-  { left: "10%", size: "12px", dur: "14s", delay: "0s" },
-  { left: "24%", size: "7px", dur: "11s", delay: "3s" },
-  { left: "48%", size: "16px", dur: "17s", delay: "1s" },
-  { left: "63%", size: "9px", dur: "12s", delay: "4s" },
-  { left: "80%", size: "13px", dur: "15s", delay: "2s" },
-  { left: "90%", size: "7px", dur: "10s", delay: "5s" },
-];
-
-const W = 640;
+const W = 600;
 const CX = W / 2;
-const AMP = 250;
-const SPACING = 112;
+const AMP = 205;
+const SPACING = 124;
 const TOP = 80;
-const FREQ = 1.05;
+const FREQ = 0.92;
+const PHASE = -0.7;
+const nodeX = (i: number) => CX + AMP * Math.sin(i * FREQ + PHASE);
 const pctX = (x: number) => `${(x / W) * 100}%`;
 
 function construirPath(pts: { x: number; y: number }[]): string {
@@ -49,28 +42,17 @@ export function RutaAprendizaje({
   const nodos: Nodo[] = clases.map((c, i) => ({
     ...c,
     estado: i < CLASES_COMPLETADAS ? "completada" : i === CLASES_COMPLETADAS ? "actual" : "bloqueada",
-    x: CX + AMP * Math.sin(i * FREQ),
+    x: nodeX(i),
     y: TOP + i * SPACING,
   }));
   const trofeoY = TOP + clases.length * SPACING;
-  const trofeoX = CX + AMP * Math.sin(clases.length * FREQ);
+  const trofeoX = nodeX(clases.length);
   const puntos = [...nodos.map((n) => ({ x: n.x, y: n.y })), { x: trofeoX, y: trofeoY }];
   const altura = trofeoY + 120;
   const completadas = CLASES_COMPLETADAS;
 
   return (
     <div className="min-h-screen flex relative overflow-hidden bg-bg">
-      {/* Burbujas sutiles (todo el fondo) */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        {BURBUJAS.map((b, i) => (
-          <span key={i} className="burbuja" style={{ left: b.left, width: b.size, height: b.size, animationDuration: b.dur, animationDelay: b.delay }} />
-        ))}
-      </div>
-      {/* Corales/algas discretos en las esquinas inferiores */}
-      <div className="fixed bottom-2 left-2 text-4xl opacity-90 mar-vaiven pointer-events-none">🪸</div>
-      <div className="fixed bottom-3 left-20 text-2xl opacity-70 mar-vaiven pointer-events-none" style={{ animationDelay: "1s" }}>🌿</div>
-      <div className="fixed bottom-2 right-80 text-3xl opacity-80 mar-vaiven pointer-events-none" style={{ animationDelay: ".5s" }}>🪸</div>
-
       {/* ===== Nav izquierda ===== */}
       <aside className="hidden md:flex flex-col items-center gap-2 w-16 py-6 bg-surface border-r border-border sticky top-0 h-screen z-20">
         <div className="w-9 h-9 rounded-xl bg-accent grid place-items-center font-display font-extrabold text-white mb-4">M</div>
@@ -196,61 +178,90 @@ export function RutaAprendizaje({
   );
 }
 
+function Destello() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24">
+      <path d="M12 2 L13.7 9.5 L21 12 L13.7 14.5 L12 22 L10.3 14.5 L3 12 L10.3 9.5 Z" fill="#CBD0DB" />
+    </svg>
+  );
+}
+
 function NodoClase({ nodo }: { nodo: Nodo }) {
-  const base = "absolute grid place-items-center rounded-full shadow-lg transition-transform z-[5]";
-  const style = { left: pctX(nodo.x), top: nodo.y, transform: "translate(-50%,-50%)" } as const;
+  const pos = { left: pctX(nodo.x), top: nodo.y, transform: "translate(-50%,-50%)" } as const;
 
   if (nodo.estado === "completada") {
     return (
-      <button className={`${base} w-16 h-16 bg-green text-white border-4 border-white hover:scale-105`} style={style} title={nodo.clase.titulo}>
+      <button className="absolute grid place-items-center rounded-full w-16 h-16 bg-green text-white border-4 border-white hover:scale-105 transition-transform z-[5]"
+        style={{ ...pos, boxShadow: "0 6px 0 #047857, 0 10px 14px rgba(0,0,0,.14)" }} title={nodo.clase.titulo}>
         <span className="text-2xl">★</span>
       </button>
     );
   }
   if (nodo.estado === "actual") {
     return (
-      <div className="absolute" style={style}>
-        <button className="ruta-pulse w-[72px] h-[72px] grid place-items-center rounded-full bg-accent text-white border-4 border-white shadow-xl hover:scale-105 transition-transform" title={nodo.clase.titulo}>
-          <span className="text-2xl">▶</span>
+      <div className="absolute z-[6]" style={pos}>
+        <button className="ruta-pulse w-[74px] h-[74px] grid place-items-center rounded-full bg-accent text-white border-4 border-white hover:scale-105 transition-transform"
+          style={{ boxShadow: "0 6px 0 #5B21B6, 0 12px 16px rgba(124,58,237,.3)" }} title={nodo.clase.titulo}>
+          <span className="text-2xl ml-0.5">▶</span>
         </button>
-        <div className="absolute left-1/2 -translate-x-1/2 top-[80px] whitespace-nowrap bg-white text-[11px] font-bold text-accent rounded-full px-3 py-1 shadow">
+        <div className="absolute left-1/2 -translate-x-1/2 top-[84px] whitespace-nowrap bg-white text-[11px] font-bold text-accent rounded-full px-3 py-1.5 shadow-md">
           {nodo.clase.titulo}
         </div>
       </div>
     );
   }
   return (
-    <button className={`${base} w-14 h-14 bg-white text-hint border-4 border-border`} style={style} title="Completa la anterior para desbloquear">
-      <span className="text-lg">🔒</span>
+    <button className="absolute grid place-items-center rounded-full w-16 h-16 bg-white border-4 border-white hover:scale-105 transition-transform z-[5]"
+      style={{ ...pos, boxShadow: "0 6px 0 #E7E4EC, 0 10px 12px rgba(0,0,0,.08)" }} title="Completa la anterior para desbloquear">
+      <Destello />
     </button>
   );
 }
 
+function AlgaRoja() {
+  return (
+    <svg width="52" height="78" viewBox="0 0 52 78" fill="none">
+      <path d="M14 76 C7 60 19 52 11 38 C4 25 18 18 13 4" stroke="#E8586A" strokeWidth="5.5" strokeLinecap="round" />
+      <path d="M26 76 C33 58 21 48 29 34 C36 21 24 12 31 2" stroke="#D63F52" strokeWidth="5.5" strokeLinecap="round" />
+      <path d="M38 76 C31 62 41 52 35 42 C30 33 39 26 37 16" stroke="#F27A88" strokeWidth="5.5" strokeLinecap="round" />
+      <ellipse cx="26" cy="76" rx="16" ry="3.5" fill="#E8586A" opacity="0.18" />
+    </svg>
+  );
+}
+
+function CoralTurquesa() {
+  return (
+    <svg width="80" height="66" viewBox="0 0 80 66" fill="none" stroke="#2CA6A4" strokeWidth="7" strokeLinecap="round">
+      <path d="M40 64 L40 30" />
+      <path d="M40 42 C31 34 24 36 22 24" />
+      <path d="M40 38 C49 32 56 34 58 22" />
+      <path d="M22 24 C19 17 24 13 22 5" />
+      <path d="M58 22 C61 15 56 11 58 4" />
+      <path d="M40 30 C37 22 43 17 40 8" />
+      <ellipse cx="40" cy="64" rx="20" ry="3.5" fill="#2CA6A4" stroke="none" opacity="0.18" />
+    </svg>
+  );
+}
+
+function Burbujas() {
+  return (
+    <svg width="62" height="58" viewBox="0 0 62 58" fill="none">
+      <circle cx="26" cy="34" r="13" stroke="#7DD3FC" strokeWidth="3" opacity="0.75" />
+      <circle cx="46" cy="20" r="8" stroke="#7DD3FC" strokeWidth="2.6" opacity="0.65" />
+      <circle cx="44" cy="42" r="5" stroke="#7DD3FC" strokeWidth="2.2" opacity="0.55" />
+      <circle cx="22" cy="29" r="3.4" fill="#BAE6FD" opacity="0.8" />
+    </svg>
+  );
+}
+
 function DecorMar({ altura }: { altura: number }) {
-  const items: { e: string; left: string; top: number; size: string; anim?: string }[] = [
-    { e: "🌿", left: "1%", top: altura * 0.14, size: "50px", anim: "mar-vaiven" },
-    { e: "🐠", left: "86%", top: altura * 0.08, size: "34px", anim: "mar-nada" },
-    { e: "🫧", left: "9%", top: altura * 0.26, size: "22px" },
-    { e: "🪸", left: "92%", top: altura * 0.26, size: "44px", anim: "mar-vaiven" },
-    { e: "🐟", left: "3%", top: altura * 0.4, size: "32px", anim: "mar-nada" },
-    { e: "🐚", left: "90%", top: altura * 0.44, size: "28px" },
-    { e: "🌿", left: "95%", top: altura * 0.56, size: "56px", anim: "mar-vaiven" },
-    { e: "🐡", left: "2%", top: altura * 0.58, size: "34px", anim: "mar-nada" },
-    { e: "⭐", left: "11%", top: altura * 0.7, size: "26px" },
-    { e: "💰", left: "87%", top: altura * 0.72, size: "32px" },
-    { e: "🪸", left: "1%", top: altura * 0.8, size: "48px", anim: "mar-vaiven" },
-    { e: "🐠", left: "85%", top: altura * 0.86, size: "32px", anim: "mar-nada" },
-    { e: "🌿", left: "47%", top: altura * 0.95, size: "44px", anim: "mar-vaiven" },
-    { e: "🫧", left: "72%", top: altura * 0.38, size: "20px" },
-    { e: "🐢", left: "8%", top: altura * 0.5, size: "30px", anim: "mar-nada" },
-  ];
   return (
     <div className="absolute inset-0 pointer-events-none z-[1]">
-      {items.map((d, i) => (
-        <span key={i} className={`absolute ${d.anim ?? ""}`} style={{ left: d.left, top: d.top, fontSize: d.size }}>
-          {d.e}
-        </span>
-      ))}
+      <div className="absolute mar-vaiven" style={{ left: "5%", top: 46 }}><AlgaRoja /></div>
+      <div className="absolute" style={{ left: "56%", top: 128 }}><Burbujas /></div>
+      <div className="absolute mar-vaiven" style={{ left: "78%", top: altura * 0.5, animationDelay: "1s" }}><CoralTurquesa /></div>
+      <div className="absolute mar-vaiven" style={{ left: "4%", top: altura * 0.72, animationDelay: ".5s" }}><AlgaRoja /></div>
+      <div className="absolute" style={{ left: "30%", top: altura * 0.86 }}><Burbujas /></div>
     </div>
   );
 }
