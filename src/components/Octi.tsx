@@ -83,21 +83,34 @@ function OctiSVG({ size, anim = "octi-float" }: { size: number; anim?: string })
       </defs>
 
       {/* sombra suave */}
-      <ellipse cx="100" cy="185" rx="46" ry="8" fill="#000" opacity="0.08" />
+      <ellipse cx="100" cy="186" rx="48" ry="8" fill="#000" opacity="0.08" />
 
-      {/* tentáculos */}
+      {/* tentáculos traseros (más oscuros, dan profundidad) */}
+      <g fill="#6D28D9">
+        <path d="M64 118 C46 138 36 160 46 178 C53 188 64 183 62 170 C60 156 66 138 78 128 Z" />
+        <path d="M136 118 C154 138 164 160 154 178 C147 188 136 183 138 170 C140 156 134 138 122 128 Z" />
+      </g>
+      {/* tentáculos frontales */}
       <g fill="url(#octiBody)">
-        <path d="M56 120 C40 140 34 160 44 176 C50 184 60 180 58 168 C56 156 62 140 74 132 Z" />
-        <path d="M72 132 C64 156 60 172 68 182 C74 189 84 184 80 172 C77 162 80 146 88 138 Z" />
-        <path d="M100 138 C96 160 96 176 100 184 C104 176 104 160 100 138 Z" />
-        <path d="M128 132 C136 156 140 172 132 182 C126 189 116 184 120 172 C123 162 120 146 112 138 Z" />
-        <path d="M144 120 C160 140 166 160 156 176 C150 184 140 180 142 168 C144 156 138 140 126 132 Z" />
+        <path d="M80 128 C68 150 62 170 70 182 C76 190 86 186 84 173 C82 160 86 142 94 134 Z" />
+        <path d="M100 132 C95 156 94 176 100 186 C106 176 106 156 100 132 Z" />
+        <path d="M120 128 C132 150 138 170 130 182 C124 190 114 186 116 173 C118 160 114 142 106 134 Z" />
+      </g>
+      {/* ventositas */}
+      <g fill="#C4B5FD">
+        <circle cx="57" cy="168" r="3" /><circle cx="61" cy="176" r="2.4" />
+        <circle cx="78" cy="171" r="3" /><circle cx="81" cy="180" r="2.4" />
+        <circle cx="100" cy="176" r="3" /><circle cx="100" cy="184" r="2.4" />
+        <circle cx="122" cy="171" r="3" /><circle cx="119" cy="180" r="2.4" />
+        <circle cx="143" cy="168" r="3" /><circle cx="139" cy="176" r="2.4" />
       </g>
 
       {/* cabeza / manto */}
-      <ellipse cx="100" cy="82" rx="60" ry="56" fill="url(#octiBody)" />
+      <ellipse cx="100" cy="80" rx="58" ry="55" fill="url(#octiBody)" />
+      {/* brillo superior */}
+      <ellipse cx="80" cy="52" rx="24" ry="16" fill="#fff" opacity="0.18" />
       {/* pancita más clara */}
-      <ellipse cx="100" cy="98" rx="40" ry="34" fill="#EDE9FE" opacity="0.55" />
+      <ellipse cx="100" cy="97" rx="39" ry="33" fill="#EDE9FE" opacity="0.5" />
 
       {/* cachetitos */}
       <circle cx="66" cy="98" r="10" fill="#F9A8D4" opacity="0.75" />
