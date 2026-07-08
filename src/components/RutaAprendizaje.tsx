@@ -15,11 +15,13 @@ const BURBUJAS = [
   { left: "90%", size: "7px", dur: "10s", delay: "5s" },
 ];
 
-const W = 440;
+const W = 640;
 const CX = W / 2;
-const AMP = 145;
-const SPACING = 132;
+const AMP = 250;
+const SPACING = 112;
 const TOP = 80;
+const FREQ = 1.05;
+const pctX = (x: number) => `${(x / W) * 100}%`;
 
 function construirPath(pts: { x: number; y: number }[]): string {
   if (!pts.length) return "";
@@ -47,11 +49,11 @@ export function RutaAprendizaje({
   const nodos: Nodo[] = clases.map((c, i) => ({
     ...c,
     estado: i < CLASES_COMPLETADAS ? "completada" : i === CLASES_COMPLETADAS ? "actual" : "bloqueada",
-    x: CX + AMP * Math.sin(i * 0.85),
+    x: CX + AMP * Math.sin(i * FREQ),
     y: TOP + i * SPACING,
   }));
   const trofeoY = TOP + clases.length * SPACING;
-  const trofeoX = CX + AMP * Math.sin(clases.length * 0.85);
+  const trofeoX = CX + AMP * Math.sin(clases.length * FREQ);
   const puntos = [...nodos.map((n) => ({ x: n.x, y: n.y })), { x: trofeoX, y: trofeoY }];
   const altura = trofeoY + 120;
   const completadas = CLASES_COMPLETADAS;
@@ -137,23 +139,25 @@ export function RutaAprendizaje({
             </div>
           </div>
 
-          {/* El mapa serpenteante */}
-          <div className="relative mx-auto mt-6" style={{ width: W, maxWidth: "100%", height: altura }}>
-            <svg viewBox={`0 0 ${W} ${altura}`} className="absolute inset-0 w-full h-full" fill="none" preserveAspectRatio="xMidYMin meet">
-              <path d={construirPath(puntos)} stroke="#C7BEF5" strokeWidth="7" strokeLinecap="round" strokeDasharray="2 20" />
-              <Decoraciones altura={altura} />
+          {/* El mapa serpenteante (ancho, más horizontal) */}
+          <div className="relative mx-auto mt-6 w-full" style={{ maxWidth: 700, height: altura }}>
+            <svg viewBox={`0 0 ${W} ${altura}`} className="absolute inset-0 w-full h-full" fill="none" preserveAspectRatio="none">
+              <path d={construirPath(puntos)} stroke="#C7BEF5" strokeWidth="9" strokeLinecap="round" strokeDasharray="2 22" vectorEffect="non-scaling-stroke" />
             </svg>
+
+            {/* Decoración marina (HTML, no se distorsiona) */}
+            <DecorMar altura={altura} />
 
             {nodos.map((n) => (
               <NodoClase key={n.clase.id} nodo={n} />
             ))}
 
-            <div className="absolute" style={{ left: trofeoX, top: trofeoY, transform: "translate(-50%,-50%)" }}>
+            <div className="absolute" style={{ left: pctX(trofeoX), top: trofeoY, transform: "translate(-50%,-50%)" }}>
               <div className="w-[68px] h-[68px] rounded-full bg-white border-4 border-amber-soft grid place-items-center text-3xl shadow-lg opacity-80">🏆</div>
               <div className="text-center text-[11px] font-bold text-amber mt-1 w-24 -ml-3">Diploma Creador+</div>
             </div>
 
-            <div className="absolute" style={{ left: 0, top: nodos[completadas]?.y ?? TOP + 40 }}>
+            <div className="absolute z-10" style={{ left: "1%", top: nodos[completadas]?.y ?? TOP + 40 }}>
               <OctiInteractivo nombre={nombre} />
             </div>
           </div>
@@ -193,8 +197,8 @@ export function RutaAprendizaje({
 }
 
 function NodoClase({ nodo }: { nodo: Nodo }) {
-  const base = "absolute grid place-items-center rounded-full shadow-lg transition-transform";
-  const style = { left: nodo.x, top: nodo.y, transform: "translate(-50%,-50%)" } as const;
+  const base = "absolute grid place-items-center rounded-full shadow-lg transition-transform z-[5]";
+  const style = { left: pctX(nodo.x), top: nodo.y, transform: "translate(-50%,-50%)" } as const;
 
   if (nodo.estado === "completada") {
     return (
@@ -222,15 +226,32 @@ function NodoClase({ nodo }: { nodo: Nodo }) {
   );
 }
 
-function Decoraciones({ altura }: { altura: number }) {
+function DecorMar({ altura }: { altura: number }) {
+  const items: { e: string; left: string; top: number; size: string; anim?: string }[] = [
+    { e: "🌿", left: "1%", top: altura * 0.14, size: "50px", anim: "mar-vaiven" },
+    { e: "🐠", left: "86%", top: altura * 0.08, size: "34px", anim: "mar-nada" },
+    { e: "🫧", left: "9%", top: altura * 0.26, size: "22px" },
+    { e: "🪸", left: "92%", top: altura * 0.26, size: "44px", anim: "mar-vaiven" },
+    { e: "🐟", left: "3%", top: altura * 0.4, size: "32px", anim: "mar-nada" },
+    { e: "🐚", left: "90%", top: altura * 0.44, size: "28px" },
+    { e: "🌿", left: "95%", top: altura * 0.56, size: "56px", anim: "mar-vaiven" },
+    { e: "🐡", left: "2%", top: altura * 0.58, size: "34px", anim: "mar-nada" },
+    { e: "⭐", left: "11%", top: altura * 0.7, size: "26px" },
+    { e: "💰", left: "87%", top: altura * 0.72, size: "32px" },
+    { e: "🪸", left: "1%", top: altura * 0.8, size: "48px", anim: "mar-vaiven" },
+    { e: "🐠", left: "85%", top: altura * 0.86, size: "32px", anim: "mar-nada" },
+    { e: "🌿", left: "47%", top: altura * 0.95, size: "44px", anim: "mar-vaiven" },
+    { e: "🫧", left: "72%", top: altura * 0.38, size: "20px" },
+    { e: "🐢", left: "8%", top: altura * 0.5, size: "30px", anim: "mar-nada" },
+  ];
   return (
-    <g opacity="0.85">
-      <text x="26" y={altura * 0.3} fontSize="26">🫧</text>
-      <text x={W - 48} y={altura * 0.24} fontSize="24">🐠</text>
-      <text x={W - 40} y={altura * 0.55} fontSize="24">🐚</text>
-      <text x="24" y={altura * 0.62} fontSize="22">🫧</text>
-      <text x={W - 52} y={altura * 0.82} fontSize="26">🌿</text>
-    </g>
+    <div className="absolute inset-0 pointer-events-none z-[1]">
+      {items.map((d, i) => (
+        <span key={i} className={`absolute ${d.anim ?? ""}`} style={{ left: d.left, top: d.top, fontSize: d.size }}>
+          {d.e}
+        </span>
+      ))}
+    </div>
   );
 }
 
