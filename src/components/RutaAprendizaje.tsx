@@ -7,29 +7,12 @@ import { cerrarSesion } from "@/lib/auth-actions";
 import { ETAPA_1, TOTAL_CLASES, nivelPorXP, type Clase } from "@/lib/data";
 
 const BURBUJAS = [
-  { left: "6%", size: "10px", dur: "13s", delay: "0s" },
-  { left: "18%", size: "6px", dur: "10s", delay: "2s" },
-  { left: "31%", size: "16px", dur: "16s", delay: "1s" },
-  { left: "43%", size: "8px", dur: "11s", delay: "3.5s" },
-  { left: "55%", size: "12px", dur: "14s", delay: "0.5s" },
-  { left: "67%", size: "7px", dur: "9s", delay: "2.5s" },
-  { left: "78%", size: "14px", dur: "15s", delay: "1.5s" },
-  { left: "90%", size: "9px", dur: "12s", delay: "4s" },
-  { left: "12%", size: "5px", dur: "8s", delay: "5s" },
-  { left: "62%", size: "6px", dur: "10s", delay: "6s" },
-];
-
-const DECOR = [
-  { e: "🐠", top: "14%", left: "7%", anim: "mar-nada", delay: "0s", size: "30px" },
-  { e: "🐟", top: "28%", left: "90%", anim: "mar-nada", delay: "1s", size: "26px" },
-  { e: "🐡", top: "52%", left: "94%", anim: "mar-nada", delay: "2s", size: "28px" },
-  { e: "🐠", top: "66%", left: "4%", anim: "mar-nada", delay: "1.5s", size: "26px" },
-  { e: "🌿", top: "72%", left: "10%", anim: "mar-vaiven", delay: "0s", size: "44px" },
-  { e: "🪸", top: "80%", left: "86%", anim: "mar-vaiven", delay: "0.6s", size: "40px" },
-  { e: "🌿", top: "78%", left: "50%", anim: "mar-vaiven", delay: "1.2s", size: "38px" },
-  { e: "🐚", top: "88%", left: "28%", anim: "", delay: "0s", size: "24px" },
-  { e: "⭐", top: "90%", left: "68%", anim: "", delay: "0s", size: "24px" },
-  { e: "🫧", top: "40%", left: "12%", anim: "", delay: "0s", size: "20px" },
+  { left: "10%", size: "12px", dur: "14s", delay: "0s" },
+  { left: "24%", size: "7px", dur: "11s", delay: "3s" },
+  { left: "48%", size: "16px", dur: "17s", delay: "1s" },
+  { left: "63%", size: "9px", dur: "12s", delay: "4s" },
+  { left: "80%", size: "13px", dur: "15s", delay: "2s" },
+  { left: "90%", size: "7px", dur: "10s", delay: "5s" },
 ];
 
 const W = 440;
@@ -74,33 +57,20 @@ export function RutaAprendizaje({
   const completadas = CLASES_COMPLETADAS;
 
   return (
-    <div className="min-h-screen flex relative overflow-hidden"
-      style={{ background: "linear-gradient(180deg,#BAE6FD 0%,#7DD3FC 22%,#38BDF8 48%,#0EA5E9 72%,#075985 100%)" }}>
-
-      {/* Rayos de luz (todo el fondo) */}
-      <div className="fixed inset-0 pointer-events-none opacity-20" style={{
-        backgroundImage: "linear-gradient(102deg, transparent 30%, rgba(255,255,255,.6) 42%, transparent 50%), linear-gradient(78deg, transparent 58%, rgba(255,255,255,.4) 68%, transparent 74%)",
-      }} />
-
-      {/* Burbujas (todo el fondo) */}
+    <div className="min-h-screen flex relative overflow-hidden bg-bg">
+      {/* Burbujas sutiles (todo el fondo) */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         {BURBUJAS.map((b, i) => (
           <span key={i} className="burbuja" style={{ left: b.left, width: b.size, height: b.size, animationDuration: b.dur, animationDelay: b.delay }} />
         ))}
       </div>
-
-      {/* Vida marina (todo el fondo) */}
-      <div className="fixed inset-0 pointer-events-none">
-        {DECOR.map((d, i) => (
-          <span key={i} className={`absolute ${d.anim}`} style={{ top: d.top, left: d.left, fontSize: d.size, animationDelay: d.delay }}>{d.e}</span>
-        ))}
-      </div>
-
-      {/* Arena en el fondo */}
-      <div className="fixed bottom-0 left-0 right-0 h-24 pointer-events-none" style={{ background: "linear-gradient(180deg, transparent, #FCD9A5 88%)" }} />
+      {/* Corales/algas discretos en las esquinas inferiores */}
+      <div className="fixed bottom-2 left-2 text-4xl opacity-90 mar-vaiven pointer-events-none">🪸</div>
+      <div className="fixed bottom-3 left-20 text-2xl opacity-70 mar-vaiven pointer-events-none" style={{ animationDelay: "1s" }}>🌿</div>
+      <div className="fixed bottom-2 right-80 text-3xl opacity-80 mar-vaiven pointer-events-none" style={{ animationDelay: ".5s" }}>🪸</div>
 
       {/* ===== Nav izquierda ===== */}
-      <aside className="hidden md:flex flex-col items-center gap-2 w-16 py-6 bg-white/45 backdrop-blur-md border-r border-white/40 sticky top-0 h-screen z-20">
+      <aside className="hidden md:flex flex-col items-center gap-2 w-16 py-6 bg-surface border-r border-border sticky top-0 h-screen z-20">
         <div className="w-9 h-9 rounded-xl bg-accent grid place-items-center font-display font-extrabold text-white mb-4">M</div>
         <NavIcon href="/app/ruta" label="Inicio" activo>🏠</NavIcon>
         <NavIcon href="/app/ruta" label="Retos">🎯</NavIcon>
@@ -110,16 +80,16 @@ export function RutaAprendizaje({
         <div className="mt-auto flex flex-col items-center gap-2">
           <NavIcon href="/app/perfil" label="Mi perfil">👤</NavIcon>
           <form action={cerrarSesion}>
-            <button title="Cerrar sesión" className="w-11 h-11 grid place-items-center rounded-xl text-xl hover:bg-white/40 transition">🚪</button>
+            <button title="Cerrar sesión" className="w-11 h-11 grid place-items-center rounded-xl text-xl hover:bg-bg transition">🚪</button>
           </form>
         </div>
       </aside>
 
       {/* ===== Centro ===== */}
       <main className="flex-1 min-w-0 relative z-10">
-        <header className="sticky top-0 z-20 bg-white/40 backdrop-blur-md border-b border-white/40">
+        <header className="sticky top-0 z-20 bg-surface/90 backdrop-blur border-b border-border">
           <div className="max-w-3xl mx-auto px-5 h-16 flex items-center justify-between">
-            <h1 className="font-display text-xl font-extrabold text-[#0C4A6E]">Ruta de aprendizaje</h1>
+            <h1 className="font-display text-xl font-extrabold">Ruta de aprendizaje</h1>
             <div className="flex items-center gap-2.5">
               <Contador emoji="🔥" valor={racha} />
               <Contador emoji="💎" valor={gemas} />
@@ -127,9 +97,9 @@ export function RutaAprendizaje({
               <Link href="/app/perfil" className="ml-1">
                 {avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatarUrl} alt="Tu perfil" className="w-9 h-9 rounded-full object-cover border-2 border-white" />
+                  <img src={avatarUrl} alt="Tu perfil" className="w-9 h-9 rounded-full object-cover border-2 border-accent/30" />
                 ) : (
-                  <div className="w-9 h-9 rounded-full bg-accent grid place-items-center text-white text-xs font-bold border-2 border-white">
+                  <div className="w-9 h-9 rounded-full bg-accent grid place-items-center text-white text-xs font-bold">
                     {nombre.slice(0, 2).toUpperCase()}
                   </div>
                 )}
@@ -142,7 +112,7 @@ export function RutaAprendizaje({
           {/* Banner: completa tu perfil y gana puntos */}
           {perfilPct < 100 && (
             <Link href="/app/perfil/completar"
-              className="flex items-center gap-3 rounded-2xl p-4 mb-4 bg-white/95 backdrop-blur border-2 border-amber/40 shadow-lg hover:scale-[1.01] transition">
+              className="flex items-center gap-3 rounded-2xl p-4 mb-4 bg-surface border-2 border-amber/40 shadow-sm hover:scale-[1.01] transition">
               <div className="text-3xl">🎁</div>
               <div className="flex-1">
                 <div className="font-bold text-sm text-text">
@@ -155,7 +125,7 @@ export function RutaAprendizaje({
           )}
 
           {/* Banner del módulo */}
-          <div className="rounded-2xl px-5 py-4 flex items-center justify-between text-white shadow-lg"
+          <div className="rounded-2xl px-5 py-4 flex items-center justify-between text-white shadow-lg shadow-accent/20"
             style={{ background: "linear-gradient(120deg,#6D28D9,#7C3AED)" }}>
             <div>
               <div className="text-[11px] font-bold uppercase tracking-wider text-white/70">Etapa 1 · Starter</div>
@@ -167,10 +137,11 @@ export function RutaAprendizaje({
             </div>
           </div>
 
-          {/* El mapa serpenteante (directo sobre el mar) */}
+          {/* El mapa serpenteante */}
           <div className="relative mx-auto mt-6" style={{ width: W, maxWidth: "100%", height: altura }}>
             <svg viewBox={`0 0 ${W} ${altura}`} className="absolute inset-0 w-full h-full" fill="none" preserveAspectRatio="xMidYMin meet">
-              <path d={construirPath(puntos)} stroke="rgba(255,255,255,0.9)" strokeWidth="8" strokeLinecap="round" strokeDasharray="1 24" />
+              <path d={construirPath(puntos)} stroke="#C7BEF5" strokeWidth="7" strokeLinecap="round" strokeDasharray="2 20" />
+              <Decoraciones altura={altura} />
             </svg>
 
             {nodos.map((n) => (
@@ -178,8 +149,8 @@ export function RutaAprendizaje({
             ))}
 
             <div className="absolute" style={{ left: trofeoX, top: trofeoY, transform: "translate(-50%,-50%)" }}>
-              <div className="w-[68px] h-[68px] rounded-full bg-white/90 border-4 border-amber grid place-items-center text-3xl shadow-lg">🏆</div>
-              <div className="text-center text-[11px] font-bold text-white mt-1 w-24 -ml-3 drop-shadow">Diploma Creador+</div>
+              <div className="w-[68px] h-[68px] rounded-full bg-white border-4 border-amber-soft grid place-items-center text-3xl shadow-lg opacity-80">🏆</div>
+              <div className="text-center text-[11px] font-bold text-amber mt-1 w-24 -ml-3">Diploma Creador+</div>
             </div>
 
             <div className="absolute" style={{ left: 0, top: nodos[completadas]?.y ?? TOP + 40 }}>
@@ -190,7 +161,7 @@ export function RutaAprendizaje({
       </main>
 
       {/* ===== Sidebar derecha ===== */}
-      <aside className="hidden lg:block w-72 shrink-0 p-5 space-y-4 sticky top-0 h-screen overflow-y-auto z-20">
+      <aside className="hidden lg:block w-72 shrink-0 p-5 space-y-4 sticky top-0 h-screen overflow-y-auto z-20 bg-bg/50">
         <Tarjeta titulo="Desafíos del día" extra={<span className="text-[12px] text-accent font-semibold">Ver todos</span>}>
           <Desafio emoji="⚡" texto="Gana 10 XP" progreso={0} total={10} />
           <Desafio emoji="🎯" texto="Termina 1 clase" progreso={0} total={1} />
@@ -245,9 +216,21 @@ function NodoClase({ nodo }: { nodo: Nodo }) {
     );
   }
   return (
-    <button className={`${base} w-14 h-14 bg-white/85 text-hint border-4 border-white/70`} style={style} title="Completa la anterior para desbloquear">
+    <button className={`${base} w-14 h-14 bg-white text-hint border-4 border-border`} style={style} title="Completa la anterior para desbloquear">
       <span className="text-lg">🔒</span>
     </button>
+  );
+}
+
+function Decoraciones({ altura }: { altura: number }) {
+  return (
+    <g opacity="0.85">
+      <text x="26" y={altura * 0.3} fontSize="26">🫧</text>
+      <text x={W - 48} y={altura * 0.24} fontSize="24">🐠</text>
+      <text x={W - 40} y={altura * 0.55} fontSize="24">🐚</text>
+      <text x="24" y={altura * 0.62} fontSize="22">🫧</text>
+      <text x={W - 52} y={altura * 0.82} fontSize="26">🌿</text>
+    </g>
   );
 }
 
@@ -272,7 +255,7 @@ function OctiInteractivo({ nombre }: { nombre: string }) {
 function NavIcon({ href, label, children, activo }: { href: string; label: string; children: React.ReactNode; activo?: boolean }) {
   return (
     <Link href={href} title={label}
-      className={`w-11 h-11 grid place-items-center rounded-xl text-xl transition ${activo ? "bg-white/70 shadow-sm" : "hover:bg-white/40"}`}>
+      className={`w-11 h-11 grid place-items-center rounded-xl text-xl transition ${activo ? "bg-accent-soft" : "hover:bg-bg"}`}>
       {children}
     </Link>
   );
@@ -280,7 +263,7 @@ function NavIcon({ href, label, children, activo }: { href: string; label: strin
 
 function Contador({ emoji, valor }: { emoji: string; valor: number }) {
   return (
-    <div className="flex items-center gap-1 bg-white/80 rounded-full px-2.5 py-1">
+    <div className="flex items-center gap-1 bg-bg rounded-full px-2.5 py-1">
       <span className="text-sm">{emoji}</span>
       <span className="font-display font-extrabold text-sm text-text">{valor}</span>
     </div>
@@ -289,7 +272,7 @@ function Contador({ emoji, valor }: { emoji: string; valor: number }) {
 
 function Tarjeta({ titulo, children, extra }: { titulo: string; children: React.ReactNode; extra?: React.ReactNode }) {
   return (
-    <div className="bg-white/90 backdrop-blur border border-white/60 rounded-2xl p-4 shadow-lg">
+    <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm">
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-display font-extrabold text-sm">{titulo}</h3>
         {extra}

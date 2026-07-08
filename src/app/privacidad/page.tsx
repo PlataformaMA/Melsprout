@@ -1,150 +1,80 @@
-import Link from "next/link";
 import type { Metadata } from "next";
+import { LegalShell, Sec, Lista } from "@/components/LegalShell";
 
 export const metadata: Metadata = {
-  title: "Política de Privacidad · Melsprout",
-  description:
-    "Cómo Melsprout recopila, usa y protege tus datos personales.",
+  title: "Aviso de Privacidad · Melsprout",
+  description: "Aviso de Privacidad de Melsprout.",
 };
 
-const CONTACTO = "sveidy@fixcraft.com.mx";
-const ACTUALIZADO = "3 de julio de 2026";
+const P = (s: string) => <p>{s}</p>;
 
 export default function PrivacidadPage() {
   return (
-    <main className="min-h-screen bg-bg">
-      <header className="bg-surface border-b border-border">
-        <div className="max-w-2xl mx-auto px-6 h-16 flex items-center">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-accent grid place-items-center font-display font-extrabold text-white text-sm">
-              M
-            </div>
-            <span className="font-display font-extrabold">
-              Mel<span className="text-accent">sprout</span>
-            </span>
-          </Link>
-        </div>
-      </header>
+    <LegalShell titulo="Aviso de Privacidad" fecha="Última actualización: 8 de julio de 2026 · Conforme a la LFPDPPP (México, 2025), compatible con la Ley 1581/2012 (Colombia) y estándares internacionales.">
+      <Sec n="A" titulo="Responsable del tratamiento">
+        {P(`[RAZÓN SOCIAL DE LA EMPRESA], con domicilio en [DOMICILIO LEGAL], es responsable del tratamiento de tus datos personales. Contacto de privacidad: [CORREO DE PRIVACIDAD].`)}
+      </Sec>
 
-      <article className="max-w-2xl mx-auto px-6 py-12">
-        <h1 className="font-display text-3xl font-extrabold">
-          Política de Privacidad
-        </h1>
-        <p className="text-sub text-sm mt-2">
-          Última actualización: {ACTUALIZADO}
-        </p>
+      <Sec n="B" titulo="Qué datos recolectamos">
+        <Lista>
+          <li><b>Identificación y contacto:</b> nombre, correo, país, zona horaria, fecha de nacimiento (opcional), WhatsApp (opcional), foto de perfil. <i>Origen: tú, al registrarte.</i></li>
+          <li><b>Perfil de creador:</b> nicho, objetivo, plataforma principal, tamaño de audiencia, @ de redes, bio, etiquetas, idiomas, intereses. <i>Origen: tú, en el onboarding.</i></li>
+          <li><b>Métricas de Cuentas Conectadas:</b> nombre de usuario, foto, seguidores, alcance, interacción, reproducciones de Instagram, TikTok, YouTube y LinkedIn. <i>Origen: las APIs oficiales, con tu autorización.</i></li>
+          <li><b>Uso de la Plataforma:</b> clases vistas y tiempo, retos y evidencias, XP, gemas, rachas, publicaciones, comentarios, dispositivos, IP, canal de origen. <i>Origen: automático.</i></li>
+          <li><b>Pagos:</b> historial de compras y estado de suscripción. Los datos completos de tarjeta los procesa el proveedor; no los almacenamos.</li>
+          <li><b>Comunicaciones:</b> tus mensajes con soporte y con el asistente de WhatsApp (si diste consentimiento).</li>
+        </Lista>
+        {P(`No solicitamos datos personales sensibles (salud, religión, origen étnico, etc.). Te pedimos no incluirlos en publicaciones ni evidencias.`)}
+      </Sec>
 
-        <p className="mt-6 text-[15px] text-sub leading-relaxed">
-          En Melsprout (operado por Boost Academy) respetamos tu privacidad.
-          Esta política explica qué datos recopilamos, para qué los usamos y qué
-          derechos tienes sobre ellos.
-        </p>
+      <Sec n="C" titulo="Para qué usamos tus datos (finalidades)">
+        {P(`Finalidades primarias (necesarias para el servicio): crear y administrar tu cuenta · mostrar tu progreso, XP, gemas y ranking · validar retos y emitir certificaciones (incluida la verificación pública) · construir tu media kit y operar el Marketplace · procesar pagos · personalizar tu experiencia y las herramientas de IA · enviarte mensajes de servicio · prevenir fraude y mantener la seguridad · cumplir obligaciones legales.`)}
+        {P(`Finalidades secundarias (requieren tu consentimiento, que puedes retirar sin afectar el servicio): enviarte marketing y novedades por correo y/o WhatsApp · usar tu contenido o resultados en publicidad de Melsprout · estudios y estadísticas con fines promocionales.`)}
+      </Sec>
 
-        <Seccion titulo="1. Qué datos recopilamos">
-          <ul className="list-disc pl-5 space-y-1.5">
-            <li>
-              <b>Datos de cuenta:</b> tu nombre y correo electrónico. Tu
-              contraseña se guarda cifrada; nunca la vemos.
-            </li>
-            <li>
-              <b>Datos de perfil:</b> los que nos das al registrarte o completar
-              tu perfil (país, nicho de interés, objetivos, redes sociales que
-              decidas conectar).
-            </li>
-            <li>
-              <b>Datos de uso:</b> tu progreso en las clases, retos, puntos,
-              racha y actividad dentro de la plataforma.
-            </li>
-            <li>
-              <b>Datos técnicos:</b> país y zona horaria (para tu racha),
-              y de qué canal llegaste, para mejorar el servicio.
-            </li>
-            <li>
-              <b>Inicio de sesión social:</b> si entras con Google o Facebook,
-              recibimos tu nombre, correo y foto de perfil de ese proveedor. No
-              accedemos a tus contraseñas ni publicamos en tu nombre.
-            </li>
-          </ul>
-        </Seccion>
+      <Sec n="D" titulo="Cuentas Conectadas y datos de terceros (Instagram, TikTok, YouTube, LinkedIn)">
+        <Lista>
+          <li>La conexión es voluntaria, por los mecanismos oficiales de cada plataforma, y nunca implica entregarnos tus contraseñas.</li>
+          <li>Usamos esos datos solo para tu media kit, recomendación y verificación de campañas, personalización y estadísticas agregadas. No los vendemos.</li>
+          <li><b>YouTube:</b> usa los Servicios API de YouTube. Al usarla aceptas los Términos de YouTube; el tratamiento de Google se rige por su Política de Privacidad. Puedes revocar el acceso en security.google.com/settings/security/permissions. Ciclos de actualización/eliminación no mayores a 30 días.</li>
+          <li><b>Instagram (Meta) y TikTok:</b> tratamos sus datos conforme a los términos de plataforma de Meta y de TikTok for Developers, solo para las finalidades descritas.</li>
+          <li><b>Desconexión y borrado:</b> al desconectar una red (o al eliminar tu cuenta), eliminamos los datos obtenidos en un máximo de 30 días. También puedes pedir el borrado a [CORREO DE PRIVACIDAD].</li>
+        </Lista>
+      </Sec>
 
-        <Seccion titulo="2. Para qué usamos tus datos">
-          <ul className="list-disc pl-5 space-y-1.5">
-            <li>Darte acceso a la plataforma y personalizar tu experiencia.</li>
-            <li>Registrar tu avance y emitir tus certificados.</li>
-            <li>Enviarte notificaciones y recordatorios (puedes desactivarlos).</li>
-            <li>Mejorar el producto y entender cómo se usa.</li>
-          </ul>
-        </Seccion>
+      <Sec n="E" titulo="Con quién compartimos datos">
+        {P(`No vendemos tus datos. Los compartimos únicamente con: (a) proveedores que nos prestan servicios bajo contrato (alojamiento, streaming de video, procesador de pagos como Stripe, envío de correos, WhatsApp, analítica); (b) Marcas del Marketplace: solo tu media kit y lo necesario para la campaña a la que apliques; (c) autoridades, cuando una ley u orden válida lo exija. Algunos proveedores están fuera de tu país; exigimos garantías contractuales equivalentes a este Aviso.`)}
+      </Sec>
 
-        <Seccion titulo="3. Con quién compartimos datos">
-          <p>
-            No vendemos tus datos. Los procesamos con proveedores de confianza
-            que nos ayudan a operar:
-          </p>
-          <ul className="list-disc pl-5 space-y-1.5 mt-2">
-            <li><b>Supabase</b> — base de datos y autenticación.</li>
-            <li><b>Vercel</b> — alojamiento de la aplicación.</li>
-            <li><b>Google / Meta (Facebook)</b> — solo si eliges iniciar sesión con ellos.</li>
-          </ul>
-        </Seccion>
+      <Sec n="F" titulo="Tus derechos (ARCO) y cómo ejercerlos">
+        <Lista>
+          <li>Tienes derecho a <b>Acceder</b>, <b>Rectificar</b>, <b>Cancelar</b> (eliminar) y <b>Oponerte</b> al tratamiento, retirar tu consentimiento y limitar el uso o divulgación.</li>
+          <li><b>Cómo:</b> (1) directamente en la Plataforma (editar perfil, desconectar redes, desactivar comunicaciones, eliminar cuenta), o (2) escribiendo a [CORREO DE PRIVACIDAD] con tu nombre, el derecho que ejerces y el correo de tu cuenta. Respondemos en máximo 20 días hábiles (o menos si tu ley lo exige).</li>
+          <li>Si consideras vulnerados tus derechos, puedes acudir a la autoridad de tu país (en México, la Secretaría Anticorrupción y Buen Gobierno; en Colombia, la Superintendencia de Industria y Comercio).</li>
+        </Lista>
+      </Sec>
 
-        <Seccion titulo="4. Cómo protegemos tus datos">
-          <p>
-            Ciframos las contraseñas, usamos conexiones seguras (HTTPS),
-            verificación en dos pasos opcional, y controles de acceso a nivel de
-            base de datos para que cada usuario solo vea su propia información.
-          </p>
-        </Seccion>
+      <Sec n="G" titulo="Conservación y eliminación">
+        <Lista>
+          <li>Conservamos tus datos mientras tu cuenta exista y sean necesarios para las finalidades de este Aviso.</li>
+          <li>Al eliminar tu cuenta: borramos o anonimizamos tus datos en máximo 30 días, salvo los que debamos conservar por obligación legal (por ejemplo, registros fiscales).</li>
+          <li>Los datos de Cuentas Conectadas se eliminan según la sección D. Las evidencias asociadas a certificados emitidos pueden conservarse como soporte de su validez.</li>
+          <li>La página pública de verificación muestra tu nombre, certificación y fecha; puedes pedir su desactivación en cualquier momento.</li>
+        </Lista>
+      </Sec>
 
-        <Seccion titulo="5. Tus derechos">
-          <p>
-            Puedes acceder, corregir o eliminar tus datos en cualquier momento.
-            Para eliminar tu cuenta y todos tus datos, consulta{" "}
-            <Link href="/eliminar-datos" className="text-accent font-medium">
-              Eliminación de datos
-            </Link>
-            .
-          </p>
-        </Seccion>
+      <Sec n="H" titulo="Menores de edad">
+        {P(`La Plataforma es para mayores de 16 años. Entre 16 y 17 se requiere autorización del padre, madre o tutor. Si detectamos una cuenta de un menor de 16 años, la eliminaremos junto con sus datos. Si eres tutor y crees que un menor a tu cargo creó una cuenta, escríbenos a [CORREO DE PRIVACIDAD].`)}
+      </Sec>
 
-        <Seccion titulo="6. Menores de edad">
-          <p>
-            Melsprout está dirigido a personas de 16 años en adelante. No
-            recopilamos datos de menores de esa edad a sabiendas.
-          </p>
-        </Seccion>
+      <Sec n="I" titulo="Cookies y seguridad">
+        {P(`Cookies: usamos cookies y tecnologías similares para mantener tu sesión, recordar preferencias y medir el uso. Puedes gestionarlas desde tu navegador; deshabilitar las esenciales puede impedir el funcionamiento.`)}
+        {P(`Seguridad: aplicamos medidas administrativas, técnicas y físicas razonables (cifrado en tránsito, controles de acceso, registro de actividad). Si ocurriera una vulneración que afecte significativamente tus derechos, te lo notificaremos conforme a la ley.`)}
+      </Sec>
 
-        <Seccion titulo="7. Contacto">
-          <p>
-            Si tienes dudas sobre esta política o tus datos, escríbenos a{" "}
-            <a href={`mailto:${CONTACTO}`} className="text-accent font-medium">
-              {CONTACTO}
-            </a>
-            .
-          </p>
-        </Seccion>
-
-        <div className="mt-10 pt-6 border-t border-border">
-          <Link href="/" className="text-sm text-accent font-medium">
-            ← Volver a Melsprout
-          </Link>
-        </div>
-      </article>
-    </main>
-  );
-}
-
-function Seccion({
-  titulo,
-  children,
-}: {
-  titulo: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="mt-8">
-      <h2 className="font-display text-lg font-extrabold text-text">{titulo}</h2>
-      <div className="mt-2 text-[15px] text-sub leading-relaxed">{children}</div>
-    </section>
+      <Sec n="J" titulo="Cambios a este Aviso">
+        {P(`Publicaremos cualquier cambio en /privacidad indicando la fecha, y te avisaremos por correo y dentro de la Plataforma cuando el cambio sea sustancial. Los cambios que requieran tu consentimiento no aplicarán hasta que lo otorgues.`)}
+      </Sec>
+    </LegalShell>
   );
 }

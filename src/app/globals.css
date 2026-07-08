@@ -189,7 +189,8 @@ body {
   position: absolute;
   bottom: -40px;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.15));
+  background: radial-gradient(circle at 32% 30%, rgba(186, 230, 253, 0.55), rgba(125, 211, 252, 0.12));
+  border: 1px solid rgba(125, 211, 252, 0.35);
   animation: burbuja-sube linear infinite;
   pointer-events: none;
 }
