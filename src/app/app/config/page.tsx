@@ -7,6 +7,7 @@ import { cerrarSesion } from "@/lib/auth-actions";
 import { BACKUP_CONFIGURADO } from "@/lib/supabase/env";
 import { MFASetup } from "@/components/MFASetup";
 import { BackupCodes } from "@/components/BackupCodes";
+import { CambiarContrasena, CambiarEmail } from "@/components/CambiarCredenciales";
 
 export default async function ConfigPage() {
   const supabase = await createClient();
@@ -44,6 +45,13 @@ export default async function ConfigPage() {
             <Fila label="Estado del correo" valor={user.email_confirmed_at ? "✅ Confirmado" : "⏳ Pendiente"} />
             <Fila label="Método de acceso" valor={proveedor === "email" ? "Email y contraseña" : `Login social (${proveedor})`} />
           </div>
+        </div>
+
+        {/* Acceso · contraseña y correo */}
+        <div className="mt-6 mb-2 text-[11px] font-bold tracking-widest uppercase text-hint">Acceso</div>
+        <div className="space-y-4">
+          <CambiarContrasena />
+          <CambiarEmail actual={user.email ?? "—"} />
         </div>
 
         {/* Seguridad · 2FA */}

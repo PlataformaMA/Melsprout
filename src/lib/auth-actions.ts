@@ -126,6 +126,58 @@ export async function actualizarPassword(
   redirect("/app");
 }
 
+// ===== Cambiar contraseña (ya con sesión iniciada, desde Configuración) =====
+export async function cambiarPassword(
+  _prev: EstadoAuth,
+  formData: FormData
+): Promise<EstadoAuth> {
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+
+  const fuerza = evaluarPassword(password);
+  if (!fuerza.cumpleMinimo)
+    return { error: `Tu contraseña necesita: ${fuerza.faltantes.join(", ")}.` };
+  if (password !== confirm) return { error: "Las contraseñas no coinciden." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Inicia sesión de nuevo." };
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { error: traducirError(error.message) };
+
+  return { mensaje: "¡Contraseña actualizada! Ya puedes usarla para entrar." };
+}
+
+// ===== Cambiar correo (envía confirmación al nuevo correo) =====
+export async function cambiarCorreo(
+  _prev: EstadoAuth,
+  formData: FormData
+): Promise<EstadoAuth> {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!emailValido(email)) return { error: "Escribe un correo válido." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Inicia sesión de nuevo." };
+  if (email === user.email) return { error: "Ese ya es tu correo actual." };
+
+  const { error } = await supabase.auth.updateUser(
+    { email },
+    { emailRedirectTo: `${await urlSitio()}/auth/callback?next=/app/config` }
+  );
+  if (error) return { error: traducirError(error.message) };
+
+  return {
+    mensaje:
+      "Te enviamos un enlace de confirmación a tu correo actual y al nuevo. Confírmalo en ambos para completar el cambio.",
+  };
+}
+
 // ===== Cerrar sesión =====
 export async function cerrarSesion() {
   const supabase = await createClient();

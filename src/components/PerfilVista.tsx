@@ -8,6 +8,7 @@ import { NICHOS, banderaUrl } from "@/lib/catalogos";
 import { nivelPorXP, TOTAL_CLASES } from "@/lib/data";
 import { AvatarUploader } from "@/components/AvatarUploader";
 import { AppSidebar } from "@/components/AppSidebar";
+import { UserMenu } from "@/components/UserMenu";
 
 // ————————————— Helpers —————————————
 function calcularEdad(fecha: string | null): number | null {
@@ -71,12 +72,7 @@ export function PerfilVista({ perfil, creadoEn }: { perfil: Perfil; creadoEn: st
               <BellIcon />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-accent" />
             </button>
-            <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-accent/25 grid place-items-center bg-accent/10 shrink-0">
-              {perfil.avatar_url
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={perfil.avatar_url} alt="Tú" className="w-full h-full object-cover" />
-                : <span className="text-sm">🐙</span>}
-            </div>
+            <UserMenu avatarUrl={perfil.avatar_url} nombre={perfil.full_name ?? "Creador"} />
           </header>
 
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start">

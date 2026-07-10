@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
+import { UserMenu } from "@/components/UserMenu";
 import { ETAPA_1, type Clase, type ModuloCurso } from "@/lib/data";
 
 // ————— Geometría del camino serpenteante (S amplia y suave) —————
@@ -100,12 +101,7 @@ export function RutaAprendizaje({
               <BellIcon />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-accent" />
             </button>
-            <Link href="/app/perfil" className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-accent/25 grid place-items-center bg-accent/10 shrink-0">
-              {avatarUrl
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={avatarUrl} alt="Tu perfil" className="w-full h-full object-cover" />
-                : <span className="text-white text-xs font-bold bg-accent w-full h-full grid place-items-center">{nombre.slice(0, 2).toUpperCase()}</span>}
-            </Link>
+            <UserMenu avatarUrl={avatarUrl} nombre={nombre} />
           </header>
 
           <h1 className="font-display text-2xl font-extrabold mb-4">Ruta De Aprendizaje</h1>

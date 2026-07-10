@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
+import { UserMenu } from "@/components/UserMenu";
 import { type Clase, type ModuloCurso } from "@/lib/data";
 
 function titleCase(s: string): string {
@@ -67,12 +68,7 @@ export function ReproductorClase({
             <button className="relative w-9 h-9 grid place-items-center rounded-full hover:bg-surface transition" aria-label="Notificaciones">
               <BellIcon /><span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-accent" />
             </button>
-            <Link href="/app/perfil" className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-accent/25 bg-accent/10 grid place-items-center shrink-0">
-              {avatarUrl
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={avatarUrl} alt="Tú" className="w-full h-full object-cover" />
-                : <span className="text-white text-xs font-bold bg-accent w-full h-full grid place-items-center">{nombre.slice(0, 2).toUpperCase()}</span>}
-            </Link>
+            <UserMenu avatarUrl={avatarUrl} nombre={nombre} />
           </header>
 
           <div className="flex items-center gap-3 mb-4">
