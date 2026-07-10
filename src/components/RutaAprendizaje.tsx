@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Octi } from "@/components/Octi";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ETAPA_1, type Clase, type ModuloCurso } from "@/lib/data";
 
@@ -251,50 +250,23 @@ function EtiquetaReto({ texto, clase }: { texto: string; clase: string }) {
   );
 }
 
-// ————— Ilustraciones —————
+// ————— Ilustraciones (imágenes reales del mockup) —————
 function TrofeoBurbuja({ apagado }: { apagado?: boolean }) {
   return (
-    <div className={`relative w-[80px] h-[80px] grid place-items-center ${apagado ? "opacity-45 grayscale" : ""}`}>
-      {/* burbuja de vidrio */}
-      <div className="absolute inset-0 rounded-full"
-        style={{
-          background: "radial-gradient(circle at 36% 28%, rgba(255,255,255,.95) 0%, rgba(213,240,252,.75) 34%, rgba(160,214,244,.35) 66%, rgba(160,214,244,.12) 100%)",
-          boxShadow: "0 10px 22px rgba(80,140,200,.30), inset 0 3px 8px rgba(255,255,255,.9), inset 0 -6px 12px rgba(120,180,220,.35)",
-        }} />
-      <span className="absolute inset-0 rounded-full ring-1 ring-white/70" />
-      {/* brillos */}
-      <span className="absolute top-2.5 left-4 w-4 h-4 rounded-full bg-white/85 blur-[1px]" />
-      <span className="absolute bottom-4 right-4 w-2 h-2 rounded-full bg-white/60" />
-      <span className="relative text-[34px] drop-shadow-sm">🏆</span>
-    </div>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src="/trofeo.webp" alt="Hito de nivel" width={82} height={82}
+      className={`select-none ${apagado ? "opacity-45 grayscale" : ""}`} draggable={false} />
   );
 }
 
 function HieloNivel({ bloqueado }: { bloqueado?: boolean }) {
   return (
     <div className="relative grid place-items-center">
-      <svg width="156" height="96" viewBox="0 0 156 96" fill="none">
-        <defs>
-          <linearGradient id="ice1" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#E4F8F2" /><stop offset="100%" stopColor="#8AD6C9" />
-          </linearGradient>
-          <linearGradient id="ice2" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#D2F2EA" /><stop offset="100%" stopColor="#73C9BB" />
-          </linearGradient>
-        </defs>
-        <ellipse cx="78" cy="92" rx="68" ry="5" fill="#7EC8BB" opacity="0.28" />
-        <path d="M16 92 L26 44 Q28 38 34 40 L48 46 L46 92 Z" fill="url(#ice1)" />
-        <path d="M40 92 L52 28 Q55 20 62 24 L78 34 L74 92 Z" fill="url(#ice2)" />
-        <path d="M68 92 L86 20 Q90 12 98 18 L112 30 L106 92 Z" fill="url(#ice1)" />
-        <path d="M100 92 L112 40 Q115 32 122 36 L136 46 L132 92 Z" fill="url(#ice2)" />
-        <path d="M124 92 L134 54 Q136 48 142 52 L150 60 L148 92 Z" fill="url(#ice1)" />
-        {/* brillos de las puntas */}
-        <path d="M30 44 L34 40 L40 44" stroke="#fff" strokeWidth="2" strokeLinecap="round" opacity=".7" fill="none" />
-        <path d="M86 22 L92 16 L100 22" stroke="#fff" strokeWidth="2" strokeLinecap="round" opacity=".7" fill="none" />
-      </svg>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/hielo.webp" alt="Siguiente nivel" width={158} className="select-none" draggable={false} />
       {bloqueado && (
         <>
-          <span className="absolute top-8 left-1/2 -translate-x-1/2 w-9 h-9 rounded-full bg-white/90 grid place-items-center shadow-md"><LockIcon /></span>
+          <span className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-9 h-9 rounded-full bg-white/90 grid place-items-center shadow-md"><LockIcon /></span>
           <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-accent text-white text-[11px] font-bold rounded-lg px-3 py-1 shadow whitespace-nowrap">Siguiente Nivel</span>
         </>
       )}
@@ -345,15 +317,22 @@ function DecorMar({ altura }: { altura: number }) {
 function OctiRuta({ nombre }: { nombre: string }) {
   const primer = nombre.split(" ")[0];
   const MENSAJES = [
-    "¡Completaste una clase! +10XP ⭐",
-    `¡Vamos, ${primer}! Toca el nodo morado para tu clase de hoy. ▶`,
-    "Una clase al día y en 90 días serás otro creador. 🚀",
-    "¡No dejes que se apague tu racha! 🔥",
+    "¡Completaste una clase! +10XP",
+    `¡Vamos, ${primer}! Toca el nodo morado para tu clase de hoy.`,
+    "Una clase al día y en 90 días serás otro creador.",
+    "¡No dejes que se apague tu racha!",
   ];
   const [i, setI] = useState(0);
   return (
-    <button onClick={() => setI((n) => (n + 1) % MENSAJES.length)} className="text-left hover:scale-[1.03] active:scale-95 transition" title="Tócame 🐙">
-      <Octi size={116} mensaje={MENSAJES[i]} />
+    <button onClick={() => setI((n) => (n + 1) % MENSAJES.length)} className="flex items-start gap-2 text-left hover:scale-[1.02] active:scale-95 transition" title="Tócame 🐙">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/octi.webp" alt="Octi" width={132} className="octi-float select-none shrink-0" draggable={false} />
+      <div key={i} className="octi-fade relative bg-white rounded-full shadow-lg flex items-center gap-2 pl-1.5 pr-3 py-1.5 mt-8 whitespace-nowrap">
+        <span className="w-6 h-6 rounded-full bg-amber-soft grid place-items-center text-[13px]">⭐</span>
+        <span className="text-[12px] font-bold text-[#3C1A6B]">{MENSAJES[i]}</span>
+        <span className="w-5 h-5 rounded-full bg-accent-soft grid place-items-center text-[10px]">💎</span>
+        <span className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-3 h-3 bg-white rotate-45" />
+      </div>
     </button>
   );
 }

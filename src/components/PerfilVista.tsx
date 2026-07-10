@@ -116,8 +116,9 @@ export function PerfilVista({ perfil, creadoEn }: { perfil: Perfil; creadoEn: st
                 <div className="relative mt-5 flex items-center gap-4">
                   <div className="relative flex-1 h-3.5 rounded-full bg-[#E7E3F3]">
                     <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#8B5CF6] to-accent" style={{ width: `${xpPct}%` }} />
-                    <div className="absolute top-1/2 -translate-y-1/2" style={{ left: `calc(${xpPct}% - 16px)` }}>
-                      <span className="text-3xl leading-none select-none drop-shadow-sm">🐙</span>
+                    <div className="absolute top-1/2 -translate-y-1/2" style={{ left: `calc(${xpPct}% - 18px)` }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src="/octi.webp" alt="Octi" width={36} className="select-none drop-shadow-sm" draggable={false} />
                     </div>
                   </div>
                   <span className="text-[13px] text-sub shrink-0">

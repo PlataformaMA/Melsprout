@@ -170,7 +170,10 @@ export function ReproductorClase({
                 <div className="relative flex items-center gap-2">
                   <div className="relative flex-1 h-3 rounded-full bg-[#E7E3F3]">
                     <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#8B5CF6] to-accent" style={{ width: `${(posicion / total) * 100}%` }} />
-                    <div className="absolute top-1/2 -translate-y-1/2" style={{ left: `calc(${(posicion / total) * 100}% - 14px)` }}><span className="text-2xl">🐙</span></div>
+                    <div className="absolute top-1/2 -translate-y-1/2" style={{ left: `calc(${(posicion / total) * 100}% - 16px)` }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src="/octi.webp" alt="Octi" width={32} className="select-none" draggable={false} />
+                    </div>
                   </div>
                   <span className="text-xl">🏆</span>
                 </div>
