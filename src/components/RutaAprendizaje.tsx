@@ -10,8 +10,8 @@ import { ETAPA_1, type Clase, type ModuloCurso } from "@/lib/data";
 const W = 640;
 const CX = W / 2;
 const AMP = 172;      // vaivén horizontal (~27% → nodos entre 23% y 77%)
-const SPACING = 152;  // separación vertical
-const TOP = 84;
+const SPACING = 164;  // separación vertical (más aire para nodos grandes)
+const TOP = 92;
 const FREQ = 0.7;     // frecuencia baja = S fluida, sin zig-zag
 const PHASE = -1.35;  // el primer nodo arranca a la izquierda
 const serpX = (i: number) => CX + AMP * Math.sin(i * FREQ + PHASE);
@@ -110,20 +110,26 @@ export function RutaAprendizaje({
             {/* ——— Mapa ——— */}
             <div className="min-w-0">
               {/* Banner del módulo */}
-              <div className="rounded-2xl px-5 py-4 flex items-center justify-between text-white shadow-lg shadow-accent/20 mb-4"
+              <div className="relative overflow-hidden rounded-2xl px-6 py-5 flex items-center justify-between text-white shadow-lg shadow-accent/20 mb-4"
                 style={{ background: "linear-gradient(120deg,#6D28D9,#7C3AED)" }}>
-                <div className="font-display text-lg font-extrabold">
-                  Módulo {ETAPA_1.indexOf(moduloActual ?? ETAPA_1[0]) + 1}: {(moduloActual ?? ETAPA_1[0]).nombre}
+                {/* Destellos decorativos */}
+                <Sparkle4 className="absolute right-24 top-1/2 -translate-y-1/2 opacity-30" size={64} />
+                <Sparkle4 className="absolute right-16 top-3 opacity-20" size={26} />
+                <Sparkle4 className="absolute right-40 bottom-2 opacity-15" size={20} />
+
+                <div className="relative font-display text-lg font-extrabold">
+                  Modulo {ETAPA_1.indexOf(moduloActual ?? ETAPA_1[0]) + 1}: {(moduloActual ?? ETAPA_1[0]).nombre}
                 </div>
-                <span className="flex items-center gap-1.5 bg-white/20 rounded-full pl-3 pr-1.5 py-1 text-[12px] font-bold">
-                  Guía <span className="w-5 h-5 rounded-full bg-white/90 text-accent grid place-items-center text-[11px]">?</span>
+                <span className="relative flex items-center gap-2 bg-white rounded-full pl-4 pr-1.5 py-1.5 text-[13px] font-bold text-[#5B21B6]">
+                  Guía
+                  <span className="w-6 h-6 rounded-full bg-accent grid place-items-center text-white"><PlayMini /></span>
                 </span>
               </div>
 
               {/* Camino */}
               <div className="relative mx-auto w-full" style={{ maxWidth: 640, height: altura }}>
                 <svg viewBox={`0 0 ${W} ${altura}`} className="absolute inset-0 w-full h-full" fill="none" preserveAspectRatio="none">
-                  <path d={construirPath(pts)} stroke="#C9BCF0" strokeWidth="6" strokeLinecap="round" strokeDasharray="11 16" vectorEffect="non-scaling-stroke" />
+                  <path d={construirPath(pts)} stroke="#C7B8EF" strokeWidth="5.5" strokeLinecap="round" strokeDasharray="10 15" vectorEffect="non-scaling-stroke" />
                 </svg>
 
                 <DecorMar altura={altura} />
@@ -135,7 +141,7 @@ export function RutaAprendizaje({
                 ))}
 
                 {/* Octi con burbuja junto a la clase actual */}
-                <div className="absolute z-10 hidden sm:block" style={{ left: "-4%", top: octiY - 60 }}>
+                <div className="absolute z-10 hidden sm:block" style={{ left: "-3%", top: octiY - 34 }}>
                   <OctiRuta nombre={nombre} />
                 </div>
               </div>
@@ -178,8 +184,8 @@ function NodoElemento({ el }: { el: Elemento }) {
     if (el.estado === "completada")
       return (
         <Link href={`/app/clase/${el.clase.id}`} title={el.clase.titulo}
-          className="grid place-items-center rounded-full w-16 h-16 bg-green text-white border-4 border-white hover:scale-105 transition-transform"
-          style={{ boxShadow: "0 6px 0 #047857, 0 10px 14px rgba(0,0,0,.14)" }}>
+          className="grid place-items-center rounded-full w-[80px] h-[80px] bg-green text-white border-[5px] border-white hover:scale-105 transition-transform"
+          style={{ boxShadow: "0 7px 0 #047857, 0 12px 16px rgba(0,0,0,.14)" }}>
           <StarIcon />
         </Link>
       );
@@ -187,26 +193,26 @@ function NodoElemento({ el }: { el: Elemento }) {
       return (
         <div className="relative">
           <Link href={`/app/clase/${el.clase.id}`} title={el.clase.titulo}
-            className="ruta-pulse grid place-items-center rounded-full w-[70px] h-[70px] bg-accent text-white border-4 border-white hover:scale-105 transition-transform"
-            style={{ boxShadow: "0 6px 0 #5B21B6, 0 12px 16px rgba(124,58,237,.3)" }}>
+            className="ruta-pulse grid place-items-center rounded-full w-[84px] h-[84px] bg-accent text-white border-[5px] border-white hover:scale-105 transition-transform"
+            style={{ boxShadow: "0 7px 0 #5B21B6, 0 14px 18px rgba(124,58,237,.3)" }}>
             <PlayIcon />
           </Link>
-          <div className="absolute left-1/2 -translate-x-1/2 top-[80px] whitespace-nowrap bg-white text-[11px] font-bold text-accent rounded-full px-3 py-1.5 shadow-md">
+          <div className="absolute left-1/2 -translate-x-1/2 top-[92px] whitespace-nowrap bg-white text-[11px] font-bold text-accent rounded-full px-3 py-1.5 shadow-md">
             {el.clase.titulo}
           </div>
         </div>
       );
     // bloqueada
     return (
-      <div className="grid place-items-center rounded-full w-16 h-16 bg-[#B9BDC7] text-white border-4 border-white"
-        style={{ boxShadow: "0 6px 0 #9AA0AD, 0 10px 12px rgba(0,0,0,.1)" }} title="Completa la clase anterior">
+      <div className="grid place-items-center rounded-full w-[80px] h-[80px] bg-[#B9BDC7] text-white border-[5px] border-white"
+        style={{ boxShadow: "0 7px 0 #9AA0AD, 0 12px 14px rgba(0,0,0,.1)" }} title="Completa la clase anterior">
         <PlayIcon />
       </div>
     );
   }
 
   if (el.tipo === "reto") {
-    const base = "grid place-items-center rounded-full w-14 h-14 bg-white border-4 border-white";
+    const base = "grid place-items-center rounded-full w-[64px] h-[64px] bg-white border-[5px] border-white";
     const sombraOk = "0 5px 0 #EADFbf, 0 8px 12px rgba(0,0,0,.08)";
     const sombraGris = "0 5px 0 #E7E4EC, 0 8px 12px rgba(0,0,0,.08)";
 
@@ -255,7 +261,7 @@ function EtiquetaReto({ texto, clase }: { texto: string; clase: string }) {
 function TrofeoBurbuja({ apagado }: { apagado?: boolean }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src="/trofeo.webp" alt="Hito de nivel" width={82} height={82}
+    <img src="/trofeo.webp" alt="Hito de nivel" width={124} height={124}
       className={`select-none ${apagado ? "opacity-45 grayscale" : ""}`} draggable={false} />
   );
 }
@@ -264,7 +270,7 @@ function HieloNivel({ bloqueado }: { bloqueado?: boolean }) {
   return (
     <div className="relative grid place-items-center">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/hielo.webp" alt="Siguiente nivel" width={158} className="select-none" draggable={false} />
+      <img src="/hielo.webp" alt="Siguiente nivel" width={212} className="select-none" draggable={false} />
       {bloqueado && (
         <>
           <span className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-9 h-9 rounded-full bg-white/90 grid place-items-center shadow-md"><LockIcon /></span>
@@ -277,7 +283,7 @@ function HieloNivel({ bloqueado }: { bloqueado?: boolean }) {
 
 function AlgaRoja() {
   return (
-    <svg width="46" height="70" viewBox="0 0 52 78" fill="none">
+    <svg width="54" height="81" viewBox="0 0 52 78" fill="none">
       <path d="M14 76 C7 60 19 52 11 38 C4 25 18 18 13 4" stroke="#E8586A" strokeWidth="5.5" strokeLinecap="round" />
       <path d="M26 76 C33 58 21 48 29 34 C36 21 24 12 31 2" stroke="#D63F52" strokeWidth="5.5" strokeLinecap="round" />
       <path d="M38 76 C31 62 41 52 35 42 C30 33 39 26 37 16" stroke="#F27A88" strokeWidth="5.5" strokeLinecap="round" />
@@ -287,7 +293,7 @@ function AlgaRoja() {
 }
 function CoralTurquesa() {
   return (
-    <svg width="72" height="60" viewBox="0 0 80 66" fill="none" stroke="#2CA6A4" strokeWidth="7" strokeLinecap="round">
+    <svg width="94" height="78" viewBox="0 0 80 66" fill="none" stroke="#2CA6A4" strokeWidth="7" strokeLinecap="round">
       <path d="M40 64 L40 30" /><path d="M40 42 C31 34 24 36 22 24" /><path d="M40 38 C49 32 56 34 58 22" />
       <path d="M22 24 C19 17 24 13 22 5" /><path d="M58 22 C61 15 56 11 58 4" /><path d="M40 30 C37 22 43 17 40 8" />
       <ellipse cx="40" cy="64" rx="20" ry="3.5" fill="#2CA6A4" stroke="none" opacity="0.18" />
@@ -328,8 +334,8 @@ function OctiRuta({ nombre }: { nombre: string }) {
   return (
     <button onClick={() => setI((n) => (n + 1) % MENSAJES.length)} className="flex items-start gap-2 text-left hover:scale-[1.02] active:scale-95 transition" title="Tócame 🐙">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/octi.webp" alt="Octi" width={188} className="octi-float select-none shrink-0" draggable={false} />
-      <div key={i} className="octi-fade relative bg-white rounded-full shadow-lg flex items-center gap-2 pl-1.5 pr-3 py-1.5 mt-16 whitespace-nowrap">
+      <img src="/octi.webp" alt="Octi" width={136} className="octi-float select-none shrink-0" draggable={false} />
+      <div key={i} className="octi-fade relative bg-white rounded-full shadow-lg flex items-center gap-2 pl-1.5 pr-3 py-1.5 mt-10 whitespace-nowrap">
         <span className="w-6 h-6 rounded-full bg-amber-soft grid place-items-center text-[13px]">⭐</span>
         <span className="text-[12px] font-bold text-[#3C1A6B]">{MENSAJES[i]}</span>
         <span className="w-5 h-5 rounded-full bg-accent-soft grid place-items-center text-[10px]">💎</span>
@@ -396,9 +402,17 @@ function Recurso({ icon, titulo, sub }: { icon: React.ReactNode; titulo: string;
 }
 
 // ————— Iconos —————
-function StarIcon() { return <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.7-4.9 4.4 1.4 6.4L12 17.8 6 20l1.4-6.4L2.5 9.2l6.6-.7z" /></svg>; }
-function PlayIcon() { return <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z" /></svg>; }
-function SparkleIcon({ color }: { color: string }) { return <svg width="24" height="24" viewBox="0 0 24 24" fill={color}><path d="M12 2l1.8 6.4L20 10l-5.4 2.2L13 19l-2.2-5.6L5 12l5.6-2z" /><circle cx="18.5" cy="5.5" r="1.6" /></svg>; }
+function Sparkle4({ size, className }: { size: number; className?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="#fff" className={className}>
+      <path d="M12 0 C12.8 8 16 11.2 24 12 C16 12.8 12.8 16 12 24 C11.2 16 8 12.8 0 12 C8 11.2 11.2 8 12 0 Z" />
+    </svg>
+  );
+}
+function PlayMini() { return <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z" /></svg>; }
+function StarIcon() { return <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.7-4.9 4.4 1.4 6.4L12 17.8 6 20l1.4-6.4L2.5 9.2l6.6-.7z" /></svg>; }
+function PlayIcon() { return <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z" /></svg>; }
+function SparkleIcon({ color }: { color: string }) { return <svg width="28" height="28" viewBox="0 0 24 24" fill={color}><path d="M12 2l1.8 6.4L20 10l-5.4 2.2L13 19l-2.2-5.6L5 12l5.6-2z" /><circle cx="18.5" cy="5.5" r="1.6" /></svg>; }
 function LockIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>; }
 function BellIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#71717a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" /></svg>; }
 function DocIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2h8l4 4v16H6z" /><path d="M14 2v4h4M9 13h6M9 17h6" /></svg>; }
