@@ -1,12 +1,13 @@
 import "server-only";
 
-// Resuelve la URL base del sitio de forma robusta para los redirect_uri de OAuth.
-// Si NEXT_PUBLIC_SITE_URL quedó mal configurada en "localhost" pero corremos en
-// un host real (producción), usa el host real (origin) para que el redirect_uri
-// que se manda a Instagram/TikTok/YouTube no se rompa.
+// Resuelve la URL base del sitio para los redirect_uri de OAuth.
+// PRIORIZA el host real de la petición (el dominio donde entró el usuario), así
+// el redirect_uri siempre apunta a ese dominio (melsprout.boostacademy.io) sin
+// depender de NEXT_PUBLIC_SITE_URL (que puede estar mal configurada).
 export function siteBase(origin: string): string {
+  const originClean = origin?.replace(/\/$/, "");
+  if (originClean && !originClean.includes("localhost")) return originClean;
+  // En local usamos la variable si existe (útil para túneles/ngrok).
   const env = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
-  const originReal = !!origin && !origin.includes("localhost");
-  if (env && !(env.includes("localhost") && originReal)) return env;
-  return (origin || "http://localhost:3000").replace(/\/$/, "");
+  return env || originClean || "http://localhost:3000";
 }
