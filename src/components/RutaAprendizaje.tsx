@@ -142,7 +142,7 @@ export function RutaAprendizaje({
                 ))}
 
                 {/* Octi con burbuja (arriba) junto a la clase actual */}
-                <div className="absolute z-10 hidden sm:block" style={{ left: "-7%", top: octiY - 150 }}>
+                <div className="absolute z-10 hidden lg:block" style={{ left: "-11%", top: octiY - 140 }}>
                   <OctiRuta nombre={nombre} />
                 </div>
               </div>
@@ -327,22 +327,21 @@ function OctiRuta({ nombre }: { nombre: string }) {
   const primer = nombre.split(" ")[0];
   const MENSAJES = [
     "¡Completaste una clase! +10XP",
-    `¡Vamos, ${primer}! Toca el nodo morado para tu clase de hoy.`,
-    "Una clase al día y en 90 días serás otro creador.",
-    "¡No dejes que se apague tu racha!",
+    `¡Toca el nodo morado, ${primer}!`,
+    "Una clase al día 🚀",
+    "¡Cuida tu racha! 🔥",
   ];
   const [i, setI] = useState(0);
   return (
     <button onClick={() => setI((n) => (n + 1) % MENSAJES.length)} className="flex flex-col items-center text-left hover:scale-[1.02] active:scale-95 transition" title="Tócame 🐙">
-      {/* Burbuja ARRIBA de Octi (no tapa los nodos) */}
-      <div key={i} className="octi-fade relative bg-white rounded-2xl shadow-lg flex items-center gap-2 pl-1.5 pr-3 py-1.5 mb-1 whitespace-nowrap z-10">
-        <span className="w-6 h-6 rounded-full bg-amber-soft grid place-items-center text-[13px]">⭐</span>
-        <span className="text-[12px] font-bold text-[#3C1A6B]">{MENSAJES[i]}</span>
-        <span className="w-5 h-5 rounded-full bg-accent-soft grid place-items-center text-[10px]">💎</span>
+      {/* Burbuja ARRIBA de Octi (compacta, no tapa los nodos) */}
+      <div key={i} className="octi-fade relative bg-white rounded-2xl shadow-lg flex items-center gap-2 px-3 py-2 mb-1 max-w-[190px] z-10">
+        <span className="w-6 h-6 rounded-full bg-amber-soft grid place-items-center text-[13px] shrink-0">⭐</span>
+        <span className="text-[12px] font-bold text-[#3C1A6B] leading-snug">{MENSAJES[i]}</span>
         <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rotate-45" />
       </div>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/octi.webp" alt="Octi" width={210} className="octi-float select-none shrink-0" draggable={false} />
+      <img src="/octi.webp" alt="Octi" width={200} className="octi-float select-none shrink-0" draggable={false} />
     </button>
   );
 }
