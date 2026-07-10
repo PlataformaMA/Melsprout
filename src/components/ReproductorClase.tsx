@@ -136,19 +136,13 @@ export function ReproductorClase({
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  {!terminado ? (
-                    <span className="text-[12px] text-hint">Termina el video para avanzar a la siguiente clase</span>
-                  ) : (
-                    <>
-                      <Link href="/app/ruta" className="flex items-center gap-2 bg-accent text-white font-bold text-sm rounded-xl px-5 py-2.5 hover:brightness-110 transition shadow-sm shadow-accent/30">
-                        <SparkleMini /> Continuar al reto
-                      </Link>
-                      {siguiente && (
-                        <Link href={`/app/clase/${siguiente.id}`} className="flex items-center gap-2 border border-border rounded-xl px-4 py-2.5 font-bold text-sm text-sub hover:bg-surface transition">
-                          Siguiente clase <NextIcon small />
-                        </Link>
-                      )}
-                    </>
+                  <Link href="/app/ruta" className="flex items-center gap-2 bg-accent text-white font-bold text-sm rounded-xl px-5 py-2.5 hover:brightness-110 transition shadow-sm shadow-accent/30">
+                    <SparkleMini /> Continuar al reto
+                  </Link>
+                  {terminado && siguiente && (
+                    <Link href={`/app/clase/${siguiente.id}`} className="flex items-center gap-2 border border-border rounded-xl px-4 py-2.5 font-bold text-sm text-sub hover:bg-surface transition">
+                      Siguiente clase <NextIcon small />
+                    </Link>
                   )}
                 </div>
               </div>

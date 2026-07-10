@@ -8,23 +8,22 @@ import { ETAPA_1, type Clase, type ModuloCurso } from "@/lib/data";
 // ————— Geometría del camino serpenteante (S amplia y suave) —————
 const W = 600;
 const CX = W / 2;
-const AMP = 150;      // vaivén horizontal (más chico = S más suave)
-const SPACING = 152;  // separación vertical (más grande = curvas más largas)
+const AMP = 158;      // vaivén horizontal
+const SPACING = 150;  // separación vertical
 const TOP = 82;
-const FREQ = 0.72;    // frecuencia baja = menos zig-zag, S más fluida
-const PHASE = -1.25;
+const FREQ = 0.7;     // frecuencia baja = S fluida, sin zig-zag
+const PHASE = -1.35;  // el primer nodo arranca a la izquierda
 const serpX = (i: number) => CX + AMP * Math.sin(i * FREQ + PHASE);
 const pctX = (x: number) => `${(x / W) * 100}%`;
 
-// Curva suave tipo "spline" con tangentes horizontales en cada nodo (efecto serpiente fluida).
+// Serpentina clásica: controles en el punto medio con la X de cada nodo → S limpia y simétrica.
 function construirPath(pts: { x: number; y: number }[]): string {
-  if (pts.length < 2) return pts.length ? `M ${pts[0].x} ${pts[0].y}` : "";
+  if (!pts.length) return "";
   let d = `M ${pts[0].x} ${pts[0].y}`;
   for (let i = 1; i < pts.length; i++) {
     const p0 = pts[i - 1], p1 = pts[i];
-    const dy = (p1.y - p0.y) * 0.5;
-    // control 1 sale de p0 hacia abajo, control 2 entra a p1 desde arriba → curva en S continua
-    d += ` C ${p0.x} ${p0.y + dy}, ${p1.x} ${p1.y - dy}, ${p1.x} ${p1.y}`;
+    const my = (p0.y + p1.y) / 2;
+    d += ` C ${p0.x} ${my}, ${p1.x} ${my}, ${p1.x} ${p1.y}`;
   }
   return d;
 }
@@ -135,7 +134,7 @@ export function RutaAprendizaje({
                 ))}
 
                 {/* Octi con burbuja junto a la clase actual */}
-                <div className="absolute z-10 hidden sm:block" style={{ left: "-2%", top: octiY - 10 }}>
+                <div className="absolute z-10 hidden sm:block" style={{ left: "-4%", top: octiY - 60 }}>
                   <OctiRuta nombre={nombre} />
                 </div>
               </div>
@@ -326,8 +325,8 @@ function OctiRuta({ nombre }: { nombre: string }) {
   return (
     <button onClick={() => setI((n) => (n + 1) % MENSAJES.length)} className="flex items-start gap-2 text-left hover:scale-[1.02] active:scale-95 transition" title="Tócame 🐙">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/octi.webp" alt="Octi" width={132} className="octi-float select-none shrink-0" draggable={false} />
-      <div key={i} className="octi-fade relative bg-white rounded-full shadow-lg flex items-center gap-2 pl-1.5 pr-3 py-1.5 mt-8 whitespace-nowrap">
+      <img src="/octi.webp" alt="Octi" width={188} className="octi-float select-none shrink-0" draggable={false} />
+      <div key={i} className="octi-fade relative bg-white rounded-full shadow-lg flex items-center gap-2 pl-1.5 pr-3 py-1.5 mt-16 whitespace-nowrap">
         <span className="w-6 h-6 rounded-full bg-amber-soft grid place-items-center text-[13px]">⭐</span>
         <span className="text-[12px] font-bold text-[#3C1A6B]">{MENSAJES[i]}</span>
         <span className="w-5 h-5 rounded-full bg-accent-soft grid place-items-center text-[10px]">💎</span>
