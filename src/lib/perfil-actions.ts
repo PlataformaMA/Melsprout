@@ -175,6 +175,25 @@ export async function actualizarPerfil(
   return { ok: true };
 }
 
+// Cambia o quita el nicho desde el chip del perfil.
+export async function guardarNicho(
+  nicho: string | null
+): Promise<{ ok: true } | { error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Inicia sesión de nuevo." };
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ nicho: nicho ? nicho.trim().slice(0, 40) : null })
+    .eq("id", user.id);
+  if (error) return { error: "No se pudo guardar." };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 // Sube una imagen (avatar o portada) al bucket "avatars" con la llave de
 // servidor y guarda su URL en el perfil. La imagen llega ya reducida del navegador.
 async function subirImagen(
