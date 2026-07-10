@@ -12,13 +12,21 @@ export type EstadoAuth = {
 };
 
 // URL base del sitio, para armar los enlaces de los correos (confirmación, reset).
+// Blindado: si la variable de entorno quedó en "localhost" pero corremos en un
+// host real (producción), usamos el host real para que los enlaces no se rompan.
 async function urlSitio(): Promise<string> {
-  const env = process.env.NEXT_PUBLIC_SITE_URL;
-  if (env) return env.replace(/\/$/, "");
   const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
-  const proto = h.get("x-forwarded-proto") ?? "http";
-  return `${proto}://${host}`;
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
+  const proto = h.get("x-forwarded-proto") ?? "https";
+  const env = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
+
+  const hostReal = host && !host.includes("localhost");
+  const envEsLocalhost = !!env && env.includes("localhost");
+
+  // Prioriza el host real cuando el env está mal configurado (localhost en prod).
+  if (env && !(envEsLocalhost && hostReal)) return env;
+  if (host) return `${proto}://${host}`;
+  return env ?? "http://localhost:3000";
 }
 
 // ===== Iniciar sesión con email + contraseña =====
