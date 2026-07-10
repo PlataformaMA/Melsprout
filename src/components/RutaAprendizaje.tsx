@@ -128,7 +128,7 @@ export function RutaAprendizaje({
                 <DecorMar altura={altura} />
 
                 {elementos.map((el, i) => (
-                  <div key={i} className="absolute" style={{ left: pctX(pts[i].x), top: pts[i].y, transform: "translate(-50%,-50%)" }}>
+                  <div key={i} className="absolute z-[5]" style={{ left: pctX(pts[i].x), top: pts[i].y, transform: "translate(-50%,-50%)" }}>
                     <NodoElemento el={el} />
                   </div>
                 ))}
@@ -303,12 +303,13 @@ function Burbujas() {
   );
 }
 function DecorMar({ altura }: { altura: number }) {
+  // Decoraciones SIEMPRE en las orillas (fuera del rango de los nodos, 24%–76%) y detrás de ellos.
   return (
     <div className="absolute inset-0 pointer-events-none z-[1]">
-      <div className="absolute mar-vaiven" style={{ left: "2%", top: 120 }}><AlgaRoja /></div>
-      <div className="absolute mar-vaiven" style={{ left: "82%", top: 300, animationDelay: "1s" }}><CoralTurquesa /></div>
-      <div className="absolute mar-vaiven" style={{ left: "4%", top: altura * 0.55, animationDelay: ".5s" }}><AlgaRoja /></div>
-      <div className="absolute mar-vaiven" style={{ left: "72%", top: altura * 0.8, animationDelay: "1.4s" }}><CoralTurquesa /></div>
+      <div className="absolute mar-vaiven" style={{ left: "-1%", top: 165 }}><AlgaRoja /></div>
+      <div className="absolute mar-vaiven" style={{ left: "88%", top: 470, animationDelay: "1s" }}><CoralTurquesa /></div>
+      <div className="absolute mar-vaiven" style={{ left: "-1%", top: altura * 0.64, animationDelay: ".5s" }}><AlgaRoja /></div>
+      <div className="absolute mar-vaiven" style={{ left: "86%", top: altura * 0.83, animationDelay: "1.4s" }}><CoralTurquesa /></div>
     </div>
   );
 }
