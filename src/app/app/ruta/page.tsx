@@ -25,7 +25,6 @@ export default async function RutaPage() {
     <RutaAprendizaje
       nombre={perfil.full_name ?? "creador"}
       avatarUrl={perfil.avatar_url}
-      xp={perfil.xp}
       gemas={perfil.gemas}
       racha={perfil.racha}
       perfilPct={perfilPct}

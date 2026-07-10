@@ -3,17 +3,18 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Octi } from "@/components/Octi";
-import { cerrarSesion } from "@/lib/auth-actions";
-import { ETAPA_1, TOTAL_CLASES, nivelPorXP, type Clase } from "@/lib/data";
+import { AppSidebar } from "@/components/AppSidebar";
+import { ETAPA_1, type Clase, type ModuloCurso } from "@/lib/data";
 
-const W = 600;
+// ————— Geometría del camino serpenteante —————
+const W = 560;
 const CX = W / 2;
-const AMP = 205;
-const SPACING = 124;
-const TOP = 80;
-const FREQ = 0.92;
-const PHASE = -0.7;
-const nodeX = (i: number) => CX + AMP * Math.sin(i * FREQ + PHASE);
+const AMP = 200;
+const SPACING = 116;
+const TOP = 70;
+const FREQ = 0.9;
+const PHASE = -0.6;
+const serpX = (i: number) => CX + AMP * Math.sin(i * FREQ + PHASE);
 const pctX = (x: number) => `${(x / W) * 100}%`;
 
 function construirPath(pts: { x: number; y: number }[]): string {
@@ -27,200 +28,238 @@ function construirPath(pts: { x: number; y: number }[]): string {
   return d;
 }
 
-const CLASES_COMPLETADAS = 1;
-type Estado = "completada" | "actual" | "bloqueada";
-type Nodo = { clase: Clase; modulo: string; estado: Estado; x: number; y: number };
+const COMPLETADAS = 2; // clases completadas (demo hasta conectar el progreso real)
+
+type EClase = "completada" | "actual" | "bloqueada";
+type EReto = "completada" | "pendiente" | "bloqueada";
+type Elemento =
+  | { tipo: "clase"; clase: Clase; estado: EClase }
+  | { tipo: "reto"; clase: Clase; estado: EReto }
+  | { tipo: "hito"; modulo: ModuloCurso; estado: "completada" | "bloqueada" }
+  | { tipo: "gate"; modulo: ModuloCurso; estado: "desbloqueada" | "bloqueada" };
+
+function construirElementos(): Elemento[] {
+  const els: Elemento[] = [];
+  let gi = 0;
+  ETAPA_1.forEach((modulo) => {
+    const inicioModulo = gi;
+    modulo.clases.forEach((clase) => {
+      const ec: EClase = gi < COMPLETADAS ? "completada" : gi === COMPLETADAS ? "actual" : "bloqueada";
+      const er: EReto = gi < COMPLETADAS ? "completada" : gi === COMPLETADAS ? "pendiente" : "bloqueada";
+      els.push({ tipo: "clase", clase, estado: ec });
+      els.push({ tipo: "reto", clase, estado: er });
+      gi++;
+    });
+    const moduloDone = inicioModulo + modulo.clases.length <= COMPLETADAS;
+    els.push({ tipo: "hito", modulo, estado: moduloDone ? "completada" : "bloqueada" });
+    els.push({ tipo: "gate", modulo, estado: moduloDone ? "desbloqueada" : "bloqueada" });
+  });
+  return els;
+}
 
 export function RutaAprendizaje({
-  nombre, avatarUrl, xp, gemas, racha, perfilPct,
+  nombre, avatarUrl, gemas, racha, perfilPct,
 }: {
-  nombre: string; avatarUrl: string | null; xp: number; gemas: number; racha: number; perfilPct: number;
+  nombre: string; avatarUrl: string | null; gemas: number; racha: number; perfilPct: number;
 }) {
-  const nivel = nivelPorXP(xp);
-
-  const clases = ETAPA_1.flatMap((m) => m.clases.map((clase) => ({ clase, modulo: m.nombre })));
-  const nodos: Nodo[] = clases.map((c, i) => ({
-    ...c,
-    estado: i < CLASES_COMPLETADAS ? "completada" : i === CLASES_COMPLETADAS ? "actual" : "bloqueada",
-    x: nodeX(i),
+  const elementos = construirElementos();
+  const pts = elementos.map((el, i) => ({
+    x: el.tipo === "hito" || el.tipo === "gate" ? CX : serpX(i),
     y: TOP + i * SPACING,
   }));
-  const trofeoY = TOP + clases.length * SPACING;
-  const trofeoX = nodeX(clases.length);
-  const puntos = [...nodos.map((n) => ({ x: n.x, y: n.y })), { x: trofeoX, y: trofeoY }];
-  const altura = trofeoY + 120;
-  const completadas = CLASES_COMPLETADAS;
+  const altura = TOP + elementos.length * SPACING + 40;
+
+  // Módulo actual (el que contiene la clase "actual")
+  const idxActual = elementos.findIndex((e) => e.tipo === "clase" && e.estado === "actual");
+  const moduloActual = idxActual >= 0 && elementos[idxActual].tipo === "clase"
+    ? ETAPA_1.find((m) => m.clases.includes((elementos[idxActual] as { clase: Clase }).clase))
+    : ETAPA_1[0];
+
+  // Octi junto a la clase actual
+  const octiY = idxActual >= 0 ? pts[idxActual].y : TOP + 3 * SPACING;
 
   return (
-    <div className="min-h-screen flex relative overflow-hidden bg-bg">
-      {/* ===== Nav izquierda ===== */}
-      <aside className="hidden md:flex flex-col items-center gap-2 w-16 py-6 bg-surface border-r border-border sticky top-0 h-screen z-20">
-        <div className="w-9 h-9 rounded-xl bg-accent grid place-items-center font-display font-extrabold text-white mb-4">M</div>
-        <NavIcon href="/app/ruta" label="Inicio" activo>🏠</NavIcon>
-        <NavIcon href="/app/ruta" label="Retos">🎯</NavIcon>
-        <NavIcon href="/app/ruta" label="Ranking">🏆</NavIcon>
-        <NavIcon href="/app/ruta" label="Comunidad">💬</NavIcon>
-        <NavIcon href="/app/config" label="Configuración">⚙️</NavIcon>
-        <div className="mt-auto flex flex-col items-center gap-2">
-          <NavIcon href="/app/perfil" label="Mi perfil">👤</NavIcon>
-          <form action={cerrarSesion}>
-            <button title="Cerrar sesión" className="w-11 h-11 grid place-items-center rounded-xl text-xl hover:bg-bg transition">🚪</button>
-          </form>
-        </div>
-      </aside>
+    <div className="min-h-screen bg-bg flex">
+      <AppSidebar active="clases" />
 
-      {/* ===== Centro ===== */}
-      <main className="flex-1 min-w-0 relative z-10">
-        <header className="sticky top-0 z-20 bg-surface/90 backdrop-blur border-b border-border">
-          <div className="max-w-3xl mx-auto px-5 h-16 flex items-center justify-between">
-            <h1 className="font-display text-xl font-extrabold">Ruta de aprendizaje</h1>
-            <div className="flex items-center gap-2.5">
-              <Contador emoji="🔥" valor={racha} />
-              <Contador emoji="💎" valor={gemas} />
-              <Contador emoji="⭐" valor={xp} />
-              <Link href="/app/perfil" className="ml-1">
-                {avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatarUrl} alt="Tu perfil" className="w-9 h-9 rounded-full object-cover border-2 border-accent/30" />
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-accent grid place-items-center text-white text-xs font-bold">
-                    {nombre.slice(0, 2).toUpperCase()}
-                  </div>
-                )}
-              </Link>
-            </div>
-          </div>
-        </header>
-
-        <div className="max-w-3xl mx-auto px-5 py-6">
-          {/* Banner: completa tu perfil y gana puntos */}
-          {perfilPct < 100 && (
-            <Link href="/app/perfil/completar"
-              className="flex items-center gap-3 rounded-2xl p-4 mb-4 bg-surface border-2 border-amber/40 shadow-sm hover:scale-[1.01] transition">
-              <div className="text-3xl">🎁</div>
-              <div className="flex-1">
-                <div className="font-bold text-sm text-text">
-                  Tu perfil está al {perfilPct}% — complétalo y gana <span className="text-accent">+15 💎</span>
-                </div>
-                <div className="text-[12px] text-sub">Sube tu foto, redes y métricas paso a paso con Octi 🐙</div>
-              </div>
-              <span className="text-accent font-bold text-lg">→</span>
+      <main className="flex-1 min-w-0">
+        <div className="max-w-[1180px] mx-auto px-4 sm:px-8 py-5">
+          {/* Barra superior */}
+          <header className="flex items-center justify-end gap-4 mb-4 h-10">
+            <Counter icon="🔥" valor={racha} />
+            <Counter icon="💎" valor={gemas} />
+            <button className="relative w-9 h-9 grid place-items-center rounded-full hover:bg-surface transition" aria-label="Notificaciones">
+              <BellIcon />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-accent" />
+            </button>
+            <Link href="/app/perfil" className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-accent/25 grid place-items-center bg-accent/10 shrink-0">
+              {avatarUrl
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={avatarUrl} alt="Tu perfil" className="w-full h-full object-cover" />
+                : <span className="text-white text-xs font-bold bg-accent w-full h-full grid place-items-center">{nombre.slice(0, 2).toUpperCase()}</span>}
             </Link>
-          )}
+          </header>
 
-          {/* Banner del módulo */}
-          <div className="rounded-2xl px-5 py-4 flex items-center justify-between text-white shadow-lg shadow-accent/20"
-            style={{ background: "linear-gradient(120deg,#6D28D9,#7C3AED)" }}>
-            <div>
-              <div className="text-[11px] font-bold uppercase tracking-wider text-white/70">Etapa 1 · Starter</div>
-              <div className="font-display text-lg font-extrabold">Módulo 1: Fundamentos del creador</div>
+          <h1 className="font-display text-2xl font-extrabold mb-4">Ruta De Aprendizaje</h1>
+
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
+            {/* ——— Mapa ——— */}
+            <div className="min-w-0">
+              {/* Banner del módulo */}
+              <div className="rounded-2xl px-5 py-4 flex items-center justify-between text-white shadow-lg shadow-accent/20 mb-4"
+                style={{ background: "linear-gradient(120deg,#6D28D9,#7C3AED)" }}>
+                <div className="font-display text-lg font-extrabold">
+                  Módulo {ETAPA_1.indexOf(moduloActual ?? ETAPA_1[0]) + 1}: {(moduloActual ?? ETAPA_1[0]).nombre}
+                </div>
+                <span className="flex items-center gap-1.5 bg-white/20 rounded-full pl-3 pr-1.5 py-1 text-[12px] font-bold">
+                  Guía <span className="w-5 h-5 rounded-full bg-white/90 text-accent grid place-items-center text-[11px]">?</span>
+                </span>
+              </div>
+
+              {/* Camino */}
+              <div className="relative mx-auto w-full" style={{ maxWidth: 640, height: altura }}>
+                <svg viewBox={`0 0 ${W} ${altura}`} className="absolute inset-0 w-full h-full" fill="none" preserveAspectRatio="none">
+                  <path d={construirPath(pts)} stroke="#C7BEF5" strokeWidth="7" strokeLinecap="round" strokeDasharray="1 20" vectorEffect="non-scaling-stroke" />
+                </svg>
+
+                <DecorMar altura={altura} />
+
+                {elementos.map((el, i) => (
+                  <div key={i} className="absolute" style={{ left: pctX(pts[i].x), top: pts[i].y, transform: "translate(-50%,-50%)" }}>
+                    <NodoElemento el={el} />
+                  </div>
+                ))}
+
+                {/* Octi con burbuja junto a la clase actual */}
+                <div className="absolute z-10 hidden sm:block" style={{ left: "-2%", top: octiY - 10 }}>
+                  <OctiRuta nombre={nombre} />
+                </div>
+              </div>
             </div>
-            <div className="text-right">
-              <div className="font-display text-2xl font-extrabold">{completadas}/{TOTAL_CLASES}</div>
-              <div className="text-[11px] text-white/70">clases</div>
-            </div>
-          </div>
 
-          {/* El mapa serpenteante (ancho, más horizontal) */}
-          <div className="relative mx-auto mt-6 w-full" style={{ maxWidth: 700, height: altura }}>
-            <svg viewBox={`0 0 ${W} ${altura}`} className="absolute inset-0 w-full h-full" fill="none" preserveAspectRatio="none">
-              <path d={construirPath(puntos)} stroke="#C7BEF5" strokeWidth="9" strokeLinecap="round" strokeDasharray="2 22" vectorEffect="non-scaling-stroke" />
-            </svg>
+            {/* ——— Sidebar derecha ——— */}
+            <aside className="space-y-4 lg:sticky lg:top-5">
+              {/* Banner completa perfil */}
+              {perfilPct < 100 && (
+                <Link href="/app/perfil/completar" className="flex items-center gap-3 rounded-2xl p-3.5 bg-surface border border-amber/40 shadow-sm hover:scale-[1.01] transition">
+                  <div className="text-2xl">🎁</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-[13px] text-text leading-tight">Perfil al {perfilPct}% — gana <span className="text-accent">+15 💎</span></div>
+                    <div className="text-[11px] text-sub">Complétalo con Octi 🐙</div>
+                  </div>
+                </Link>
+              )}
 
-            {/* Decoración marina (HTML, no se distorsiona) */}
-            <DecorMar altura={altura} />
+              <Tarjeta titulo="Desafíos del día" extra={<span className="text-[12px] text-accent font-semibold cursor-default">Ver todos</span>}>
+                <Desafio icon={<span className="text-amber">⚡</span>} texto="Gana 10 EXP" progreso={0} total={10} />
+                <Desafio icon={<span className="text-green">🎯</span>} texto="Obtén un puntaje de 90% o más en 1 lección" progreso={0} total={1} />
+              </Tarjeta>
 
-            {nodos.map((n) => (
-              <NodoClase key={n.clase.id} nodo={n} />
-            ))}
-
-            <div className="absolute" style={{ left: pctX(trofeoX), top: trofeoY, transform: "translate(-50%,-50%)" }}>
-              <div className="w-[68px] h-[68px] rounded-full bg-white border-4 border-amber-soft grid place-items-center text-3xl shadow-lg opacity-80">🏆</div>
-              <div className="text-center text-[11px] font-bold text-amber mt-1 w-24 -ml-3">Diploma Creador+</div>
-            </div>
-
-            <div className="absolute z-10" style={{ left: "1%", top: nodos[completadas]?.y ?? TOP + 40 }}>
-              <OctiInteractivo nombre={nombre} />
-            </div>
+              <Tarjeta titulo="Recursos">
+                <Recurso icon={<DocIcon />} titulo="Plantillas" sub="para creadores" />
+                <Recurso icon={<BookIcon />} titulo="Guías" sub="rápidas" />
+                <Recurso icon={<ToolIcon />} titulo="Herramientas" sub="recomendadas" />
+              </Tarjeta>
+            </aside>
           </div>
         </div>
       </main>
-
-      {/* ===== Sidebar derecha ===== */}
-      <aside className="hidden lg:block w-72 shrink-0 p-5 space-y-4 sticky top-0 h-screen overflow-y-auto z-20 bg-bg/50">
-        <Tarjeta titulo="Desafíos del día" extra={<span className="text-[12px] text-accent font-semibold">Ver todos</span>}>
-          <Desafio emoji="⚡" texto="Gana 10 XP" progreso={0} total={10} />
-          <Desafio emoji="🎯" texto="Termina 1 clase" progreso={0} total={1} />
-        </Tarjeta>
-
-        <Tarjeta titulo="Nivel actual">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 grid place-items-center text-2xl rounded-2xl bg-accent-soft">⬡</div>
-            <div>
-              <div className="font-display font-extrabold text-text">{nivel.actual.nombre}</div>
-              {nivel.siguiente && <div className="text-[11px] text-sub">{nivel.faltan} XP para {nivel.siguiente.nombre}</div>}
-            </div>
-          </div>
-          {nivel.siguiente && (
-            <div className="h-2 rounded-full bg-bg overflow-hidden mt-3">
-              <div className="h-full bg-accent rounded-full" style={{ width: `${Math.min(100, Math.round((xp / nivel.siguiente.xp) * 100))}%` }} />
-            </div>
-          )}
-        </Tarjeta>
-
-        <Tarjeta titulo="Recursos">
-          <Recurso emoji="📄" titulo="Plantillas" sub="para creadores" />
-          <Recurso emoji="📖" titulo="Guías" sub="rápidas" />
-          <Recurso emoji="🛠️" titulo="Herramientas" sub="recomendadas" />
-        </Tarjeta>
-      </aside>
     </div>
   );
 }
 
-function Destello() {
-  return (
-    <svg width="26" height="26" viewBox="0 0 24 24">
-      <path d="M12 2 L13.7 9.5 L21 12 L13.7 14.5 L12 22 L10.3 14.5 L3 12 L10.3 9.5 Z" fill="#CBD0DB" />
-    </svg>
-  );
-}
-
-function NodoClase({ nodo }: { nodo: Nodo }) {
-  const pos = { left: pctX(nodo.x), top: nodo.y, transform: "translate(-50%,-50%)" } as const;
-
-  if (nodo.estado === "completada") {
-    return (
-      <button className="absolute grid place-items-center rounded-full w-16 h-16 bg-green text-white border-4 border-white hover:scale-105 transition-transform z-[5]"
-        style={{ ...pos, boxShadow: "0 6px 0 #047857, 0 10px 14px rgba(0,0,0,.14)" }} title={nodo.clase.titulo}>
-        <span className="text-2xl">★</span>
-      </button>
-    );
-  }
-  if (nodo.estado === "actual") {
-    return (
-      <div className="absolute z-[6]" style={pos}>
-        <button className="ruta-pulse w-[74px] h-[74px] grid place-items-center rounded-full bg-accent text-white border-4 border-white hover:scale-105 transition-transform"
-          style={{ boxShadow: "0 6px 0 #5B21B6, 0 12px 16px rgba(124,58,237,.3)" }} title={nodo.clase.titulo}>
-          <span className="text-2xl ml-0.5">▶</span>
-        </button>
-        <div className="absolute left-1/2 -translate-x-1/2 top-[84px] whitespace-nowrap bg-white text-[11px] font-bold text-accent rounded-full px-3 py-1.5 shadow-md">
-          {nodo.clase.titulo}
+// ————— Nodo según tipo/estado (la leyenda) —————
+function NodoElemento({ el }: { el: Elemento }) {
+  if (el.tipo === "clase") {
+    if (el.estado === "completada")
+      return (
+        <Link href={`/app/clase/${el.clase.id}`} title={el.clase.titulo}
+          className="grid place-items-center rounded-full w-16 h-16 bg-green text-white border-4 border-white hover:scale-105 transition-transform"
+          style={{ boxShadow: "0 6px 0 #047857, 0 10px 14px rgba(0,0,0,.14)" }}>
+          <StarIcon />
+        </Link>
+      );
+    if (el.estado === "actual")
+      return (
+        <div className="relative">
+          <Link href={`/app/clase/${el.clase.id}`} title={el.clase.titulo}
+            className="ruta-pulse grid place-items-center rounded-full w-[70px] h-[70px] bg-accent text-white border-4 border-white hover:scale-105 transition-transform"
+            style={{ boxShadow: "0 6px 0 #5B21B6, 0 12px 16px rgba(124,58,237,.3)" }}>
+            <PlayIcon />
+          </Link>
+          <div className="absolute left-1/2 -translate-x-1/2 top-[80px] whitespace-nowrap bg-white text-[11px] font-bold text-accent rounded-full px-3 py-1.5 shadow-md">
+            {el.clase.titulo}
+          </div>
         </div>
+      );
+    // bloqueada
+    return (
+      <div className="grid place-items-center rounded-full w-16 h-16 bg-[#B9BDC7] text-white border-4 border-white"
+        style={{ boxShadow: "0 6px 0 #9AA0AD, 0 10px 12px rgba(0,0,0,.1)" }} title="Completa la clase anterior">
+        <PlayIcon />
       </div>
     );
   }
+
+  if (el.tipo === "reto") {
+    const base = "grid place-items-center rounded-full w-14 h-14 bg-white border-4 border-white";
+    if (el.estado === "completada")
+      return <div className={base} style={{ boxShadow: "0 5px 0 #EADFbf, 0 8px 12px rgba(0,0,0,.08)" }} title="Reto completado"><SparkleIcon color="#F5B301" /></div>;
+    if (el.estado === "pendiente")
+      return (
+        <div className="relative">
+          <div className={base} style={{ boxShadow: "0 5px 0 #E7E4EC, 0 8px 12px rgba(0,0,0,.08)" }} title="Reto pendiente"><SparkleIcon color="#9AA0AD" /></div>
+          <div className="absolute -top-4 -right-5"><Burbujas /></div>
+        </div>
+      );
+    return <div className={base} style={{ boxShadow: "0 5px 0 #E7E4EC, 0 8px 12px rgba(0,0,0,.08)" }} title="Reto bloqueado"><SparkleIcon color="#C6CAD3" /></div>;
+  }
+
+  if (el.tipo === "hito") {
+    return <TrofeoBurbuja apagado={el.estado === "bloqueada"} />;
+  }
+
+  // gate
+  return <HieloNivel bloqueado={el.estado === "bloqueada"} />;
+}
+
+// ————— Ilustraciones —————
+function TrofeoBurbuja({ apagado }: { apagado?: boolean }) {
   return (
-    <button className="absolute grid place-items-center rounded-full w-16 h-16 bg-white border-4 border-white hover:scale-105 transition-transform z-[5]"
-      style={{ ...pos, boxShadow: "0 6px 0 #E7E4EC, 0 10px 12px rgba(0,0,0,.08)" }} title="Completa la anterior para desbloquear">
-      <Destello />
-    </button>
+    <div className={`relative w-[76px] h-[76px] rounded-full grid place-items-center ${apagado ? "opacity-50 grayscale" : ""}`}
+      style={{ background: "radial-gradient(circle at 38% 30%, #EAF7FF 0%, #CDEBFB 55%, #AFDCF5 100%)", boxShadow: "0 8px 18px rgba(80,140,200,.28), inset 0 2px 6px #fff" }}>
+      <span className="text-3xl">🏆</span>
+      <span className="absolute top-3 left-4 w-3 h-3 rounded-full bg-white/70" />
+    </div>
+  );
+}
+
+function HieloNivel({ bloqueado }: { bloqueado?: boolean }) {
+  return (
+    <div className="relative grid place-items-center">
+      <svg width="150" height="92" viewBox="0 0 150 92" fill="none">
+        <g>
+          <path d="M18 90 L30 40 L46 44 L44 90 Z" fill="#BDECE4" />
+          <path d="M40 90 L54 26 L74 34 L70 90 Z" fill="#A6E3D9" />
+          <path d="M66 90 L84 20 L104 30 L98 90 Z" fill="#C7F0E9" />
+          <path d="M96 90 L110 40 L128 46 L124 90 Z" fill="#A6E3D9" />
+          <path d="M118 90 L130 52 L142 58 L140 90 Z" fill="#BDECE4" />
+        </g>
+        <ellipse cx="75" cy="90" rx="66" ry="4" fill="#8FD6CA" opacity="0.35" />
+      </svg>
+      {bloqueado && (
+        <>
+          <span className="absolute top-7 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-white/85 grid place-items-center shadow"><LockIcon /></span>
+          <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-accent text-white text-[11px] font-bold rounded-lg px-3 py-1 shadow whitespace-nowrap">Siguiente Nivel</span>
+        </>
+      )}
+    </div>
   );
 }
 
 function AlgaRoja() {
   return (
-    <svg width="52" height="78" viewBox="0 0 52 78" fill="none">
+    <svg width="46" height="70" viewBox="0 0 52 78" fill="none">
       <path d="M14 76 C7 60 19 52 11 38 C4 25 18 18 13 4" stroke="#E8586A" strokeWidth="5.5" strokeLinecap="round" />
       <path d="M26 76 C33 58 21 48 29 34 C36 21 24 12 31 2" stroke="#D63F52" strokeWidth="5.5" strokeLinecap="round" />
       <path d="M38 76 C31 62 41 52 35 42 C30 33 39 26 37 16" stroke="#F27A88" strokeWidth="5.5" strokeLinecap="round" />
@@ -228,116 +267,93 @@ function AlgaRoja() {
     </svg>
   );
 }
-
 function CoralTurquesa() {
   return (
-    <svg width="80" height="66" viewBox="0 0 80 66" fill="none" stroke="#2CA6A4" strokeWidth="7" strokeLinecap="round">
-      <path d="M40 64 L40 30" />
-      <path d="M40 42 C31 34 24 36 22 24" />
-      <path d="M40 38 C49 32 56 34 58 22" />
-      <path d="M22 24 C19 17 24 13 22 5" />
-      <path d="M58 22 C61 15 56 11 58 4" />
-      <path d="M40 30 C37 22 43 17 40 8" />
+    <svg width="72" height="60" viewBox="0 0 80 66" fill="none" stroke="#2CA6A4" strokeWidth="7" strokeLinecap="round">
+      <path d="M40 64 L40 30" /><path d="M40 42 C31 34 24 36 22 24" /><path d="M40 38 C49 32 56 34 58 22" />
+      <path d="M22 24 C19 17 24 13 22 5" /><path d="M58 22 C61 15 56 11 58 4" /><path d="M40 30 C37 22 43 17 40 8" />
       <ellipse cx="40" cy="64" rx="20" ry="3.5" fill="#2CA6A4" stroke="none" opacity="0.18" />
     </svg>
   );
 }
-
 function Burbujas() {
   return (
-    <svg width="62" height="58" viewBox="0 0 62 58" fill="none">
-      <circle cx="26" cy="34" r="13" stroke="#7DD3FC" strokeWidth="3" opacity="0.75" />
-      <circle cx="46" cy="20" r="8" stroke="#7DD3FC" strokeWidth="2.6" opacity="0.65" />
-      <circle cx="44" cy="42" r="5" stroke="#7DD3FC" strokeWidth="2.2" opacity="0.55" />
-      <circle cx="22" cy="29" r="3.4" fill="#BAE6FD" opacity="0.8" />
+    <svg width="52" height="48" viewBox="0 0 62 58" fill="none">
+      <circle cx="26" cy="34" r="12" stroke="#7DD3FC" strokeWidth="3" opacity="0.75" />
+      <circle cx="46" cy="20" r="7" stroke="#7DD3FC" strokeWidth="2.6" opacity="0.65" />
+      <circle cx="44" cy="42" r="4.5" stroke="#7DD3FC" strokeWidth="2.2" opacity="0.55" />
+      <circle cx="22" cy="29" r="3" fill="#BAE6FD" opacity="0.8" />
     </svg>
   );
 }
-
 function DecorMar({ altura }: { altura: number }) {
   return (
     <div className="absolute inset-0 pointer-events-none z-[1]">
-      <div className="absolute mar-vaiven" style={{ left: "5%", top: 46 }}><AlgaRoja /></div>
-      <div className="absolute" style={{ left: "56%", top: 128 }}><Burbujas /></div>
-      <div className="absolute mar-vaiven" style={{ left: "78%", top: altura * 0.5, animationDelay: "1s" }}><CoralTurquesa /></div>
-      <div className="absolute mar-vaiven" style={{ left: "4%", top: altura * 0.72, animationDelay: ".5s" }}><AlgaRoja /></div>
-      <div className="absolute" style={{ left: "30%", top: altura * 0.86 }}><Burbujas /></div>
+      <div className="absolute mar-vaiven" style={{ left: "2%", top: 120 }}><AlgaRoja /></div>
+      <div className="absolute mar-vaiven" style={{ left: "82%", top: 300, animationDelay: "1s" }}><CoralTurquesa /></div>
+      <div className="absolute mar-vaiven" style={{ left: "4%", top: altura * 0.55, animationDelay: ".5s" }}><AlgaRoja /></div>
+      <div className="absolute mar-vaiven" style={{ left: "72%", top: altura * 0.8, animationDelay: "1.4s" }}><CoralTurquesa /></div>
     </div>
   );
 }
 
-function OctiInteractivo({ nombre }: { nombre: string }) {
+function OctiRuta({ nombre }: { nombre: string }) {
   const primer = nombre.split(" ")[0];
   const MENSAJES = [
-    `¡Hola, ${primer}! 🐙 Continuemos tu camino.`,
-    "Toca el nodo morado para empezar tu clase de hoy. ▶",
+    "¡Completaste una clase! +10XP ⭐",
+    `¡Vamos, ${primer}! Toca el nodo morado para tu clase de hoy. ▶`,
     "Una clase al día y en 90 días serás otro creador. 🚀",
     "¡No dejes que se apague tu racha! 🔥",
-    "Publicar constante le gana al talento. Siempre.",
-    "Estoy aquí para nadar contigo en cada ola. 🌊",
   ];
   const [i, setI] = useState(0);
   return (
-    <button onClick={() => setI((n) => (n + 1) % MENSAJES.length)} className="text-left hover:scale-[1.04] active:scale-95 transition" title="Tócame 🐙">
-      <Octi size={124} mensaje={MENSAJES[i]} />
+    <button onClick={() => setI((n) => (n + 1) % MENSAJES.length)} className="text-left hover:scale-[1.03] active:scale-95 transition" title="Tócame 🐙">
+      <Octi size={116} mensaje={MENSAJES[i]} />
     </button>
   );
 }
 
-function NavIcon({ href, label, children, activo }: { href: string; label: string; children: React.ReactNode; activo?: boolean }) {
-  return (
-    <Link href={href} title={label}
-      className={`w-11 h-11 grid place-items-center rounded-xl text-xl transition ${activo ? "bg-accent-soft" : "hover:bg-bg"}`}>
-      {children}
-    </Link>
-  );
+// ————— Piezas de la derecha —————
+function Counter({ icon, valor }: { icon: string; valor: number }) {
+  return <div className="flex items-center gap-1.5"><span className="text-lg">{icon}</span><span className="font-display font-extrabold text-[15px] text-text">{valor}</span></div>;
 }
-
-function Contador({ emoji, valor }: { emoji: string; valor: number }) {
-  return (
-    <div className="flex items-center gap-1 bg-bg rounded-full px-2.5 py-1">
-      <span className="text-sm">{emoji}</span>
-      <span className="font-display font-extrabold text-sm text-text">{valor}</span>
-    </div>
-  );
-}
-
 function Tarjeta({ titulo, children, extra }: { titulo: string; children: React.ReactNode; extra?: React.ReactNode }) {
   return (
     <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="font-display font-extrabold text-sm">{titulo}</h3>
-        {extra}
-      </div>
-      <div className="space-y-3">{children}</div>
+      <div className="flex items-center justify-between mb-3"><h3 className="font-display font-extrabold text-sm">{titulo}</h3>{extra}</div>
+      <div className="space-y-3.5">{children}</div>
     </div>
   );
 }
-
-function Desafio({ emoji, texto, progreso, total }: { emoji: string; texto: string; progreso: number; total: number }) {
+function Desafio({ icon, texto, progreso, total }: { icon: React.ReactNode; texto: string; progreso: number; total: number }) {
   return (
     <div className="flex items-center gap-2.5">
-      <div className="w-8 h-8 rounded-lg bg-amber-soft grid place-items-center">{emoji}</div>
-      <div className="flex-1">
-        <div className="text-[12.5px] font-semibold text-text">{texto}</div>
-        <div className="h-1.5 rounded-full bg-bg overflow-hidden mt-1">
-          <div className="h-full bg-amber rounded-full" style={{ width: `${(progreso / total) * 100}%` }} />
-        </div>
+      <div className="w-8 h-8 rounded-lg bg-amber-soft grid place-items-center text-sm shrink-0">{icon}</div>
+      <div className="flex-1 min-w-0">
+        <div className="text-[12px] font-semibold text-text leading-tight">{texto}</div>
+        <div className="h-1.5 rounded-full bg-bg overflow-hidden mt-1"><div className="h-full bg-amber rounded-full" style={{ width: `${(progreso / total) * 100}%` }} /></div>
+        <div className="text-[10px] text-hint mt-0.5">{progreso} / {total}</div>
       </div>
-      <span className="text-[11px] text-hint">{progreso}/{total}</span>
+      <span className="text-lg shrink-0">🎁</span>
     </div>
   );
 }
-
-function Recurso({ emoji, titulo, sub }: { emoji: string; titulo: string; sub: string }) {
+function Recurso({ icon, titulo, sub }: { icon: React.ReactNode; titulo: string; sub: string }) {
   return (
     <div className="flex items-center gap-2.5">
-      <div className="w-9 h-9 rounded-lg bg-accent-soft grid place-items-center text-base">{emoji}</div>
-      <div className="flex-1">
-        <div className="text-[13px] font-semibold text-text">{titulo}</div>
-        <div className="text-[11px] text-sub">{sub}</div>
-      </div>
+      <div className="w-9 h-9 rounded-lg bg-accent-soft grid place-items-center text-accent shrink-0">{icon}</div>
+      <div className="flex-1"><div className="text-[13px] font-semibold text-text">{titulo}</div><div className="text-[11px] text-sub">{sub}</div></div>
       <span className="text-hint">›</span>
     </div>
   );
 }
+
+// ————— Iconos —————
+function StarIcon() { return <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.7-4.9 4.4 1.4 6.4L12 17.8 6 20l1.4-6.4L2.5 9.2l6.6-.7z" /></svg>; }
+function PlayIcon() { return <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z" /></svg>; }
+function SparkleIcon({ color }: { color: string }) { return <svg width="24" height="24" viewBox="0 0 24 24" fill={color}><path d="M12 2l1.8 6.4L20 10l-5.4 2.2L13 19l-2.2-5.6L5 12l5.6-2z" /><circle cx="18.5" cy="5.5" r="1.6" /></svg>; }
+function LockIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>; }
+function BellIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#71717a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" /></svg>; }
+function DocIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2h8l4 4v16H6z" /><path d="M14 2v4h4M9 13h6M9 17h6" /></svg>; }
+function BookIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 5a2 2 0 0 1 2-2h5v16H6a2 2 0 0 0-2 2z" /><path d="M20 5a2 2 0 0 0-2-2h-5v16h5a2 2 0 0 1 2 2z" /></svg>; }
+function ToolIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-2.5z" /></svg>; }

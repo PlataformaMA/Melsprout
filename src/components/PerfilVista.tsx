@@ -7,6 +7,7 @@ import { type Perfil, guardarNicho } from "@/lib/perfil-actions";
 import { NICHOS } from "@/lib/catalogos";
 import { nivelPorXP, TOTAL_CLASES } from "@/lib/data";
 import { AvatarUploader } from "@/components/AvatarUploader";
+import { AppSidebar } from "@/components/AppSidebar";
 
 // ————————————— Helpers —————————————
 function calcularEdad(fecha: string | null): number | null {
@@ -57,7 +58,7 @@ export function PerfilVista({ perfil, creadoEn }: { perfil: Perfil; creadoEn: st
 
   return (
     <div className="min-h-screen bg-bg flex">
-      <IconRail />
+      <AppSidebar active="perfil" />
 
       <div className="flex-1 min-w-0">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-8 py-5">
@@ -465,35 +466,6 @@ function TabResumen({ perfil, nivel }: { perfil: Perfil; nivel: ReturnType<typeo
 }
 
 // ————————————— Piezas —————————————
-function IconRail() {
-  return (
-    <div className="hidden lg:block w-[92px] shrink-0">
-      <div className="sticky top-5 ml-4 mt-4">
-        <div className="text-[11px] text-sub mb-1 pl-2">Perfil</div>
-        <div className="bg-surface rounded-3xl shadow-md border border-border py-4 flex flex-col items-center gap-1.5">
-          <div className="flex items-center gap-1 mb-3">
-            <div className="w-9 h-9 rounded-xl border border-border grid place-items-center">
-              <span className="w-4 h-4 rounded-full bg-accent" />
-            </div>
-            <button className="w-6 h-9 grid place-items-center text-hint hover:text-sub" aria-label="Expandir">›</button>
-          </div>
-          <RailIcon active><HomeIcon /></RailIcon>
-          <RailIcon><ChartIcon /></RailIcon>
-          <RailIcon><GridIcon /></RailIcon>
-          <RailIcon><PieIcon /></RailIcon>
-          <RailIcon><MailIcon /></RailIcon>
-        </div>
-      </div>
-    </div>
-  );
-}
-function RailIcon({ children, active }: { children: React.ReactNode; active?: boolean }) {
-  return (
-    <Link href="/app/ruta" className={`w-11 h-11 rounded-2xl grid place-items-center transition ${active ? "text-accent" : "text-hint hover:text-sub hover:bg-bg"}`}>
-      {children}
-    </Link>
-  );
-}
 function Counter({ icon, valor }: { icon: string; valor: number }) {
   return (
     <div className="flex items-center gap-1.5">
@@ -528,11 +500,6 @@ function Anillo({ pct }: { pct: number }) {
 // ————————————— Iconos —————————————
 function BellIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#71717a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" /></svg>; }
 function ChevronDown() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>; }
-function HomeIcon() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" /></svg>; }
-function ChartIcon() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>; }
-function GridIcon() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg>; }
-function PieIcon() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a9 9 0 1 0 9 9h-9z" /><path d="M12 3v9h9" /></svg>; }
-function MailIcon() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5" /><path d="m3 7 9 6 9-6" /></svg>; }
 function UsersIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="8" r="3.2" /><path d="M3 20a6 6 0 0 1 12 0" /><path d="M16 5.5a3 3 0 0 1 0 5.8M21 20a6 6 0 0 0-4-5.6" /></svg>; }
 function EyeIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg>; }
 function HeartIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z" /></svg>; }
