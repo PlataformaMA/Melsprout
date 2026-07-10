@@ -14,11 +14,5 @@ export default async function PerfilPage() {
   if (!perfil) redirect("/onboarding");
   if (!perfil.onboarding_completo) redirect("/onboarding");
 
-  return (
-    <PerfilVista
-      perfil={perfil}
-      email={user.email ?? ""}
-      creadoEn={user.created_at ?? null}
-    />
-  );
+  return <PerfilVista perfil={perfil} creadoEn={user.created_at ?? null} />;
 }
