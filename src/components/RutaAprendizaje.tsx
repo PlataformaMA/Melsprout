@@ -8,8 +8,8 @@ import { ETAPA_1, type Clase, type ModuloCurso } from "@/lib/data";
 // ————— Geometría del camino serpenteante (S amplia y suave) —————
 // W debe COINCIDIR con el maxWidth del contenedor para que el SVG no se deforme.
 const W = 640;
-const CX = 292;                 // centro ligeramente a la izquierda (como el mockup)
-const AMP = 150;                // clases en ~22% y ~69%
+const CX = 310;                 // centro
+const AMP = 208;                // clases en ~16% (izq) y ~81% (der), como el mockup
 const SPACING = 158;            // separación vertical
 const TOP = 94;
 const FREQ = Math.PI / 2;       // período de 4 nodos → S regular y limpia
@@ -315,10 +315,10 @@ function DecorMar({ altura }: { altura: number }) {
   // Decoraciones SIEMPRE en las orillas (fuera del rango de los nodos, 24%–76%) y detrás de ellos.
   return (
     <div className="absolute inset-0 pointer-events-none z-[1]">
-      <div className="absolute mar-vaiven" style={{ left: "-1%", top: 165 }}><AlgaRoja /></div>
-      <div className="absolute mar-vaiven" style={{ left: "88%", top: 470, animationDelay: "1s" }}><CoralTurquesa /></div>
-      <div className="absolute mar-vaiven" style={{ left: "-1%", top: altura * 0.64, animationDelay: ".5s" }}><AlgaRoja /></div>
-      <div className="absolute mar-vaiven" style={{ left: "86%", top: altura * 0.83, animationDelay: "1.4s" }}><CoralTurquesa /></div>
+      <div className="absolute mar-vaiven" style={{ left: "-4%", top: 210 }}><AlgaRoja /></div>
+      <div className="absolute mar-vaiven" style={{ left: "91%", top: 520, animationDelay: "1s" }}><CoralTurquesa /></div>
+      <div className="absolute mar-vaiven" style={{ left: "-4%", top: altura * 0.64, animationDelay: ".5s" }}><AlgaRoja /></div>
+      <div className="absolute mar-vaiven" style={{ left: "90%", top: altura * 0.84, animationDelay: "1.4s" }}><CoralTurquesa /></div>
     </div>
   );
 }
