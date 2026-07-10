@@ -6,24 +6,26 @@ import { Octi } from "@/components/Octi";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ETAPA_1, type Clase, type ModuloCurso } from "@/lib/data";
 
-// ————— Geometría del camino serpenteante —————
-const W = 560;
+// ————— Geometría del camino serpenteante (S amplia y suave) —————
+const W = 600;
 const CX = W / 2;
-const AMP = 200;
-const SPACING = 116;
-const TOP = 70;
-const FREQ = 0.9;
-const PHASE = -0.6;
+const AMP = 150;      // vaivén horizontal (más chico = S más suave)
+const SPACING = 152;  // separación vertical (más grande = curvas más largas)
+const TOP = 82;
+const FREQ = 0.72;    // frecuencia baja = menos zig-zag, S más fluida
+const PHASE = -1.25;
 const serpX = (i: number) => CX + AMP * Math.sin(i * FREQ + PHASE);
 const pctX = (x: number) => `${(x / W) * 100}%`;
 
+// Curva suave tipo "spline" con tangentes horizontales en cada nodo (efecto serpiente fluida).
 function construirPath(pts: { x: number; y: number }[]): string {
-  if (!pts.length) return "";
+  if (pts.length < 2) return pts.length ? `M ${pts[0].x} ${pts[0].y}` : "";
   let d = `M ${pts[0].x} ${pts[0].y}`;
   for (let i = 1; i < pts.length; i++) {
     const p0 = pts[i - 1], p1 = pts[i];
-    const my = (p0.y + p1.y) / 2;
-    d += ` C ${p0.x} ${my}, ${p1.x} ${my}, ${p1.x} ${p1.y}`;
+    const dy = (p1.y - p0.y) * 0.5;
+    // control 1 sale de p0 hacia abajo, control 2 entra a p1 desde arriba → curva en S continua
+    d += ` C ${p0.x} ${p0.y + dy}, ${p1.x} ${p1.y - dy}, ${p1.x} ${p1.y}`;
   }
   return d;
 }
@@ -31,12 +33,15 @@ function construirPath(pts: { x: number; y: number }[]): string {
 const COMPLETADAS = 2; // clases completadas (demo hasta conectar el progreso real)
 
 type EClase = "completada" | "actual" | "bloqueada";
-type EReto = "completada" | "pendiente" | "bloqueada";
+type EReto = "completada" | "en-revision" | "rechazada" | "pendiente" | "bloqueada";
 type Elemento =
   | { tipo: "clase"; clase: Clase; estado: EClase }
   | { tipo: "reto"; clase: Clase; estado: EReto }
   | { tipo: "hito"; modulo: ModuloCurso; estado: "completada" | "bloqueada" }
   | { tipo: "gate"; modulo: ModuloCurso; estado: "desbloqueada" | "bloqueada" };
+
+// Estados de reto de demo (muestran todos los casos hasta conectar el progreso real).
+const RETO_DEMO: EReto[] = ["completada", "en-revision", "rechazada"];
 
 function construirElementos(): Elemento[] {
   const els: Elemento[] = [];
@@ -45,7 +50,7 @@ function construirElementos(): Elemento[] {
     const inicioModulo = gi;
     modulo.clases.forEach((clase) => {
       const ec: EClase = gi < COMPLETADAS ? "completada" : gi === COMPLETADAS ? "actual" : "bloqueada";
-      const er: EReto = gi < COMPLETADAS ? "completada" : gi === COMPLETADAS ? "pendiente" : "bloqueada";
+      const er: EReto = RETO_DEMO[gi] ?? (gi === COMPLETADAS ? "pendiente" : "bloqueada");
       els.push({ tipo: "clase", clase, estado: ec });
       els.push({ tipo: "reto", clase, estado: er });
       gi++;
@@ -203,16 +208,33 @@ function NodoElemento({ el }: { el: Elemento }) {
 
   if (el.tipo === "reto") {
     const base = "grid place-items-center rounded-full w-14 h-14 bg-white border-4 border-white";
+    const sombraOk = "0 5px 0 #EADFbf, 0 8px 12px rgba(0,0,0,.08)";
+    const sombraGris = "0 5px 0 #E7E4EC, 0 8px 12px rgba(0,0,0,.08)";
+
     if (el.estado === "completada")
-      return <div className={base} style={{ boxShadow: "0 5px 0 #EADFbf, 0 8px 12px rgba(0,0,0,.08)" }} title="Reto completado"><SparkleIcon color="#F5B301" /></div>;
+      return <div className={base} style={{ boxShadow: sombraOk }} title="Reto completado"><SparkleIcon color="#F5B301" /></div>;
+    if (el.estado === "en-revision")
+      return (
+        <div className="relative">
+          <div className={base} style={{ boxShadow: sombraGris }} title="Reto en revisión"><SparkleIcon color="#9AA0AD" /></div>
+          <EtiquetaReto texto="En revisión" clase="bg-accent-soft text-accent" />
+        </div>
+      );
+    if (el.estado === "rechazada")
+      return (
+        <div className="relative">
+          <div className={base} style={{ boxShadow: "0 5px 0 #F3C4C9, 0 8px 12px rgba(0,0,0,.08)" }} title="Reto rechazado"><SparkleIcon color="#EF4444" /></div>
+          <EtiquetaReto texto="✕ Rechazado" clase="bg-pink-soft text-pink" />
+        </div>
+      );
     if (el.estado === "pendiente")
       return (
         <div className="relative">
-          <div className={base} style={{ boxShadow: "0 5px 0 #E7E4EC, 0 8px 12px rgba(0,0,0,.08)" }} title="Reto pendiente"><SparkleIcon color="#9AA0AD" /></div>
+          <div className={base} style={{ boxShadow: sombraGris }} title="Reto pendiente"><SparkleIcon color="#9AA0AD" /></div>
           <div className="absolute -top-4 -right-5"><Burbujas /></div>
         </div>
       );
-    return <div className={base} style={{ boxShadow: "0 5px 0 #E7E4EC, 0 8px 12px rgba(0,0,0,.08)" }} title="Reto bloqueado"><SparkleIcon color="#C6CAD3" /></div>;
+    return <div className={base} style={{ boxShadow: sombraGris }} title="Reto bloqueado"><SparkleIcon color="#C6CAD3" /></div>;
   }
 
   if (el.tipo === "hito") {
@@ -221,6 +243,12 @@ function NodoElemento({ el }: { el: Elemento }) {
 
   // gate
   return <HieloNivel bloqueado={el.estado === "bloqueada"} />;
+}
+
+function EtiquetaReto({ texto, clase }: { texto: string; clase: string }) {
+  return (
+    <span className={`absolute left-1/2 -translate-x-1/2 top-[62px] whitespace-nowrap text-[11px] font-bold rounded-full px-3 py-1 shadow-sm ${clase}`}>{texto}</span>
+  );
 }
 
 // ————— Ilustraciones —————
