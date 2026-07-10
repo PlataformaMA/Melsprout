@@ -195,6 +195,25 @@ body {
   pointer-events: none;
 }
 
+/* Burbujas que flotan y palpitan (decoración de retos) */
+@keyframes burbujas-flota {
+  0% {
+    transform: translateY(5px) scale(0.96);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translateY(-7px) scale(1.04);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(5px) scale(0.96);
+    opacity: 0.45;
+  }
+}
+.burbujas-anim {
+  animation: burbujas-flota 3.2s ease-in-out infinite;
+}
+
 /* Vaivén suave (algas, peces) */
 @keyframes mar-vaiven {
   0%,
@@ -263,6 +282,7 @@ body {
   .octi-bounce,
   .onb-pop-in,
   .onb-blob,
+  .burbujas-anim,
   .ruta-pulse {
     animation: none;
   }

@@ -9,11 +9,11 @@ import { ETAPA_1, type Clase, type ModuloCurso } from "@/lib/data";
 // W debe COINCIDIR con el maxWidth del contenedor para que el SVG no se deforme.
 const W = 640;
 const CX = W / 2;
-const AMP = 172;      // vaivén horizontal (~27% → nodos entre 23% y 77%)
-const SPACING = 164;  // separación vertical (más aire para nodos grandes)
-const TOP = 92;
-const FREQ = 0.7;     // frecuencia baja = S fluida, sin zig-zag
-const PHASE = -1.35;  // el primer nodo arranca a la izquierda
+const AMP = 190;      // vaivén horizontal (S marcada, nodos entre ~20% y ~80%)
+const SPACING = 168;  // separación vertical (más aire para nodos grandes)
+const TOP = 96;
+const FREQ = 0.66;    // onda amplia y fluida
+const PHASE = -1.4;   // el primer nodo arranca a la izquierda
 const serpX = (i: number) => CX + AMP * Math.sin(i * FREQ + PHASE);
 const pctX = (x: number) => `${(x / W) * 100}%`;
 
@@ -67,8 +67,9 @@ export function RutaAprendizaje({
   nombre: string; avatarUrl: string | null; gemas: number; racha: number; perfilPct: number;
 }) {
   const elementos = construirElementos();
-  const pts = elementos.map((el, i) => ({
-    x: el.tipo === "hito" || el.tipo === "gate" ? CX : serpX(i),
+  // TODOS los nodos siguen la misma onda senoidal → serpentina continua y suave (sin codos).
+  const pts = elementos.map((_, i) => ({
+    x: serpX(i),
     y: TOP + i * SPACING,
   }));
   const altura = TOP + elementos.length * SPACING + 40;
@@ -141,7 +142,7 @@ export function RutaAprendizaje({
                 ))}
 
                 {/* Octi con burbuja junto a la clase actual */}
-                <div className="absolute z-10 hidden sm:block" style={{ left: "-3%", top: octiY - 34 }}>
+                <div className="absolute z-10 hidden sm:block" style={{ left: "-6%", top: octiY - 70 }}>
                   <OctiRuta nombre={nombre} />
                 </div>
               </div>
@@ -302,7 +303,7 @@ function CoralTurquesa() {
 }
 function Burbujas() {
   return (
-    <svg width="52" height="48" viewBox="0 0 62 58" fill="none">
+    <svg width="52" height="48" viewBox="0 0 62 58" fill="none" className="burbujas-anim">
       <circle cx="26" cy="34" r="12" stroke="#7DD3FC" strokeWidth="3" opacity="0.75" />
       <circle cx="46" cy="20" r="7" stroke="#7DD3FC" strokeWidth="2.6" opacity="0.65" />
       <circle cx="44" cy="42" r="4.5" stroke="#7DD3FC" strokeWidth="2.2" opacity="0.55" />
@@ -334,8 +335,8 @@ function OctiRuta({ nombre }: { nombre: string }) {
   return (
     <button onClick={() => setI((n) => (n + 1) % MENSAJES.length)} className="flex items-start gap-2 text-left hover:scale-[1.02] active:scale-95 transition" title="Tócame 🐙">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/octi.webp" alt="Octi" width={136} className="octi-float select-none shrink-0" draggable={false} />
-      <div key={i} className="octi-fade relative bg-white rounded-full shadow-lg flex items-center gap-2 pl-1.5 pr-3 py-1.5 mt-10 whitespace-nowrap">
+      <img src="/octi.webp" alt="Octi" width={210} className="octi-float select-none shrink-0" draggable={false} />
+      <div key={i} className="octi-fade relative bg-white rounded-full shadow-lg flex items-center gap-2 pl-1.5 pr-3 py-1.5 mt-14 whitespace-nowrap">
         <span className="w-6 h-6 rounded-full bg-amber-soft grid place-items-center text-[13px]">⭐</span>
         <span className="text-[12px] font-bold text-[#3C1A6B]">{MENSAJES[i]}</span>
         <span className="w-5 h-5 rounded-full bg-accent-soft grid place-items-center text-[10px]">💎</span>
