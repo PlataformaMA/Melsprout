@@ -35,6 +35,19 @@ export const PLATAFORMAS = [
 
 export const AUDIENCIAS = ["0–500", "500–5K", "5K–50K", "50K+"];
 
+// Bandera emoji por país (para el encabezado del perfil).
+export const PAIS_FLAG: Record<string, string> = {
+  "México": "🇲🇽", "Colombia": "🇨🇴", "Argentina": "🇦🇷", "Perú": "🇵🇪",
+  "Chile": "🇨🇱", "Ecuador": "🇪🇨", "Guatemala": "🇬🇹", "Venezuela": "🇻🇪",
+  "España": "🇪🇸", "Estados Unidos": "🇺🇸", "República Dominicana": "🇩🇴",
+  "Bolivia": "🇧🇴", "Honduras": "🇭🇳", "Paraguay": "🇵🇾", "El Salvador": "🇸🇻",
+  "Nicaragua": "🇳🇮", "Costa Rica": "🇨🇷", "Panamá": "🇵🇦", "Uruguay": "🇺🇾",
+  "Puerto Rico": "🇵🇷",
+};
+export function banderaPais(pais: string | null): string {
+  return (pais && PAIS_FLAG[pais]) || "🌎";
+}
+
 export function emojiNicho(nicho: string | null): string {
   return NICHOS.find((n) => n.id === nicho)?.emoji ?? "🎯";
 }
