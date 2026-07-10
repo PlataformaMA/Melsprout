@@ -7,11 +7,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export type Perfil = {
   id: string;
   full_name: string | null;
+  username: string | null;
   avatar_url: string | null;
   cover_url: string | null;
   headline: string | null;
   bio: string | null;
   ciudad: string | null;
+  estado: string | null;
   especialidades: string[];
   abierto_colab: boolean;
   pais: string | null;
@@ -242,11 +244,21 @@ export async function subirCover(dataUrl: string) {
   return subirImagen(dataUrl, "cover");
 }
 
+// Limpia el @usuario elegido: sin @, sin espacios, minúsculas, solo letras/números/._
+function limpiarUsuario(v?: string): string {
+  if (!v) return "";
+  return v.trim().replace(/^@+/, "").replace(/\s+/g, "").replace(/[^a-zA-Z0-9._]/g, "").slice(0, 30);
+}
+
 // Guardado incremental para el flujo de completar perfil.
 // Solo actualiza los campos enviados (uno o varios por paso).
 export async function guardarCampos(campos: {
+  username?: string;
+  fecha_nacimiento?: string;
   headline?: string;
   bio?: string;
+  pais?: string;
+  estado?: string;
   ciudad?: string;
   redes?: Record<string, string>;
 }): Promise<{ ok: true } | { error: string }> {
@@ -257,6 +269,14 @@ export async function guardarCampos(campos: {
   if (!user) return { error: "Inicia sesión de nuevo." };
 
   const update: Record<string, unknown> = {};
+  if (campos.username !== undefined)
+    update.username = limpiarUsuario(campos.username) || null;
+  if (campos.fecha_nacimiento !== undefined)
+    update.fecha_nacimiento = campos.fecha_nacimiento || null;
+  if (campos.pais !== undefined)
+    update.pais = campos.pais.trim().slice(0, 60) || null;
+  if (campos.estado !== undefined)
+    update.estado = campos.estado.trim().slice(0, 60) || null;
   if (campos.headline !== undefined)
     update.headline = campos.headline.trim().slice(0, 80) || null;
   if (campos.bio !== undefined)

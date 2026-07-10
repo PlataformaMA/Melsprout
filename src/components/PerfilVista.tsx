@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type Perfil, guardarNicho } from "@/lib/perfil-actions";
-import { NICHOS } from "@/lib/catalogos";
+import { NICHOS, banderaUrl } from "@/lib/catalogos";
 import { nivelPorXP, TOTAL_CLASES } from "@/lib/data";
 import { AvatarUploader } from "@/components/AvatarUploader";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -25,7 +25,8 @@ function mesAnio(iso: string | null): string {
   if (isNaN(dt.getTime())) return "Julio del 2026";
   return `${MESES[dt.getMonth()]} del ${dt.getFullYear()}`;
 }
-function handleDe(nombre: string | null): string {
+function handleDe(username: string | null, nombre: string | null): string {
+  if (username) return `@${username}`;
   const base = (nombre ?? "creador").trim().split(/\s+/)[0].toLowerCase().replace(/[^a-z0-9]/g, "");
   return `@${base || "creador"}`;
 }
@@ -97,13 +98,13 @@ export function PerfilVista({ perfil, creadoEn }: { perfil: Perfil; creadoEn: st
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <h1 className="font-display text-2xl font-extrabold leading-tight truncate">{perfil.full_name ?? "Creador"}</h1>
-                        <p className="text-sub text-sm">{handleDe(perfil.full_name)}</p>
+                        <p className="text-sub text-sm">{handleDe(perfil.username, perfil.full_name)}</p>
                         {edad
                           ? <p className="text-sub text-sm mt-0.5">{edad} Años</p>
                           : <Link href="/app/perfil/completar" className="text-accent text-sm mt-0.5 font-medium hover:underline inline-block">+ Agrega tu edad</Link>}
                       </div>
                       <div className="flex items-center gap-2 shrink-0 text-sub text-sm">
-                        <span className="truncate max-w-[110px]">{perfil.ciudad || perfil.pais || ""}</span>
+                        <span className="truncate max-w-[130px]">{perfil.ciudad || perfil.estado || perfil.pais || ""}</span>
                         <BanderaCirculo pais={perfil.pais} />
                       </div>
                     </div>
@@ -256,22 +257,14 @@ function NichoChip({ nicho }: { nicho: string | null }) {
 }
 
 // ————————————— Bandera circular (imagen real con escudo) —————————————
-const ISO_PAIS: Record<string, string> = {
-  "México": "mx", "Colombia": "co", "Argentina": "ar", "Perú": "pe", "Chile": "cl",
-  "Ecuador": "ec", "Guatemala": "gt", "Venezuela": "ve", "España": "es",
-  "Estados Unidos": "us", "República Dominicana": "do", "Bolivia": "bo",
-  "Honduras": "hn", "Paraguay": "py", "El Salvador": "sv", "Nicaragua": "ni",
-  "Costa Rica": "cr", "Panamá": "pa", "Uruguay": "uy", "Puerto Rico": "pr",
-};
-
 function BanderaCirculo({ pais }: { pais: string | null }) {
-  const code = pais ? ISO_PAIS[pais] : null;
-  if (!code) {
+  const url = banderaUrl(pais);
+  if (!url) {
     return <span className="w-6 h-6 rounded-full grid place-items-center text-[13px] bg-blue-soft text-blue border border-border shrink-0">🌎</span>;
   }
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={`https://flagcdn.com/w80/${code}.png`} alt={pais ?? "país"}
+    <img src={url} alt={pais ?? "país"}
       className="w-6 h-6 rounded-full object-cover ring-1 ring-black/10 shrink-0" />
   );
 }

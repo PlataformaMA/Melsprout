@@ -48,6 +48,19 @@ export function banderaPais(pais: string | null): string {
   return (pais && PAIS_FLAG[pais]) || "🌎";
 }
 
+// Código ISO por país → para imágenes de bandera reales (con escudo).
+export const ISO_PAIS: Record<string, string> = {
+  "México": "mx", "Colombia": "co", "Argentina": "ar", "Perú": "pe", "Chile": "cl",
+  "Ecuador": "ec", "Guatemala": "gt", "Venezuela": "ve", "España": "es",
+  "Estados Unidos": "us", "República Dominicana": "do", "Bolivia": "bo",
+  "Honduras": "hn", "Paraguay": "py", "El Salvador": "sv", "Nicaragua": "ni",
+  "Costa Rica": "cr", "Panamá": "pa", "Uruguay": "uy", "Puerto Rico": "pr",
+};
+export function banderaUrl(pais: string | null): string | null {
+  const c = pais ? ISO_PAIS[pais] : null;
+  return c ? `https://flagcdn.com/w80/${c}.png` : null;
+}
+
 export function emojiNicho(nicho: string | null): string {
   return NICHOS.find((n) => n.id === nicho)?.emoji ?? "🎯";
 }

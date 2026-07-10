@@ -6,25 +6,40 @@ import { Octi } from "@/components/Octi";
 import { AvatarUploader } from "@/components/AvatarUploader";
 import { CoverUploader } from "@/components/CoverUploader";
 import { guardarCampos, type Perfil } from "@/lib/perfil-actions";
+import { PAISES, banderaUrl } from "@/lib/catalogos";
+import { estadosDe } from "@/lib/estados";
+import { IconoRed, REDES_ESTILO } from "@/components/iconos-redes";
 
-const STEPS = ["foto", "portada", "headline", "bio", "ciudad", "redes", "conectar"] as const;
+const STEPS = ["foto", "portada", "usuario", "edad", "headline", "bio", "ubicacion", "redes", "conectar"] as const;
 type Step = (typeof STEPS)[number];
 
 const MENSAJES: Record<Step, string> = {
   foto: "¡Ponle cara a tu perfil! 📸 Una buena foto genera confianza.",
   portada: "Una portada le da personalidad a tu media kit. 🎨",
+  usuario: "Elige tu nombre de usuario. Así te verán en Melsprout. ✨",
+  edad: "¿Cuándo naciste? Nos ayuda a personalizar tu experiencia. 🎂",
   headline: "Tu headline dice quién eres en una frase. ✍️",
   bio: "Cuéntale al mundo tu historia. Las marcas leen esto. 💜",
-  ciudad: "¿De dónde creas? Conecta con tu audiencia local. 🌎",
+  ubicacion: "¿De dónde creas? Conecta con tu audiencia local. 🌎",
   redes: "Suma tus @ para que te encuentren en todos lados. 🌐",
   conectar: "¡Lo mejor! Conecta tus redes y muestra tus seguidores reales. 🚀",
 };
 
 const PLATAFORMAS = [
-  { key: "instagram", nombre: "Instagram", emoji: "📸", color: "#E1306C", connect: "/api/instagram/connect" },
-  { key: "tiktok", nombre: "TikTok", emoji: "🎵", color: "#111827", connect: "/api/tiktok/connect" },
-  { key: "youtube", nombre: "YouTube", emoji: "▶️", color: "#FF0000", connect: "/api/youtube/connect" },
+  { key: "instagram", connect: "/api/instagram/connect" },
+  { key: "tiktok", connect: "/api/tiktok/connect" },
+  { key: "youtube", connect: "/api/youtube/connect" },
 ] as const;
+
+function edadDe(fecha: string): number | null {
+  if (!fecha) return null;
+  const [y, m, d] = fecha.slice(0, 10).split("-").map(Number);
+  if (!y || !m || !d) return null;
+  const hoy = new Date();
+  let e = hoy.getFullYear() - y;
+  if (hoy.getMonth() + 1 < m || (hoy.getMonth() + 1 === m && hoy.getDate() < d)) e--;
+  return e > 0 && e < 120 ? e : null;
+}
 
 export function CompletarPerfil({
   perfil, pasoInicial, resultado, configurado,
@@ -39,8 +54,12 @@ export function CompletarPerfil({
   const inicial = pasoInicial ? STEPS.indexOf(pasoInicial as Step) : 0;
   const [idx, setIdx] = useState(inicial >= 0 ? inicial : 0);
 
+  const [username, setUsername] = useState(perfil.username ?? "");
+  const [fechaNac, setFechaNac] = useState(perfil.fecha_nacimiento?.slice(0, 10) ?? "");
   const [headline, setHeadline] = useState(perfil.headline ?? "");
   const [bio, setBio] = useState(perfil.bio ?? "");
+  const [pais, setPais] = useState(perfil.pais ?? "");
+  const [estado, setEstado] = useState(perfil.estado ?? "");
   const [ciudad, setCiudad] = useState(perfil.ciudad ?? "");
   const [insta, setInsta] = useState(perfil.redes?.instagram ?? "");
   const [tiktok, setTiktok] = useState(perfil.redes?.tiktok ?? "");
@@ -48,15 +67,18 @@ export function CompletarPerfil({
 
   const terminado = idx >= STEPS.length;
   const step = STEPS[idx];
+  const listaEstados = estadosDe(pais);
 
   function avanzar() {
     setIdx((n) => n + 1);
   }
   function continuar() {
     startTransition(async () => {
-      if (step === "headline") await guardarCampos({ headline });
+      if (step === "usuario") await guardarCampos({ username });
+      else if (step === "edad") await guardarCampos({ fecha_nacimiento: fechaNac });
+      else if (step === "headline") await guardarCampos({ headline });
       else if (step === "bio") await guardarCampos({ bio });
-      else if (step === "ciudad") await guardarCampos({ ciudad });
+      else if (step === "ubicacion") await guardarCampos({ pais, estado, ciudad });
       else if (step === "redes") await guardarCampos({ redes: { instagram: insta, tiktok, youtube } });
       avanzar();
     });
@@ -68,11 +90,8 @@ export function CompletarPerfil({
         <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
           <Octi size={170} celebrando conBurbuja={false} />
           <h1 className="font-display text-3xl font-extrabold mt-6">¡Perfil listo! 🎉</h1>
-          <p className="text-sub mt-2 max-w-sm">
-            Tu media kit se ve increíble. Las marcas ya te pueden conocer mejor.
-          </p>
-          <button
-            onClick={() => { router.replace("/app/perfil"); router.refresh(); }}
+          <p className="text-sub mt-2 max-w-sm">Tu media kit se ve increíble. Las marcas ya te pueden conocer mejor.</p>
+          <button onClick={() => { router.replace("/app/perfil"); router.refresh(); }}
             className="mt-8 bg-accent text-white font-bold rounded-2xl px-8 py-4 shadow-lg shadow-accent/30 hover:brightness-110 hover:scale-[1.03] active:scale-95 transition">
             Ver mi perfil →
           </button>
@@ -124,6 +143,27 @@ export function CompletarPerfil({
               </Bloque>
             )}
 
+            {step === "usuario" && (
+              <Bloque titulo="Elige tu nombre de usuario">
+                <div className="flex items-center gap-1 rounded-xl border-2 border-border bg-white px-3.5 focus-within:border-accent transition">
+                  <span className="text-sub text-lg font-bold">@</span>
+                  <input value={username} onChange={(e) => setUsername(e.target.value.replace(/\s/g, ""))} maxLength={30}
+                    placeholder="tu_usuario"
+                    className="flex-1 bg-transparent py-3 text-sm outline-none lowercase" />
+                </div>
+                <p className="text-[12px] text-hint mt-2">Solo letras, números, punto y guion bajo. Así te verán: <b className="text-accent">@{username || "tu_usuario"}</b></p>
+              </Bloque>
+            )}
+
+            {step === "edad" && (
+              <Bloque titulo="¿Cuál es tu fecha de nacimiento?">
+                <input type="date" value={fechaNac} onChange={(e) => setFechaNac(e.target.value)}
+                  max={new Date().toISOString().slice(0, 10)}
+                  className="w-full rounded-xl border-2 border-border bg-white px-3.5 py-3 text-sm outline-none focus:border-accent transition" />
+                {edadDe(fechaNac) && <p className="text-[12px] text-hint mt-2">Tienes <b className="text-accent">{edadDe(fechaNac)} años</b> 🎉</p>}
+              </Bloque>
+            )}
+
             {step === "headline" && (
               <Bloque titulo="¿Cuál es tu título?">
                 <input value={headline} onChange={(e) => setHeadline(e.target.value)} maxLength={80}
@@ -141,24 +181,66 @@ export function CompletarPerfil({
               </Bloque>
             )}
 
-            {step === "ciudad" && (
-              <Bloque titulo="¿De qué ciudad eres?">
-                <input value={ciudad} onChange={(e) => setCiudad(e.target.value)} maxLength={60}
-                  placeholder="Ej. Ciudad de México"
-                  className="w-full rounded-xl border-2 border-border bg-white px-3.5 py-3 text-sm outline-none focus:border-accent transition" />
+            {step === "ubicacion" && (
+              <Bloque titulo="¿De dónde eres?">
+                <div className="space-y-3">
+                  {/* País */}
+                  <div>
+                    <label className="text-[12px] font-semibold text-sub mb-1 block">País</label>
+                    <div className="flex items-center gap-2 rounded-xl border-2 border-border bg-white px-3 focus-within:border-accent transition">
+                      {banderaUrl(pais)
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img src={banderaUrl(pais)!} alt="" className="w-6 h-6 rounded-full object-cover ring-1 ring-black/10 shrink-0" />
+                        : <span className="text-lg">🌎</span>}
+                      <select value={pais} onChange={(e) => { setPais(e.target.value); setEstado(""); }}
+                        className="flex-1 bg-transparent py-3 text-sm outline-none">
+                        <option value="">Selecciona tu país</option>
+                        {PAISES.map((p) => <option key={p} value={p}>{p}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Estado / Provincia */}
+                  <div>
+                    <label className="text-[12px] font-semibold text-sub mb-1 block">Estado / Provincia</label>
+                    {listaEstados ? (
+                      <select value={estado} onChange={(e) => setEstado(e.target.value)}
+                        className="w-full rounded-xl border-2 border-border bg-white px-3.5 py-3 text-sm outline-none focus:border-accent transition">
+                        <option value="">Selecciona tu estado</option>
+                        {listaEstados.map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    ) : (
+                      <input value={estado} onChange={(e) => setEstado(e.target.value)} maxLength={60}
+                        placeholder={pais ? "Escribe tu estado o provincia" : "Primero elige tu país"}
+                        disabled={!pais}
+                        className="w-full rounded-xl border-2 border-border bg-white px-3.5 py-3 text-sm outline-none focus:border-accent transition disabled:opacity-60" />
+                    )}
+                  </div>
+
+                  {/* Ciudad */}
+                  <div>
+                    <label className="text-[12px] font-semibold text-sub mb-1 block">Ciudad</label>
+                    <input value={ciudad} onChange={(e) => setCiudad(e.target.value)} maxLength={60}
+                      placeholder="Ej. Monterrey"
+                      className="w-full rounded-xl border-2 border-border bg-white px-3.5 py-3 text-sm outline-none focus:border-accent transition" />
+                  </div>
+                </div>
               </Bloque>
             )}
 
             {step === "redes" && (
               <Bloque titulo="Tus redes sociales">
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   {[
-                    { emoji: "📸", ph: "usuario_ig", v: insta, set: setInsta },
-                    { emoji: "🎵", ph: "usuario_tiktok", v: tiktok, set: setTiktok },
-                    { emoji: "▶️", ph: "canal_youtube", v: youtube, set: setYoutube },
-                  ].map((r, i) => (
-                    <div key={i} className="flex items-center gap-2 rounded-xl border-2 border-border bg-white px-3 focus-within:border-accent transition">
-                      <span className="text-lg">{r.emoji}</span><span className="text-sub text-sm">@</span>
+                    { key: "instagram", ph: "usuario_ig", v: insta, set: setInsta },
+                    { key: "tiktok", ph: "usuario_tiktok", v: tiktok, set: setTiktok },
+                    { key: "youtube", ph: "canal_youtube", v: youtube, set: setYoutube },
+                  ].map((r) => (
+                    <div key={r.key} className="flex items-center gap-2.5 rounded-xl border-2 border-border bg-white px-3 focus-within:border-accent transition">
+                      <span className="w-8 h-8 rounded-lg grid place-items-center text-white shrink-0" style={{ background: REDES_ESTILO[r.key].bg }}>
+                        <IconoRed red={r.key} />
+                      </span>
+                      <span className="text-sub text-sm">@</span>
                       <input value={r.v} onChange={(e) => r.set(e.target.value)} placeholder={r.ph}
                         className="flex-1 bg-transparent py-3 text-sm outline-none" />
                     </div>
@@ -169,9 +251,7 @@ export function CompletarPerfil({
 
             {step === "conectar" && (
               <Bloque titulo="Conecta y trae tus métricas">
-                <p className="text-center text-sub text-[13px] mb-4">
-                  Conecta tus cuentas profesionales para mostrar tus seguidores reales. ✅
-                </p>
+                <p className="text-center text-sub text-[13px] mb-4">Conecta tus cuentas para mostrar tus seguidores reales. ✅</p>
                 <div className="space-y-3">
                   {PLATAFORMAS.map((p) => {
                     const metric = perfil.metricas?.[p.key];
@@ -179,11 +259,11 @@ export function CompletarPerfil({
                     const err = resultado === `${p.key}_err`;
                     return (
                       <div key={p.key} className="flex items-center gap-3 bg-bg rounded-2xl p-3.5">
-                        <div className="w-10 h-10 rounded-full grid place-items-center text-lg text-white" style={{ background: p.color }}>
-                          {p.emoji}
+                        <div className="w-10 h-10 rounded-full grid place-items-center text-white shrink-0" style={{ background: REDES_ESTILO[p.key].bg }}>
+                          <IconoRed red={p.key} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="font-bold text-sm text-text">{p.nombre}</div>
+                          <div className="font-bold text-sm text-text">{REDES_ESTILO[p.key].nombre}</div>
                           {metric?.username ? (
                             <div className="text-[12px] text-sub truncate">
                               @{metric.username}
@@ -198,9 +278,7 @@ export function CompletarPerfil({
                         {metric?.username ? (
                           <span className="text-green text-sm font-bold">✅</span>
                         ) : conf ? (
-                          <a href={p.connect}
-                            className="text-white text-[13px] font-bold rounded-xl px-3.5 py-2 hover:brightness-110 transition shrink-0"
-                            style={{ background: p.color }}>
+                          <a href={p.connect} className="text-white text-[13px] font-bold rounded-xl px-3.5 py-2 hover:brightness-110 transition shrink-0" style={{ background: REDES_ESTILO[p.key].bg }}>
                             Conectar
                           </a>
                         ) : (
@@ -216,10 +294,7 @@ export function CompletarPerfil({
         </div>
 
         <div className="mt-6 flex items-center gap-3">
-          <button onClick={avanzar} disabled={pendiente}
-            className="text-sm font-semibold text-sub hover:text-text px-5 py-3.5">
-            Saltar
-          </button>
+          <button onClick={avanzar} disabled={pendiente} className="text-sm font-semibold text-sub hover:text-text px-5 py-3.5">Saltar</button>
           <button
             onClick={step === "foto" || step === "portada" || step === "conectar" ? avanzar : continuar}
             disabled={pendiente}
