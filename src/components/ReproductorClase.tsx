@@ -1,12 +1,16 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
-import { ETAPA_1, type Clase, type ModuloCurso } from "@/lib/data";
+import { type Clase, type ModuloCurso } from "@/lib/data";
 
 function titleCase(s: string): string {
   return s.split(" ").map((w) => (w.length > 2 ? w[0].toUpperCase() + w.slice(1) : w)).join(" ");
+}
+function fmtTiempo(seg: number): string {
+  const m = Math.floor(seg / 60), s = Math.round(seg % 60);
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
 
 export function ReproductorClase({
@@ -15,6 +19,8 @@ export function ReproductorClase({
   clase: Clase; modulo: ModuloCurso; avatarUrl: string | null; nombre: string; gemas: number; racha: number;
 }) {
   const [reproduciendo, setReproduciendo] = useState(false);
+  const [progreso, setProgreso] = useState(0); // 0–100 del video
+  const [terminado, setTerminado] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const idx = modulo.clases.findIndex((c) => c.id === clase.id);
@@ -22,9 +28,32 @@ export function ReproductorClase({
   const total = modulo.clases.length;
   const posicion = idx + 1;
 
-  // Próximos módulos (para "avanzar de curso")
-  const miModulo = ETAPA_1.indexOf(modulo);
-  const proximos = ETAPA_1.slice(miModulo + 1);
+  const totalSeg = clase.duracionMin * 60;
+  const curSeg = (progreso / 100) * totalSeg;
+
+  // Avance del video (simulado hasta conectar el video real).
+  useEffect(() => {
+    if (!reproduciendo || terminado) return;
+    const t = setInterval(() => {
+      setProgreso((p) => {
+        const n = p + 1.5;
+        if (n >= 100) { setReproduciendo(false); setTerminado(true); return 100; }
+        return n;
+      });
+    }, 200);
+    return () => clearInterval(t);
+  }, [reproduciendo, terminado]);
+
+  function togglePlay() {
+    if (terminado) { setTerminado(false); setProgreso(0); setReproduciendo(true); return; }
+    setReproduciendo((v) => !v);
+  }
+  function seek(e: React.MouseEvent<HTMLDivElement>) {
+    const r = e.currentTarget.getBoundingClientRect();
+    const f = Math.min(100, Math.max(0, ((e.clientX - r.left) / r.width) * 100));
+    setProgreso(f);
+    if (f >= 99) { setTerminado(true); setReproduciendo(false); } else setTerminado(false);
+  }
 
   return (
     <div className="min-h-screen bg-bg flex">
@@ -66,7 +95,7 @@ export function ReproductorClase({
                 </div>
 
                 {/* Botón grande play/pausa central */}
-                <button onClick={() => setReproduciendo((v) => !v)}
+                <button onClick={togglePlay}
                   className="absolute inset-0 grid place-items-center group" aria-label={reproduciendo ? "Pausar" : "Reproducir"}>
                   <span className="w-16 h-16 rounded-full bg-black/35 group-hover:bg-black/50 backdrop-blur grid place-items-center text-white transition">
                     {reproduciendo ? <PauseIcon big /> : <PlayIcon big />}
@@ -75,16 +104,16 @@ export function ReproductorClase({
 
                 {/* Barra de controles */}
                 <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/55 to-transparent">
-                  <div className="h-1.5 rounded-full bg-white/30 mb-3">
-                    <div className="h-full w-[42%] rounded-full bg-white relative">
+                  <div className="h-1.5 rounded-full bg-white/30 mb-3 cursor-pointer" onClick={seek}>
+                    <div className="h-full rounded-full bg-white relative" style={{ width: `${progreso}%` }}>
                       <span className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white" />
                     </div>
                   </div>
                   <div className="flex items-center gap-4 text-white">
-                    <button onClick={() => setReproduciendo((v) => !v)}>{reproduciendo ? <PauseIcon /> : <PlayIcon />}</button>
+                    <button onClick={togglePlay}>{reproduciendo ? <PauseIcon /> : <PlayIcon />}</button>
                     <button><PrevIcon /></button>
                     <button><NextIcon /></button>
-                    <span className="text-[12px] ml-1">47:38 / 1:52:32</span>
+                    <span className="text-[12px] ml-1">{fmtTiempo(curSeg)} / {fmtTiempo(totalSeg)}</span>
                     <div className="ml-auto flex items-center gap-4">
                       <button aria-label="Volumen"><VolIcon /></button>
                       <button aria-label="Chat"><ChatIcon /></button>
@@ -107,14 +136,20 @@ export function ReproductorClase({
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  {siguiente && (
-                    <Link href={`/app/clase/${siguiente.id}`} className="flex items-center gap-2 border border-border rounded-xl px-4 py-2.5 font-bold text-sm text-sub hover:bg-surface transition">
-                      Siguiente <NextIcon small />
-                    </Link>
+                  {!terminado ? (
+                    <span className="text-[12px] text-hint">Termina el video para avanzar a la siguiente clase</span>
+                  ) : (
+                    <>
+                      <Link href="/app/ruta" className="flex items-center gap-2 bg-accent text-white font-bold text-sm rounded-xl px-5 py-2.5 hover:brightness-110 transition shadow-sm shadow-accent/30">
+                        <SparkleMini /> Continuar al reto
+                      </Link>
+                      {siguiente && (
+                        <Link href={`/app/clase/${siguiente.id}`} className="flex items-center gap-2 border border-border rounded-xl px-4 py-2.5 font-bold text-sm text-sub hover:bg-surface transition">
+                          Siguiente clase <NextIcon small />
+                        </Link>
+                      )}
+                    </>
                   )}
-                  <Link href="/app/ruta" className="flex items-center gap-2 bg-accent text-white font-bold text-sm rounded-xl px-5 py-2.5 hover:brightness-110 transition shadow-sm shadow-accent/30">
-                    <SparkleMini /> Continuar al reto
-                  </Link>
                 </div>
               </div>
 
@@ -124,25 +159,6 @@ export function ReproductorClase({
                 <p className="text-sub text-sm">{clase.reto}</p>
               </section>
 
-              {/* Avanzar de curso — próximos módulos */}
-              {proximos.length > 0 && (
-                <section className="mt-6">
-                  <h3 className="font-display text-lg font-extrabold mb-3">Avanza de curso</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {proximos.map((m) => (
-                      <Link key={m.id} href={`/app/clase/${m.clases[0].id}`}
-                        className="flex items-center gap-3 bg-surface border border-border rounded-2xl p-3.5 shadow-sm hover:scale-[1.01] transition">
-                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-accent to-[#60A5FA] grid place-items-center text-2xl shrink-0">🎬</div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-bold text-sm leading-tight">{titleCase(m.nombre)}</div>
-                          <div className="text-[12px] text-sub">{m.clases.length} clases · {m.descripcion}</div>
-                        </div>
-                        <span className="text-accent">›</span>
-                      </Link>
-                    ))}
-                  </div>
-                </section>
-              )}
             </div>
 
             {/* ——— Columna derecha ——— */}

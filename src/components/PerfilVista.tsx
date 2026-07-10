@@ -254,44 +254,24 @@ function NichoChip({ nicho }: { nicho: string | null }) {
   );
 }
 
-// ————————————— Bandera circular —————————————
-type FlagDef = { dir: "v" | "h"; bands: [string, number][] };
-const FLAGS: Record<string, FlagDef> = {
-  "México": { dir: "v", bands: [["#006847", 1], ["#ffffff", 1], ["#CE1126", 1]] },
-  "Colombia": { dir: "h", bands: [["#FCD116", 2], ["#003893", 1], ["#CE1126", 1]] },
-  "Argentina": { dir: "h", bands: [["#74ACDF", 1], ["#ffffff", 1], ["#74ACDF", 1]] },
-  "Perú": { dir: "v", bands: [["#D91023", 1], ["#ffffff", 1], ["#D91023", 1]] },
-  "Venezuela": { dir: "h", bands: [["#FFCC00", 1], ["#00247D", 1], ["#CF142B", 1]] },
-  "España": { dir: "h", bands: [["#AA151B", 1], ["#F1BF00", 2], ["#AA151B", 1]] },
-  "Ecuador": { dir: "h", bands: [["#FFDD00", 2], ["#034EA2", 1], ["#ED1C24", 1]] },
-  "Chile": { dir: "h", bands: [["#ffffff", 1], ["#D52B1E", 1]] },
-  "Guatemala": { dir: "v", bands: [["#4997D0", 1], ["#ffffff", 1], ["#4997D0", 1]] },
-  "Costa Rica": { dir: "h", bands: [["#002B7F", 1], ["#ffffff", 1], ["#CE1126", 2], ["#ffffff", 1], ["#002B7F", 1]] },
+// ————————————— Bandera circular (imagen real con escudo) —————————————
+const ISO_PAIS: Record<string, string> = {
+  "México": "mx", "Colombia": "co", "Argentina": "ar", "Perú": "pe", "Chile": "cl",
+  "Ecuador": "ec", "Guatemala": "gt", "Venezuela": "ve", "España": "es",
+  "Estados Unidos": "us", "República Dominicana": "do", "Bolivia": "bo",
+  "Honduras": "hn", "Paraguay": "py", "El Salvador": "sv", "Nicaragua": "ni",
+  "Costa Rica": "cr", "Panamá": "pa", "Uruguay": "uy", "Puerto Rico": "pr",
 };
 
 function BanderaCirculo({ pais }: { pais: string | null }) {
-  const def = pais ? FLAGS[pais] : null;
-  if (!def) {
-    return (
-      <span className="w-6 h-6 rounded-full grid place-items-center text-[13px] bg-blue-soft text-blue border border-border shrink-0">🌎</span>
-    );
+  const code = pais ? ISO_PAIS[pais] : null;
+  if (!code) {
+    return <span className="w-6 h-6 rounded-full grid place-items-center text-[13px] bg-blue-soft text-blue border border-border shrink-0">🌎</span>;
   }
-  const total = def.bands.reduce((s, b) => s + b[1], 0);
-  const prefijos = def.bands.reduce<number[]>((arr, b, i) => [...arr, (arr[i] ?? 0) + b[1]], [0]);
-  const rects = def.bands.map(([color, w], i) => {
-    const start = (prefijos[i] / total) * 36;
-    const size = (w / total) * 36;
-    return def.dir === "v"
-      ? <rect key={i} x={start} y={0} width={size} height={36} fill={color} />
-      : <rect key={i} x={0} y={start} width={36} height={size} fill={color} />;
-  });
   return (
-    <span className="shrink-0" style={{ lineHeight: 0 }}>
-      <svg width="24" height="24" viewBox="0 0 36 36" className="rounded-full ring-1 ring-black/10">
-        <defs><clipPath id={`fc-${pais}`}><circle cx="18" cy="18" r="18" /></clipPath></defs>
-        <g clipPath={`url(#fc-${pais})`}>{rects}</g>
-      </svg>
-    </span>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={`https://flagcdn.com/w80/${code}.png`} alt={pais ?? "país"}
+      className="w-6 h-6 rounded-full object-cover ring-1 ring-black/10 shrink-0" />
   );
 }
 
