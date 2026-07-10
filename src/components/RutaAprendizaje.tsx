@@ -80,8 +80,11 @@ export function RutaAprendizaje({
     ? ETAPA_1.find((m) => m.clases.includes((elementos[idxActual] as { clase: Clase }).clase))
     : ETAPA_1[0];
 
-  // Octi junto a la clase actual
-  const octiY = idxActual >= 0 ? pts[idxActual].y : TOP + 3 * SPACING;
+  // Octi va a la izquierda: lo anclamos a la altura de un nodo del CENTRO/derecha
+  // (nunca a la altura de un nodo del extremo izquierdo, para que no se encime).
+  let octiAncla = idxActual >= 0 ? idxActual : 3;
+  if (serpX(octiAncla) < W * 0.45) octiAncla = Math.max(1, octiAncla - 1);
+  const octiY = pts[octiAncla].y;
 
   return (
     <div className="min-h-screen bg-bg flex">
@@ -141,8 +144,8 @@ export function RutaAprendizaje({
                   </div>
                 ))}
 
-                {/* Octi con burbuja (arriba) junto a la clase actual */}
-                <div className="absolute z-10 hidden lg:block" style={{ left: "-11%", top: octiY - 140 }}>
+                {/* Octi con burbuja (arriba) a la izquierda, a la altura de un nodo del centro */}
+                <div className="absolute z-10 hidden lg:block" style={{ left: "-13%", top: octiY - 120 }}>
                   <OctiRuta nombre={nombre} />
                 </div>
               </div>
