@@ -8,12 +8,12 @@ import { ETAPA_1, type Clase, type ModuloCurso } from "@/lib/data";
 // ————— Geometría del camino serpenteante (S amplia y suave) —————
 // W debe COINCIDIR con el maxWidth del contenedor para que el SVG no se deforme.
 const W = 640;
-const CX = W / 2;
-const AMP = 190;      // vaivén horizontal (S marcada, nodos entre ~20% y ~80%)
-const SPACING = 168;  // separación vertical (más aire para nodos grandes)
-const TOP = 96;
-const FREQ = 0.66;    // onda amplia y fluida
-const PHASE = -1.4;   // el primer nodo arranca a la izquierda
+const CX = 292;                 // centro ligeramente a la izquierda (como el mockup)
+const AMP = 150;                // clases en ~22% y ~69%
+const SPACING = 158;            // separación vertical
+const TOP = 94;
+const FREQ = Math.PI / 2;       // período de 4 nodos → S regular y limpia
+const PHASE = -Math.PI / 2;     // el primer nodo arranca a la izquierda (valle)
 const serpX = (i: number) => CX + AMP * Math.sin(i * FREQ + PHASE);
 const pctX = (x: number) => `${(x / W) * 100}%`;
 

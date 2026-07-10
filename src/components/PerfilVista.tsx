@@ -113,13 +113,13 @@ export function PerfilVista({ perfil, creadoEn }: { perfil: Perfil; creadoEn: st
                   </div>
                 </div>
 
-                {/* Barra de XP con Octi */}
+                {/* Barra de XP con Octi montado encima */}
                 <div className="relative mt-5 flex items-center gap-4">
-                  <div className="relative flex-1 h-3.5 rounded-full bg-[#E7E3F3]">
-                    <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#8B5CF6] to-accent" style={{ width: `${xpPct}%` }} />
-                    <div className="absolute top-1/2 -translate-y-1/2" style={{ left: `calc(${xpPct}% - 18px)` }}>
+                  <div className="relative flex-1 h-3 rounded-full bg-[#E7E3F3]">
+                    <div className="absolute inset-y-0 left-0 rounded-full bg-accent" style={{ width: `${xpPct}%` }} />
+                    <div className="absolute z-10" style={{ left: `calc(${xpPct}% - 22px)`, top: "50%", transform: "translateY(-60%)" }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/octi.webp" alt="Octi" width={36} className="select-none drop-shadow-sm" draggable={false} />
+                      <img src="/octi.webp" alt="Octi" width={44} className="select-none drop-shadow-[0_3px_4px_rgba(124,58,237,0.25)]" draggable={false} />
                     </div>
                   </div>
                   <span className="text-[13px] text-sub shrink-0">
