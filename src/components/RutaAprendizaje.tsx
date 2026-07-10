@@ -6,11 +6,12 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { ETAPA_1, type Clase, type ModuloCurso } from "@/lib/data";
 
 // ————— Geometría del camino serpenteante (S amplia y suave) —————
-const W = 600;
+// W debe COINCIDIR con el maxWidth del contenedor para que el SVG no se deforme.
+const W = 640;
 const CX = W / 2;
-const AMP = 158;      // vaivén horizontal
-const SPACING = 150;  // separación vertical
-const TOP = 82;
+const AMP = 172;      // vaivén horizontal (~27% → nodos entre 23% y 77%)
+const SPACING = 152;  // separación vertical
+const TOP = 84;
 const FREQ = 0.7;     // frecuencia baja = S fluida, sin zig-zag
 const PHASE = -1.35;  // el primer nodo arranca a la izquierda
 const serpX = (i: number) => CX + AMP * Math.sin(i * FREQ + PHASE);
@@ -122,7 +123,7 @@ export function RutaAprendizaje({
               {/* Camino */}
               <div className="relative mx-auto w-full" style={{ maxWidth: 640, height: altura }}>
                 <svg viewBox={`0 0 ${W} ${altura}`} className="absolute inset-0 w-full h-full" fill="none" preserveAspectRatio="none">
-                  <path d={construirPath(pts)} stroke="#C7BEF5" strokeWidth="7" strokeLinecap="round" strokeDasharray="1 20" vectorEffect="non-scaling-stroke" />
+                  <path d={construirPath(pts)} stroke="#C9BCF0" strokeWidth="6" strokeLinecap="round" strokeDasharray="11 16" vectorEffect="non-scaling-stroke" />
                 </svg>
 
                 <DecorMar altura={altura} />
@@ -214,6 +215,7 @@ function NodoElemento({ el }: { el: Elemento }) {
     if (el.estado === "en-revision")
       return (
         <div className="relative">
+          <div className="absolute -top-5 -right-6"><Burbujas /></div>
           <div className={base} style={{ boxShadow: sombraGris }} title="Reto en revisión"><SparkleIcon color="#9AA0AD" /></div>
           <EtiquetaReto texto="En revisión" clase="bg-accent-soft text-accent" />
         </div>
@@ -352,14 +354,35 @@ function Tarjeta({ titulo, children, extra }: { titulo: string; children: React.
 function Desafio({ icon, texto, progreso, total }: { icon: React.ReactNode; texto: string; progreso: number; total: number }) {
   return (
     <div className="flex items-center gap-2.5">
-      <div className="w-8 h-8 rounded-lg bg-amber-soft grid place-items-center text-sm shrink-0">{icon}</div>
+      <div className="text-xl w-7 grid place-items-center shrink-0">{icon}</div>
       <div className="flex-1 min-w-0">
-        <div className="text-[12px] font-semibold text-text leading-tight">{texto}</div>
-        <div className="h-1.5 rounded-full bg-bg overflow-hidden mt-1"><div className="h-full bg-amber rounded-full" style={{ width: `${(progreso / total) * 100}%` }} /></div>
-        <div className="text-[10px] text-hint mt-0.5">{progreso} / {total}</div>
+        <div className="text-[12px] font-bold text-text leading-tight">{texto}</div>
+        <div className="flex items-center gap-2 mt-1">
+          <div className="flex-1 h-2 rounded-full bg-bg overflow-hidden"><div className="h-full bg-amber rounded-full" style={{ width: `${(progreso / total) * 100}%` }} /></div>
+          <span className="text-[10px] text-hint shrink-0">{progreso} / {total}</span>
+        </div>
       </div>
-      <span className="text-lg shrink-0">🎁</span>
+      <ChestIcon />
     </div>
+  );
+}
+
+function ChestIcon() {
+  return (
+    <svg width="30" height="27" viewBox="0 0 30 27" fill="none" className="shrink-0">
+      {/* cuerpo */}
+      <rect x="4" y="13" width="22" height="11" rx="1.5" fill="#D9822B" />
+      {/* tapa */}
+      <path d="M4 14 Q15 6 26 14 L26 14 L4 14 Z" fill="#E89A45" />
+      <path d="M4 13.5 Q15 5.5 26 13.5 L26 15.5 Q15 8 4 15.5 Z" fill="#B45C1E" />
+      {/* banda central */}
+      <rect x="13" y="8" width="4" height="16" fill="#8A4418" />
+      {/* cerradura */}
+      <rect x="12.5" y="14" width="5" height="6" rx="1" fill="#F6C948" />
+      <circle cx="15" cy="17" r="1.3" fill="#8A4418" />
+      {/* base */}
+      <rect x="3" y="23" width="24" height="3" rx="1" fill="#8A4418" />
+    </svg>
   );
 }
 function Recurso({ icon, titulo, sub }: { icon: React.ReactNode; titulo: string; sub: string }) {
