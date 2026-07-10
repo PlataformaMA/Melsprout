@@ -1,4 +1,5 @@
 import "server-only";
+import { siteBase } from "@/lib/site-url";
 
 // TikTok Login Kit + Display API (follower_count).
 const CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY || "";
@@ -6,8 +7,7 @@ const CLIENT_SECRET = process.env.TIKTOK_CLIENT_SECRET || "";
 export const TIKTOK_CONFIGURADO = !!CLIENT_KEY && !!CLIENT_SECRET;
 
 function redirectUri(origin: string): string {
-  const base = (process.env.NEXT_PUBLIC_SITE_URL || origin).replace(/\/$/, "");
-  return `${base}/api/tiktok/callback`;
+  return `${siteBase(origin)}/api/tiktok/callback`;
 }
 
 export function buildAuthUrl(origin: string, state: string): string {

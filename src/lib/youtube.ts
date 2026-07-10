@@ -1,4 +1,5 @@
 import "server-only";
+import { siteBase } from "@/lib/site-url";
 
 // YouTube: OAuth de Google + YouTube Data API v3 (subscriberCount).
 const CLIENT_ID = process.env.YOUTUBE_CLIENT_ID || "";
@@ -6,8 +7,7 @@ const CLIENT_SECRET = process.env.YOUTUBE_CLIENT_SECRET || "";
 export const YOUTUBE_CONFIGURADO = !!CLIENT_ID && !!CLIENT_SECRET;
 
 function redirectUri(origin: string): string {
-  const base = (process.env.NEXT_PUBLIC_SITE_URL || origin).replace(/\/$/, "");
-  return `${base}/api/youtube/callback`;
+  return `${siteBase(origin)}/api/youtube/callback`;
 }
 
 export function buildAuthUrl(origin: string, state: string): string {

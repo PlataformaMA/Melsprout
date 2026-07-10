@@ -1,4 +1,5 @@
 import "server-only";
+import { siteBase } from "@/lib/site-url";
 
 // Integración con "Instagram API con Instagram Login" (cuentas profesionales).
 // Requiere INSTAGRAM_APP_ID e INSTAGRAM_APP_SECRET (solo servidor).
@@ -8,8 +9,7 @@ const IG_APP_SECRET = process.env.INSTAGRAM_APP_SECRET || "";
 export const INSTAGRAM_CONFIGURADO = !!IG_APP_ID && !!IG_APP_SECRET;
 
 function redirectUri(origin: string): string {
-  const base = (process.env.NEXT_PUBLIC_SITE_URL || origin).replace(/\/$/, "");
-  return `${base}/api/instagram/callback`;
+  return `${siteBase(origin)}/api/instagram/callback`;
 }
 
 export function buildAuthUrl(origin: string, state: string): string {
