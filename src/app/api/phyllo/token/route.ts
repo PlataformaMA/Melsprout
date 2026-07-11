@@ -4,6 +4,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { crearUsuario, crearSdkToken, PHYLLO_ENV, PHYLLO_CONFIGURADO } from "@/lib/phyllo";
 
 // Prepara el usuario Phyllo y devuelve el token para el Connect SDK.
+// GET existe solo para poder probar en el navegador; POST es el real.
+export async function GET() {
+  return POST();
+}
+
 export async function POST() {
   try {
     if (!PHYLLO_CONFIGURADO)
