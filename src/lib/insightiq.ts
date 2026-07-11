@@ -117,7 +117,16 @@ export async function desconectarCuenta(accountId: string): Promise<boolean> {
 export async function crearSdkToken(userId: string): Promise<string | null> {
   const r = await api<{ sdk_token: string }>("/v1/sdk-tokens", {
     method: "POST",
-    body: { user_id: userId, products: ["IDENTITY", "ENGAGEMENT"] },
+    body: {
+      user_id: userId,
+      // IDENTITY.AUDIENCE + ENGAGEMENT.AUDIENCE habilitan la demografía de audiencia.
+      products: [
+        "IDENTITY",
+        "IDENTITY.AUDIENCE",
+        "ENGAGEMENT",
+        "ENGAGEMENT.AUDIENCE",
+      ],
+    },
   });
   return r?.sdk_token ?? null;
 }
