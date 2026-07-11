@@ -5,7 +5,7 @@ import "server-only";
 
 const CLIENT_ID = process.env.PHYLLO_CLIENT_ID || "";
 const CLIENT_SECRET = process.env.PHYLLO_CLIENT_SECRET || "";
-export const PHYLLO_ENV = (process.env.PHYLLO_ENV || "sandbox").toLowerCase();
+export const PHYLLO_ENV = (process.env.PHYLLO_ENV || "sandbox").trim().toLowerCase();
 export const PHYLLO_CONFIGURADO = !!CLIENT_ID && !!CLIENT_SECRET;
 
 const BASE_URLS: Record<string, string> = {
