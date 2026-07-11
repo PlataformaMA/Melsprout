@@ -10,7 +10,7 @@ const ITEMS: Item[] = [
   { id: "clases", label: "Todas las clases", href: "/app/ruta", icon: <MapIcon /> },
   { id: "vivo", label: "Clases en vivo", href: "/app/ruta", icon: <LiveIcon /> },
   { id: "comunidad", label: "Comunidad", href: "/app/ruta", icon: <PeopleIcon /> },
-  { id: "retos", label: "Retos", href: "/app/ruta", icon: <TrophyIcon /> },
+  { id: "retos", label: "Retos", href: "/app/retos", icon: <TrophyIcon /> },
   { id: "perfil", label: "Mi perfil", href: "/app/perfil", icon: <UserIcon /> },
 ];
 
