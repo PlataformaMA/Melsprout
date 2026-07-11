@@ -174,7 +174,16 @@ export function PerfilVista({ perfil, creadoEn, insightiq }: { perfil: Perfil; c
                           <div className="text-[13px] text-sub truncate">{handle ? `@${handle}` : "Sin conectar"}</div>
                         </div>
                         {handle ? (
-                          <span className="w-6 h-6 rounded-full bg-green text-white grid place-items-center text-[12px] shrink-0">✓</span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="w-6 h-6 rounded-full bg-green text-white grid place-items-center text-[12px]">✓</span>
+                            <a
+                              href={`/api/insightiq/disconnect?provider=${r.key}`}
+                              onClick={(e) => { if (!confirm(`¿Desconectar ${r.nombre}? Dejarás de ver sus métricas.`)) e.preventDefault(); }}
+                              className="text-[11px] font-semibold text-sub hover:text-red-500 transition"
+                            >
+                              Desconectar
+                            </a>
+                          </div>
                         ) : disponible ? (
                           <button
                             type="button"

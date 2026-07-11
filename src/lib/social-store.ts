@@ -38,6 +38,25 @@ export async function guardarMetricasInsightIQ(
     .eq("id", userId);
 }
 
+// Quita una red del perfil (al desconectar la cuenta).
+export async function eliminarRedInsightIQ(userId: string, provider: string) {
+  const admin = createAdminClient();
+  const { data: p } = await admin
+    .from("profiles")
+    .select("metricas, redes")
+    .eq("id", userId)
+    .single();
+
+  const metricas = { ...(p?.metricas || {}) };
+  const redesMap = { ...(p?.redes || {}) };
+  delete metricas[provider];
+  delete redesMap[provider];
+  await admin
+    .from("profiles")
+    .update({ metricas, redes: redesMap })
+    .eq("id", userId);
+}
+
 // Guarda (de forma segura) el token y las métricas de una red conectada.
 export async function guardarConexion(
   userId: string,

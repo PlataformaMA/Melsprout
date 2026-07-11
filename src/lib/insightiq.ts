@@ -90,6 +90,30 @@ export async function crearUsuario(
   return lista?.data?.[0]?.id ?? null;
 }
 
+// Cuentas conectadas (id de cuenta + red) para poder desconectarlas.
+type IqAccount = { id: string; work_platform?: { id?: string }; status?: string };
+export async function obtenerCuentas(
+  userId: string
+): Promise<{ accountId: string; provider: string }[]> {
+  const r = await api<{ data: IqAccount[] }>(
+    `/v1/accounts?user_id=${encodeURIComponent(userId)}&limit=50`
+  );
+  const out: { accountId: string; provider: string }[] = [];
+  for (const a of r?.data ?? []) {
+    const provider = providerDeWorkPlatform(a.work_platform?.id || "");
+    if (provider && a.id) out.push({ accountId: a.id, provider });
+  }
+  return out;
+}
+
+// Desconecta una cuenta en InsightIQ (deja de sincronizar/leer sus datos).
+export async function desconectarCuenta(accountId: string): Promise<boolean> {
+  const r = await api<unknown>(`/v1/accounts/${accountId}/disconnect`, {
+    method: "POST",
+  });
+  return r !== null;
+}
+
 export async function crearSdkToken(userId: string): Promise<string | null> {
   const r = await api<{ sdk_token: string }>("/v1/sdk-tokens", {
     method: "POST",
