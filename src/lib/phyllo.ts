@@ -23,6 +23,8 @@ function authHeader(): string {
 }
 
 async function phylloFetch<T>(path: string, init?: RequestInit): Promise<T | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000); // no colgar > 8s
   try {
     const r = await fetch(`${phylloBaseUrl()}${path}`, {
       ...init,
@@ -33,6 +35,7 @@ async function phylloFetch<T>(path: string, init?: RequestInit): Promise<T | nul
         ...(init?.headers || {}),
       },
       cache: "no-store",
+      signal: controller.signal,
     });
     if (!r.ok) {
       // Log server-side para depurar en sandbox.
@@ -43,6 +46,8 @@ async function phylloFetch<T>(path: string, init?: RequestInit): Promise<T | nul
   } catch (e) {
     console.error("Phyllo fetch fail", path, e);
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
