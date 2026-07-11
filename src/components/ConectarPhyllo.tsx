@@ -47,11 +47,12 @@ export function ConectarPhyllo({
       }
       alert("PASO 2: token OK (env=" + t.environment + "). Cargando SDK…");
       await cargarScript();
-      const ok = !!window.PhylloConnect && typeof window.PhylloConnect.initialize === "function";
+      const PC = window.PhylloConnect;
+      const ok = !!PC && typeof PC.initialize === "function";
       alert("PASO 3: SDK cargado = " + ok + ". Abriendo Phyllo…");
-      if (!ok) throw new Error("SDK no disponible");
+      if (!PC || !ok) throw new Error("SDK no disponible");
 
-      window.PhylloConnect.initialize({
+      PC.initialize({
         clientDisplayName: "Melsprout",
         environment: t.environment,
         userId: t.userId,
