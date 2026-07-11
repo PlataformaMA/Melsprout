@@ -35,17 +35,16 @@ export function ConectarPhyllo({
   const [cargando, setCargando] = useState(false);
 
   const abrir = useCallback(async () => {
-    if (!token) {
-      alert("La conexión de redes aún no está lista. Recarga la página e inténtalo.");
-      return;
-    }
+    alert("A: click. token = " + (token ? "SÍ (env=" + token.environment + ")" : "NULL"));
+    if (!token) return;
     setCargando(true);
     try {
       await cargarScript();
       const PC = window.PhylloConnect;
+      alert("B: SDK cargado. PhylloConnect=" + !!PC + " initialize=" + typeof PC?.initialize);
       if (!PC || typeof PC.initialize !== "function") throw new Error("SDK no disponible");
 
-      // Modo redirección: te lleva a la página de Phyllo y regresa a /app/perfil.
+      alert("C: llamando initialize(redirect)… deberías ir a Phyllo ahora.");
       PC.initialize({
         clientDisplayName: "Melsprout",
         environment: token.environment,
@@ -54,8 +53,9 @@ export function ConectarPhyllo({
         redirect: true,
         redirectURL: `${window.location.origin}/app/perfil?phyllo=conectado`,
       });
-    } catch {
-      alert("No se pudo abrir la conexión de redes. Inténtalo de nuevo.");
+      alert("D: initialize YA se llamó. Si ves esto y NO navegaste a Phyllo, el redirect del SDK falló.");
+    } catch (e) {
+      alert("EXCEPCIÓN: " + (e instanceof Error ? e.message : String(e)));
       setCargando(false);
     }
   }, [token]);
