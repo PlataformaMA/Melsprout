@@ -1,8 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { useRouter } from "next/navigation";
-import { obtenerTokenPhyllo, sincronizarMetricasPhyllo } from "@/lib/phyllo-actions";
+import { obtenerTokenPhyllo } from "@/lib/phyllo-actions";
 
 type PhylloInstance = {
   on: (event: string, cb: (...args: unknown[]) => void) => void;
@@ -34,7 +33,6 @@ export function ConectarPhyllo({
   className?: string;
   children: React.ReactNode;
 }) {
-  const router = useRouter();
   const [cargando, setCargando] = useState(false);
 
   const abrir = useCallback(async () => {
@@ -49,26 +47,22 @@ export function ConectarPhyllo({
       await cargarScript();
       if (!window.PhylloConnect) throw new Error("SDK no disponible");
 
-      // initialize() ABRE el popup automáticamente (no hay .open() en el SDK web).
-      const pc = window.PhylloConnect.initialize({
+      // Modo REDIRECCIÓN: navega a la página de Phyllo a pantalla completa y
+      // regresa a /app/perfil?phyllo=conectado (ahí sincronizamos las métricas).
+      window.PhylloConnect.initialize({
         clientDisplayName: "Melsprout",
         environment: t.environment,
         userId: t.userId,
         token: t.sdkToken,
+        redirect: true,
+        redirectURL: `${window.location.origin}/app/perfil?phyllo=conectado`,
       });
-
-      pc.on("accountConnected", async () => {
-        await sincronizarMetricasPhyllo();
-        router.refresh();
-      });
-      pc.on("exit", () => setCargando(false));
-      pc.on("connectionFailure", () => setCargando(false));
-      pc.on("accountDisconnected", () => {});
+      // La página navega a Phyllo; no vuelve a ejecutarse código aquí.
     } catch {
       alert("No se pudo abrir la conexión de redes. Inténtalo de nuevo.");
       setCargando(false);
     }
-  }, [router]);
+  }, []);
 
   return (
     <button type="button" onClick={abrir} disabled={cargando} className={className}>

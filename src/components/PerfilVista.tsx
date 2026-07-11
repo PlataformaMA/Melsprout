@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type Perfil, guardarNicho } from "@/lib/perfil-actions";
+import { sincronizarMetricasPhyllo } from "@/lib/phyllo-actions";
 import { NICHOS, banderaUrl } from "@/lib/catalogos";
 import { nivelPorXP, TOTAL_CLASES } from "@/lib/data";
 import { AvatarUploader } from "@/components/AvatarUploader";
@@ -48,6 +49,20 @@ const REDES = [
 // ————————————— Componente principal —————————————
 export function PerfilVista({ perfil, creadoEn }: { perfil: Perfil; creadoEn: string | null }) {
   const [tab, setTab] = useState<"Resumen" | "Métricas">("Resumen");
+  const router = useRouter();
+
+  // Al volver de conectar en Phyllo (?phyllo=conectado) → jala las métricas.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const p = new URLSearchParams(window.location.search);
+    if (p.get("phyllo") === "conectado") {
+      sincronizarMetricasPhyllo().finally(() => {
+        window.history.replaceState({}, "", "/app/perfil");
+        router.refresh();
+      });
+    }
+  }, [router]);
+
   const nivel = nivelPorXP(perfil.xp);
   const edad = calcularEdad(perfil.fecha_nacimiento);
 
