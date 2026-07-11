@@ -46,21 +46,22 @@ const REDES = [
 ] as const;
 
 // ————————————— Componente principal —————————————
-export function PerfilVista({ perfil, creadoEn }: { perfil: Perfil; creadoEn: string | null }) {
+export function PerfilVista({
+  perfil, creadoEn, phylloToken,
+}: {
+  perfil: Perfil;
+  creadoEn: string | null;
+  phylloToken: { sdkToken: string; environment: string; userId: string } | null;
+}) {
   const [tab, setTab] = useState<"Resumen" | "Métricas">("Resumen");
-  const router = useRouter();
 
-  // Al volver de conectar en Phyllo (?phyllo=conectado) → jala las métricas.
+  // Al volver de Phyllo, la sincronización ya la hizo el servidor. Solo limpiamos la URL.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const p = new URLSearchParams(window.location.search);
-    if (p.get("phyllo") === "conectado") {
-      fetch("/api/phyllo/sync", { method: "POST" }).finally(() => {
-        window.history.replaceState({}, "", "/app/perfil");
-        router.refresh();
-      });
+    if (new URLSearchParams(window.location.search).get("phyllo")) {
+      window.history.replaceState({}, "", "/app/perfil");
     }
-  }, [router]);
+  }, []);
 
   const nivel = nivelPorXP(perfil.xp);
   const edad = calcularEdad(perfil.fecha_nacimiento);
@@ -167,7 +168,7 @@ export function PerfilVista({ perfil, creadoEn }: { perfil: Perfil; creadoEn: st
               <section className="bg-surface border border-border rounded-3xl p-5 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-display font-extrabold">Redes sociales</h2>
-                  <ConectarPhyllo className="text-[12px] font-bold text-accent hover:brightness-105 transition">
+                  <ConectarPhyllo token={phylloToken} className="text-[12px] font-bold text-accent hover:brightness-105 transition">
                     {tieneRedes ? "Gestionar" : "Conectar"}
                   </ConectarPhyllo>
                 </div>
@@ -187,7 +188,7 @@ export function PerfilVista({ perfil, creadoEn }: { perfil: Perfil; creadoEn: st
                         {handle ? (
                           <span className="w-6 h-6 rounded-full bg-green text-white grid place-items-center text-[12px] shrink-0">✓</span>
                         ) : (
-                          <ConectarPhyllo className="text-[12px] font-bold text-accent bg-accent-soft rounded-lg px-3 py-1.5 shrink-0 hover:brightness-105 transition">
+                          <ConectarPhyllo token={phylloToken} className="text-[12px] font-bold text-accent bg-accent-soft rounded-lg px-3 py-1.5 shrink-0 hover:brightness-105 transition">
                             Conectar
                           </ConectarPhyllo>
                         )}

@@ -26,25 +26,21 @@ function cargarScript(): Promise<void> {
 }
 
 export function ConectarPhyllo({
-  className, children,
+  className, children, token,
 }: {
   className?: string;
   children: React.ReactNode;
+  token: { sdkToken: string; environment: string; userId: string } | null;
 }) {
   const [cargando, setCargando] = useState(false);
 
   const abrir = useCallback(async () => {
+    if (!token) {
+      alert("La conexión de redes aún no está lista. Recarga la página e inténtalo.");
+      return;
+    }
     setCargando(true);
     try {
-      // El token se pide por RUTA DE API (los Server Actions se cuelgan en este setup).
-      const res = await fetch("/api/phyllo/token", { method: "POST" });
-      const t = await res.json();
-      if (t.error) {
-        alert(t.error);
-        setCargando(false);
-        return;
-      }
-
       await cargarScript();
       const PC = window.PhylloConnect;
       if (!PC || typeof PC.initialize !== "function") throw new Error("SDK no disponible");
@@ -52,9 +48,9 @@ export function ConectarPhyllo({
       // Modo redirección: te lleva a la página de Phyllo y regresa a /app/perfil.
       PC.initialize({
         clientDisplayName: "Melsprout",
-        environment: t.environment,
-        userId: t.userId,
-        token: t.sdkToken,
+        environment: token.environment,
+        userId: token.userId,
+        token: token.sdkToken,
         redirect: true,
         redirectURL: `${window.location.origin}/app/perfil?phyllo=conectado`,
       });
@@ -62,7 +58,7 @@ export function ConectarPhyllo({
       alert("No se pudo abrir la conexión de redes. Inténtalo de nuevo.");
       setCargando(false);
     }
-  }, []);
+  }, [token]);
 
   return (
     <button type="button" onClick={abrir} disabled={cargando} className={className}>
