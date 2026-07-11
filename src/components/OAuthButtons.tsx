@@ -17,6 +17,10 @@ export function OAuthButtons() {
       provider,
       options: {
         redirectTo: `${window.location.origin}/auth/callback?next=/app`,
+        // Facebook: pedir solo public_profile (acceso avanzado automático) para que
+        // TODOS puedan entrar. El permiso `email` sigue en revisión de Meta; cuando
+        // lo aprueben, se puede volver a agregar "email" aquí para capturar el correo.
+        ...(provider === "facebook" ? { scopes: "public_profile" } : {}),
       },
     });
     if (error) {
