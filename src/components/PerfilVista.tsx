@@ -9,6 +9,7 @@ import { nivelPorXP, TOTAL_CLASES } from "@/lib/data";
 import { AvatarUploader } from "@/components/AvatarUploader";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
+import { ConectarPhyllo } from "@/components/ConectarPhyllo";
 
 // ————————————— Helpers —————————————
 function calcularEdad(fecha: string | null): number | null {
@@ -152,9 +153,9 @@ export function PerfilVista({ perfil, creadoEn }: { perfil: Perfil; creadoEn: st
               <section className="bg-surface border border-border rounded-3xl p-5 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-display font-extrabold">Redes sociales</h2>
-                  <span className="text-[11px] font-semibold rounded-full px-2.5 py-1 text-sub bg-bg">
-                    {tieneRedes ? "Conectadas" : "Conecta"}
-                  </span>
+                  <ConectarPhyllo className="text-[12px] font-bold text-accent hover:brightness-105 transition">
+                    {tieneRedes ? "Gestionar" : "Conectar"}
+                  </ConectarPhyllo>
                 </div>
                 <div className="space-y-4">
                   {REDES.map((r) => {
@@ -172,9 +173,9 @@ export function PerfilVista({ perfil, creadoEn }: { perfil: Perfil; creadoEn: st
                         {handle ? (
                           <span className="w-6 h-6 rounded-full bg-green text-white grid place-items-center text-[12px] shrink-0">✓</span>
                         ) : (
-                          <a href={`/api/${r.key}/connect`} className="text-[12px] font-bold text-accent bg-accent-soft rounded-lg px-3 py-1.5 shrink-0 hover:brightness-105 transition">
+                          <ConectarPhyllo className="text-[12px] font-bold text-accent bg-accent-soft rounded-lg px-3 py-1.5 shrink-0 hover:brightness-105 transition">
                             Conectar
-                          </a>
+                          </ConectarPhyllo>
                         )}
                       </div>
                     );
