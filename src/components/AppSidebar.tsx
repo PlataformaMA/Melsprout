@@ -60,9 +60,11 @@ export function AppSidebar({ active }: { active: string }) {
   );
 }
 
-function HomeIcon() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" /></svg>; }
-function MapIcon() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z" /><path d="M9 4v14M15 6v14" /></svg>; }
-function LiveIcon() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="2" /><path d="M6.3 6.3a8 8 0 0 0 0 11.4M17.7 6.3a8 8 0 0 1 0 11.4M3.5 3.5a12 12 0 0 0 0 17M20.5 3.5a12 12 0 0 1 0 17" /></svg>; }
-function PeopleIcon() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="8" r="3" /><path d="M3 20a6 6 0 0 1 12 0" /><path d="M16 5.5a3 3 0 0 1 0 5.8M21 20a6 6 0 0 0-4-5.6" /></svg>; }
-function TrophyIcon() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 4h10v4a5 5 0 0 1-10 0z" /><path d="M7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3M9 20h6M12 13v4" /></svg>; }
-function UserIcon() { return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>; }
+const ICO = { width: 22, height: 22, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.9, strokeLinecap: "round", strokeLinejoin: "round" } as const;
+
+function HomeIcon() { return <svg {...ICO}><path d="M4 10 12 3.5 20 10v9.5a.9.9 0 0 1-.9.9H14.5V15h-5v5.4H4.9a.9.9 0 0 1-.9-.9z" /></svg>; }
+function MapIcon() { return <svg {...ICO}><path d="M9 4.5 3.7 6.4v13.1l5.3-1.9 6 1.9 5.3-1.9V4.5l-5.3 1.9-6-1.9z" /><path d="M9 4.5v13.1M15 6.4v13.1" /></svg>; }
+function LiveIcon() { return <svg {...ICO}><circle cx="12" cy="12" r="2.3" fill="currentColor" stroke="none" /><path d="M7.8 7.8a6 6 0 0 0 0 8.4" /><path d="M16.2 7.8a6 6 0 0 1 0 8.4" /><path d="M5.2 5.2a10 10 0 0 0 0 13.6" /><path d="M18.8 5.2a10 10 0 0 1 0 13.6" /></svg>; }
+function PeopleIcon() { return <svg {...ICO}><circle cx="9" cy="8.5" r="3" /><path d="M3.5 19.5a5.5 5.5 0 0 1 11 0" /><path d="M15.5 6a3 3 0 0 1 0 5.6M20.5 19.5a5.5 5.5 0 0 0-3.6-5.2" /></svg>; }
+function TrophyIcon() { return <svg {...ICO}><path d="M7 4.5h10v3.5a5 5 0 0 1-10 0z" /><path d="M7 6.5H4.5v.8a3 3 0 0 0 3 3M17 6.5h2.5v.8a3 3 0 0 1-3 3M9.5 19.5h5M12 13v3.5" /></svg>; }
+function UserIcon() { return <svg {...ICO}><circle cx="12" cy="8" r="3.6" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>; }
