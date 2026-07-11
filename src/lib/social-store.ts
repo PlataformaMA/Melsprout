@@ -1,5 +1,37 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { MetricaRed } from "@/lib/insightiq";
+
+// Guarda las métricas de las redes conectadas vía InsightIQ en el perfil.
+// No maneja tokens (InsightIQ los guarda por su lado); solo métricas públicas + @.
+export async function guardarMetricasInsightIQ(
+  userId: string,
+  redes: MetricaRed[]
+) {
+  if (!redes.length) return;
+  const admin = createAdminClient();
+  const { data: p } = await admin
+    .from("profiles")
+    .select("metricas, redes")
+    .eq("id", userId)
+    .single();
+
+  const metricas = { ...(p?.metricas || {}) };
+  const redesMap = { ...(p?.redes || {}) };
+  const now = new Date().toISOString();
+  for (const r of redes) {
+    metricas[r.provider] = {
+      followers: r.followers,
+      username: r.username,
+      updated_at: now,
+    };
+    if (r.username) redesMap[r.provider] = r.username;
+  }
+  await admin
+    .from("profiles")
+    .update({ metricas, redes: redesMap })
+    .eq("id", userId);
+}
 
 // Guarda (de forma segura) el token y las métricas de una red conectada.
 export async function guardarConexion(

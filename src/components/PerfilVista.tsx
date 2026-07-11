@@ -9,6 +9,9 @@ import { nivelPorXP, TOTAL_CLASES } from "@/lib/data";
 import { AvatarUploader } from "@/components/AvatarUploader";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
+import { useConectarInsightIQ, type InsightIQConfig } from "@/components/ConectarInsightIQ";
+
+export type InsightIQProps = InsightIQConfig;
 
 // ————————————— Helpers —————————————
 function calcularEdad(fecha: string | null): number | null {
@@ -37,16 +40,17 @@ function formatN(n: number): string {
   return `${Math.round(n)}`;
 }
 
-// Redes con las que tenemos integración OAuth real.
+// Redes conectables vía InsightIQ (workPlatformId = id de la plataforma en InsightIQ).
 const REDES = [
-  { key: "tiktok", nombre: "TikTok", color: "#111827", icon: <TikTokIcon /> },
-  { key: "instagram", nombre: "Instagram", color: "grad-ig", icon: <InstagramIcon /> },
-  { key: "youtube", nombre: "YouTube", color: "#FF0000", icon: <YouTubeIcon /> },
+  { key: "tiktok", nombre: "TikTok", color: "#111827", icon: <TikTokIcon />, wp: "de55aeec-0dc8-4119-bf90-16b3d1f0c987" },
+  { key: "instagram", nombre: "Instagram", color: "grad-ig", icon: <InstagramIcon />, wp: "9bb8913b-ddd9-430b-a66a-d74d846e6c66" },
+  { key: "youtube", nombre: "YouTube", color: "#FF0000", icon: <YouTubeIcon />, wp: "14d9ddf5-51c6-415e-bde6-f8ed36ad7054" },
 ] as const;
 
 // ————————————— Componente principal —————————————
-export function PerfilVista({ perfil, creadoEn }: { perfil: Perfil; creadoEn: string | null }) {
+export function PerfilVista({ perfil, creadoEn, insightiq }: { perfil: Perfil; creadoEn: string | null; insightiq?: InsightIQProps | null }) {
   const [tab, setTab] = useState<"Resumen" | "Métricas">("Resumen");
+  const { abrir, cargando, disponible } = useConectarInsightIQ(insightiq ?? null);
   const nivel = nivelPorXP(perfil.xp);
   const edad = calcularEdad(perfil.fecha_nacimiento);
 
@@ -171,6 +175,15 @@ export function PerfilVista({ perfil, creadoEn }: { perfil: Perfil; creadoEn: st
                         </div>
                         {handle ? (
                           <span className="w-6 h-6 rounded-full bg-green text-white grid place-items-center text-[12px] shrink-0">✓</span>
+                        ) : disponible ? (
+                          <button
+                            type="button"
+                            disabled={cargando}
+                            onClick={() => abrir(r.wp)}
+                            className="text-[12px] font-bold text-accent bg-accent-soft rounded-lg px-3 py-1.5 shrink-0 hover:brightness-105 transition disabled:opacity-60"
+                          >
+                            {cargando ? "Abriendo…" : "Conectar"}
+                          </button>
                         ) : (
                           <a href={`/api/${r.key}/connect`} className="text-[12px] font-bold text-accent bg-accent-soft rounded-lg px-3 py-1.5 shrink-0 hover:brightness-105 transition">
                             Conectar
