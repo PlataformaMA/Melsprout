@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { crearUsuario, crearSdkToken, PHYLLO_ENV, PHYLLO_CONFIGURADO } from "@/lib/phyllo";
@@ -15,10 +16,13 @@ export async function POST() {
       return NextResponse.json({ error: "La conexión de redes aún no está configurada." });
 
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Inicia sesión de nuevo." });
+    let user = (await supabase.auth.getUser()).data.user;
+    if (!user) user = (await supabase.auth.getSession()).data.session?.user ?? null;
+    if (!user) {
+      const store = await cookies();
+      const authCookies = store.getAll().map((c) => c.name).filter((n) => n.includes("sb-") || n.includes("auth"));
+      return NextResponse.json({ error: "Inicia sesión de nuevo.", debug_cookies: authCookies });
+    }
 
     const admin = createAdminClient();
     const nombre = (user.user_metadata?.full_name as string) || user.email || "Creador";
