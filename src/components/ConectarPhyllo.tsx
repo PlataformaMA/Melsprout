@@ -15,6 +15,19 @@ declare global {
 
 const SDK_URL = "https://cdn.getphyllo.com/connect/v2/phyllo-connect.js";
 
+// Fuerza que el popup (iframe) de Phyllo se vea a pantalla completa
+// (a veces el SDK lo crea con altura 0 = invisible).
+function forzarVisibilidadPopup() {
+  if (document.getElementById("phyllo-fix-css")) return;
+  const style = document.createElement("style");
+  style.id = "phyllo-fix-css";
+  style.textContent = `
+    .modal-phyllo { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100vh !important; z-index: 2147483647 !important; display: block !important; background: rgba(0,0,0,.15); }
+    .modal-phyllo iframe { width: 100% !important; height: 100% !important; border: 0 !important; display: block !important; }
+  `;
+  document.head.appendChild(style);
+}
+
 function cargarScript(): Promise<void> {
   return new Promise((resolve, reject) => {
     if (typeof window !== "undefined" && window.PhylloConnect) return resolve();
@@ -47,6 +60,8 @@ export function ConectarPhyllo({
       await cargarScript();
       const PC = window.PhylloConnect;
       if (!PC || typeof PC.initialize !== "function") throw new Error("SDK no disponible");
+
+      forzarVisibilidadPopup();
 
       // Modo popup embebido (iframe) — el estándar de Phyllo, no necesita redirect URL.
       const pc = PC.initialize({
