@@ -36,6 +36,12 @@ export type Perfil = {
       url?: string;
       image?: string;
       updated_at?: string;
+      audiencia?: {
+        paises: { k: string; pct: number }[];
+        ciudades: { k: string; pct: number }[];
+        genero: { k: string; pct: number }[];
+        edad: { k: string; pct: number }[];
+      } | null;
     }
   >;
   onboarding_completo: boolean;

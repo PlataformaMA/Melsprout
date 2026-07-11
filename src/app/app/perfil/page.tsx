@@ -43,6 +43,7 @@ export default async function PerfilPage() {
               username: m.username ?? undefined,
               url: m.url ?? undefined,
               image: m.image ?? undefined,
+              audiencia: m.audiencia ?? null,
               updated_at: new Date().toISOString(),
             };
             if (m.username) perfil.redes[m.provider] = m.username;

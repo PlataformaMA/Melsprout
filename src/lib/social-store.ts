@@ -28,6 +28,7 @@ export async function guardarMetricasInsightIQ(
       username: r.username ?? undefined,
       url: r.url ?? undefined,
       image: r.image ?? undefined,
+      audiencia: r.audiencia ?? null,
       updated_at: now,
     };
     if (r.username) redesMap[r.provider] = r.username;

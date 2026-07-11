@@ -132,6 +132,13 @@ export async function crearSdkToken(userId: string): Promise<string | null> {
 }
 
 // ————————————— Cuentas conectadas + métricas —————————————
+export type Reparto = { k: string; pct: number }[];
+export type Audiencia = {
+  paises: Reparto;
+  ciudades: Reparto;
+  genero: Reparto;
+  edad: Reparto;
+};
 export type MetricaRed = {
   provider: string;
   username: string | null;
@@ -141,6 +148,7 @@ export type MetricaRed = {
   following: number | null;
   posts: number | null;
   likes: number | null;
+  audiencia: Audiencia | null;
 };
 
 type IqReputation = {
@@ -152,6 +160,7 @@ type IqReputation = {
 };
 type IqProfile = {
   work_platform?: { id?: string };
+  account?: { id?: string };
   platform_username?: string | null;
   username?: string | null;
   url?: string | null;
@@ -161,6 +170,58 @@ type IqProfile = {
 
 function num(v: number | null | undefined): number | null {
   return typeof v === "number" ? v : null;
+}
+
+// Demografía de audiencia de una cuenta (países, ciudades, género, edad).
+type IqAudiencia = {
+  countries?: { code?: string; name?: string; value?: number }[] | null;
+  cities?: { name?: string; value?: number }[] | null;
+  gender_age_distribution?: { gender?: string; age_range?: string; value?: number }[] | null;
+};
+const GENERO_ES: Record<string, string> = {
+  MALE: "Hombres",
+  FEMALE: "Mujeres",
+  GENDER_NEUTRAL: "No especifica",
+  OTHER: "Otro",
+};
+function acumular(m: Map<string, number>, k: string, v: number) {
+  m.set(k, (m.get(k) || 0) + v);
+}
+function topReparto(m: Map<string, number>, n = 6): Reparto {
+  return [...m.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, n)
+    .map(([k, pct]) => ({ k, pct: Math.round(pct * 10) / 10 }));
+}
+export async function obtenerAudiencia(accountId: string): Promise<Audiencia | null> {
+  const a = await api<IqAudiencia>(
+    `/v1/audience?account_id=${encodeURIComponent(accountId)}`
+  );
+  if (!a) return null;
+  const countries = a.countries ?? [];
+  const cities = a.cities ?? [];
+  const ga = a.gender_age_distribution ?? [];
+  if (!countries.length && !cities.length && !ga.length) return null;
+
+  const gen = new Map<string, number>();
+  const edad = new Map<string, number>();
+  for (const g of ga) {
+    const val = typeof g.value === "number" ? g.value : 0;
+    if (g.gender) acumular(gen, GENERO_ES[g.gender] || g.gender, val);
+    if (g.age_range) acumular(edad, g.age_range, val);
+  }
+  return {
+    paises: countries
+      .filter((c) => typeof c.value === "number")
+      .slice(0, 6)
+      .map((c) => ({ k: c.code || c.name || "—", pct: Math.round((c.value || 0) * 10) / 10 })),
+    ciudades: cities
+      .filter((c) => typeof c.value === "number")
+      .slice(0, 6)
+      .map((c) => ({ k: c.name || "—", pct: Math.round((c.value || 0) * 10) / 10 })),
+    genero: topReparto(gen, 3),
+    edad: topReparto(edad, 6),
+  };
 }
 
 // Lee los perfiles conectados del usuario y devuelve métricas reales por red.
@@ -177,6 +238,8 @@ export async function obtenerMetricas(userId: string): Promise<MetricaRed[]> {
     const rep = p.reputation || {};
     // YouTube usa subscriber_count; el resto follower_count.
     const followers = num(rep.follower_count) ?? num(rep.subscriber_count);
+    const accountId = p.account?.id || "";
+    const audiencia = accountId ? await obtenerAudiencia(accountId) : null;
     out.push({
       provider,
       username: p.platform_username || p.username || null,
@@ -186,6 +249,7 @@ export async function obtenerMetricas(userId: string): Promise<MetricaRed[]> {
       following: num(rep.following_count),
       posts: num(rep.content_count),
       likes: num(rep.like_count),
+      audiencia,
     });
   }
   return out;

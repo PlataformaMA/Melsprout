@@ -345,6 +345,11 @@ function TabMetricas({ metricas }: { metricas: Perfil["metricas"] }) {
   ];
 
   const actualizado = activa !== "General" ? fechaCorta(metricas[activa]?.updated_at) : null;
+  // Audiencia: de la red activa, o de la primera conectada que tenga datos (en General).
+  const aud =
+    activa === "General"
+      ? conectadas.map((k) => metricas[k]?.audiencia).find((a) => a) ?? null
+      : metricas[activa]?.audiencia ?? null;
 
   return (
     <div className="mt-6">
@@ -398,8 +403,44 @@ function TabMetricas({ metricas }: { metricas: Perfil["metricas"] }) {
 
       <p className="text-[12px] text-sub mt-4">
         {actualizado ? `Actualizado ${actualizado} · ` : ""}
-        Datos reales conectados con tu cuenta. La demografía de audiencia se habilita al pasar a producción.
+        Datos reales conectados con tu cuenta.
       </p>
+
+      {aud && (
+        <>
+          <h3 className="font-display text-lg font-extrabold mt-8 mb-4">Público</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {aud.paises.length > 0 && <Breakdown titulo="Países" icon={<PinIcon />} filas={aud.paises} />}
+            {aud.ciudades.length > 0 && <Breakdown titulo="Ciudades" icon={<BuildingIcon />} filas={aud.ciudades} />}
+            {aud.genero.length > 0 && <Breakdown titulo="Género" icon={<UsersIcon />} filas={aud.genero} />}
+            {aud.edad.length > 0 && <Breakdown titulo="Edad" icon={<BarsIcon />} filas={aud.edad} />}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Reparto de audiencia (valores en %) con barras.
+function Breakdown({ titulo, icon, filas }: { titulo: string; icon: React.ReactNode; filas: { k: string; pct: number }[] }) {
+  const max = Math.max(...filas.map((f) => f.pct), 1);
+  return (
+    <div className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-accent">{icon}</span>
+        <h4 className="font-display font-extrabold">{titulo}</h4>
+      </div>
+      <div className="space-y-3">
+        {filas.map((f) => (
+          <div key={f.k} className="flex items-center gap-3">
+            <span className="text-[13px] font-semibold text-text w-28 shrink-0 truncate">{f.k}</span>
+            <div className="flex-1 h-2.5 rounded-full bg-[#EEEBF6] overflow-hidden">
+              <div className="h-full rounded-full bg-gradient-to-r from-[#A78BFA] to-accent" style={{ width: `${Math.max(6, Math.round((f.pct / max) * 92))}%` }} />
+            </div>
+            <span className="text-[12px] text-sub w-11 text-right shrink-0">{f.pct}%</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -496,6 +537,9 @@ function UsersIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fi
 function HeartIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z" /></svg>; }
 function ChatIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 10h8M8 14h5" /><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z" /></svg>; }
 function StatBars() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.2" strokeLinecap="round"><path d="M6 20v-6M12 20V8M18 20v-9" /></svg>; }
+function PinIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z" /><circle cx="12" cy="10" r="2.5" /></svg>; }
+function BuildingIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="3" width="12" height="18" rx="1.5" /><path d="M16 8h4v13M8 7h1M12 7h1M8 11h1M12 11h1M8 15h1M12 15h1" /></svg>; }
+function BarsIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 20v-5M10 20V8M15 20v-9M20 20V5" /></svg>; }
 function InstagramIcon() { return <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" /></svg>; }
 function FacebookIcon() { return <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V7c0-1 .3-1.5 1.6-1.5H17V2.2C16.6 2.1 15.5 2 14.4 2 11.8 2 10 3.6 10 6.5V9H7.5v3.5H10V22h4v-9.5h2.7l.4-3.5z" /></svg>; }
 function TikTokIcon() { return <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3c.3 2.3 1.9 4 4 4.3v3c-1.5 0-2.9-.4-4-1.1V15a6 6 0 1 1-6-6c.3 0 .7 0 1 .1v3.1a3 3 0 1 0 2 2.8V3z" /></svg>; }
