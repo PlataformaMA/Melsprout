@@ -49,6 +49,7 @@ export function ConectarPhyllo({
       await cargarScript();
       if (!window.PhylloConnect) throw new Error("SDK no disponible");
 
+      // initialize() ABRE el popup automáticamente (no hay .open() en el SDK web).
       const pc = window.PhylloConnect.initialize({
         clientDisplayName: "Melsprout",
         environment: t.environment,
@@ -62,8 +63,7 @@ export function ConectarPhyllo({
       });
       pc.on("exit", () => setCargando(false));
       pc.on("connectionFailure", () => setCargando(false));
-
-      pc.open();
+      pc.on("accountDisconnected", () => {});
     } catch {
       alert("No se pudo abrir la conexión de redes. Inténtalo de nuevo.");
       setCargando(false);

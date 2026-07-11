@@ -21,7 +21,7 @@ export async function obtenerTokenPhyllo(): Promise<
   { sdkToken: string; environment: string; userId: string } | { error: string }
 > {
   try {
-    if (!PHYLLO_CONFIGURADO) return { error: "diag: PHYLLO no configurado (faltan credenciales)" };
+    if (!PHYLLO_CONFIGURADO) return { error: "La conexión de redes aún no está configurada." };
 
     const supabase = await createClient();
     const {
@@ -29,13 +29,7 @@ export async function obtenerTokenPhyllo(): Promise<
     } = await supabase.auth.getUser();
     if (!user) return { error: "Inicia sesión de nuevo." };
 
-    let admin;
-    try {
-      admin = createAdminClient();
-    } catch (e) {
-      return { error: "diag: admin_client → " + msg(e) };
-    }
-
+    const admin = createAdminClient();
     const nombre = (user.user_metadata?.full_name as string) || user.email || "Creador";
 
     // 1) ¿Ya tenemos su usuario Phyllo guardado?
@@ -46,32 +40,29 @@ export async function obtenerTokenPhyllo(): Promise<
       .eq("user_id", user.id)
       .eq("provider", "phyllo")
       .maybeSingle();
-    if (sel.error) return { error: "diag: db_select → " + sel.error.message };
     if (sel.data?.external_id) phylloUserId = sel.data.external_id as string;
 
     // 2) Si no, créalo en Phyllo y guárdalo.
     if (!phylloUserId) {
       let creado = await crearUsuario(nombre, `melsprout-${user.id}`);
       if (!creado?.id) creado = await crearUsuario(nombre, `melsprout-${user.id}-${Date.now()}`);
-      if (!creado?.id) return { error: "diag: crear_usuario devolvió null" };
+      if (!creado?.id) return { error: "No se pudo preparar la conexión. Inténtalo de nuevo." };
       phylloUserId = creado.id;
-
-      const up = await admin.from("social_connections").upsert({
+      await admin.from("social_connections").upsert({
         user_id: user.id,
         provider: "phyllo",
         external_id: phylloUserId,
         updated_at: new Date().toISOString(),
       });
-      if (up.error) return { error: "diag: db_upsert → " + up.error.message };
     }
 
     // 3) Token del SDK.
     const t = await crearSdkToken(phylloUserId);
-    if (!t) return { error: "diag: sdk_token devolvió null" };
+    if (!t) return { error: "No se pudo generar el token de conexión." };
 
     return { sdkToken: t.sdk_token, environment: PHYLLO_ENV, userId: phylloUserId };
   } catch (e) {
-    return { error: "diag: excepción → " + msg(e) };
+    return { error: "No se pudo preparar la conexión: " + msg(e) };
   }
 }
 
