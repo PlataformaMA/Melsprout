@@ -25,7 +25,19 @@ export type Perfil = {
   plataforma_principal: string | null;
   tamano_audiencia: string | null;
   redes: Record<string, string>;
-  metricas: Record<string, { followers?: number; username?: string; updated_at?: string }>;
+  metricas: Record<
+    string,
+    {
+      followers?: number;
+      following?: number;
+      posts?: number;
+      likes?: number;
+      username?: string;
+      url?: string;
+      image?: string;
+      updated_at?: string;
+    }
+  >;
   onboarding_completo: boolean;
   etapa: string;
   xp: number;

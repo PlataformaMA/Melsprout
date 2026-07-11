@@ -102,19 +102,35 @@ export async function crearSdkToken(userId: string): Promise<string | null> {
 export type MetricaRed = {
   provider: string;
   username: string | null;
+  url: string | null;
+  image: string | null;
   followers: number | null;
+  following: number | null;
+  posts: number | null;
+  likes: number | null;
 };
 
+type IqReputation = {
+  follower_count?: number | null;
+  following_count?: number | null;
+  subscriber_count?: number | null;
+  content_count?: number | null;
+  like_count?: number | null;
+};
 type IqProfile = {
   work_platform?: { id?: string };
   platform_username?: string | null;
   username?: string | null;
+  url?: string | null;
   image_url?: string | null;
-  reputation?: { follower_count?: number | null } | null;
-  follower_count?: number | null;
+  reputation?: IqReputation | null;
 };
 
-// Lee los perfiles conectados del usuario y devuelve métricas por red.
+function num(v: number | null | undefined): number | null {
+  return typeof v === "number" ? v : null;
+}
+
+// Lee los perfiles conectados del usuario y devuelve métricas reales por red.
 export async function obtenerMetricas(userId: string): Promise<MetricaRed[]> {
   const r = await api<{ data: IqProfile[] }>(
     `/v1/profiles?user_id=${encodeURIComponent(userId)}&limit=50`
@@ -125,12 +141,18 @@ export async function obtenerMetricas(userId: string): Promise<MetricaRed[]> {
     const pid = p.work_platform?.id || "";
     const provider = providerDeWorkPlatform(pid);
     if (!provider) continue;
-    const followers =
-      p.reputation?.follower_count ?? p.follower_count ?? null;
+    const rep = p.reputation || {};
+    // YouTube usa subscriber_count; el resto follower_count.
+    const followers = num(rep.follower_count) ?? num(rep.subscriber_count);
     out.push({
       provider,
       username: p.platform_username || p.username || null,
-      followers: typeof followers === "number" ? followers : null,
+      url: p.url || null,
+      image: p.image_url || null,
+      followers,
+      following: num(rep.following_count),
+      posts: num(rep.content_count),
+      likes: num(rep.like_count),
     });
   }
   return out;

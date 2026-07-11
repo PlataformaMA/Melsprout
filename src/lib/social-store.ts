@@ -21,8 +21,13 @@ export async function guardarMetricasInsightIQ(
   const now = new Date().toISOString();
   for (const r of redes) {
     metricas[r.provider] = {
-      followers: r.followers,
-      username: r.username,
+      followers: r.followers ?? undefined,
+      following: r.following ?? undefined,
+      posts: r.posts ?? undefined,
+      likes: r.likes ?? undefined,
+      username: r.username ?? undefined,
+      url: r.url ?? undefined,
+      image: r.image ?? undefined,
       updated_at: now,
     };
     if (r.username) redesMap[r.provider] = r.username;

@@ -147,7 +147,7 @@ export function PerfilVista({ perfil, creadoEn, insightiq }: { perfil: Perfil; c
                 ))}
               </div>
 
-              {tab === "Métricas" ? <TabMetricas /> : <TabResumen perfil={perfil} nivel={nivel} />}
+              {tab === "Métricas" ? <TabMetricas metricas={perfil.metricas} /> : <TabResumen perfil={perfil} nivel={nivel} />}
             </div>
 
             {/* ═══════ Columna derecha ═══════ */}
@@ -278,72 +278,98 @@ function BanderaCirculo({ pais }: { pais: string | null }) {
   );
 }
 
-// ————————————— Tab Métricas —————————————
-type MetricaSet = { seguidores: number; vistas: number; engagement: string; interacciones: number };
-const BASE_METRICAS: Record<string, MetricaSet> = {
-  General: { seguidores: 128400, vistas: 2300000, engagement: "8.7%", interacciones: 198300 },
-  Instagram: { seguidores: 62100, vistas: 890000, engagement: "9.4%", interacciones: 84200 },
-  Facebook: { seguidores: 28700, vistas: 410000, engagement: "5.2%", interacciones: 31500 },
-  TikTok: { seguidores: 37600, vistas: 1000000, engagement: "11.3%", interacciones: 82600 },
+// ————————————— Tab Métricas (datos REALES de InsightIQ) —————————————
+const RED_INFO: Record<string, { label: string; bg: string; icon: React.ReactNode }> = {
+  instagram: { label: "Instagram", bg: "linear-gradient(45deg,#F58529,#DD2A7B,#8134AF)", icon: <InstagramIcon /> },
+  tiktok: { label: "TikTok", bg: "#111827", icon: <TikTokIcon /> },
+  youtube: { label: "YouTube", bg: "#FF0000", icon: <YouTubeIcon /> },
+  facebook: { label: "Facebook", bg: "#1877F2", icon: <FacebookIcon /> },
 };
-const FACTOR: Record<string, number> = { General: 1, Instagram: 0.48, Facebook: 0.22, TikTok: 0.29 };
-const BASE_PUBLICO = {
-  paises: [["MX", 7400], ["US", 903], ["CO", 497], ["PE", 312], ["VE", 259], ["AR", 255]] as [string, number][],
-  ciudades: [["Mexico City, ...", 1200], ["Monterrey, N...", 448], ["Zapopan, Jal...", 330], ["Lima, Lima R...", 215], ["Guadalajara, ...", 197], ["Bogotá, Distri...", 126]] as [string, number][],
-  genero: [["Mujeres", 8000], ["Hombres", 1900], ["No especific...", 1100]] as [string, number][],
-  edad: [["25-34", 5000], ["35-44", 3200], ["18-24", 1400], ["45-54", 1100], ["55-64", 277], ["13-17", 133]] as [string, number][],
-};
-const REDES_METRICAS = [
-  { key: "Instagram", bg: "linear-gradient(45deg,#F58529,#DD2A7B,#8134AF)", icon: <InstagramIcon /> },
-  { key: "Facebook", bg: "#1877F2", icon: <FacebookIcon /> },
-  { key: "TikTok", bg: "#111827", icon: <TikTokIcon /> },
-];
 
-function TabMetricas() {
-  const [red, setRed] = useState("General");
+function fechaCorta(iso?: string): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("es-MX", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+function TabMetricas({ metricas }: { metricas: Perfil["metricas"] }) {
+  // Redes realmente conectadas (con datos de InsightIQ).
+  const conectadas = Object.keys(RED_INFO).filter((k) => {
+    const m = metricas?.[k];
+    return m && (m.followers != null || m.username);
+  });
+
+  const opciones = conectadas.length > 1 ? ["General", ...conectadas] : conectadas;
+  const [red, setRed] = useState<string>(opciones[0] || "General");
   const [abierto, setAbierto] = useState(false);
-  const m = BASE_METRICAS[red];
-  const f = FACTOR[red];
-  const escala = (filas: [string, number][]) => filas.map(([k, v]) => ({ k, v: Math.round(v * f), t: formatN(v * f) }));
+  const activa = opciones.includes(red) ? red : opciones[0];
+
+  if (conectadas.length === 0) {
+    return (
+      <div className="mt-6 bg-surface border border-border rounded-3xl p-8 text-center">
+        <div className="text-4xl mb-3">📊</div>
+        <h3 className="font-display text-lg font-extrabold">Aún no hay métricas</h3>
+        <p className="text-sub text-[14px] mt-1.5">
+          Conecta una red social en <span className="text-accent font-semibold">Redes sociales</span> para ver aquí tus datos reales.
+        </p>
+      </div>
+    );
+  }
+
+  const campo = (c: "followers" | "following" | "posts" | "likes"): number | null => {
+    if (activa === "General") {
+      const vals = conectadas.map((k) => metricas[k]?.[c]).filter((v): v is number => typeof v === "number");
+      return vals.length ? vals.reduce((s, v) => s + v, 0) : null;
+    }
+    const v = metricas[activa]?.[c];
+    return typeof v === "number" ? v : null;
+  };
+
+  const muestra = (n: number | null) => (n == null ? "—" : formatN(n));
 
   const cards = [
-    { label: "Seguidores totales", valor: formatN(m.seguidores), icon: <UsersIcon />, tono: "text-accent" },
-    { label: "Vistas", valor: formatN(m.vistas), icon: <EyeIcon />, tono: "text-blue" },
-    { label: "Engagement", valor: m.engagement, icon: <HeartIcon />, tono: "text-pink" },
-    { label: "Interacciones", valor: formatN(m.interacciones), icon: <ChatIcon />, tono: "text-accent" },
+    { label: "Seguidores", valor: muestra(campo("followers")), icon: <UsersIcon />, tono: "text-accent" },
+    { label: "Me gusta", valor: muestra(campo("likes")), icon: <HeartIcon />, tono: "text-pink" },
+    { label: "Publicaciones", valor: muestra(campo("posts")), icon: <ChatIcon />, tono: "text-blue" },
+    { label: "Siguiendo", valor: muestra(campo("following")), icon: <UsersIcon />, tono: "text-accent" },
   ];
+
+  const actualizado = activa !== "General" ? fechaCorta(metricas[activa]?.updated_at) : null;
 
   return (
     <div className="mt-6">
       <h3 className="font-display text-lg font-extrabold mb-4">Métricas principales</h3>
 
       <div className="flex items-center gap-4 mb-6 flex-wrap">
-        <div className="relative">
-          <button onClick={() => setAbierto((v) => !v)}
-            className="flex items-center justify-between gap-6 bg-surface border border-border rounded-2xl px-5 py-3.5 shadow-sm min-w-[240px]">
-            <span className="font-display font-extrabold">{red}</span>
-            <ChevronDown />
-          </button>
-          {abierto && (
-            <>
-              <div className="fixed inset-0 z-20" onClick={() => setAbierto(false)} />
-              <div className="absolute left-0 top-full mt-2 z-30 w-[240px] bg-surface border border-border rounded-2xl shadow-lg p-1.5">
-                {Object.keys(BASE_METRICAS).map((k) => (
-                  <button key={k} onClick={() => { setRed(k); setAbierto(false); }}
-                    className={`w-full text-left text-sm rounded-xl px-3 py-2.5 hover:bg-bg transition ${red === k ? "text-accent font-bold bg-accent-soft" : "text-text"}`}>
-                    {k}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+        {opciones.length > 1 && (
+          <div className="relative">
+            <button onClick={() => setAbierto((v) => !v)}
+              className="flex items-center justify-between gap-6 bg-surface border border-border rounded-2xl px-5 py-3.5 shadow-sm min-w-[240px]">
+              <span className="font-display font-extrabold">{activa === "General" ? "General" : RED_INFO[activa]?.label}</span>
+              <ChevronDown />
+            </button>
+            {abierto && (
+              <>
+                <div className="fixed inset-0 z-20" onClick={() => setAbierto(false)} />
+                <div className="absolute left-0 top-full mt-2 z-30 w-[240px] bg-surface border border-border rounded-2xl shadow-lg p-1.5">
+                  {opciones.map((k) => (
+                    <button key={k} onClick={() => { setRed(k); setAbierto(false); }}
+                      className={`w-full text-left text-sm rounded-xl px-3 py-2.5 hover:bg-bg transition ${activa === k ? "text-accent font-bold bg-accent-soft" : "text-text"}`}>
+                      {k === "General" ? "General" : RED_INFO[k]?.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
         <div className="flex items-center gap-2.5">
-          {REDES_METRICAS.map((r) => (
-            <button key={r.key} onClick={() => setRed(r.key)}
-              className={`w-9 h-9 rounded-xl grid place-items-center text-white transition ${red === r.key ? "ring-2 ring-accent ring-offset-2" : "opacity-90 hover:opacity-100"}`}
-              style={{ background: r.bg }} title={r.key}>
-              {r.icon}
+          {conectadas.map((k) => (
+            <button key={k} onClick={() => setRed(k)}
+              className={`w-9 h-9 rounded-xl grid place-items-center text-white transition ${activa === k ? "ring-2 ring-accent ring-offset-2" : "opacity-90 hover:opacity-100"}`}
+              style={{ background: RED_INFO[k]?.bg }} title={RED_INFO[k]?.label}>
+              {RED_INFO[k]?.icon}
             </button>
           ))}
         </div>
@@ -361,36 +387,10 @@ function TabMetricas() {
         ))}
       </div>
 
-      <h3 className="font-display text-lg font-extrabold mt-8 mb-4">Público</h3>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Breakdown titulo="Países" icon={<PinIcon />} filas={escala(BASE_PUBLICO.paises)} />
-        <Breakdown titulo="Ciudades" icon={<BuildingIcon />} filas={escala(BASE_PUBLICO.ciudades)} />
-        <Breakdown titulo="Género" icon={<UsersIcon />} filas={escala(BASE_PUBLICO.genero)} />
-        <Breakdown titulo="Edad" icon={<BarsIcon />} filas={escala(BASE_PUBLICO.edad)} />
-      </div>
-    </div>
-  );
-}
-
-function Breakdown({ titulo, icon, filas }: { titulo: string; icon: React.ReactNode; filas: { k: string; v: number; t: string }[] }) {
-  const max = Math.max(...filas.map((f) => f.v), 1);
-  return (
-    <div className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
-      <div className="flex items-center gap-2 mb-4">
-        <span className="text-accent">{icon}</span>
-        <h4 className="font-display font-extrabold">{titulo}</h4>
-      </div>
-      <div className="space-y-3">
-        {filas.map((f) => (
-          <div key={f.k} className="flex items-center gap-3">
-            <span className="text-[13px] font-semibold text-text w-28 shrink-0 truncate">{f.k}</span>
-            <div className="flex-1 h-2.5 rounded-full bg-[#EEEBF6] overflow-hidden">
-              <div className="h-full rounded-full bg-gradient-to-r from-[#A78BFA] to-accent" style={{ width: `${Math.max(6, Math.round((f.v / max) * 92))}%` }} />
-            </div>
-            <span className="text-[12px] text-sub w-11 text-right shrink-0">{f.t}</span>
-          </div>
-        ))}
-      </div>
+      <p className="text-[12px] text-sub mt-4">
+        {actualizado ? `Actualizado ${actualizado} · ` : ""}
+        Datos reales conectados con tu cuenta. La demografía de audiencia se habilita al pasar a producción.
+      </p>
     </div>
   );
 }
@@ -484,12 +484,8 @@ function Anillo({ pct }: { pct: number }) {
 function BellIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#71717a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" /></svg>; }
 function ChevronDown() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>; }
 function UsersIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="8" r="3.2" /><path d="M3 20a6 6 0 0 1 12 0" /><path d="M16 5.5a3 3 0 0 1 0 5.8M21 20a6 6 0 0 0-4-5.6" /></svg>; }
-function EyeIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg>; }
 function HeartIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z" /></svg>; }
 function ChatIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 10h8M8 14h5" /><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z" /></svg>; }
-function PinIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z" /><circle cx="12" cy="10" r="2.5" /></svg>; }
-function BuildingIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="3" width="12" height="18" rx="1.5" /><path d="M16 8h4v13M8 7h1M12 7h1M8 11h1M12 11h1M8 15h1M12 15h1" /></svg>; }
-function BarsIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 20v-5M10 20V8M15 20v-9M20 20V5" /></svg>; }
 function StatBars() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.2" strokeLinecap="round"><path d="M6 20v-6M12 20V8M18 20v-9" /></svg>; }
 function InstagramIcon() { return <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" /></svg>; }
 function FacebookIcon() { return <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V7c0-1 .3-1.5 1.6-1.5H17V2.2C16.6 2.1 15.5 2 14.4 2 11.8 2 10 3.6 10 6.5V9H7.5v3.5H10V22h4v-9.5h2.7l.4-3.5z" /></svg>; }

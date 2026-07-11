@@ -37,7 +37,12 @@ export default async function PerfilPage() {
           for (const m of metricas) {
             perfil.metricas[m.provider] = {
               followers: m.followers ?? undefined,
+              following: m.following ?? undefined,
+              posts: m.posts ?? undefined,
+              likes: m.likes ?? undefined,
               username: m.username ?? undefined,
+              url: m.url ?? undefined,
+              image: m.image ?? undefined,
               updated_at: new Date().toISOString(),
             };
             if (m.username) perfil.redes[m.provider] = m.username;
