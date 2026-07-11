@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { PHYLLO_ENV, phylloBaseUrl } from "@/lib/phyllo";
+import { PHYLLO_ENV, phylloBaseUrl, crearUsuario, crearSdkToken } from "@/lib/phyllo";
 
 // Diagnóstico TEMPORAL: confirma qué entorno/credenciales usa producción.
 // No expone secretos (solo longitudes y el status del test). Se elimina después.
@@ -23,13 +23,24 @@ export async function GET() {
   } catch {
     errType = "fetch_fail";
   }
+  // Ejecuta las FUNCIONES REALES del código (lib/phyllo) en producción.
+  const u = await crearUsuario("Diag Melsprout", "diag-" + Date.now());
+  const libCrearUsuario = u?.id ? "OK" : "FALLO (null)";
+  let libSdkToken = "no-corrió";
+  if (u?.id) {
+    const t = await crearSdkToken(u.id);
+    libSdkToken = t?.sdk_token ? "OK" : "FALLO (null)";
+  }
+
   return NextResponse.json({
     envRaw: process.env.PHYLLO_ENV ?? null,
     envResuelto: PHYLLO_ENV,
     base,
     idLen: id.length,
     secretLen: secret.length,
-    testStatus,
+    testStatusDirecto: testStatus,
     errType,
+    libCrearUsuario,
+    libSdkToken,
   });
 }
