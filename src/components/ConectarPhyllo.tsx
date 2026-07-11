@@ -1,11 +1,9 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { obtenerTokenPhyllo } from "@/lib/phyllo-actions";
 
 type PhylloInstance = {
   on: (event: string, cb: (...args: unknown[]) => void) => void;
-  open: () => void;
 };
 declare global {
   interface Window {
@@ -38,20 +36,20 @@ export function ConectarPhyllo({
   const abrir = useCallback(async () => {
     setCargando(true);
     try {
-      alert("PASO 1: pidiendo token…");
-      const t = await obtenerTokenPhyllo();
-      if ("error" in t) {
-        alert("ERROR TOKEN: " + t.error);
+      // El token se pide por RUTA DE API (los Server Actions se cuelgan en este setup).
+      const res = await fetch("/api/phyllo/token", { method: "POST" });
+      const t = await res.json();
+      if (t.error) {
+        alert(t.error);
         setCargando(false);
         return;
       }
-      alert("PASO 2: token OK (env=" + t.environment + "). Cargando SDK…");
+
       await cargarScript();
       const PC = window.PhylloConnect;
-      const ok = !!PC && typeof PC.initialize === "function";
-      alert("PASO 3: SDK cargado = " + ok + ". Abriendo Phyllo…");
-      if (!PC || !ok) throw new Error("SDK no disponible");
+      if (!PC || typeof PC.initialize !== "function") throw new Error("SDK no disponible");
 
+      // Modo redirección: te lleva a la página de Phyllo y regresa a /app/perfil.
       PC.initialize({
         clientDisplayName: "Melsprout",
         environment: t.environment,
@@ -60,9 +58,8 @@ export function ConectarPhyllo({
         redirect: true,
         redirectURL: `${window.location.origin}/app/perfil?phyllo=conectado`,
       });
-      alert("PASO 4: initialize llamado. Si ves esto y NO te llevó a Phyllo, el redirect falló.");
-    } catch (e) {
-      alert("EXCEPCIÓN: " + (e instanceof Error ? e.message : String(e)));
+    } catch {
+      alert("No se pudo abrir la conexión de redes. Inténtalo de nuevo.");
       setCargando(false);
     }
   }, []);

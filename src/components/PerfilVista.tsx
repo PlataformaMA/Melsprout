@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type Perfil, guardarNicho } from "@/lib/perfil-actions";
-import { sincronizarMetricasPhyllo } from "@/lib/phyllo-actions";
 import { NICHOS, banderaUrl } from "@/lib/catalogos";
 import { nivelPorXP, TOTAL_CLASES } from "@/lib/data";
 import { AvatarUploader } from "@/components/AvatarUploader";
@@ -56,7 +55,7 @@ export function PerfilVista({ perfil, creadoEn }: { perfil: Perfil; creadoEn: st
     if (typeof window === "undefined") return;
     const p = new URLSearchParams(window.location.search);
     if (p.get("phyllo") === "conectado") {
-      sincronizarMetricasPhyllo().finally(() => {
+      fetch("/api/phyllo/sync", { method: "POST" }).finally(() => {
         window.history.replaceState({}, "", "/app/perfil");
         router.refresh();
       });
