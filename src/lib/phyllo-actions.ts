@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
-  crearUsuario, buscarUsuarioPorExternalId, crearSdkToken,
+  crearUsuario, crearSdkToken,
   obtenerCuentas, obtenerPerfiles, llaveDePlataforma,
   PHYLLO_ENV, PHYLLO_CONFIGURADO,
 } from "@/lib/phyllo";
@@ -23,14 +23,12 @@ async function asegurarPhylloUser(userId: string, nombre: string): Promise<strin
     .maybeSingle();
   if (conn?.external_id) return conn.external_id as string;
 
-  // No lo teníamos guardado: búscalo en Phyllo por external_id o créalo.
-  let phylloId: string | null = null;
-  const existente = await buscarUsuarioPorExternalId(userId);
-  if (existente?.id) phylloId = existente.id;
-  else {
-    const creado = await crearUsuario(nombre, userId);
-    phylloId = creado?.id ?? null;
-  }
+  // No lo teníamos guardado: créalo. Con external_id determinista; si ya existe
+  // (400 user_exists) usamos uno único, porque el filtro por external_id de Phyllo
+  // no es confiable para recuperarlo.
+  let creado = await crearUsuario(nombre, `melsprout-${userId}`);
+  if (!creado?.id) creado = await crearUsuario(nombre, `melsprout-${userId}-${Date.now()}`);
+  const phylloId = creado?.id ?? null;
   if (!phylloId) return null;
 
   await admin.from("social_connections").upsert({
