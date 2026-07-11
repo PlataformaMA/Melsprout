@@ -15,9 +15,16 @@ const ITEMS: Item[] = [
 ];
 
 export function AppSidebar({ active }: { active: string }) {
-  const [abierto, setAbierto] = useState(false);
+  const [fijado, setFijado] = useState(false);
+  const [hover, setHover] = useState(false);
+  const abierto = fijado || hover; // se despliega al pasar el mouse o al fijarlo
   return (
-    <div className="hidden lg:block shrink-0" style={{ width: abierto ? 264 : 92 }}>
+    <div
+      className="hidden lg:block shrink-0"
+      style={{ width: abierto ? 264 : 92 }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+    >
       <div className="sticky top-5 ml-4 mt-4 transition-all">
         <div className="text-[11px] text-sub mb-1 pl-3">Menú</div>
         <div className="bg-surface rounded-3xl shadow-md border border-border py-4 px-2.5">
@@ -26,7 +33,7 @@ export function AppSidebar({ active }: { active: string }) {
             <div className="w-9 h-9 rounded-xl border border-border grid place-items-center shrink-0">
               <span className="w-4 h-4 rounded-full bg-accent" />
             </div>
-            <button onClick={() => setAbierto((v) => !v)} aria-label={abierto ? "Contraer" : "Expandir"}
+            <button onClick={() => setFijado((v) => !v)} aria-label={fijado ? "Contraer" : "Fijar abierto"}
               className="w-7 h-9 grid place-items-center text-hint hover:text-sub transition">
               <span className={`transition-transform ${abierto ? "rotate-180" : ""}`}>›</span>
             </button>
