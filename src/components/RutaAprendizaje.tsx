@@ -62,10 +62,12 @@ function construirElementos(): Elemento[] {
   return els;
 }
 
+export type TopCreador = { id: string; nombre: string; avatarUrl: string | null; xp: number; esTu: boolean };
+
 export function RutaAprendizaje({
-  nombre, avatarUrl, gemas, racha, perfilPct,
+  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [],
 }: {
-  nombre: string; avatarUrl: string | null; gemas: number; racha: number; perfilPct: number;
+  nombre: string; avatarUrl: string | null; gemas: number; racha: number; perfilPct: number; topCreadores?: TopCreador[];
 }) {
   const elementos = construirElementos();
   // TODOS los nodos siguen la misma onda senoidal → serpentina continua y suave (sin codos).
@@ -149,6 +151,38 @@ export function RutaAprendizaje({
 
             {/* ——— Sidebar derecha ——— */}
             <aside className="space-y-4 lg:sticky lg:top-5">
+              {/* Top 5 creadores */}
+              {topCreadores.length > 0 && (
+                <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-lg">🏆</span>
+                    <h3 className="font-display font-extrabold text-[15px]">Top creadores</h3>
+                  </div>
+                  <div className="space-y-1.5">
+                    {topCreadores.map((c, i) => (
+                      <div key={c.id}
+                        className={`flex items-center gap-2.5 rounded-xl px-2 py-1.5 ${c.esTu ? "bg-accent-soft" : ""}`}>
+                        <span className={`w-6 text-center text-[13px] font-extrabold shrink-0 ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-hint"}`}>
+                          {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
+                        </span>
+                        {c.avatarUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={c.avatarUrl} alt={c.nombre} className="w-8 h-8 rounded-full object-cover shrink-0" />
+                        ) : (
+                          <span className="w-8 h-8 rounded-full bg-accent/15 text-accent grid place-items-center text-[11px] font-bold shrink-0">
+                            {c.nombre.slice(0, 2).toUpperCase()}
+                          </span>
+                        )}
+                        <span className="flex-1 min-w-0 text-[13px] font-semibold truncate">
+                          {c.nombre}{c.esTu && <span className="text-accent"> · Tú</span>}
+                        </span>
+                        <span className="text-[12px] font-bold text-accent shrink-0">{c.xp} XP</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Banner completa perfil */}
               {perfilPct < 100 && (
                 <Link href="/app/perfil/completar" className="flex items-center gap-3 rounded-2xl p-3.5 bg-surface border border-amber/40 shadow-sm hover:scale-[1.01] transition">
