@@ -131,6 +131,64 @@ export async function marcarAdmin(userId: string, valor: boolean): Promise<{ ok:
   return { ok: true };
 }
 
+// ————— Comentarios (moderación) —————
+export type ComentarioAdmin = {
+  id: string;
+  autorNombre: string;
+  texto: string;
+  oculto: boolean;
+  fecha: string;
+  retoTitulo: string;
+};
+
+export async function listarComentariosAdmin(): Promise<ComentarioAdmin[]> {
+  const admin = await comoAdmin();
+  if (!admin) return [];
+  const { data } = await admin
+    .from("comentarios")
+    .select("id, autor_id, reto_id, texto, oculto, created_at")
+    .order("created_at", { ascending: false })
+    .limit(300);
+  if (!data || data.length === 0) return [];
+  const autorIds = [...new Set(data.map((c) => c.autor_id as string))];
+  const { data: perfiles } = await admin.from("profiles").select("id, full_name").in("id", autorIds);
+  const pMap = new Map((perfiles || []).map((p) => [p.id as string, (p.full_name as string) || "Creador"]));
+  const retoCache = new Map<string, string>();
+  const out: ComentarioAdmin[] = [];
+  for (const c of data) {
+    const rid = c.reto_id as string;
+    if (!retoCache.has(rid)) {
+      const r = await getRetoUnificado(rid);
+      retoCache.set(rid, r?.titulo || rid);
+    }
+    out.push({
+      id: c.id as string,
+      autorNombre: pMap.get(c.autor_id as string) || "Creador",
+      texto: c.texto as string,
+      oculto: c.oculto as boolean,
+      fecha: c.created_at as string,
+      retoTitulo: retoCache.get(rid)!,
+    });
+  }
+  return out;
+}
+
+export async function moderarComentario(id: string, oculto: boolean): Promise<{ ok: true } | { error: string }> {
+  const admin = await comoAdmin();
+  if (!admin) return { error: "No autorizado." };
+  const { error } = await admin.from("comentarios").update({ oculto }).eq("id", id);
+  if (error) return { error: "No se pudo moderar." };
+  return { ok: true };
+}
+
+export async function borrarComentario(id: string): Promise<{ ok: true } | { error: string }> {
+  const admin = await comoAdmin();
+  if (!admin) return { error: "No autorizado." };
+  const { error } = await admin.from("comentarios").delete().eq("id", id);
+  if (error) return { error: "No se pudo borrar." };
+  return { ok: true };
+}
+
 // ————— Avances / envíos de retos —————
 export type Avance = {
   userId: string;
@@ -204,7 +262,8 @@ export async function revisarReto(
 export async function crearUsuarioAdmin(
   email: string,
   nombre: string,
-  password: string
+  password: string,
+  comoAdminNuevo: boolean = false
 ): Promise<{ ok: true } | { error: string }> {
   const admin = await comoAdmin();
   if (!admin) return { error: "No autorizado." };
@@ -219,7 +278,11 @@ export async function crearUsuarioAdmin(
   });
   if (error || !data.user) return { error: error?.message || "No se pudo crear el usuario." };
 
-  // Asegura el perfil con el nombre.
-  await admin.from("profiles").upsert({ id: data.user.id, full_name: nombre?.trim() || "" });
+  // Asegura el perfil con el nombre y el rol elegido (admin o normal).
+  await admin.from("profiles").upsert({
+    id: data.user.id,
+    full_name: nombre?.trim() || "",
+    is_admin: comoAdminNuevo,
+  });
   return { ok: true };
 }

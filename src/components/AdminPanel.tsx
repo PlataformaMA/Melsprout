@@ -14,9 +14,12 @@ import {
   crearUsuarioAdmin,
   marcarAdmin,
   revisarReto,
+  moderarComentario,
+  borrarComentario,
   type RetoInput,
   type UsuarioAdmin,
   type Avance,
+  type ComentarioAdmin,
 } from "@/lib/admin-actions";
 
 const TIPOS: { v: RetoTipo; label: string }[] = [
@@ -59,9 +62,9 @@ function rowToForm(r: RetoRow): FormReto {
   };
 }
 
-export function AdminPanel({ retos, usuarios, avances, adminEmail }: { retos: RetoRow[]; usuarios: UsuarioAdmin[]; avances: Avance[]; adminEmail: string }) {
+export function AdminPanel({ retos, usuarios, avances, comentarios, adminEmail }: { retos: RetoRow[]; usuarios: UsuarioAdmin[]; avances: Avance[]; comentarios: ComentarioAdmin[]; adminEmail: string }) {
   const router = useRouter();
-  const [tab, setTab] = useState<"retos" | "avances" | "usuarios">("retos");
+  const [tab, setTab] = useState<AdminTab>("retos");
   const [form, setForm] = useState<FormReto | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [msg, setMsg] = useState("");
@@ -97,12 +100,12 @@ export function AdminPanel({ retos, usuarios, avances, adminEmail }: { retos: Re
     personal: "bg-pink-soft text-pink", curso: "bg-amber-100 text-amber-700",
   };
 
-  const TITULOS: Record<string, string> = { retos: "Retos", avances: "Avances de usuarios", usuarios: "Usuarios" };
+  const TITULOS: Record<string, string> = { retos: "Retos", avances: "Avances de usuarios", comentarios: "Comentarios", usuarios: "Usuarios" };
 
   return (
     <div className="min-h-screen bg-bg flex">
       <AdminSidebar tab={tab} setTab={(t) => { setTab(t); setForm(null); }} adminEmail={adminEmail}
-        counts={{ retos: retos.length, avances: avances.length, usuarios: usuarios.length }} />
+        counts={{ retos: retos.length, avances: avances.length, comentarios: comentarios.length, usuarios: usuarios.length }} />
 
       <div className="flex-1 min-w-0">
         <div className="max-w-[1080px] mx-auto px-4 sm:px-8 py-6">
@@ -156,6 +159,8 @@ export function AdminPanel({ retos, usuarios, avances, adminEmail }: { retos: Re
             </div>
           ) : tab === "avances" ? (
             <AvancesTab avances={avances} onCambio={() => router.refresh()} />
+          ) : tab === "comentarios" ? (
+            <ComentariosTab comentarios={comentarios} onCambio={() => router.refresh()} />
           ) : (
             <UsuariosTab usuarios={usuarios} onCreado={() => router.refresh()} />
           )}
@@ -166,14 +171,15 @@ export function AdminPanel({ retos, usuarios, avances, adminEmail }: { retos: Re
 }
 
 // ————— Barra lateral del admin —————
-type AdminTab = "retos" | "avances" | "usuarios";
+type AdminTab = "retos" | "avances" | "comentarios" | "usuarios";
 function AdminSidebar({ tab, setTab, adminEmail, counts }: {
   tab: AdminTab; setTab: (t: AdminTab) => void; adminEmail: string;
-  counts: { retos: number; avances: number; usuarios: number };
+  counts: { retos: number; avances: number; comentarios: number; usuarios: number };
 }) {
   const items: { id: AdminTab; label: string; icon: string; count: number }[] = [
     { id: "retos", label: "Retos", icon: "🎯", count: counts.retos },
     { id: "avances", label: "Avances", icon: "📊", count: counts.avances },
+    { id: "comentarios", label: "Comentarios", icon: "💬", count: counts.comentarios },
     { id: "usuarios", label: "Usuarios", icon: "👥", count: counts.usuarios },
   ];
   return (
@@ -197,7 +203,6 @@ function AdminSidebar({ tab, setTab, adminEmail, counts }: {
         ))}
         <div className="text-[11px] text-hint font-semibold px-3 pt-4 pb-1 uppercase">Próximamente</div>
         <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-semibold text-hint/70 cursor-default"><span>📚</span> Clases y cursos</div>
-        <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-semibold text-hint/70 cursor-default"><span>💬</span> Comentarios</div>
         <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-semibold text-hint/70 cursor-default"><span>⚙️</span> Configuración</div>
       </nav>
 
@@ -219,10 +224,10 @@ function AdminSidebar({ tab, setTab, adminEmail, counts }: {
 // Selector de sección para móvil (la barra lateral se oculta en móvil).
 function AdminTabsMovil({ tab, setTab }: { tab: AdminTab; setTab: (t: AdminTab) => void }) {
   return (
-    <div className="md:hidden inline-flex bg-surface border border-border rounded-2xl p-1 mb-5 shadow-sm">
-      {(["retos", "avances", "usuarios"] as AdminTab[]).map((t) => (
+    <div className="md:hidden flex flex-wrap gap-1 bg-surface border border-border rounded-2xl p-1 mb-5 shadow-sm">
+      {(["retos", "avances", "comentarios", "usuarios"] as AdminTab[]).map((t) => (
         <button key={t} onClick={() => setTab(t)}
-          className={`px-4 py-2 rounded-xl text-[13px] font-bold transition ${tab === t ? "bg-accent text-white" : "text-sub"}`}>
+          className={`px-3 py-2 rounded-xl text-[13px] font-bold transition ${tab === t ? "bg-accent text-white" : "text-sub"}`}>
           {t.charAt(0).toUpperCase() + t.slice(1)}
         </button>
       ))}
@@ -436,21 +441,72 @@ function RetoForm({ form, setForm, guardar, guardando, cancelar, msg }: {
   );
 }
 
+// ————— Comentarios (moderación) —————
+function ComentariosTab({ comentarios, onCambio }: { comentarios: ComentarioAdmin[]; onCambio: () => void }) {
+  if (comentarios.length === 0) {
+    return (
+      <div className="bg-surface border border-dashed border-border rounded-2xl p-8 text-center text-sub">
+        <div className="text-3xl mb-2">💬</div>
+        Aún no hay comentarios en la comunidad.
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-2.5">
+      {comentarios.map((c) => <ComentarioFila key={c.id} c={c} onCambio={onCambio} />)}
+    </div>
+  );
+}
+
+function ComentarioFila({ c, onCambio }: { c: ComentarioAdmin; onCambio: () => void }) {
+  const [cargando, setCargando] = useState(false);
+  async function accion(fn: Promise<{ ok: true } | { error: string }>) {
+    setCargando(true);
+    const r = await fn;
+    setCargando(false);
+    if ("error" in r) { alert(r.error); return; }
+    onCambio();
+  }
+  return (
+    <div className={`bg-surface border rounded-2xl px-4 py-3 shadow-sm ${c.oculto ? "border-amber-300 opacity-70" : "border-border"}`}>
+      <div className="flex items-start gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-[13.5px]">{c.autorNombre}</span>
+            <span className="text-[11px] text-hint truncate">en {c.retoTitulo}</span>
+            {c.oculto && <span className="text-[11px] font-bold text-amber-700 bg-amber-100 rounded-full px-2 py-0.5">Oculto</span>}
+          </div>
+          <p className="text-[13.5px] text-text whitespace-pre-wrap mt-0.5">{c.texto}</p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button onClick={() => accion(moderarComentario(c.id, !c.oculto))} disabled={cargando}
+            className="text-[12px] font-semibold text-amber-700 disabled:opacity-50">
+            {c.oculto ? "Mostrar" : "Ocultar"}
+          </button>
+          <button onClick={() => { if (confirm("¿Borrar este comentario?")) accion(borrarComentario(c.id)); }} disabled={cargando}
+            className="text-[12px] font-semibold text-red-500 disabled:opacity-50">Borrar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ————— Usuarios —————
 function UsuariosTab({ usuarios, onCreado }: { usuarios: UsuarioAdmin[]; onCreado: () => void }) {
   const [email, setEmail] = useState("");
   const [nombre, setNombre] = useState("");
   const [pass, setPass] = useState("");
+  const [rolAdmin, setRolAdmin] = useState(false);
   const [creando, setCreando] = useState(false);
   const [msg, setMsg] = useState("");
   const inputC = "w-full bg-bg border border-border rounded-lg px-3 py-2 text-[14px] outline-none focus:border-accent";
 
   async function crear() {
     setCreando(true); setMsg("");
-    const r = await crearUsuarioAdmin(email, nombre, pass);
+    const r = await crearUsuarioAdmin(email, nombre, pass, rolAdmin);
     setCreando(false);
     if ("error" in r) { setMsg(r.error); return; }
-    setEmail(""); setNombre(""); setPass(""); setMsg("✅ Usuario creado"); onCreado();
+    setEmail(""); setNombre(""); setPass(""); setRolAdmin(false); setMsg("✅ Usuario creado"); onCreado();
   }
 
   return (
@@ -460,9 +516,20 @@ function UsuariosTab({ usuarios, onCreado }: { usuarios: UsuarioAdmin[]; onCread
         <input value={nombre} onChange={(e) => setNombre(e.target.value)} className={inputC} placeholder="Nombre completo" />
         <input value={email} onChange={(e) => setEmail(e.target.value)} className={inputC} placeholder="correo@ejemplo.com" type="email" />
         <input value={pass} onChange={(e) => setPass(e.target.value)} className={inputC} placeholder="Contraseña (mín. 6)" type="text" />
+        {/* Rol */}
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setRolAdmin(false)}
+            className={`flex-1 rounded-xl px-3 py-2.5 text-[13.5px] font-bold border transition ${!rolAdmin ? "bg-accent-soft border-accent text-accent" : "bg-bg border-border text-sub"}`}>
+            👤 Usuario normal
+          </button>
+          <button type="button" onClick={() => setRolAdmin(true)}
+            className={`flex-1 rounded-xl px-3 py-2.5 text-[13.5px] font-bold border transition ${rolAdmin ? "bg-accent-soft border-accent text-accent" : "bg-bg border-border text-sub"}`}>
+            ⚙️ Admin
+          </button>
+        </div>
         {msg && <p className="text-[13px] text-sub">{msg}</p>}
         <button onClick={crear} disabled={creando} className="bg-accent text-white rounded-xl px-5 py-2.5 text-[14px] font-bold hover:brightness-110 disabled:opacity-60 transition">
-          {creando ? "Creando…" : "Crear usuario"}
+          {creando ? "Creando…" : `Crear ${rolAdmin ? "admin" : "usuario"}`}
         </button>
       </div>
 
