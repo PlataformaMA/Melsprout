@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AppSidebar } from "@/components/AppSidebar";
+import { cerrarSesion } from "@/lib/auth-actions";
 import { ETAPA_1 } from "@/lib/data";
 import type { RetoRow, RetoTipo } from "@/lib/retos-db";
 import type { PasoReto } from "@/lib/retos";
@@ -97,32 +97,22 @@ export function AdminPanel({ retos, usuarios, avances, adminEmail }: { retos: Re
     personal: "bg-pink-soft text-pink", curso: "bg-amber-100 text-amber-700",
   };
 
+  const TITULOS: Record<string, string> = { retos: "Retos", avances: "Avances de usuarios", usuarios: "Usuarios" };
+
   return (
     <div className="min-h-screen bg-bg flex">
-      <AppSidebar active="admin" />
+      <AdminSidebar tab={tab} setTab={(t) => { setTab(t); setForm(null); }} adminEmail={adminEmail}
+        counts={{ retos: retos.length, avances: avances.length, usuarios: usuarios.length }} />
+
       <div className="flex-1 min-w-0">
         <div className="max-w-[1080px] mx-auto px-4 sm:px-8 py-6">
-          {/* Barra superior */}
-          <div className="flex items-center justify-between gap-3 mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-accent grid place-items-center text-white text-xl shrink-0">⚙️</div>
-              <div>
-                <h1 className="font-display text-xl sm:text-2xl font-extrabold leading-tight">Panel de administración</h1>
-                <p className="text-sub text-[12.5px] truncate max-w-[240px] sm:max-w-none">{adminEmail}</p>
-              </div>
-            </div>
-            <Link href="/app/ruta" className="text-[13px] text-sub font-semibold hover:text-accent transition shrink-0">← Volver a la app</Link>
+          {/* Encabezado de sección */}
+          <div className="mb-5">
+            <h1 className="font-display text-xl sm:text-2xl font-extrabold leading-tight">{TITULOS[tab]}</h1>
+            <p className="text-sub text-[12.5px]">Panel de administración · Melsprout</p>
           </div>
 
-          {/* Tabs tipo segmento */}
-          <div className="inline-flex flex-wrap bg-surface border border-border rounded-2xl p-1 mb-6 shadow-sm">
-            {(["retos", "avances", "usuarios"] as const).map((t) => (
-              <button key={t} onClick={() => { setTab(t); setForm(null); }}
-                className={`px-5 py-2 rounded-xl text-[14px] font-bold transition ${tab === t ? "bg-accent text-white shadow-sm" : "text-sub hover:text-text"}`}>
-                {t === "retos" ? `Retos · ${retos.length}` : t === "avances" ? `Avances · ${avances.length}` : `Usuarios · ${usuarios.length}`}
-              </button>
-            ))}
-          </div>
+          <AdminTabsMovil tab={tab} setTab={(t) => { setTab(t); setForm(null); }} />
 
           {tab === "retos" ? (
             <div>
@@ -171,6 +161,71 @@ export function AdminPanel({ retos, usuarios, avances, adminEmail }: { retos: Re
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ————— Barra lateral del admin —————
+type AdminTab = "retos" | "avances" | "usuarios";
+function AdminSidebar({ tab, setTab, adminEmail, counts }: {
+  tab: AdminTab; setTab: (t: AdminTab) => void; adminEmail: string;
+  counts: { retos: number; avances: number; usuarios: number };
+}) {
+  const items: { id: AdminTab; label: string; icon: string; count: number }[] = [
+    { id: "retos", label: "Retos", icon: "🎯", count: counts.retos },
+    { id: "avances", label: "Avances", icon: "📊", count: counts.avances },
+    { id: "usuarios", label: "Usuarios", icon: "👥", count: counts.usuarios },
+  ];
+  return (
+    <div className="hidden md:flex flex-col w-64 shrink-0 bg-surface border-r border-border min-h-screen sticky top-0 p-4">
+      <div className="flex items-center gap-2.5 px-2 mb-6">
+        <div className="w-9 h-9 rounded-xl bg-accent grid place-items-center text-white font-extrabold">M</div>
+        <div>
+          <div className="font-display font-extrabold leading-tight">Melsprout</div>
+          <div className="text-[11px] text-accent font-bold">ADMIN</div>
+        </div>
+      </div>
+
+      <nav className="flex flex-col gap-1">
+        {items.map((it) => (
+          <button key={it.id} onClick={() => setTab(it.id)}
+            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-semibold transition ${tab === it.id ? "bg-accent-soft text-accent" : "text-sub hover:bg-bg"}`}>
+            <span>{it.icon}</span>
+            <span className="flex-1 text-left">{it.label}</span>
+            <span className={`text-[11px] font-bold rounded-full px-2 py-0.5 ${tab === it.id ? "bg-accent text-white" : "bg-bg text-hint"}`}>{it.count}</span>
+          </button>
+        ))}
+        <div className="text-[11px] text-hint font-semibold px-3 pt-4 pb-1 uppercase">Próximamente</div>
+        <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-semibold text-hint/70 cursor-default"><span>📚</span> Clases y cursos</div>
+        <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-semibold text-hint/70 cursor-default"><span>💬</span> Comentarios</div>
+        <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-semibold text-hint/70 cursor-default"><span>⚙️</span> Configuración</div>
+      </nav>
+
+      <div className="mt-auto pt-4 border-t border-border">
+        <div className="text-[11px] text-hint px-3 truncate mb-2">{adminEmail}</div>
+        <Link href="/app/ruta" className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-sub hover:bg-bg transition">
+          👁️ Ver como usuario
+        </Link>
+        <form action={cerrarSesion}>
+          <button className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-pink hover:bg-pink-soft transition">
+            🚪 Cerrar sesión
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Selector de sección para móvil (la barra lateral se oculta en móvil).
+function AdminTabsMovil({ tab, setTab }: { tab: AdminTab; setTab: (t: AdminTab) => void }) {
+  return (
+    <div className="md:hidden inline-flex bg-surface border border-border rounded-2xl p-1 mb-5 shadow-sm">
+      {(["retos", "avances", "usuarios"] as AdminTab[]).map((t) => (
+        <button key={t} onClick={() => setTab(t)}
+          className={`px-4 py-2 rounded-xl text-[13px] font-bold transition ${tab === t ? "bg-accent text-white" : "text-sub"}`}>
+          {t.charAt(0).toUpperCase() + t.slice(1)}
+        </button>
+      ))}
     </div>
   );
 }
