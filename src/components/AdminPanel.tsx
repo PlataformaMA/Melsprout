@@ -13,8 +13,10 @@ import {
   borrarReto,
   crearUsuarioAdmin,
   marcarAdmin,
+  revisarReto,
   type RetoInput,
   type UsuarioAdmin,
+  type Avance,
 } from "@/lib/admin-actions";
 
 const TIPOS: { v: RetoTipo; label: string }[] = [
@@ -57,9 +59,9 @@ function rowToForm(r: RetoRow): FormReto {
   };
 }
 
-export function AdminPanel({ retos, usuarios, adminEmail }: { retos: RetoRow[]; usuarios: UsuarioAdmin[]; adminEmail: string }) {
+export function AdminPanel({ retos, usuarios, avances, adminEmail }: { retos: RetoRow[]; usuarios: UsuarioAdmin[]; avances: Avance[]; adminEmail: string }) {
   const router = useRouter();
-  const [tab, setTab] = useState<"retos" | "usuarios">("retos");
+  const [tab, setTab] = useState<"retos" | "avances" | "usuarios">("retos");
   const [form, setForm] = useState<FormReto | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [msg, setMsg] = useState("");
@@ -113,11 +115,11 @@ export function AdminPanel({ retos, usuarios, adminEmail }: { retos: RetoRow[]; 
           </div>
 
           {/* Tabs tipo segmento */}
-          <div className="inline-flex bg-surface border border-border rounded-2xl p-1 mb-6 shadow-sm">
-            {(["retos", "usuarios"] as const).map((t) => (
+          <div className="inline-flex flex-wrap bg-surface border border-border rounded-2xl p-1 mb-6 shadow-sm">
+            {(["retos", "avances", "usuarios"] as const).map((t) => (
               <button key={t} onClick={() => { setTab(t); setForm(null); }}
                 className={`px-5 py-2 rounded-xl text-[14px] font-bold transition ${tab === t ? "bg-accent text-white shadow-sm" : "text-sub hover:text-text"}`}>
-                {t === "retos" ? `Retos · ${retos.length}` : `Usuarios · ${usuarios.length}`}
+                {t === "retos" ? `Retos · ${retos.length}` : t === "avances" ? `Avances · ${avances.length}` : `Usuarios · ${usuarios.length}`}
               </button>
             ))}
           </div>
@@ -162,11 +164,117 @@ export function AdminPanel({ retos, usuarios, adminEmail }: { retos: RetoRow[]; 
                 <RetoForm form={form} setForm={setForm} guardar={guardar} guardando={guardando} cancelar={() => setForm(null)} msg={msg} />
               )}
             </div>
+          ) : tab === "avances" ? (
+            <AvancesTab avances={avances} onCambio={() => router.refresh()} />
           ) : (
             <UsuariosTab usuarios={usuarios} onCreado={() => router.refresh()} />
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ————— Avances (envíos de retos) —————
+function AvancesTab({ avances, onCambio }: { avances: Avance[]; onCambio: () => void }) {
+  const [filtro, setFiltro] = useState<"todos" | "pendiente" | "aprobado" | "rechazado">("todos");
+  const lista = filtro === "todos" ? avances : avances.filter((a) => a.revision === filtro);
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <h2 className="font-display font-extrabold text-lg mr-2">Avances</h2>
+        {(["todos", "pendiente", "aprobado", "rechazado"] as const).map((f) => (
+          <button key={f} onClick={() => setFiltro(f)}
+            className={`text-[12px] font-bold rounded-full px-3 py-1.5 transition ${filtro === f ? "bg-accent text-white" : "bg-surface border border-border text-sub hover:bg-bg"}`}>
+            {f === "todos" ? "Todos" : f.charAt(0).toUpperCase() + f.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {lista.length === 0 ? (
+        <div className="bg-surface border border-dashed border-border rounded-2xl p-8 text-center text-sub">
+          <div className="text-3xl mb-2">📭</div>
+          No hay envíos {filtro !== "todos" ? `(${filtro})` : "aún"}.
+        </div>
+      ) : (
+        <div className="space-y-2.5">
+          {lista.map((a) => (
+            <AvanceFila key={`${a.userId}-${a.retoId}`} a={a} onCambio={onCambio} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const REV_BADGE: Record<string, string> = {
+  pendiente: "bg-amber-100 text-amber-700", aprobado: "bg-green/15 text-green", rechazado: "bg-red-100 text-red-600",
+};
+
+function AvanceFila({ a, onCambio }: { a: Avance; onCambio: () => void }) {
+  const [abierto, setAbierto] = useState(false);
+  const [cargando, setCargando] = useState(false);
+  const esVideo = a.archivoUrl && /\.(mp4|mov|webm|quicktime)(\?|$)/i.test(a.archivoUrl);
+  const esImagen = a.archivoUrl && /\.(png|jpe?g|webp)(\?|$)/i.test(a.archivoUrl);
+
+  async function revisar(v: "aprobado" | "rechazado") {
+    setCargando(true);
+    const r = await revisarReto(a.userId, a.retoId, v);
+    setCargando(false);
+    if ("error" in r) { alert(r.error); return; }
+    onCambio();
+  }
+
+  return (
+    <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
+      <button onClick={() => setAbierto((v) => !v)} className="w-full flex items-center gap-3 px-4 py-3.5 text-left">
+        <span className="w-10 h-10 rounded-xl bg-bg grid place-items-center text-lg shrink-0">{a.retoEmoji}</span>
+        <div className="flex-1 min-w-0">
+          <div className="font-bold text-[14px] truncate">{a.nombre}</div>
+          <div className="text-[12px] text-sub truncate">{a.retoTitulo}</div>
+        </div>
+        <span className={`text-[11px] font-bold rounded-full px-2 py-0.5 shrink-0 ${a.estado === "publicado" ? "bg-accent-soft text-accent" : "bg-bg text-sub"}`}>{a.estado}</span>
+        <span className={`text-[11px] font-bold rounded-full px-2 py-0.5 shrink-0 ${REV_BADGE[a.revision]}`}>{a.revision}</span>
+        <span className={`text-hint transition-transform ${abierto ? "rotate-90" : ""}`}>›</span>
+      </button>
+
+      {abierto && (
+        <div className="px-4 pb-4 border-t border-border pt-3 space-y-3">
+          {/* Respuestas */}
+          {Object.entries(a.respuestas).map(([k, v]) => (
+            v && !/^https?:\/\//.test(v) ? (
+              <div key={k}>
+                <div className="text-[11px] font-bold text-hint uppercase">{k}</div>
+                <p className="text-[13.5px] text-text whitespace-pre-wrap">{v}</p>
+              </div>
+            ) : null
+          ))}
+          {/* Archivo */}
+          {esImagen && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={a.archivoUrl!} alt="envío" className="max-h-64 rounded-xl border border-border" />
+          )}
+          {esVideo && (
+            <video src={a.archivoUrl!} controls className="max-h-72 rounded-xl border border-border w-full" />
+          )}
+          {a.archivoUrl && !esImagen && !esVideo && (
+            <a href={a.archivoUrl} target="_blank" rel="noreferrer" className="text-accent text-[13px] font-semibold underline">Ver archivo enviado</a>
+          )}
+
+          {/* Acciones de revisión */}
+          <div className="flex items-center gap-2 pt-1">
+            <button onClick={() => revisar("aprobado")} disabled={cargando || a.revision === "aprobado"}
+              className="bg-green text-white rounded-lg px-4 py-2 text-[13px] font-bold hover:brightness-110 disabled:opacity-50 transition">
+              ✓ Aprobar
+            </button>
+            <button onClick={() => revisar("rechazado")} disabled={cargando || a.revision === "rechazado"}
+              className="bg-surface border border-red-300 text-red-600 rounded-lg px-4 py-2 text-[13px] font-bold hover:bg-red-50 disabled:opacity-50 transition">
+              ✕ Rechazar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

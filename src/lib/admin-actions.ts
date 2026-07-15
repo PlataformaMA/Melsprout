@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { esAdmin, esAdminUsuario } from "@/lib/admin";
-import type { RetoRow, RetoTipo } from "@/lib/retos-db";
+import { getRetoUnificado, type RetoRow, type RetoTipo } from "@/lib/retos-db";
 
 // Verifica que quien llama sea admin. Devuelve el admin client o null.
 async function comoAdmin() {
@@ -128,6 +128,76 @@ export async function marcarAdmin(userId: string, valor: boolean): Promise<{ ok:
   if (!admin) return { error: "No autorizado." };
   const { error } = await admin.from("profiles").update({ is_admin: valor }).eq("id", userId);
   if (error) return { error: "No se pudo cambiar el rol." };
+  return { ok: true };
+}
+
+// ————— Avances / envíos de retos —————
+export type Avance = {
+  userId: string;
+  nombre: string;
+  retoId: string;
+  retoTitulo: string;
+  retoEmoji: string;
+  estado: string;
+  revision: "pendiente" | "aprobado" | "rechazado";
+  respuestas: Record<string, string>;
+  archivoUrl: string | null;
+  actualizado: string;
+};
+
+export async function listarAvances(): Promise<Avance[]> {
+  const admin = await comoAdmin();
+  if (!admin) return [];
+  const { data: subs } = await admin
+    .from("reto_submissions")
+    .select("user_id, reto_id, respuestas, archivo_url, estado, revision, updated_at")
+    .order("updated_at", { ascending: false });
+  if (!subs || subs.length === 0) return [];
+
+  // Nombres de usuarios.
+  const ids = [...new Set(subs.map((s) => s.user_id as string))];
+  const { data: perfiles } = await admin.from("profiles").select("id, full_name").in("id", ids);
+  const nombreMap = new Map((perfiles || []).map((p) => [p.id as string, (p.full_name as string) || "Creador"]));
+
+  // Títulos de retos (cache por reto_id).
+  const retoCache = new Map<string, { titulo: string; emoji: string }>();
+  const out: Avance[] = [];
+  for (const s of subs) {
+    const rid = s.reto_id as string;
+    if (!retoCache.has(rid)) {
+      const r = await getRetoUnificado(rid);
+      retoCache.set(rid, { titulo: r?.titulo || rid, emoji: r?.emoji || "🎯" });
+    }
+    const info = retoCache.get(rid)!;
+    out.push({
+      userId: s.user_id as string,
+      nombre: nombreMap.get(s.user_id as string) || "Creador",
+      retoId: rid,
+      retoTitulo: info.titulo,
+      retoEmoji: info.emoji,
+      estado: (s.estado as string) || "borrador",
+      revision: (s.revision as Avance["revision"]) || "pendiente",
+      respuestas: (s.respuestas as Record<string, string>) || {},
+      archivoUrl: (s.archivo_url as string) || null,
+      actualizado: s.updated_at as string,
+    });
+  }
+  return out;
+}
+
+export async function revisarReto(
+  userId: string,
+  retoId: string,
+  revision: "aprobado" | "rechazado" | "pendiente"
+): Promise<{ ok: true } | { error: string }> {
+  const admin = await comoAdmin();
+  if (!admin) return { error: "No autorizado." };
+  const { error } = await admin
+    .from("reto_submissions")
+    .update({ revision })
+    .eq("user_id", userId)
+    .eq("reto_id", retoId);
+  if (error) return { error: "No se pudo actualizar la revisión." };
   return { ok: true };
 }
 
