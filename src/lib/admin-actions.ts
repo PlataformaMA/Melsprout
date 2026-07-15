@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { esAdmin } from "@/lib/admin";
+import { esAdmin, esAdminUsuario } from "@/lib/admin";
 import type { RetoRow, RetoTipo } from "@/lib/retos-db";
 
 // Verifica que quien llama sea admin. Devuelve el admin client o null.
@@ -11,7 +11,7 @@ async function comoAdmin() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user || !esAdmin(user.email)) return null;
+  if (!user || !(await esAdminUsuario(user.id, user.email))) return null;
   return createAdminClient();
 }
 
@@ -101,18 +101,34 @@ export async function borrarReto(id: string): Promise<{ ok: true } | { error: st
 }
 
 // ————— Usuarios —————
-export type UsuarioAdmin = { id: string; email: string | null; nombre: string | null; creado: string };
+export type UsuarioAdmin = { id: string; email: string | null; nombre: string | null; creado: string; esAdmin: boolean; esRaiz: boolean };
 
 export async function listarUsuariosAdmin(): Promise<UsuarioAdmin[]> {
   const admin = await comoAdmin();
   if (!admin) return [];
   const { data } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
-  return (data?.users || []).map((u) => ({
-    id: u.id,
-    email: u.email ?? null,
-    nombre: (u.user_metadata?.full_name as string) || null,
-    creado: u.created_at,
-  }));
+  const { data: perfiles } = await admin.from("profiles").select("id, is_admin");
+  const adminMap = new Map((perfiles || []).map((p) => [p.id as string, p.is_admin === true]));
+  return (data?.users || []).map((u) => {
+    const raiz = esAdmin(u.email); // admins por ADMIN_EMAILS (no se pueden quitar)
+    return {
+      id: u.id,
+      email: u.email ?? null,
+      nombre: (u.user_metadata?.full_name as string) || null,
+      creado: u.created_at,
+      esAdmin: raiz || adminMap.get(u.id) === true,
+      esRaiz: raiz,
+    };
+  });
+}
+
+// Promueve o quita admin a un usuario (los admins de ADMIN_EMAILS no se pueden quitar).
+export async function marcarAdmin(userId: string, valor: boolean): Promise<{ ok: true } | { error: string }> {
+  const admin = await comoAdmin();
+  if (!admin) return { error: "No autorizado." };
+  const { error } = await admin.from("profiles").update({ is_admin: valor }).eq("id", userId);
+  if (error) return { error: "No se pudo cambiar el rol." };
+  return { ok: true };
 }
 
 export async function crearUsuarioAdmin(

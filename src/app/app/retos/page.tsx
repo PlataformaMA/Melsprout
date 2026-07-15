@@ -5,7 +5,7 @@ import { getPerfil } from "@/lib/perfil-actions";
 import { ETAPA_1 } from "@/lib/data";
 import { getReto } from "@/lib/retos";
 import { listarRetosPorTipo, type RetoRow } from "@/lib/retos-db";
-import { esAdmin } from "@/lib/admin";
+import { esAdminUsuario } from "@/lib/admin";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 
@@ -26,6 +26,7 @@ export default async function RetosPage() {
     .eq("user_id", user.id);
   const estados = new Map((subs || []).map((s) => [s.reto_id as string, s.estado as string]));
   const porTipo = await listarRetosPorTipo();
+  const soyAdmin = await esAdminUsuario(user.id, user.email);
 
   return (
     <div className="min-h-screen bg-bg flex">
@@ -35,7 +36,7 @@ export default async function RetosPage() {
           <header className="flex items-center justify-end gap-4 mb-5 h-10">
             <span className="flex items-center gap-1.5 text-[14px] font-bold">🔥 {perfil.racha}</span>
             <span className="flex items-center gap-1.5 text-[14px] font-bold">💎 {perfil.gemas}</span>
-            <UserMenu avatarUrl={perfil.avatar_url} nombre={perfil.full_name ?? "Creador"} esAdmin={esAdmin(user.email)} />
+            <UserMenu avatarUrl={perfil.avatar_url} nombre={perfil.full_name ?? "Creador"} esAdmin={soyAdmin} />
           </header>
 
           {(() => {

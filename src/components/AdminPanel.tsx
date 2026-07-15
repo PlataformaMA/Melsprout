@@ -12,6 +12,7 @@ import {
   actualizarReto,
   borrarReto,
   crearUsuarioAdmin,
+  marcarAdmin,
   type RetoInput,
   type UsuarioAdmin,
 } from "@/lib/admin-actions";
@@ -287,12 +288,35 @@ function UsuariosTab({ usuarios, onCreado }: { usuarios: UsuarioAdmin[]; onCread
       <h3 className="font-display font-extrabold mt-8 mb-3">Usuarios ({usuarios.length})</h3>
       <div className="space-y-1.5">
         {usuarios.map((u) => (
-          <div key={u.id} className="flex items-center gap-3 bg-surface border border-border rounded-xl px-4 py-2.5 text-[13px]">
-            <span className="font-semibold flex-1 truncate">{u.nombre || "—"}</span>
-            <span className="text-sub truncate">{u.email}</span>
-          </div>
+          <UsuarioFila key={u.id} u={u} onCambio={onCreado} />
         ))}
       </div>
+    </div>
+  );
+}
+
+function UsuarioFila({ u, onCambio }: { u: UsuarioAdmin; onCambio: () => void }) {
+  const [cargando, setCargando] = useState(false);
+  async function toggle() {
+    setCargando(true);
+    const r = await marcarAdmin(u.id, !u.esAdmin);
+    setCargando(false);
+    if ("error" in r) { alert(r.error); return; }
+    onCambio();
+  }
+  return (
+    <div className="flex items-center gap-3 bg-surface border border-border rounded-xl px-4 py-2.5 text-[13px]">
+      <span className="font-semibold truncate min-w-0 flex-1">{u.nombre || "—"}</span>
+      <span className="text-sub truncate hidden sm:block flex-1 min-w-0">{u.email}</span>
+      {u.esAdmin && <span className="text-[11px] font-bold text-accent bg-accent-soft rounded-full px-2 py-0.5 shrink-0">Admin{u.esRaiz ? " raíz" : ""}</span>}
+      {u.esRaiz ? (
+        <span className="text-[12px] text-hint shrink-0 w-24 text-right">fijo</span>
+      ) : (
+        <button onClick={toggle} disabled={cargando}
+          className={`text-[12px] font-semibold shrink-0 w-24 text-right ${u.esAdmin ? "text-red-500" : "text-accent"} disabled:opacity-50`}>
+          {cargando ? "…" : u.esAdmin ? "Quitar admin" : "Hacer admin"}
+        </button>
+      )}
     </div>
   );
 }

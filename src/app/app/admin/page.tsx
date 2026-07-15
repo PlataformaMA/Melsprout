@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { esAdmin } from "@/lib/admin";
+import { esAdminUsuario } from "@/lib/admin";
 import { listarRetosAdmin, listarUsuariosAdmin } from "@/lib/admin-actions";
 import { AdminPanel } from "@/components/AdminPanel";
 
@@ -10,7 +10,7 @@ export default async function AdminPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  if (!esAdmin(user.email)) redirect("/app/ruta");
+  if (!(await esAdminUsuario(user.id, user.email))) redirect("/app/ruta");
 
   const [retos, usuarios] = await Promise.all([listarRetosAdmin(), listarUsuariosAdmin()]);
 
