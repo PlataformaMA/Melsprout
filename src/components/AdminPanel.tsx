@@ -208,7 +208,7 @@ function AdminSidebar({ tab, setTab, adminEmail, counts }: {
 
       <div className="mt-auto pt-4 border-t border-border">
         <div className="text-[11px] text-hint px-3 truncate mb-2">{adminEmail}</div>
-        <Link href="/app/ruta" className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-sub hover:bg-bg transition">
+        <Link href="/app/inicio" className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-sub hover:bg-bg transition">
           👁️ Ver como usuario
         </Link>
         <form action={cerrarSesion}>

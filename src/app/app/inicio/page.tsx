@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPerfil } from "@/lib/perfil-actions";
-import { esAdminUsuario } from "@/lib/admin";
 import { ETAPA_1, TOTAL_CLASES, nivelPorXP } from "@/lib/data";
 import { InicioVista } from "@/components/InicioVista";
 
@@ -12,7 +11,6 @@ export default async function InicioPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  if (await esAdminUsuario(user.id, user.email)) redirect("/app/admin");
 
   const perfil = await getPerfil();
   if (!perfil) redirect("/onboarding");
