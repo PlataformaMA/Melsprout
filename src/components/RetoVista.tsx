@@ -37,6 +37,11 @@ export function RetoVista({
   const [guardando, setGuardando] = useState<"borrador" | "publicado" | null>(null);
   const [modal, setModal] = useState<"borrador" | "publicado" | null>(null);
   const [error, setError] = useState("");
+  const [paso, setPaso] = useState(0);
+
+  const total = reto.pasos.length;
+  const esUltimo = paso >= total - 1;
+  const pasoActual = reto.pasos[paso];
 
   const set = (id: string, v: string) => setResp((p) => ({ ...p, [id]: v }));
 
@@ -99,107 +104,120 @@ export function RetoVista({
             <span className="text-sub">Reto</span>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
-            {/* ——— Columna principal ——— */}
-            <div>
-              <h1 className="font-display text-2xl sm:text-[28px] font-extrabold leading-tight">
-                Reto: {reto.titulo} <span>{reto.emoji}</span>
-              </h1>
-              <p className="text-sub mt-1.5">{reto.descripcion}</p>
-
-              {/* Banner intro */}
-              <div className="mt-5 rounded-2xl p-4 flex items-center gap-4" style={{ background: "linear-gradient(120deg,#F3F0FF,#FBFAFF)", border: "1px solid var(--color-accent-soft, #ECE6FB)" }}>
-                <div className="w-11 h-11 rounded-xl bg-accent grid place-items-center text-white shrink-0">
-                  <Sparkle />
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8">
+            {/* ——— Columna principal (flujo paso a paso) ——— */}
+            <div className="max-w-[620px]">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h1 className="font-display text-2xl sm:text-[26px] font-extrabold leading-tight">
+                    {reto.titulo} <span>{reto.emoji}</span>
+                  </h1>
+                  <p className="text-sub mt-1.5 text-[14px]">{reto.descripcion}</p>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[14px] text-sub leading-snug">{reto.intro}</p>
-                  <p className="text-[14px] text-accent font-bold mt-1">Al completarlo y {reto.accion} en la comunidad ganarás +{reto.xp} XP.</p>
-                </div>
-                <span className="bg-accent text-white text-[13px] font-extrabold rounded-lg px-3 py-1.5 shrink-0">+{reto.xp} XP</span>
+                <span className="bg-accent-soft text-accent text-[13px] font-extrabold rounded-full px-3 py-1.5 shrink-0 mt-1">+{reto.xp} XP</span>
               </div>
 
-              {/* Pasos */}
-              <div className="mt-5 space-y-4">
-                {reto.pasos.map((paso, i) => (
-                  <div key={paso.id} className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3">
-                        <span className="w-6 h-6 rounded-full bg-accent text-white grid place-items-center text-[13px] font-bold shrink-0 mt-0.5">{i + 1}</span>
-                        <div>
-                          <h3 className="font-display font-extrabold">{paso.titulo}</h3>
-                          {paso.subtitulo && <p className="text-[13px] text-sub mt-0.5">{paso.subtitulo}</p>}
-                        </div>
-                      </div>
-                      <span className="text-accent shrink-0">{i === 0 ? <HeartOutline /> : <Target />}</span>
-                    </div>
-
-                    <div className="mt-4">
-                      {paso.tipo === "archivo" ? (
-                        <FileField paso={paso} archivoUrl={archivoUrl} videoNombre={videoNombre} subiendo={subiendo} onFile={(f) => subirArchivo(paso, f)} />
-                      ) : paso.tipo === "texto" ? (
-                        <div>
-                          <input
-                            type="text"
-                            maxLength={paso.max}
-                            value={resp[paso.id] || ""}
-                            onChange={(e) => set(paso.id, e.target.value)}
-                            placeholder={paso.placeholder}
-                            className="w-full bg-bg border border-border rounded-xl px-4 py-3 text-[14px] outline-none focus:border-accent"
-                          />
-                          {paso.max && <div className="text-right text-[12px] text-hint mt-1">{(resp[paso.id] || "").length}/{paso.max}</div>}
-                        </div>
-                      ) : (
-                        <div>
-                          <textarea
-                            maxLength={paso.max}
-                            rows={4}
-                            value={resp[paso.id] || ""}
-                            onChange={(e) => set(paso.id, e.target.value)}
-                            placeholder={paso.placeholder}
-                            className="w-full bg-bg border border-border rounded-xl px-4 py-3 text-[14px] outline-none focus:border-accent resize-none"
-                          />
-                          {paso.max && <div className="text-right text-[12px] text-hint mt-1">{(resp[paso.id] || "").length}/{paso.max}</div>}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-
-                {/* Tips */}
-                <div className="rounded-2xl p-4" style={{ background: "linear-gradient(120deg,#F6F3FF,#FBFAFF)" }}>
-                  <div className="flex items-center gap-2 mb-2.5">
-                    <span className="text-accent">💡</span>
-                    <span className="text-[13px] font-bold text-accent">{reto.tips.titulo}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-x-6 gap-y-2">
-                    {reto.tips.items.map((t) => (
-                      <span key={t} className="flex items-center gap-1.5 text-[13px] text-sub">
-                        <CheckCircle /> {t}
-                      </span>
-                    ))}
-                  </div>
+              {/* Progreso del flujo */}
+              <div className="mt-6 mb-5">
+                <div className="flex items-center justify-between text-[12px] mb-2">
+                  <span className="font-bold text-accent">Paso {paso + 1} de {total}</span>
+                  <span className="text-hint">{Math.round(((paso + 1) / total) * 100)}%</span>
                 </div>
+                <div className="flex gap-1.5">
+                  {reto.pasos.map((_, i) => (
+                    <div key={i} className="flex-1 h-1.5 rounded-full overflow-hidden bg-[#EEEBF6]">
+                      <div className={`h-full rounded-full transition-all ${i <= paso ? "bg-accent" : ""}`} style={{ width: i <= paso ? "100%" : "0%" }} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Tarjeta del paso actual (una a la vez, con aire) */}
+              <div className="bg-surface border border-border rounded-3xl p-6 sm:p-7 shadow-sm">
+                <div className="flex items-center gap-3 mb-1">
+                  <span className="w-8 h-8 rounded-full bg-accent text-white grid place-items-center text-[14px] font-bold shrink-0">{paso + 1}</span>
+                  <h3 className="font-display font-extrabold text-lg">{pasoActual.titulo}</h3>
+                </div>
+                {pasoActual.subtitulo && <p className="text-[13.5px] text-sub leading-relaxed mb-5 pl-11">{pasoActual.subtitulo}</p>}
+
+                <div className={pasoActual.subtitulo ? "" : "mt-4"}>
+                  {pasoActual.tipo === "archivo" ? (
+                    <FileField paso={pasoActual} archivoUrl={archivoUrl} videoNombre={videoNombre} subiendo={subiendo} onFile={(f) => subirArchivo(pasoActual, f)} />
+                  ) : pasoActual.tipo === "texto" ? (
+                    <div>
+                      <input
+                        type="text"
+                        maxLength={pasoActual.max}
+                        value={resp[pasoActual.id] || ""}
+                        onChange={(e) => set(pasoActual.id, e.target.value)}
+                        placeholder={pasoActual.placeholder}
+                        className="w-full bg-bg border border-border rounded-xl px-4 py-3.5 text-[14px] outline-none focus:border-accent"
+                      />
+                      {pasoActual.max && <div className="text-right text-[12px] text-hint mt-1.5">{(resp[pasoActual.id] || "").length}/{pasoActual.max}</div>}
+                    </div>
+                  ) : (
+                    <div>
+                      <textarea
+                        maxLength={pasoActual.max}
+                        rows={5}
+                        value={resp[pasoActual.id] || ""}
+                        onChange={(e) => set(pasoActual.id, e.target.value)}
+                        placeholder={pasoActual.placeholder}
+                        className="w-full bg-bg border border-border rounded-xl px-4 py-3.5 text-[14px] outline-none focus:border-accent resize-none"
+                      />
+                      {pasoActual.max && <div className="text-right text-[12px] text-hint mt-1.5">{(resp[pasoActual.id] || "").length}/{pasoActual.max}</div>}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Tips (discretos, debajo del paso) */}
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4 px-1">
+                <span className="text-[12px] font-bold text-accent">💡 {reto.tips.titulo}</span>
+                {reto.tips.items.map((t) => (
+                  <span key={t} className="flex items-center gap-1.5 text-[12.5px] text-sub">
+                    <CheckCircle /> {t}
+                  </span>
+                ))}
               </div>
 
               {error && <p className="text-[13px] text-pink bg-pink-soft rounded-lg px-3 py-2 mt-4">{error}</p>}
 
-              {/* Acciones */}
-              <div className="flex items-center justify-between gap-3 mt-6">
+              {/* Navegación del flujo */}
+              <div className="flex items-center justify-between gap-3 mt-7">
                 <button
-                  onClick={() => guardar("borrador")}
-                  disabled={guardando !== null}
-                  className="flex items-center gap-2 bg-surface border border-border rounded-xl px-5 py-3 text-[14px] font-semibold hover:bg-bg disabled:opacity-60 transition"
+                  onClick={() => setPaso((p) => Math.max(0, p - 1))}
+                  disabled={paso === 0}
+                  className="flex items-center gap-2 text-[14px] font-semibold text-sub rounded-xl px-4 py-3 hover:bg-surface disabled:opacity-0 transition"
                 >
-                  <BookmarkIcon /> {guardando === "borrador" ? "Guardando…" : "Guardar borrador"}
+                  ‹ Anterior
                 </button>
-                <button
-                  onClick={() => guardar("publicado")}
-                  disabled={guardando !== null}
-                  className="flex items-center gap-2 bg-accent text-white rounded-xl px-6 py-3 text-[14px] font-bold hover:brightness-110 disabled:opacity-60 transition shadow-sm"
-                >
-                  <UploadIcon /> {guardando === "publicado" ? "Publicando…" : "Publicar en la comunidad"}
-                </button>
+
+                {!esUltimo ? (
+                  <button
+                    onClick={() => setPaso((p) => Math.min(total - 1, p + 1))}
+                    className="flex items-center gap-2 bg-accent text-white rounded-xl px-7 py-3 text-[14px] font-bold hover:brightness-110 transition shadow-sm"
+                  >
+                    Siguiente ›
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      onClick={() => guardar("borrador")}
+                      disabled={guardando !== null}
+                      className="flex items-center gap-2 bg-surface border border-border rounded-xl px-4 py-3 text-[14px] font-semibold hover:bg-bg disabled:opacity-60 transition"
+                    >
+                      <BookmarkIcon /> {guardando === "borrador" ? "Guardando…" : "Borrador"}
+                    </button>
+                    <button
+                      onClick={() => guardar("publicado")}
+                      disabled={guardando !== null}
+                      className="flex items-center gap-2 bg-accent text-white rounded-xl px-5 py-3 text-[14px] font-bold hover:brightness-110 disabled:opacity-60 transition shadow-sm"
+                    >
+                      <UploadIcon /> {guardando === "publicado" ? "Publicando…" : "Publicar"}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -360,10 +378,8 @@ function Counter({ icon, valor }: { icon: string; valor: number }) {
 }
 
 // ————————————— Iconos —————————————
-function Sparkle() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z" /></svg>; }
 function BellIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 0 0 4 0" /></svg>; }
 function HeartOutline() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z" /></svg>; }
-function Target() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.5" fill="currentColor" /></svg>; }
 function CheckCircle() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="m8.5 12 2.5 2.5 4.5-5" /></svg>; }
 function FlagIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 21V4M4 4h13l-2 4 2 4H4" /></svg>; }
 function MiniDot() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="8" /><path d="M12 8v4l2.5 2" strokeLinecap="round" /></svg>; }
