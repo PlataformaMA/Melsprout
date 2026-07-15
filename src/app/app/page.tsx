@@ -9,5 +9,5 @@ export default async function AppHome() {
     data: { user },
   } = await supabase.auth.getUser();
   if (user && (await esAdminUsuario(user.id, user.email))) redirect("/app/admin");
-  redirect("/app/ruta");
+  redirect("/app/inicio");
 }
