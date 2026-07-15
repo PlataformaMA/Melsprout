@@ -59,6 +59,8 @@ export const ETAPA_1: ModuloCurso[] = [
   },
 ];
 
+export const CATEGORIAS_FORO = ["General", "Marketing de contenido", "Redes sociales", "Branding personal", "YouTube", "TikTok", "Foto y video"];
+
 export const NICHOS = ["Moda", "Salud", "Belleza", "Tech", "Lifestyle"] as const;
 export const OBJETIVOS = ["Empezar desde cero", "Crecer mi audiencia", "Monetizar"] as const;
 export const PLATAFORMAS = ["Instagram", "TikTok", "YouTube"] as const;

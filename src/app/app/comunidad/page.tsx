@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getPerfil } from "@/lib/perfil-actions";
-import { getFeed } from "@/lib/comunidad-actions";
+import { getForoPosts, getTopColaboradores } from "@/lib/foros-actions";
 import { ComunidadVista } from "@/components/ComunidadVista";
 
 export default async function ComunidadPage() {
@@ -15,11 +15,12 @@ export default async function ComunidadPage() {
   if (!perfil) redirect("/onboarding");
   if (!perfil.onboarding_completo) redirect("/onboarding");
 
-  const feed = await getFeed();
+  const [posts, top] = await Promise.all([getForoPosts("General"), getTopColaboradores()]);
 
   return (
     <ComunidadVista
-      feed={feed}
+      postsIniciales={posts}
+      topColaboradores={top}
       nombre={perfil.full_name ?? "Creador"}
       avatarUrl={perfil.avatar_url}
       gemas={perfil.gemas}
