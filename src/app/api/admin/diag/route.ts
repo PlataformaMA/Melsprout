@@ -1,13 +1,21 @@
 import { NextResponse } from "next/server";
-import { ADMIN_EMAILS } from "@/lib/admin";
+import { createClient } from "@/lib/supabase/server";
+import { ADMIN_EMAILS, esAdmin, esAdminUsuario } from "@/lib/admin";
 
-// Diagnóstico SEGURO: no expone secretos, solo config de admin y marcador de build.
+// Diagnóstico SEGURO: lee TU sesión (al navegar directo) y dice si te reconoce
+// como admin. No expone secretos ni datos de otros usuarios (solo tu propia sesión).
 export async function GET() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   return NextResponse.json({
-    build: "admin-v2-isadmin", // marcador para confirmar que el deploy está vivo
+    build: "admin-v3-session",
+    logueado: !!user,
+    tuCorreo: user?.email ?? null,
+    esAdminPorCorreo: esAdmin(user?.email),
+    esAdminReal: user ? await esAdminUsuario(user.id, user.email) : false,
     adminEmailsCount: ADMIN_EMAILS.length,
-    incluyeSveidyBoost: ADMIN_EMAILS.includes("sveidy@boostacademy.io"),
-    // primeras letras de cada correo admin (para ubicar sin exponer)
-    pistas: ADMIN_EMAILS.map((e) => e.slice(0, 4) + "…@" + (e.split("@")[1] || "")),
   });
 }
