@@ -30,8 +30,6 @@ function construirPath(pts: { x: number; y: number }[]): string {
   return d;
 }
 
-const COMPLETADAS = 2; // clases completadas (demo hasta conectar el progreso real)
-
 type EClase = "completada" | "actual" | "bloqueada";
 type EReto = "completada" | "en-revision" | "rechazada" | "pendiente" | "bloqueada";
 type Elemento =
@@ -40,22 +38,23 @@ type Elemento =
   | { tipo: "hito"; modulo: ModuloCurso; estado: "completada" | "bloqueada" }
   | { tipo: "gate"; modulo: ModuloCurso; estado: "desbloqueada" | "bloqueada" };
 
-// Estados de reto de demo (muestran todos los casos hasta conectar el progreso real).
-const RETO_DEMO: EReto[] = ["completada", "en-revision", "rechazada"];
-
-function construirElementos(): Elemento[] {
+// Construye los nodos según el progreso REAL: `completadas` = # de clases
+// completadas en orden; `retoEstados` = estado del reto por clase.
+function construirElementos(completadas: number, retoEstados: Record<string, EReto>): Elemento[] {
   const els: Elemento[] = [];
   let gi = 0;
   ETAPA_1.forEach((modulo) => {
     const inicioModulo = gi;
     modulo.clases.forEach((clase) => {
-      const ec: EClase = gi < COMPLETADAS ? "completada" : gi === COMPLETADAS ? "actual" : "bloqueada";
-      const er: EReto = RETO_DEMO[gi] ?? (gi === COMPLETADAS ? "pendiente" : "bloqueada");
+      const ec: EClase = gi < completadas ? "completada" : gi === completadas ? "actual" : "bloqueada";
+      // El reto se puede intentar si su clase ya está disponible (actual o completada).
+      const disponible = gi <= completadas;
+      const er: EReto = retoEstados[clase.id] ?? (disponible ? "pendiente" : "bloqueada");
       els.push({ tipo: "clase", clase, estado: ec });
       els.push({ tipo: "reto", clase, estado: er });
       gi++;
     });
-    const moduloDone = inicioModulo + modulo.clases.length <= COMPLETADAS;
+    const moduloDone = inicioModulo + modulo.clases.length <= completadas;
     els.push({ tipo: "hito", modulo, estado: moduloDone ? "completada" : "bloqueada" });
     els.push({ tipo: "gate", modulo, estado: moduloDone ? "desbloqueada" : "bloqueada" });
   });
@@ -65,11 +64,12 @@ function construirElementos(): Elemento[] {
 export type TopCreador = { id: string; nombre: string; avatarUrl: string | null; xp: number; esTu: boolean };
 
 export function RutaAprendizaje({
-  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [],
+  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [], completadas = 0, retoEstados = {},
 }: {
   nombre: string; avatarUrl: string | null; gemas: number; racha: number; perfilPct: number; topCreadores?: TopCreador[];
+  completadas?: number; retoEstados?: Record<string, EReto>;
 }) {
-  const elementos = construirElementos();
+  const elementos = construirElementos(completadas, retoEstados);
   // TODOS los nodos siguen la misma onda senoidal → serpentina continua y suave (sin codos).
   const pts = elementos.map((_, i) => ({
     x: serpX(i),

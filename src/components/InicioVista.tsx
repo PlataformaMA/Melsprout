@@ -158,14 +158,14 @@ export function InicioVista({ perfil, stats, ranking, continuar }: Props) {
                 {REDES.map((r) => {
                   const conectada = perfil.metricas?.[r.key]?.username || perfil.redes?.[r.key];
                   return (
-                    <div key={r.key} className="flex items-center gap-3">
+                    <Link key={r.key} href="/app/perfil" className="flex items-center gap-3 group">
                       <span className="w-10 h-10 rounded-xl grid place-items-center text-white shrink-0" style={{ background: r.bg }}>{r.icon}</span>
                       <div className="flex-1 min-w-0">
-                        <div className="font-bold text-[13.5px]">{r.nombre}</div>
+                        <div className="font-bold text-[13.5px] group-hover:text-accent transition">{r.nombre}</div>
                         <div className="text-[12px] text-sub truncate">{conectada ? `@${conectada}` : "Sin conectar"}</div>
                       </div>
-                      <span className={`text-[12px] font-bold ${conectada ? "text-green" : "text-sub"}`}>{conectada ? "Conectada" : "Conectar"}</span>
-                    </div>
+                      <span className={`text-[12px] font-bold ${conectada ? "text-green" : "text-accent"}`}>{conectada ? "Conectada" : "Conectar →"}</span>
+                    </Link>
                   );
                 })}
               </div>

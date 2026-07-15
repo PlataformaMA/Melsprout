@@ -2,7 +2,11 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPerfil } from "@/lib/perfil-actions";
+import { getClasesCompletadas } from "@/lib/progreso-actions";
+import { ETAPA_1 } from "@/lib/data";
 import { RutaAprendizaje } from "@/components/RutaAprendizaje";
+
+type EReto = "completada" | "en-revision" | "rechazada" | "pendiente" | "bloqueada";
 
 export default async function RutaPage() {
   const supabase = await createClient();
@@ -38,6 +42,26 @@ export default async function RutaPage() {
   ];
   const perfilPct = Math.round((items.filter(Boolean).length / items.length) * 100);
 
+  // ——— Progreso REAL de clases ———
+  const orden = ETAPA_1.flatMap((m) => m.clases.map((c) => c.id));
+  const completadasSet = await getClasesCompletadas();
+  let completadas = 0;
+  for (const id of orden) { if (completadasSet.has(id)) completadas++; else break; }
+
+  // ——— Estado de los retos (de reto_submissions) ———
+  const { data: subs } = await supabase
+    .from("reto_submissions")
+    .select("reto_id, estado, revision")
+    .eq("user_id", user.id);
+  const retoEstados: Record<string, EReto> = {};
+  for (const s of subs || []) {
+    const rid = s.reto_id as string;
+    if (!orden.includes(rid)) continue; // solo retos ligados a clases (id "1.1")
+    if (s.revision === "aprobado") retoEstados[rid] = "completada";
+    else if (s.revision === "rechazado") retoEstados[rid] = "rechazada";
+    else if (s.estado === "publicado") retoEstados[rid] = "en-revision";
+  }
+
   return (
     <RutaAprendizaje
       nombre={perfil.full_name ?? "creador"}
@@ -46,6 +70,8 @@ export default async function RutaPage() {
       racha={perfil.racha}
       perfilPct={perfilPct}
       topCreadores={topCreadores}
+      completadas={completadas}
+      retoEstados={retoEstados}
     />
   );
 }

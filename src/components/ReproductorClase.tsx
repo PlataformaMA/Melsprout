@@ -2,8 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
+import { PopupClaseCompletada } from "@/components/PopupCelebracion";
+import { completarClase } from "@/lib/progreso-actions";
 import { type Clase, type ModuloCurso } from "@/lib/data";
 
 function titleCase(s: string): string {
@@ -15,13 +18,16 @@ function fmtTiempo(seg: number): string {
 }
 
 export function ReproductorClase({
-  clase, modulo, avatarUrl, nombre, gemas, racha,
+  clase, modulo, avatarUrl, nombre, gemas, racha, yaCompletada = false,
 }: {
-  clase: Clase; modulo: ModuloCurso; avatarUrl: string | null; nombre: string; gemas: number; racha: number;
+  clase: Clase; modulo: ModuloCurso; avatarUrl: string | null; nombre: string; gemas: number; racha: number; yaCompletada?: boolean;
 }) {
+  const router = useRouter();
   const [reproduciendo, setReproduciendo] = useState(false);
   const [progreso, setProgreso] = useState(0); // 0–100 del video
   const [terminado, setTerminado] = useState(false);
+  const [popup, setPopup] = useState(false);
+  const completadoRef = useRef(yaCompletada); // ya alcanzó el 85% (guarda anti-repetición)
   const fileRef = useRef<HTMLInputElement>(null);
 
   const idx = modulo.clases.findIndex((c) => c.id === clase.id);
@@ -45,6 +51,20 @@ export function ReproductorClase({
     return () => clearInterval(t);
   }, [reproduciendo, terminado]);
 
+  // Al llegar al 85% real: clase completada (+100 XP una sola vez) y desbloquea la siguiente.
+  useEffect(() => {
+    if (progreso < 85 || completadoRef.current) return;
+    completadoRef.current = true;
+    (async () => {
+      setTerminado(true);
+      const r = await completarClase(clase.id);
+      if (!("error" in r) && r.xpDado) {
+        setPopup(true); // muestra +100 XP solo la primera vez
+        router.refresh();
+      }
+    })();
+  }, [progreso, clase.id, router]);
+
   function togglePlay() {
     if (terminado) { setTerminado(false); setProgreso(0); setReproduciendo(true); return; }
     setReproduciendo((v) => !v);
@@ -58,6 +78,14 @@ export function ReproductorClase({
 
   return (
     <div className="min-h-screen bg-bg flex">
+      {popup && (
+        <PopupClaseCompletada
+          completadas={posicion}
+          total={total}
+          onContinuar={() => { setPopup(false); router.push(siguiente ? `/app/clase/${siguiente.id}` : "/app/ruta"); }}
+          onClose={() => setPopup(false)}
+        />
+      )}
       <AppSidebar active="clases" />
 
       <main className="flex-1 min-w-0">

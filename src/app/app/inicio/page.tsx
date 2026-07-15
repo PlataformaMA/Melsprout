@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPerfil } from "@/lib/perfil-actions";
+import { getClasesCompletadas } from "@/lib/progreso-actions";
 import { ETAPA_1, TOTAL_CLASES, nivelPorXP } from "@/lib/data";
 import { InicioVista } from "@/components/InicioVista";
 
@@ -39,8 +40,10 @@ export default async function InicioPage() {
   }));
 
   const nivel = nivelPorXP(perfil.xp);
-  // Primera clase como "continuar aprendiendo".
-  const cont = ETAPA_1[0].clases[0];
+  // Clase actual real = primera no completada (para "Continuar aprendiendo").
+  const clasesOrden = ETAPA_1.flatMap((m) => m.clases);
+  const completadasSet = await getClasesCompletadas();
+  const cont = clasesOrden.find((c) => !completadasSet.has(c.id)) ?? clasesOrden[clasesOrden.length - 1];
 
   return (
     <InicioVista
