@@ -160,6 +160,11 @@ export function PerfilVista({ perfil, creadoEn, insightiq }: { perfil: Perfil; c
                     {tieneRedes ? "Conectadas" : "Conecta"}
                   </span>
                 </div>
+                {!tieneRedes && disponible && (
+                  <p className="text-[12px] text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mb-4 leading-snug">
+                    ⚠️ Antes de conectar, asegúrate de haber iniciado sesión en <b>TU</b> cuenta de la red social en este navegador. Se conectará la cuenta que tengas abierta.
+                  </p>
+                )}
                 <div className="space-y-4">
                   {REDES.map((r) => {
                     const handle = perfil.metricas?.[r.key as string]?.username || perfil.redes?.[r.key as string];
