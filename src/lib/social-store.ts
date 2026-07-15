@@ -39,6 +39,27 @@ export async function guardarMetricasInsightIQ(
     .eq("id", userId);
 }
 
+// ¿La cuenta (red + @usuario) ya está reclamada por OTRO usuario de Melsprout?
+// Blindaje: una misma cuenta social solo puede pertenecer a un usuario.
+export async function cuentaDeOtroUsuario(
+  userId: string,
+  provider: string,
+  username: string
+): Promise<boolean> {
+  if (!username) return false;
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("profiles")
+    .select("id, metricas")
+    .neq("id", userId);
+  const u = username.toLowerCase();
+  for (const p of data || []) {
+    const m = (p.metricas as Record<string, { username?: string }> | null)?.[provider];
+    if (m?.username && m.username.toLowerCase() === u) return true;
+  }
+  return false;
+}
+
 // Quita una red del perfil (al desconectar la cuenta).
 export async function eliminarRedInsightIQ(userId: string, provider: string) {
   const admin = createAdminClient();

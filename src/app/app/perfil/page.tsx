@@ -1,12 +1,14 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getPerfil } from "@/lib/perfil-actions";
-import { guardarMetricasInsightIQ } from "@/lib/social-store";
+import { guardarMetricasInsightIQ, cuentaDeOtroUsuario } from "@/lib/social-store";
 import {
   INSIGHTIQ_CONFIGURADO,
   crearUsuario,
   crearSdkToken,
   obtenerMetricas,
+  obtenerCuentas,
+  desconectarCuenta,
   insightiqEnv,
 } from "@/lib/insightiq";
 import { PerfilVista, type InsightIQProps } from "@/components/PerfilVista";
@@ -31,7 +33,23 @@ export default async function PerfilPage() {
 
       if (iqUserId) {
         // Sincroniza métricas de cuentas ya conectadas (al recargar la página).
-        const metricas = await obtenerMetricas(iqUserId);
+        const metricasTodas = await obtenerMetricas(iqUserId);
+
+        // BLINDAJE: descarta cuentas que ya pertenecen a OTRO usuario de Melsprout
+        // (evita que una misma red social quede en dos cuentas). Se desconectan.
+        const metricas: typeof metricasTodas = [];
+        let cuentasIq: { accountId: string; provider: string }[] | null = null;
+        for (const m of metricasTodas) {
+          if (m.username && (await cuentaDeOtroUsuario(user.id, m.provider, m.username))) {
+            if (!cuentasIq) cuentasIq = await obtenerCuentas(iqUserId);
+            const c = cuentasIq.find((x) => x.provider === m.provider);
+            if (c) await desconectarCuenta(c.accountId);
+            console.warn("InsightIQ: cuenta ya reclamada por otro usuario, desconectada", m.provider, m.username);
+            continue;
+          }
+          metricas.push(m);
+        }
+
         if (metricas.length) {
           await guardarMetricasInsightIQ(user.id, metricas);
           for (const m of metricas) {
