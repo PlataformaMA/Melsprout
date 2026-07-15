@@ -8,7 +8,7 @@ type Item = { id: string; label: string; href: string; icon: React.ReactNode };
 const ITEMS: Item[] = [
   { id: "inicio", label: "Inicio", href: "/app/inicio", icon: <HomeIcon /> },
   { id: "clases", label: "Todas las clases", href: "/app/ruta", icon: <MapIcon /> },
-  { id: "vivo", label: "Clases en vivo", href: "/app/ruta", icon: <LiveIcon /> },
+  { id: "vivo", label: "Clases en vivo", href: "/app/vivo", icon: <LiveIcon /> },
   { id: "comunidad", label: "Comunidad", href: "/app/comunidad", icon: <PeopleIcon /> },
   { id: "retos", label: "Retos", href: "/app/retos", icon: <TrophyIcon /> },
   { id: "perfil", label: "Mi perfil", href: "/app/perfil", icon: <UserIcon /> },

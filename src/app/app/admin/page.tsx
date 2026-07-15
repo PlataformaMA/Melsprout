@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { esAdminUsuario } from "@/lib/admin";
 import { listarRetosAdmin, listarUsuariosAdmin, listarAvances, listarComentariosAdmin } from "@/lib/admin-actions";
+import { listarClasesVivoAdmin } from "@/lib/vivo-actions";
 import { AdminPanel } from "@/components/AdminPanel";
 
 export default async function AdminPage() {
@@ -34,12 +35,13 @@ export default async function AdminPage() {
     );
   }
 
-  const [retos, usuarios, avances, comentarios] = await Promise.all([
+  const [retos, usuarios, avances, comentarios, clasesVivo] = await Promise.all([
     listarRetosAdmin(),
     listarUsuariosAdmin(),
     listarAvances(),
     listarComentariosAdmin(),
+    listarClasesVivoAdmin(),
   ]);
 
-  return <AdminPanel retos={retos} usuarios={usuarios} avances={avances} comentarios={comentarios} adminEmail={user.email ?? ""} />;
+  return <AdminPanel retos={retos} usuarios={usuarios} avances={avances} comentarios={comentarios} clasesVivo={clasesVivo} adminEmail={user.email ?? ""} />;
 }
