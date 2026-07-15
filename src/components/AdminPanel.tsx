@@ -90,59 +90,77 @@ export function AdminPanel({ retos, usuarios, adminEmail }: { retos: RetoRow[]; 
     router.refresh();
   }
 
+  const TIPO_COLOR: Record<string, string> = {
+    semanal: "bg-accent-soft text-accent", grupal: "bg-blue-soft text-blue",
+    personal: "bg-pink-soft text-pink", curso: "bg-amber-100 text-amber-700",
+  };
+
   return (
     <div className="min-h-screen bg-bg flex">
       <AppSidebar active="admin" />
       <div className="flex-1 min-w-0">
-        <div className="max-w-[1100px] mx-auto px-4 sm:px-8 py-6">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h1 className="font-display text-2xl font-extrabold">Panel admin ⚙️</h1>
-              <p className="text-sub text-[13px]">Conectado como {adminEmail}</p>
+        <div className="max-w-[1080px] mx-auto px-4 sm:px-8 py-6">
+          {/* Barra superior */}
+          <div className="flex items-center justify-between gap-3 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-accent grid place-items-center text-white text-xl shrink-0">⚙️</div>
+              <div>
+                <h1 className="font-display text-xl sm:text-2xl font-extrabold leading-tight">Panel de administración</h1>
+                <p className="text-sub text-[12.5px] truncate max-w-[240px] sm:max-w-none">{adminEmail}</p>
+              </div>
             </div>
-            <Link href="/app/ruta" className="text-[13px] text-accent font-semibold">← Volver a la app</Link>
+            <Link href="/app/ruta" className="text-[13px] text-sub font-semibold hover:text-accent transition shrink-0">← Volver a la app</Link>
           </div>
 
-          {/* Tabs */}
-          <div className="flex gap-2 mb-6">
+          {/* Tabs tipo segmento */}
+          <div className="inline-flex bg-surface border border-border rounded-2xl p-1 mb-6 shadow-sm">
             {(["retos", "usuarios"] as const).map((t) => (
-              <button key={t} onClick={() => setTab(t)}
-                className={`px-4 py-2 rounded-xl text-[14px] font-bold transition ${tab === t ? "bg-accent text-white" : "bg-surface border border-border text-sub hover:bg-bg"}`}>
-                {t === "retos" ? "Retos" : "Usuarios"}
+              <button key={t} onClick={() => { setTab(t); setForm(null); }}
+                className={`px-5 py-2 rounded-xl text-[14px] font-bold transition ${tab === t ? "bg-accent text-white shadow-sm" : "text-sub hover:text-text"}`}>
+                {t === "retos" ? `Retos · ${retos.length}` : `Usuarios · ${usuarios.length}`}
               </button>
             ))}
           </div>
 
           {tab === "retos" ? (
             <div>
-              {!form && (
-                <button onClick={nuevo} className="mb-4 bg-accent text-white rounded-xl px-4 py-2.5 text-[14px] font-bold hover:brightness-110 transition">
-                  + Nuevo reto
-                </button>
-              )}
+              {!form ? (
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-display font-extrabold text-lg">Retos</h2>
+                    <button onClick={nuevo} className="bg-accent text-white rounded-xl px-4 py-2.5 text-[14px] font-bold hover:brightness-110 transition shadow-sm">
+                      + Nuevo reto
+                    </button>
+                  </div>
 
-              {form && (
+                  <div className="space-y-2.5">
+                    {retos.length === 0 && (
+                      <div className="bg-surface border border-dashed border-border rounded-2xl p-8 text-center text-sub">
+                        <div className="text-3xl mb-2">🎯</div>
+                        Aún no hay retos. Crea el primero con <b className="text-accent">“+ Nuevo reto”</b>.
+                      </div>
+                    )}
+                    {retos.map((r) => (
+                      <div key={r.id} className="flex items-center gap-3 bg-surface border border-border rounded-2xl px-4 py-3.5 shadow-sm hover:border-accent/30 transition">
+                        <span className="w-11 h-11 rounded-2xl bg-bg grid place-items-center text-xl shrink-0">{r.emoji}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-[14.5px] truncate">{r.titulo}</div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`text-[11px] font-bold rounded-full px-2 py-0.5 ${TIPO_COLOR[r.tipo] || "bg-bg text-sub"}`}>{r.tipo}</span>
+                            {r.clase_id && <span className="text-[11px] text-hint">clase {r.clase_id}</span>}
+                            <span className="text-[11px] text-hint">+{r.xp} XP</span>
+                            {!r.activo && <span className="text-[11px] text-amber-700 font-semibold">oculto</span>}
+                          </div>
+                        </div>
+                        <button onClick={() => editar(r)} className="text-[13px] text-accent font-semibold px-2 py-1 rounded-lg hover:bg-accent-soft transition shrink-0">Editar</button>
+                        <button onClick={() => eliminar(r.id)} className="text-[13px] text-red-500 font-semibold px-2 py-1 rounded-lg hover:bg-red-50 transition shrink-0">Borrar</button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
                 <RetoForm form={form} setForm={setForm} guardar={guardar} guardando={guardando} cancelar={() => setForm(null)} msg={msg} />
               )}
-
-              {/* Lista de retos */}
-              <div className="mt-6 space-y-2">
-                {retos.length === 0 && <p className="text-sub text-[14px]">Aún no hay retos creados. Crea el primero con “+ Nuevo reto”.</p>}
-                {retos.map((r) => (
-                  <div key={r.id} className="flex items-center gap-3 bg-surface border border-border rounded-xl px-4 py-3">
-                    <span className="text-xl shrink-0">{r.emoji}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-bold text-[14px] truncate">{r.titulo}</div>
-                      <div className="text-[12px] text-sub">
-                        <span className="text-accent font-semibold">{r.tipo}</span>
-                        {r.clase_id ? ` · clase ${r.clase_id}` : ""} · {r.xp} XP {r.activo ? "" : "· (oculto)"}
-                      </div>
-                    </div>
-                    <button onClick={() => editar(r)} className="text-[13px] text-accent font-semibold">Editar</button>
-                    <button onClick={() => eliminar(r.id)} className="text-[13px] text-red-500 font-semibold">Borrar</button>
-                  </div>
-                ))}
-              </div>
             </div>
           ) : (
             <UsuariosTab usuarios={usuarios} onCreado={() => router.refresh()} />

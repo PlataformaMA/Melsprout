@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
+import { createClient } from "@/lib/supabase/client";
 import type { RetoDef, PasoReto } from "@/lib/retos";
 import { guardarReto, subirImagenReto, type RetoGuardado } from "@/lib/retos-actions";
 
@@ -59,9 +60,30 @@ export function RetoVista({
       }
       setSubiendo(false);
     } else {
-      // Video: por ahora se registra el nombre (hosting de video pesado es un paso aparte).
-      setVideoNombre(`${file.name} · ${(file.size / (1024 * 1024)).toFixed(1)} MB`);
-      set(paso.id, file.name);
+      // Video: se sube de verdad al almacenamiento (bucket "retos").
+      const mb = file.size / (1024 * 1024);
+      if (mb > 50) {
+        setError(`El video pesa ${mb.toFixed(0)} MB. El máximo es 50 MB (graba un clip más corto o baja la calidad).`);
+        return;
+      }
+      setSubiendo(true);
+      try {
+        const supabase = createClient();
+        const ext = (file.name.split(".").pop() || "mp4").toLowerCase();
+        const path = `${reto.claseId}/${paso.id}-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("retos").upload(path, file, { upsert: true });
+        if (upErr) {
+          setError("No se pudo subir el video. Intenta de nuevo.");
+        } else {
+          const { data } = supabase.storage.from("retos").getPublicUrl(path);
+          setArchivoUrl(data.publicUrl);
+          setVideoNombre(`${file.name} · ${mb.toFixed(1)} MB ✓`);
+          set(paso.id, data.publicUrl);
+        }
+      } catch {
+        setError("No se pudo subir el video.");
+      }
+      setSubiendo(false);
     }
   }
 
