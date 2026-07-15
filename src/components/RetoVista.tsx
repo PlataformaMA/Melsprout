@@ -82,6 +82,12 @@ export function RetoVista({
 
   return (
     <div className="min-h-screen bg-bg flex">
+      <style>{`
+        @keyframes octiBob { 0%,100%{ transform: translateY(0) } 50%{ transform: translateY(-7px) } }
+        @keyframes octiPop { 0%{ transform: scale(.82) rotate(-4deg) } 60%{ transform: scale(1.06) } 100%{ transform: scale(1) } }
+        .octi-bob { animation: octiBob 3s ease-in-out infinite; }
+        .octi-pop { animation: octiPop .45s cubic-bezier(.34,1.56,.64,1), octiBob 3s ease-in-out .45s infinite; }
+      `}</style>
       <AppSidebar active="retos" />
 
       <div className="flex-1 min-w-0">
@@ -132,10 +138,10 @@ export function RetoVista({
                 </div>
               </div>
 
-              {/* Octi guía el paso */}
-              <div className="flex items-end gap-2.5 mb-3">
+              {/* Octi guía el paso (versión móvil: arriba de la tarjeta) */}
+              <div className="lg:hidden flex items-end gap-2.5 mb-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/octi.webp" alt="Octi" width={58} height={58} className="shrink-0 drop-shadow-sm" />
+                <img src="/octi.webp" alt="Octi" width={52} height={52} className="shrink-0 octi-bob" />
                 <div className="relative bg-accent-soft text-accent text-[13px] font-semibold rounded-2xl rounded-bl-sm px-4 py-2.5 leading-snug">
                   {pasoActual.octi || "Tú puedes con esto. Un paso a la vez. 💜"}
                   <span className="absolute -left-1.5 bottom-2 w-3 h-3 bg-accent-soft rotate-45" />
@@ -233,6 +239,23 @@ export function RetoVista({
 
             {/* ——— Columna derecha ——— */}
             <aside className="space-y-5 lg:sticky lg:top-5 self-start">
+              {/* Octi, compañero interactivo (desktop) */}
+              <section className="hidden lg:block rounded-3xl p-5 border border-accent/15 shadow-sm overflow-hidden relative" style={{ background: "linear-gradient(160deg,#F3F0FF,#FBFAFF)" }}>
+                <div className="flex flex-col items-center text-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img key={esUltimo ? "fin" : paso} src="/octi.webp" alt="Octi" width={92} height={92} className="octi-pop" />
+                  <div className="relative mt-2 bg-white text-accent text-[13.5px] font-semibold rounded-2xl px-4 py-3 leading-snug shadow-sm w-full">
+                    {esUltimo
+                      ? "¡Vas increíble! Revisa tu último paso y publícalo. Estoy súper orgulloso de ti 🎉"
+                      : pasoActual.octi || "Tú puedes con esto. Un paso a la vez. 💜"}
+                    <span className="absolute left-1/2 -translate-x-1/2 -top-1.5 w-3 h-3 bg-white rotate-45" />
+                  </div>
+                  <div className="mt-3 text-[11px] font-bold text-accent bg-white/70 rounded-full px-3 py-1">
+                    Paso {paso + 1} de {total}
+                  </div>
+                </div>
+              </section>
+
               {/* Sobre este reto */}
               <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
