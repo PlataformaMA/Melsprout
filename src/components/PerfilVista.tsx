@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type Perfil, guardarNicho } from "@/lib/perfil-actions";
@@ -51,6 +51,16 @@ const REDES = [
 export function PerfilVista({ perfil, creadoEn, insightiq }: { perfil: Perfil; creadoEn: string | null; insightiq?: InsightIQProps | null }) {
   const [tab, setTab] = useState<"Resumen" | "Métricas">("Resumen");
   const { abrir, cargando, disponible } = useConectarInsightIQ(insightiq ?? null);
+
+  // Al volver de conectar una red (redirect de InsightIQ), refrescar para que
+  // aparezcan las métricas sin tener que recargar a mano (incluye caché móvil bfcache).
+  useEffect(() => {
+    const alVolver = (e: PageTransitionEvent) => {
+      if (e.persisted) window.location.reload();
+    };
+    window.addEventListener("pageshow", alVolver);
+    return () => window.removeEventListener("pageshow", alVolver);
+  }, []);
   const nivel = nivelPorXP(perfil.xp);
   const edad = calcularEdad(perfil.fecha_nacimiento);
 
