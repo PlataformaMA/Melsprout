@@ -77,17 +77,28 @@ export async function crearUsuario(
   externalId: string,
   name: string
 ): Promise<string | null> {
-  // Intentar crear.
+  // Intentar crear. Si es nuevo, la API devuelve el usuario creado directamente.
   const creado = await api<IqUser>("/v1/users", {
     method: "POST",
     body: { name: name || externalId, external_id: externalId },
   });
-  if (creado?.id) return creado.id;
-  // Si ya existe, recuperarlo por external_id.
-  const lista = await api<{ data: IqUser[] }>(
-    `/v1/users?external_id=${encodeURIComponent(externalId)}`
-  );
-  return lista?.data?.[0]?.id ?? null;
+  // Verificamos que el usuario devuelto sea REALMENTE el de este external_id
+  // (defensa extra contra respuestas inesperadas de la API).
+  if (creado?.id && creado.external_id === externalId) return creado.id;
+
+  // Si ya existía, hay que buscarlo. ⚠️ El filtro ?external_id= de InsightIQ NO es
+  // confiable (devuelve TODOS los usuarios), así que paginamos y filtramos AQUÍ
+  // por coincidencia EXACTA de external_id. Sin esto, dos usuarios podrían compartir
+  // la misma cuenta de InsightIQ (fuga de datos entre usuarios).
+  const LIMIT = 100;
+  for (let offset = 0; offset < 5000; offset += LIMIT) {
+    const lista = await api<{ data: IqUser[] }>(`/v1/users?limit=${LIMIT}&offset=${offset}`);
+    const data = lista?.data ?? [];
+    const match = data.find((u) => u.external_id === externalId);
+    if (match?.id) return match.id;
+    if (data.length < LIMIT) break; // no hay más páginas
+  }
+  return null;
 }
 
 // Cuentas conectadas (id de cuenta + red) para poder desconectarlas.
