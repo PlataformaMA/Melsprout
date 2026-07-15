@@ -13,6 +13,7 @@ export type PasoReto = {
   acepta?: string;
   ayudaArchivo?: string;
   archivoImagen?: boolean; // true = imagen (se sube), false/undefined = video (por ahora solo nombre)
+  octi?: string; // mensaje de Octi guiando este paso
 };
 export type BloqueEjemplo = { titulo: string; texto: string; video?: boolean; imagen?: boolean };
 export type RetoDef = {
@@ -48,8 +49,8 @@ const RETOS: Record<string, RetoDef> = {
     accion: "publicarlo",
     xp: 50,
     pasos: [
-      { id: "porque", titulo: "Escribe tu “porqué”", subtitulo: "¿Qué te motiva a crear contenido? ¿Qué impacto quieres generar?", tipo: "textarea", placeholder: "Escribe aquí tu porqué...", max: 500 },
-      { id: "meta", titulo: "Define tu meta de 90 días", subtitulo: "Sé específico. ¿Qué quieres lograr en los próximos 90 días?", tipo: "textarea", placeholder: "Escribe aquí tu meta de 90 días...", max: 500 },
+      { id: "porque", titulo: "Escribe tu “porqué”", subtitulo: "¿Qué te motiva a crear contenido? ¿Qué impacto quieres generar?", tipo: "textarea", placeholder: "Escribe aquí tu porqué...", max: 500, octi: "¡Hola! Empecemos por lo más importante: tu porqué. Escríbelo desde el corazón, sin filtros. 💜" },
+      { id: "meta", titulo: "Define tu meta de 90 días", subtitulo: "Sé específico. ¿Qué quieres lograr en los próximos 90 días?", tipo: "textarea", placeholder: "Escribe aquí tu meta de 90 días...", max: 500, octi: "¡Genial! Ahora tu meta. Que sea concreta y medible, así sabrás cuándo la lograste. 🎯" },
     ],
     tips: { titulo: "Tips para una buena meta:", items: ["Sé específico", "Debe ser medible", "Que sea alcanzable", "Tener un plazo definido"] },
     sobre: [
@@ -76,8 +77,8 @@ const RETOS: Record<string, RetoDef> = {
     accion: "publicarlo",
     xp: 50,
     pasos: [
-      { id: "nicho", titulo: "Define tu nicho", subtitulo: "¿Sobre qué tema principal crearás contenido?", tipo: "textarea", placeholder: "Escribe aquí tu nicho...", max: 80 },
-      { id: "subnicho", titulo: "Define tu subnicho", subtitulo: "Sé más específico. ¿A quién ayudas y con qué enfoque único?", tipo: "textarea", placeholder: "Escribe aquí tu subnicho...", max: 120 },
+      { id: "nicho", titulo: "Define tu nicho", subtitulo: "¿Sobre qué tema principal crearás contenido?", tipo: "textarea", placeholder: "Escribe aquí tu nicho...", max: 80, octi: "Piensa en ese tema del que podrías hablar horas. Ese es tu nicho. 🌱" },
+      { id: "subnicho", titulo: "Define tu subnicho", subtitulo: "Sé más específico. ¿A quién ayudas y con qué enfoque único?", tipo: "textarea", placeholder: "Escribe aquí tu subnicho...", max: 120, octi: "Ahora afínalo: ¿a quién ayudas exactamente? Mientras más claro, mejor. ✨" },
     ],
     tips: { titulo: "Tips para definir tu nicho y subnicho:", items: ["Alineado a tus pasiones", "Resuelve un problema", "Tiene audiencia", "Puedes aportar valor único"] },
     sobre: SOBRE_DEFAULT,
@@ -100,9 +101,9 @@ const RETOS: Record<string, RetoDef> = {
     accion: "compartir tu captura",
     xp: 50,
     pasos: [
-      { id: "nombre", titulo: "Optimiza tu nombre", subtitulo: "Usa tu nombre real o un nombre que sea fácil de recordar y represente tu marca personal.", tipo: "texto", placeholder: "Melissa Arria | Marketing para Creadores", max: 60 },
-      { id: "bio", titulo: "Optimiza tu bio", subtitulo: "Explica qué haces, a quién ayudas y qué resultados generas.", tipo: "textarea", placeholder: "Escribe aquí tu bio...", max: 180 },
-      { id: "captura", titulo: "Sube la captura de tu perfil optimizado", subtitulo: "Comparte la captura de tu bio + foto + nombre optimizados en tu red.", tipo: "archivo", acepta: "image/png,image/jpeg", ayudaArchivo: "PNG o JPG · Máx. 3 MB", archivoImagen: true },
+      { id: "nombre", titulo: "Optimiza tu nombre", subtitulo: "Usa tu nombre real o un nombre que sea fácil de recordar y represente tu marca personal.", tipo: "texto", placeholder: "Melissa Arria | Marketing para Creadores", max: 60, octi: "Tu nombre es lo primero que ven. Que sea claro y fácil de recordar. 😊" },
+      { id: "bio", titulo: "Optimiza tu bio", subtitulo: "Explica qué haces, a quién ayudas y qué resultados generas.", tipo: "textarea", placeholder: "Escribe aquí tu bio...", max: 180, octi: "En tu bio di qué haces y a quién ayudas. ¡Corta y poderosa! 💪" },
+      { id: "captura", titulo: "Sube la captura de tu perfil optimizado", subtitulo: "Comparte la captura de tu bio + foto + nombre optimizados en tu red.", tipo: "archivo", acepta: "image/png,image/jpeg", ayudaArchivo: "PNG o JPG · Máx. 3 MB", archivoImagen: true, octi: "Sube la captura de tu perfil ya optimizado. ¡Vas increíble! 📸" },
     ],
     tips: { titulo: "Tips para un perfil optimizado:", items: ["Foto clara y profesional", "Nombre fácil de recordar", "Bio que comunique valor", "Enlace relevante"] },
     sobre: SOBRE_DEFAULT,
@@ -126,9 +127,9 @@ const RETOS: Record<string, RetoDef> = {
     accion: "compartirlo",
     xp: 50,
     pasos: [
-      { id: "plan", titulo: "Planifica tu clip", subtitulo: "¿Qué vas a comunicar y a quién va dirigido tu mensaje?", tipo: "textarea", placeholder: "Escribe aquí tu idea principal...", max: 120 },
-      { id: "video", titulo: "Graba tu clip (15-30s)", subtitulo: "Aplica encuadre, buena luz y audio claro. Sé auténtico y directo.", tipo: "archivo", acepta: "video/mp4,video/quicktime", ayudaArchivo: "Formatos: MP4, MOV · Máx. 200 MB · Duración: 15–30s", archivoImagen: false },
-      { id: "desc", titulo: "Agrega una descripción corta", subtitulo: "Cuéntanos de qué trata tu clip y qué aprendizaje aplicaste.", tipo: "textarea", placeholder: "Describe brevemente tu clip y lo que aprendiste...", max: 150 },
+      { id: "plan", titulo: "Planifica tu clip", subtitulo: "¿Qué vas a comunicar y a quién va dirigido tu mensaje?", tipo: "textarea", placeholder: "Escribe aquí tu idea principal...", max: 120, octi: "Antes de grabar, ten claro tu mensaje. Un buen plan = un gran clip. 🎬" },
+      { id: "video", titulo: "Graba tu clip (15-30s)", subtitulo: "Aplica encuadre, buena luz y audio claro. Sé auténtico y directo.", tipo: "archivo", acepta: "video/mp4,video/quicktime", ayudaArchivo: "Formatos: MP4, MOV · Máx. 200 MB · Duración: 15–30s", archivoImagen: false, octi: "¡A grabar! Buena luz, audio claro y tú al centro. Tú puedes. ✨" },
+      { id: "desc", titulo: "Agrega una descripción corta", subtitulo: "Cuéntanos de qué trata tu clip y qué aprendizaje aplicaste.", tipo: "textarea", placeholder: "Describe brevemente tu clip y lo que aprendiste...", max: 150, octi: "Cuéntanos de qué trata y qué aprendiste. ¡Ya casi terminas! 🙌" },
     ],
     tips: { titulo: "Tips para un gran clip:", items: ["Encuadre a nivel de ojos", "Luz frontal o natural", "Audio limpio y sin ruido", "Mensaje claro y directo"] },
     sobre: SOBRE_DEFAULT,

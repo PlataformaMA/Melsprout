@@ -132,6 +132,16 @@ export function RetoVista({
                 </div>
               </div>
 
+              {/* Octi guía el paso */}
+              <div className="flex items-end gap-2.5 mb-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/octi.webp" alt="Octi" width={58} height={58} className="shrink-0 drop-shadow-sm" />
+                <div className="relative bg-accent-soft text-accent text-[13px] font-semibold rounded-2xl rounded-bl-sm px-4 py-2.5 leading-snug">
+                  {pasoActual.octi || "Tú puedes con esto. Un paso a la vez. 💜"}
+                  <span className="absolute -left-1.5 bottom-2 w-3 h-3 bg-accent-soft rotate-45" />
+                </div>
+              </div>
+
               {/* Tarjeta del paso actual (una a la vez, con aire) */}
               <div className="bg-surface border border-border rounded-3xl p-6 sm:p-7 shadow-sm">
                 <div className="flex items-center gap-3 mb-1">
