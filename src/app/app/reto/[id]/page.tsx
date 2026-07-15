@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getPerfil } from "@/lib/perfil-actions";
-import { getReto } from "@/lib/retos";
+import { getRetoUnificado } from "@/lib/retos-db";
 import { getRetoSubmission } from "@/lib/retos-actions";
 import { RetoVista } from "@/components/RetoVista";
 
@@ -18,7 +18,7 @@ export default async function RetoPage({ params }: { params: Promise<{ id: strin
   if (!perfil) redirect("/onboarding");
   if (!perfil.onboarding_completo) redirect("/onboarding");
 
-  const reto = getReto(id);
+  const reto = await getRetoUnificado(id);
   if (!reto) redirect("/app/retos");
 
   const guardado = await getRetoSubmission(id);

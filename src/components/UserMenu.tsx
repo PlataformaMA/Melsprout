@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { cerrarSesion } from "@/lib/auth-actions";
 
-export function UserMenu({ avatarUrl, nombre }: { avatarUrl: string | null; nombre: string }) {
+export function UserMenu({ avatarUrl, nombre, esAdmin = false }: { avatarUrl: string | null; nombre: string; esAdmin?: boolean }) {
   const [abierto, setAbierto] = useState(false);
   return (
     <div className="relative">
@@ -27,6 +27,12 @@ export function UserMenu({ avatarUrl, nombre }: { avatarUrl: string | null; nomb
             <Item href="/app/perfil" icon={<UserIcon />}>Mi perfil</Item>
             <Item href="/app/config" icon={<GearIcon />}>Configuración</Item>
             <Item href="/app/config" icon={<ShieldIcon />}>Seguridad y 2FA</Item>
+            {esAdmin && (
+              <>
+                <div className="h-px bg-border my-1" />
+                <Item href="/app/admin" icon={<span className="text-[15px]">⚙️</span>}>Panel admin</Item>
+              </>
+            )}
             <div className="h-px bg-border my-1" />
             <form action={cerrarSesion}>
               <button className="w-full flex items-center gap-2.5 text-left text-sm rounded-xl px-3 py-2.5 text-pink hover:bg-pink-soft transition font-semibold">

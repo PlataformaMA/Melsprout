@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getPerfil } from "@/lib/perfil-actions";
 import { ETAPA_1 } from "@/lib/data";
 import { getReto } from "@/lib/retos";
+import { listarRetosPorTipo, type RetoRow } from "@/lib/retos-db";
+import { esAdmin } from "@/lib/admin";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 
@@ -23,6 +25,7 @@ export default async function RetosPage() {
     .select("reto_id, estado")
     .eq("user_id", user.id);
   const estados = new Map((subs || []).map((s) => [s.reto_id as string, s.estado as string]));
+  const porTipo = await listarRetosPorTipo();
 
   return (
     <div className="min-h-screen bg-bg flex">
@@ -32,7 +35,7 @@ export default async function RetosPage() {
           <header className="flex items-center justify-end gap-4 mb-5 h-10">
             <span className="flex items-center gap-1.5 text-[14px] font-bold">🔥 {perfil.racha}</span>
             <span className="flex items-center gap-1.5 text-[14px] font-bold">💎 {perfil.gemas}</span>
-            <UserMenu avatarUrl={perfil.avatar_url} nombre={perfil.full_name ?? "Creador"} />
+            <UserMenu avatarUrl={perfil.avatar_url} nombre={perfil.full_name ?? "Creador"} esAdmin={esAdmin(user.email)} />
           </header>
 
           {(() => {
@@ -87,6 +90,35 @@ export default async function RetosPage() {
                     </Link>
                   ))}
                 </div>
+
+                {/* Retos por tipo (creados desde el panel admin) */}
+                {(["semanal", "grupal", "personal"] as const).map((tp) => {
+                  const items: RetoRow[] = porTipo[tp] || [];
+                  if (items.length === 0) return null;
+                  const titulos: Record<string, string> = { semanal: "Más retos de la semana 🗓️", grupal: "Retos grupales 👥", personal: "Retos personales ✨" };
+                  return (
+                    <div key={tp} className="mt-8">
+                      <h2 className="font-display font-extrabold text-lg mb-3">{titulos[tp]}</h2>
+                      <div className="space-y-3">
+                        {items.map((r) => (
+                          <Link key={r.id} href={`/app/reto/${r.id}`}
+                            className="flex items-center gap-4 bg-surface border border-border rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md hover:border-accent/30 transition group">
+                            <span className="w-12 h-12 rounded-2xl bg-accent-soft grid place-items-center text-2xl shrink-0">{r.emoji}</span>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-display font-extrabold text-[15px] leading-tight truncate group-hover:text-accent transition">{r.titulo}</h3>
+                              <p className="text-[12.5px] text-sub truncate">{r.descripcion}</p>
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                              <span className="text-[12px] font-bold text-accent hidden sm:block">+{r.xp} XP</span>
+                              {estados.get(r.id) === "publicado" && <span className="text-[11px] font-bold text-green">✓</span>}
+                              <span className="text-accent text-xl group-hover:translate-x-0.5 transition">›</span>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
 
                 {/* Todos los retos (compacto, discreto) */}
                 {otros.length > 0 && (
