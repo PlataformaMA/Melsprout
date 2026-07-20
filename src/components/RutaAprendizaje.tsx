@@ -149,7 +149,7 @@ export function RutaAprendizaje({
 
                 {/* Octi acompaña a la clase actual, del lado opuesto al nodo (sin taparlo). Se desliza al avanzar. */}
                 <div className="absolute z-10 -translate-x-1/2 -translate-y-1/2 transition-all duration-700 ease-out"
-                     style={{ left: octiLeft, top: octiY }}>
+                     style={{ left: octiLeft, top: octiY + 34 }}>
                   <OctiRuta nombre={nombre} claseTitulo={claseActual?.titulo ?? null} />
                 </div>
               </div>
@@ -355,7 +355,7 @@ function DecorMar({ altura }: { altura: number }) {
   return (
     <div className="absolute inset-0 pointer-events-none z-[1] overflow-hidden">
       {/* Pegadas a la orilla y en los HUECOS entre filas (no a la altura de un nodo), para que no las tape ni las corte. */}
-      <div className="absolute mar-vaiven" style={{ left: 0, top: 173 }}><AlgaRoja /></div>
+      <div className="absolute mar-vaiven" style={{ left: 0, top: 240 }}><AlgaRoja /></div>
       <div className="absolute mar-vaiven" style={{ right: 0, top: 489, animationDelay: "1s" }}><CoralTurquesa /></div>
       <div className="absolute mar-vaiven" style={{ left: 0, top: altura * 0.64, animationDelay: ".5s" }}><AlgaRoja /></div>
       <div className="absolute mar-vaiven" style={{ right: 0, top: altura - 120, animationDelay: "1.4s" }}><CoralTurquesa /></div>
