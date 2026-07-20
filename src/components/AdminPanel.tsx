@@ -113,6 +113,18 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
       <div className="flex-1 min-w-0">
         <div className="max-w-[1080px] mx-auto px-4 sm:px-8 py-6">
           {/* Encabezado de sección */}
+          {/* Barra superior móvil (la barra lateral se oculta en móvil) */}
+          <div className="md:hidden flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-accent grid place-items-center text-white text-sm">⚙️</div>
+              <span className="font-display font-extrabold">Admin</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link href="/app/inicio" className="text-[12px] font-bold text-accent bg-accent-soft rounded-lg px-3 py-1.5">👁️ Ver app</Link>
+              <form action={cerrarSesion}><button className="text-[12px] font-bold text-pink bg-pink-soft rounded-lg px-3 py-1.5">Salir</button></form>
+            </div>
+          </div>
+
           <div className="mb-5">
             <h1 className="font-display text-xl sm:text-2xl font-extrabold leading-tight">{TITULOS[tab]}</h1>
             <p className="text-sub text-[12.5px]">Panel de administración · Melsprout</p>
@@ -362,7 +374,7 @@ function RetoForm({ form, setForm, guardar, guardando, cancelar, msg }: {
     <div className="bg-surface border border-border rounded-2xl p-5 shadow-sm space-y-4">
       <h2 className="font-display font-extrabold text-lg">{form.id ? "Editar reto" : "Nuevo reto"}</h2>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label className="text-[13px] font-semibold">Tipo
           <select value={form.tipo} onChange={(e) => set({ tipo: e.target.value as RetoTipo })} className={inputC}>
             {TIPOS.map((t) => <option key={t.v} value={t.v}>{t.label}</option>)}
@@ -424,7 +436,7 @@ function RetoForm({ form, setForm, guardar, guardando, cancelar, msg }: {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label className="text-[13px] font-semibold">Tips (separados por coma)
           <input value={form.tipsItems} onChange={(e) => set({ tipsItems: e.target.value })} className={inputC} placeholder="Sé específico, Medible, Alcanzable" />
         </label>
@@ -585,7 +597,7 @@ function VivoTab({ clases, onCambio }: { clases: ClaseVivo[]; onCambio: () => vo
         <div className="bg-surface border border-border rounded-2xl p-5 shadow-sm space-y-3 max-w-xl">
           <h2 className="font-display font-extrabold text-lg">{form.id ? "Editar clase en vivo" : "Nueva clase en vivo"}</h2>
           <input value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} className={inputC} placeholder="Título" />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <input value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} className={inputC} placeholder="Categoría (ej. TikTok)" />
             <input value={form.instructor} onChange={(e) => setForm({ ...form, instructor: e.target.value })} className={inputC} placeholder="Instructor" />
             <label className="text-[12px] font-semibold text-sub">Fecha<input type="date" value={form.fecha} onChange={(e) => setForm({ ...form, fecha: e.target.value })} className={inputC} /></label>
