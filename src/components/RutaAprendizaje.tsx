@@ -92,7 +92,7 @@ export function RutaAprendizaje({
     : null;
   // Octi se coloca del lado OPUESTO al nodo actual: si la clase va a la izquierda,
   // Octi va a la derecha (y viceversa). Así nunca queda pegado al nodo.
-  const octiLeft = serpX(idxOcti) < CX ? "63%" : "37%";
+  const octiLeft = serpX(idxOcti) < CX ? "69%" : "43%";
 
   return (
     <div className="min-h-screen bg-bg flex">
