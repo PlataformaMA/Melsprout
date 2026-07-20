@@ -320,7 +320,7 @@ function HieloNivel({ bloqueado }: { bloqueado?: boolean }) {
 
 function AlgaRoja() {
   return (
-    <svg width="54" height="81" viewBox="0 0 52 78" fill="none">
+    <svg width="46" height="69" viewBox="0 0 52 78" fill="none">
       <path d="M14 76 C7 60 19 52 11 38 C4 25 18 18 13 4" stroke="#E8586A" strokeWidth="5.5" strokeLinecap="round" />
       <path d="M26 76 C33 58 21 48 29 34 C36 21 24 12 31 2" stroke="#D63F52" strokeWidth="5.5" strokeLinecap="round" />
       <path d="M38 76 C31 62 41 52 35 42 C30 33 39 26 37 16" stroke="#F27A88" strokeWidth="5.5" strokeLinecap="round" />
@@ -330,7 +330,7 @@ function AlgaRoja() {
 }
 function CoralTurquesa() {
   return (
-    <svg width="94" height="78" viewBox="0 0 80 66" fill="none" stroke="#2CA6A4" strokeWidth="7" strokeLinecap="round">
+    <svg width="72" height="60" viewBox="0 0 80 66" fill="none" stroke="#2CA6A4" strokeWidth="7" strokeLinecap="round">
       <path d="M40 64 L40 30" /><path d="M40 42 C31 34 24 36 22 24" /><path d="M40 38 C49 32 56 34 58 22" />
       <path d="M22 24 C19 17 24 13 22 5" /><path d="M58 22 C61 15 56 11 58 4" /><path d="M40 30 C37 22 43 17 40 8" />
       <ellipse cx="40" cy="64" rx="20" ry="3.5" fill="#2CA6A4" stroke="none" opacity="0.18" />
@@ -351,10 +351,11 @@ function DecorMar({ altura }: { altura: number }) {
   // Decoraciones SIEMPRE en las orillas (fuera del rango de los nodos, 24%–76%) y detrás de ellos.
   return (
     <div className="absolute inset-0 pointer-events-none z-[1] overflow-hidden">
-      <div className="absolute mar-vaiven" style={{ left: 2, top: 210 }}><AlgaRoja /></div>
-      <div className="absolute mar-vaiven" style={{ right: 2, top: 520, animationDelay: "1s" }}><CoralTurquesa /></div>
-      <div className="absolute mar-vaiven" style={{ left: 2, top: altura * 0.64, animationDelay: ".5s" }}><AlgaRoja /></div>
-      <div className="absolute mar-vaiven" style={{ right: 2, top: altura * 0.84, animationDelay: "1.4s" }}><CoralTurquesa /></div>
+      {/* Pegadas a la orilla y en los HUECOS entre filas (no a la altura de un nodo), para que no las tape ni las corte. */}
+      <div className="absolute mar-vaiven" style={{ left: 0, top: 173 }}><AlgaRoja /></div>
+      <div className="absolute mar-vaiven" style={{ right: 0, top: 489, animationDelay: "1s" }}><CoralTurquesa /></div>
+      <div className="absolute mar-vaiven" style={{ left: 0, top: altura * 0.64, animationDelay: ".5s" }}><AlgaRoja /></div>
+      <div className="absolute mar-vaiven" style={{ right: 0, top: altura - 120, animationDelay: "1.4s" }}><CoralTurquesa /></div>
     </div>
   );
 }
@@ -396,7 +397,7 @@ function OctiRuta({ nombre, claseTitulo }: { nombre: string; claseTitulo: string
         <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rotate-45" />
       </div>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/octi.webp" alt="Octi" className={`octi-float select-none shrink-0 w-28 sm:w-40 lg:w-52 drop-shadow-lg ${wiggle ? "octi-wiggle" : ""}`} draggable={false} />
+      <img src="/octi.webp" alt="Octi" className={`octi-float select-none shrink-0 w-24 sm:w-40 lg:w-52 drop-shadow-lg ${wiggle ? "octi-wiggle" : ""}`} draggable={false} />
     </button>
   );
 }
