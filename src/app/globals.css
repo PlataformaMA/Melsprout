@@ -70,6 +70,17 @@ body {
   animation: octi-float 3.2s ease-in-out infinite;
 }
 
+/* Meneo al tocar a Octi (feedback interactivo) */
+@keyframes octi-wiggle {
+  0%, 100% { transform: rotate(0) scale(1); }
+  20% { transform: rotate(-9deg) scale(1.06); }
+  45% { transform: rotate(8deg) scale(1.06); }
+  70% { transform: rotate(-5deg) scale(1.03); }
+}
+.octi-wiggle {
+  animation: octi-wiggle 0.65s ease-in-out;
+}
+
 @keyframes octi-blink {
   0%,
   90%,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
@@ -83,6 +83,14 @@ export function RutaAprendizaje({
     ? cursos.find((m) => m.clases.includes((elementos[idxActual] as { clase: Clase }).clase))
     : cursos[0];
 
+  // Octi ACOMPAÑA a la clase actual: se coloca a su altura en el carril central
+  // (~50%), donde nunca hay nodos (siempre están en ~16% y ~81%), así no los tapa.
+  const idxOcti = idxActual >= 0 ? idxActual : 0;
+  const octiY = pts[idxOcti]?.y ?? TOP;
+  const claseActual = elementos[idxOcti]?.tipo === "clase"
+    ? (elementos[idxOcti] as { clase: Clase }).clase
+    : null;
+
   return (
     <div className="min-h-screen bg-bg flex">
       <AppSidebar active="clases" />
@@ -136,9 +144,10 @@ export function RutaAprendizaje({
                   </div>
                 ))}
 
-                {/* Octi con burbuja: arriba a la derecha (espacio libre, no tapa nodos). Visible en móvil y desktop. */}
-                <div className="absolute z-10 top-0 right-0 sm:right-1">
-                  <OctiRuta nombre={nombre} />
+                {/* Octi acompaña a la clase actual (carril central, sin tapar nodos). Se desliza al avanzar. */}
+                <div className="absolute z-10 -translate-x-1/2 -translate-y-1/2 transition-[top] duration-700 ease-out"
+                     style={{ left: "50%", top: octiY }}>
+                  <OctiRuta nombre={nombre} claseTitulo={claseActual?.titulo ?? null} />
                 </div>
               </div>
             </div>
@@ -341,34 +350,53 @@ function Burbujas() {
 function DecorMar({ altura }: { altura: number }) {
   // Decoraciones SIEMPRE en las orillas (fuera del rango de los nodos, 24%–76%) y detrás de ellos.
   return (
-    <div className="absolute inset-0 pointer-events-none z-[1]">
-      <div className="absolute mar-vaiven" style={{ left: "-4%", top: 210 }}><AlgaRoja /></div>
-      <div className="absolute mar-vaiven" style={{ left: "91%", top: 520, animationDelay: "1s" }}><CoralTurquesa /></div>
-      <div className="absolute mar-vaiven" style={{ left: "-4%", top: altura * 0.64, animationDelay: ".5s" }}><AlgaRoja /></div>
-      <div className="absolute mar-vaiven" style={{ left: "90%", top: altura * 0.84, animationDelay: "1.4s" }}><CoralTurquesa /></div>
+    <div className="absolute inset-0 pointer-events-none z-[1] overflow-hidden">
+      <div className="absolute mar-vaiven" style={{ left: 2, top: 210 }}><AlgaRoja /></div>
+      <div className="absolute mar-vaiven" style={{ right: 2, top: 520, animationDelay: "1s" }}><CoralTurquesa /></div>
+      <div className="absolute mar-vaiven" style={{ left: 2, top: altura * 0.64, animationDelay: ".5s" }}><AlgaRoja /></div>
+      <div className="absolute mar-vaiven" style={{ right: 2, top: altura * 0.84, animationDelay: "1.4s" }}><CoralTurquesa /></div>
     </div>
   );
 }
 
-function OctiRuta({ nombre }: { nombre: string }) {
+function OctiRuta({ nombre, claseTitulo }: { nombre: string; claseTitulo: string | null }) {
   const primer = nombre.split(" ")[0];
-  const MENSAJES = [
-    "¡Completaste una clase! +10XP",
-    `¡Toca el nodo morado, ${primer}!`,
-    "Una clase al día 🚀",
-    "¡Cuida tu racha! 🔥",
-  ];
+  const corto = claseTitulo && claseTitulo.length > 40 ? claseTitulo.slice(0, 38) + "…" : claseTitulo;
+  const MENSAJES = corto
+    ? [
+        `Vas aquí 👇 «${corto}»`,
+        `¡Tú puedes, ${primer}! 💪`,
+        `Termínala y ganas +100 XP ⭐`,
+        `Una clase al día 🚀🔥`,
+      ]
+    : [
+        `¡Hola, ${primer}! Soy Octi 🐙`,
+        `Toca una clase para empezar ✨`,
+        `¡Vamos a crear contenido! 🎬`,
+      ];
   const [i, setI] = useState(0);
+  const [wiggle, setWiggle] = useState(false);
+
+  // Los mensajes se van rotando solos (más "vivo").
+  useEffect(() => {
+    const t = setInterval(() => setI((n) => (n + 1) % MENSAJES.length), 4500);
+    return () => clearInterval(t);
+  }, [MENSAJES.length]);
+
   return (
-    <button onClick={() => setI((n) => (n + 1) % MENSAJES.length)} className="flex flex-col items-center text-right hover:scale-[1.02] active:scale-95 transition" title="Tócame 🐙">
+    <button
+      onClick={() => { setI((n) => (n + 1) % MENSAJES.length); setWiggle(true); setTimeout(() => setWiggle(false), 650); }}
+      className="flex flex-col items-center text-center hover:scale-[1.03] active:scale-95 transition"
+      title="Tócame 🐙"
+    >
       {/* Burbuja ARRIBA de Octi (compacta, no tapa los nodos) */}
-      <div key={i} className="octi-fade relative bg-white rounded-2xl shadow-lg flex items-center gap-1.5 px-2.5 py-1.5 mb-1 max-w-[130px] sm:max-w-[180px] z-10">
-        <span className="w-5 h-5 rounded-full bg-amber-soft grid place-items-center text-[11px] shrink-0">⭐</span>
-        <span className="text-[10.5px] sm:text-[12px] font-bold text-[#3C1A6B] leading-snug">{MENSAJES[i]}</span>
-        <span className="absolute -bottom-1.5 right-6 w-3 h-3 bg-white rotate-45" />
+      <div key={i} className="octi-fade relative bg-white rounded-2xl shadow-lg flex items-center gap-1.5 px-3 py-2 mb-1 max-w-[160px] sm:max-w-[210px] z-10">
+        <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-soft grid place-items-center text-[11px] sm:text-[13px] shrink-0">⭐</span>
+        <span className="text-[11px] sm:text-[13px] font-bold text-[#3C1A6B] leading-snug">{MENSAJES[i]}</span>
+        <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rotate-45" />
       </div>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/octi.webp" alt="Octi" className="octi-float select-none shrink-0 w-20 sm:w-32 lg:w-40" draggable={false} />
+      <img src="/octi.webp" alt="Octi" className={`octi-float select-none shrink-0 w-28 sm:w-40 lg:w-52 drop-shadow-lg ${wiggle ? "octi-wiggle" : ""}`} draggable={false} />
     </button>
   );
 }
