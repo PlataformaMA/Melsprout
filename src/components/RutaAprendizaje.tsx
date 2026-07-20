@@ -129,7 +129,7 @@ export function RutaAprendizaje({
               </div>
 
               {/* Camino */}
-              <div className="relative mx-auto w-full" style={{ maxWidth: 640, height: altura }}>
+              <div className="relative mx-auto w-full overflow-x-hidden" style={{ maxWidth: 640, height: altura }}>
                 <svg viewBox={`0 0 ${W} ${altura}`} className="absolute inset-0 w-full h-full" fill="none" preserveAspectRatio="none">
                   <path d={construirPath(pts)} stroke="#C7B8EF" strokeWidth="5.5" strokeLinecap="round" strokeDasharray="10 15" vectorEffect="non-scaling-stroke" />
                 </svg>

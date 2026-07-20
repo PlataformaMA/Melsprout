@@ -24,6 +24,16 @@ export function UserMenu({ avatarUrl, nombre, esAdmin = false }: { avatarUrl: st
               <div className="text-[12px] text-hint">Conectado como</div>
               <div className="font-bold text-sm truncate">{nombre || "Creador"}</div>
             </div>
+            {/* Secciones (solo móvil — en escritorio están en el menú lateral) */}
+            <div className="lg:hidden">
+              <div className="text-[11px] text-hint font-semibold px-3 pt-1 pb-0.5 uppercase">Secciones</div>
+              <Item href="/app/inicio" icon={<span>🏠</span>}>Inicio</Item>
+              <Item href="/app/ruta" icon={<span>🗺️</span>}>Todas las clases</Item>
+              <Item href="/app/vivo" icon={<span>📡</span>}>Clases en vivo</Item>
+              <Item href="/app/comunidad" icon={<span>👥</span>}>Comunidad</Item>
+              <Item href="/app/retos" icon={<span>🎯</span>}>Retos</Item>
+              <div className="h-px bg-border my-1" />
+            </div>
             <Item href="/app/perfil" icon={<UserIcon />}>Mi perfil</Item>
             <Item href="/app/config" icon={<GearIcon />}>Configuración</Item>
             <Item href="/app/config" icon={<ShieldIcon />}>Seguridad y 2FA</Item>
