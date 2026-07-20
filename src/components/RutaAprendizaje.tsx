@@ -92,7 +92,8 @@ export function RutaAprendizaje({
     : null;
   // Octi se coloca del lado OPUESTO al nodo actual: si la clase va a la izquierda,
   // Octi va a la derecha (y viceversa). Así nunca queda pegado al nodo.
-  const octiLeft = serpX(idxOcti) < CX ? "69%" : "43%";
+  // Móvil y desktop usan posiciones distintas (móvil más a la derecha).
+  const nodeIzq = serpX(idxOcti) < CX;
 
   return (
     <div className="min-h-screen bg-bg flex">
@@ -148,8 +149,11 @@ export function RutaAprendizaje({
                 ))}
 
                 {/* Octi acompaña a la clase actual, del lado opuesto al nodo (sin taparlo). Se desliza al avanzar. */}
-                <div className="absolute z-10 -translate-x-1/2 -translate-y-1/2 transition-all duration-700 ease-out"
-                     style={{ left: octiLeft, top: octiY + 34 }}>
+                {/* Móvil: más arriba (-mt) y más a la derecha. Desktop: más abajo (mt-8) y un poco menos a la derecha. */}
+                <div className={`absolute z-10 -translate-x-1/2 -translate-y-1/2 transition-all duration-700 ease-out -mt-1 lg:mt-8 ${
+                  nodeIzq ? "left-[75%] lg:left-[69%]" : "left-[47%] lg:left-[43%]"
+                }`}
+                     style={{ top: octiY }}>
                   <OctiRuta nombre={nombre} claseTitulo={claseActual?.titulo ?? null} />
                 </div>
               </div>
@@ -400,7 +404,7 @@ function OctiRuta({ nombre, claseTitulo }: { nombre: string; claseTitulo: string
         <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rotate-45" />
       </div>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/octi.webp" alt="Octi" className={`octi-float select-none shrink-0 w-28 sm:w-36 lg:w-44 drop-shadow-lg ${wiggle ? "octi-wiggle" : ""}`} draggable={false} />
+      <img src="/octi.webp" alt="Octi" className={`octi-float select-none shrink-0 w-32 sm:w-36 lg:w-44 drop-shadow-lg ${wiggle ? "octi-wiggle" : ""}`} draggable={false} />
     </button>
   );
 }
