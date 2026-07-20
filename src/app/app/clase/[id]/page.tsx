@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getPerfil } from "@/lib/perfil-actions";
-import { getVideoClase } from "@/lib/clase-video-actions";
-import { ETAPA_1 } from "@/lib/data";
+import { getCursos, getVideoClaseDB } from "@/lib/cursos-db";
 import { ReproductorClase } from "@/components/ReproductorClase";
 
 export default async function ClasePage({ params }: { params: Promise<{ id: string }> }) {
@@ -18,7 +17,8 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
   if (!perfil) redirect("/onboarding");
   if (!perfil.onboarding_completo) redirect("/onboarding");
 
-  const modulo = ETAPA_1.find((m) => m.clases.some((c) => c.id === id)) ?? ETAPA_1[0];
+  const cursos = await getCursos();
+  const modulo = cursos.find((m) => m.clases.some((c) => c.id === id)) ?? cursos[0];
   const clase = modulo.clases.find((c) => c.id === id) ?? modulo.clases[0];
 
   // ¿Ya está completada esta clase? (para no volver a dar XP visualmente)
@@ -29,7 +29,7 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
     .eq("clase_id", clase.id)
     .maybeSingle();
 
-  const videoUrl = await getVideoClase(clase.id);
+  const videoUrl = await getVideoClaseDB(clase.id);
 
   return (
     <ReproductorClase

@@ -3,8 +3,6 @@
 import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
-import { ETAPA_1 } from "@/lib/data";
-import { getReto } from "@/lib/retos";
 import { InstagramIcon, TikTokIcon, YouTubeIcon } from "@/components/iconos-redes";
 import { PopupBienvenida } from "@/components/PopupCelebracion";
 
@@ -15,16 +13,14 @@ type Props = {
   stats: { publicados: number; totalClases: number; nivelNombre: string; nivelNum: number; faltanXP: number; siguienteXP: number };
   ranking: { nombre: string; avatarUrl: string | null; xp: number; esTu: boolean }[];
   continuar: { id: string; titulo: string };
+  retosSugeridos: { claseId: string; titulo: string; xp: number }[];
 };
 
 function fmt(n: number) { return n.toLocaleString("es-MX"); }
 
-export function InicioVista({ perfil, stats, ranking, continuar }: Props) {
-  const pctCurso = Math.min(100, Math.round((stats.publicados / stats.totalClases) * 100));
+export function InicioVista({ perfil, stats, ranking, continuar, retosSugeridos }: Props) {
+  const pctCurso = stats.totalClases > 0 ? Math.min(100, Math.round((stats.publicados / stats.totalClases) * 100)) : 0;
   const nivelPct = stats.siguienteXP > 0 ? Math.min(100, Math.round((perfil.xp / stats.siguienteXP) * 100)) : 100;
-
-  // Retos sugeridos (primeros de la etapa).
-  const retosSugeridos = ETAPA_1.flatMap((m) => m.clases).slice(0, 2).map((c) => getReto(c.id)).filter(Boolean).slice(0, 2) as NonNullable<ReturnType<typeof getReto>>[];
 
   const REDES = [
     { key: "instagram", nombre: "Instagram", icon: <InstagramIcon />, bg: "linear-gradient(45deg,#F58529,#DD2A7B,#8134AF)" },
@@ -100,7 +96,7 @@ export function InicioVista({ perfil, stats, ranking, continuar }: Props) {
               <div className="space-y-3">
                 {retosSugeridos.map((r) => (
                   <Link key={r.claseId} href={`/app/reto/${r.claseId}`} className="flex items-center gap-3 group">
-                    <span className="w-10 h-10 rounded-xl bg-accent-soft grid place-items-center text-lg shrink-0">{r.emoji}</span>
+                    <span className="w-10 h-10 rounded-xl bg-accent-soft grid place-items-center text-lg shrink-0">🎯</span>
                     <div className="flex-1 min-w-0">
                       <div className="font-bold text-[13.5px] truncate group-hover:text-accent transition">{r.titulo}</div>
                       <div className="text-[12px] text-sub">+{r.xp} XP</div>

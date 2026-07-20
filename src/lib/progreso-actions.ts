@@ -2,10 +2,6 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { ETAPA_1 } from "@/lib/data";
-
-// Orden lineal de las clases (para desbloqueo secuencial).
-const ORDEN = ETAPA_1.flatMap((m) => m.clases.map((c) => c.id));
 
 // Devuelve el set de clase_ids completadas por el usuario.
 export async function getClasesCompletadas(): Promise<Set<string>> {
@@ -31,7 +27,7 @@ export async function completarClase(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Inicia sesión." };
-  if (!ORDEN.includes(claseId)) return { error: "Clase no válida." };
+  if (!claseId) return { error: "Clase no válida." };
 
   // ¿Ya tenía XP dado por esta clase?
   const { data: prev } = await supabase

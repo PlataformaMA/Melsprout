@@ -72,10 +72,36 @@ export async function getRetoDB(id: string): Promise<RetoDef | null> {
   return data ? rowToDef(data as RetoRow) : null;
 }
 
-// Resolutor unificado: primero BD, luego catálogo de código.
+// Reto genérico a partir de una clase del currículum (cursos_clases).
+async function getRetoDeClase(id: string): Promise<RetoDef | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+  const admin = createAdminClient();
+  const { data } = await admin.from("cursos_clases").select("titulo, reto_texto").eq("id", id).maybeSingle();
+  if (!data) return null;
+  const reto = (data.reto_texto as string) || `Aplica lo aprendido en «${data.titulo}» y compártelo.`;
+  return {
+    claseId: id,
+    modulo: data.titulo as string,
+    titulo: reto,
+    emoji: "🎯",
+    descripcion: "Pon en práctica lo de la clase y compártelo con la comunidad.",
+    intro: "Completa este reto para afianzar lo aprendido y ganar XP.",
+    accion: "compartirlo",
+    xp: 50,
+    pasos: [{ id: "respuesta", titulo: "Tu respuesta al reto", subtitulo: reto, tipo: "textarea", placeholder: "Escribe aquí tu respuesta...", max: 500 }],
+    tips: { titulo: "Tips:", items: ["Sé claro", "Aplica lo de la clase", "Comparte con la comunidad"] },
+    sobre: SOBRE_DEFAULT,
+    ejemplo: EJEMPLO_DEFAULT,
+    consejo: "La constancia es lo que te lleva lejos. Un reto a la vez. 💜",
+  };
+}
+
+// Resolutor unificado: reto de admin (BD) → reto de clase (currículum) → catálogo demo.
 export async function getRetoUnificado(id: string): Promise<RetoDef | null> {
   const db = await getRetoDB(id);
   if (db) return db;
+  const clase = await getRetoDeClase(id);
+  if (clase) return clase;
   return getRetoCatalogo(id);
 }
 

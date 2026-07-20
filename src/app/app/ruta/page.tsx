@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPerfil } from "@/lib/perfil-actions";
 import { getClasesCompletadas } from "@/lib/progreso-actions";
-import { ETAPA_1 } from "@/lib/data";
+import { getCursos } from "@/lib/cursos-db";
 import { RutaAprendizaje } from "@/components/RutaAprendizaje";
 
 type EReto = "completada" | "en-revision" | "rechazada" | "pendiente" | "bloqueada";
@@ -42,8 +42,9 @@ export default async function RutaPage() {
   ];
   const perfilPct = Math.round((items.filter(Boolean).length / items.length) * 100);
 
-  // ——— Progreso REAL de clases ———
-  const orden = ETAPA_1.flatMap((m) => m.clases.map((c) => c.id));
+  // ——— Cursos (BD, con fallback) + progreso REAL ———
+  const cursos = await getCursos();
+  const orden = cursos.flatMap((m) => m.clases.map((c) => c.id));
   const completadasSet = await getClasesCompletadas();
   let completadas = 0;
   for (const id of orden) { if (completadasSet.has(id)) completadas++; else break; }
@@ -72,6 +73,7 @@ export default async function RutaPage() {
       topCreadores={topCreadores}
       completadas={completadas}
       retoEstados={retoEstados}
+      cursos={cursos}
     />
   );
 }

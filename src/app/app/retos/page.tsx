@@ -2,8 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getPerfil } from "@/lib/perfil-actions";
-import { ETAPA_1 } from "@/lib/data";
-import { getReto } from "@/lib/retos";
+import { getCursos } from "@/lib/cursos-db";
 import { listarRetosPorTipo, type RetoRow } from "@/lib/retos-db";
 import { esAdminUsuario } from "@/lib/admin";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -27,6 +26,7 @@ export default async function RetosPage() {
   const estados = new Map((subs || []).map((s) => [s.reto_id as string, s.estado as string]));
   const porTipo = await listarRetosPorTipo();
   const soyAdmin = await esAdminUsuario(user.id, user.email);
+  const cursos = await getCursos();
 
   return (
     <div className="min-h-screen bg-bg flex">
@@ -40,13 +40,15 @@ export default async function RetosPage() {
           </header>
 
           {(() => {
-            // Todos los retos con su estado.
-            const todos = ETAPA_1.flatMap((m) =>
-              m.clases.map((c) => {
-                const reto = getReto(c.id);
-                return reto ? { claseId: c.id, claseTitulo: c.titulo, reto, estado: estados.get(c.id) } : null;
-              })
-            ).filter(Boolean) as { claseId: string; claseTitulo: string; reto: NonNullable<ReturnType<typeof getReto>>; estado?: string }[];
+            // Todos los retos con su estado (uno por clase del currículum).
+            const todos = cursos.flatMap((m) =>
+              m.clases.map((c) => ({
+                claseId: c.id,
+                claseTitulo: c.titulo,
+                reto: { emoji: "🎯", titulo: c.reto || `Reto: ${c.titulo}`, descripcion: "Aplica lo aprendido en la clase y compártelo.", xp: 50 },
+                estado: estados.get(c.id),
+              }))
+            ) as { claseId: string; claseTitulo: string; reto: { emoji: string; titulo: string; descripcion: string; xp: number }; estado?: string }[];
 
             const pendientes = todos.filter((t) => t.estado !== "publicado");
             const semana = pendientes.slice(0, 3);

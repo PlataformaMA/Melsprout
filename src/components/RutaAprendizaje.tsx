@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
-import { ETAPA_1, type Clase, type ModuloCurso } from "@/lib/data";
+import { type Clase, type ModuloCurso } from "@/lib/data";
 
 // ————— Geometría del camino serpenteante (S amplia y suave) —————
 // W debe COINCIDIR con el maxWidth del contenedor para que el SVG no se deforme.
@@ -40,10 +40,10 @@ type Elemento =
 
 // Construye los nodos según el progreso REAL: `completadas` = # de clases
 // completadas en orden; `retoEstados` = estado del reto por clase.
-function construirElementos(completadas: number, retoEstados: Record<string, EReto>): Elemento[] {
+function construirElementos(cursos: ModuloCurso[], completadas: number, retoEstados: Record<string, EReto>): Elemento[] {
   const els: Elemento[] = [];
   let gi = 0;
-  ETAPA_1.forEach((modulo) => {
+  cursos.forEach((modulo) => {
     const inicioModulo = gi;
     modulo.clases.forEach((clase) => {
       const ec: EClase = gi < completadas ? "completada" : gi === completadas ? "actual" : "bloqueada";
@@ -64,12 +64,12 @@ function construirElementos(completadas: number, retoEstados: Record<string, ERe
 export type TopCreador = { id: string; nombre: string; avatarUrl: string | null; xp: number; esTu: boolean };
 
 export function RutaAprendizaje({
-  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [], completadas = 0, retoEstados = {},
+  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [], completadas = 0, retoEstados = {}, cursos,
 }: {
   nombre: string; avatarUrl: string | null; gemas: number; racha: number; perfilPct: number; topCreadores?: TopCreador[];
-  completadas?: number; retoEstados?: Record<string, EReto>;
+  completadas?: number; retoEstados?: Record<string, EReto>; cursos: ModuloCurso[];
 }) {
-  const elementos = construirElementos(completadas, retoEstados);
+  const elementos = construirElementos(cursos, completadas, retoEstados);
   // TODOS los nodos siguen la misma onda senoidal → serpentina continua y suave (sin codos).
   const pts = elementos.map((_, i) => ({
     x: serpX(i),
@@ -80,8 +80,8 @@ export function RutaAprendizaje({
   // Módulo actual (el que contiene la clase "actual")
   const idxActual = elementos.findIndex((e) => e.tipo === "clase" && e.estado === "actual");
   const moduloActual = idxActual >= 0 && elementos[idxActual].tipo === "clase"
-    ? ETAPA_1.find((m) => m.clases.includes((elementos[idxActual] as { clase: Clase }).clase))
-    : ETAPA_1[0];
+    ? cursos.find((m) => m.clases.includes((elementos[idxActual] as { clase: Clase }).clase))
+    : cursos[0];
 
   // Octi va a la izquierda: lo anclamos a la altura de un nodo del CENTRO/derecha
   // (nunca a la altura de un nodo del extremo izquierdo, para que no se encime).
@@ -120,7 +120,7 @@ export function RutaAprendizaje({
                 <Sparkle4 className="absolute right-40 bottom-2 opacity-15" size={20} />
 
                 <div className="relative font-display text-lg font-extrabold">
-                  Modulo {ETAPA_1.indexOf(moduloActual ?? ETAPA_1[0]) + 1}: {(moduloActual ?? ETAPA_1[0]).nombre}
+                  Modulo {cursos.indexOf(moduloActual ?? cursos[0]) + 1}: {(moduloActual ?? cursos[0]).nombre}
                 </div>
                 <span className="relative flex items-center gap-2 bg-white rounded-full pl-4 pr-1.5 py-1.5 text-[13px] font-bold text-[#5B21B6]">
                   Guía

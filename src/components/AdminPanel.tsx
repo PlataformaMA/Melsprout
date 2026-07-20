@@ -4,7 +4,6 @@ import { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cerrarSesion } from "@/lib/auth-actions";
-import { ETAPA_1 } from "@/lib/data";
 import type { RetoRow, RetoTipo } from "@/lib/retos-db";
 import type { PasoReto } from "@/lib/retos";
 import {
@@ -22,7 +21,8 @@ import {
   type ComentarioAdmin,
 } from "@/lib/admin-actions";
 import { crearClaseVivo, actualizarClaseVivo, borrarClaseVivo, type ClaseVivo, type ClaseVivoInput } from "@/lib/vivo-actions";
-import { setVideoClase } from "@/lib/clase-video-actions";
+import { crearModulo, actualizarModulo, borrarModulo, crearClase, actualizarClase, borrarClase, setVideoClaseDB, type ClaseInput } from "@/lib/cursos-actions";
+import type { ModuloRow, ClaseRow } from "@/lib/cursos-db";
 import { createClient } from "@/lib/supabase/client";
 
 const TIPOS: { v: RetoTipo; label: string }[] = [
@@ -31,8 +31,6 @@ const TIPOS: { v: RetoTipo; label: string }[] = [
   { v: "personal", label: "Personal" },
   { v: "curso", label: "De curso (liga a clase)" },
 ];
-const CLASES = ETAPA_1.flatMap((m) => m.clases.map((c) => ({ id: c.id, titulo: `${c.id} · ${c.titulo}` })));
-
 type FormReto = {
   id?: string;
   tipo: RetoTipo;
@@ -65,8 +63,9 @@ function rowToForm(r: RetoRow): FormReto {
   };
 }
 
-export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, videos, adminEmail }: { retos: RetoRow[]; usuarios: UsuarioAdmin[]; avances: Avance[]; comentarios: ComentarioAdmin[]; clasesVivo: ClaseVivo[]; videos: Record<string, string>; adminEmail: string }) {
+export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, cursos, adminEmail }: { retos: RetoRow[]; usuarios: UsuarioAdmin[]; avances: Avance[]; comentarios: ComentarioAdmin[]; clasesVivo: ClaseVivo[]; cursos: { modulos: ModuloRow[]; clases: ClaseRow[] }; adminEmail: string }) {
   const router = useRouter();
+  const clasesLista = cursos.clases.map((c) => ({ id: c.id, titulo: c.titulo }));
   const [tab, setTab] = useState<AdminTab>("retos");
   const [form, setForm] = useState<FormReto | null>(null);
   const [guardando, setGuardando] = useState(false);
@@ -169,11 +168,11 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
                   </div>
                 </>
               ) : (
-                <RetoForm form={form} setForm={setForm} guardar={guardar} guardando={guardando} cancelar={() => setForm(null)} msg={msg} />
+                <RetoForm form={form} setForm={setForm} guardar={guardar} guardando={guardando} cancelar={() => setForm(null)} msg={msg} clases={clasesLista} />
               )}
             </div>
           ) : tab === "clases" ? (
-            <ClasesVideoTab videos={videos} onCambio={() => router.refresh()} />
+            <CursosTab cursos={cursos} onCambio={() => router.refresh()} />
           ) : tab === "vivo" ? (
             <VivoTab clases={clasesVivo} onCambio={() => router.refresh()} />
           ) : tab === "avances" ? (
@@ -360,7 +359,8 @@ function AvanceFila({ a, onCambio }: { a: Avance; onCambio: () => void }) {
 }
 
 // ————— Formulario de reto —————
-function RetoForm({ form, setForm, guardar, guardando, cancelar, msg }: {
+function RetoForm({ form, setForm, guardar, guardando, cancelar, msg, clases: clasesLista }: {
+  clases: { id: string; titulo: string }[];
   form: FormReto; setForm: (f: FormReto) => void; guardar: () => void; guardando: boolean; cancelar: () => void; msg: string;
 }) {
   const set = (patch: Partial<FormReto>) => setForm({ ...form, ...patch });
@@ -384,7 +384,7 @@ function RetoForm({ form, setForm, guardar, guardando, cancelar, msg }: {
           <label className="text-[13px] font-semibold">Clase ligada
             <select value={form.clase_id} onChange={(e) => set({ clase_id: e.target.value })} className={inputC}>
               <option value="">— elige clase —</option>
-              {CLASES.map((c) => <option key={c.id} value={c.id}>{c.titulo}</option>)}
+              {clasesLista.map((c) => <option key={c.id} value={c.id}>{c.titulo}</option>)}
             </select>
           </label>
         )}
@@ -461,73 +461,140 @@ function RetoForm({ form, setForm, guardar, guardando, cancelar, msg }: {
   );
 }
 
-// ————— Videos de clases —————
-function ClasesVideoTab({ videos, onCambio }: { videos: Record<string, string>; onCambio: () => void }) {
+// ————— Cursos: módulos + clases + video —————
+function CursosTab({ cursos, onCambio }: { cursos: { modulos: ModuloRow[]; clases: ClaseRow[] }; onCambio: () => void }) {
+  const [nuevoMod, setNuevoMod] = useState("");
+  const [creando, setCreando] = useState(false);
+  const inputC = "w-full bg-bg border border-border rounded-lg px-3 py-2 text-[13px] outline-none focus:border-accent";
+
+  async function agregarModulo() {
+    if (!nuevoMod.trim()) return;
+    setCreando(true);
+    const r = await crearModulo(nuevoMod, "", "accent");
+    setCreando(false);
+    if ("error" in r) { alert(r.error); return; }
+    setNuevoMod(""); onCambio();
+  }
+
   return (
     <div>
-      <p className="text-sub text-[13.5px] mb-4">Sube o pega el enlace del video de cada clase. El alumno debe ver el <b>85%</b> para completarla y ganar +100 XP.</p>
+      <p className="text-sub text-[13.5px] mb-4">Gestiona los módulos y clases del curso. Sube el video de cada clase (el alumno la completa al ver el <b>85%</b> → +100 XP).</p>
+      {cursos.modulos.length === 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[13px] text-amber-800 mb-4">
+          Aún no hay módulos en la BD (la app muestra el demo). Corre el SQL <b>15_cursos.sql</b> para sembrar tu currículum, o crea módulos aquí.
+        </div>
+      )}
+
+      <div className="flex gap-2 mb-5">
+        <input value={nuevoMod} onChange={(e) => setNuevoMod(e.target.value)} placeholder="Nombre del nuevo módulo" className={inputC} />
+        <button onClick={agregarModulo} disabled={creando} className="bg-accent text-white rounded-lg px-4 py-2 text-[13px] font-bold hover:brightness-110 disabled:opacity-60 shrink-0">+ Módulo</button>
+      </div>
+
       <div className="space-y-6">
-        {ETAPA_1.map((m) => (
-          <div key={m.id}>
-            <h3 className="font-display font-extrabold mb-2">{m.nombre}</h3>
-            <div className="space-y-2">
-              {m.clases.map((c) => <ClaseVideoFila key={c.id} clase={c} url={videos[c.id] || ""} onCambio={onCambio} />)}
-            </div>
-          </div>
+        {cursos.modulos.map((m) => (
+          <ModuloBloque key={m.id} modulo={m} clases={cursos.clases.filter((c) => c.modulo_id === m.id)} onCambio={onCambio} />
         ))}
       </div>
     </div>
   );
 }
 
-function ClaseVideoFila({ clase, url, onCambio }: { clase: { id: string; titulo: string }; url: string; onCambio: () => void }) {
-  const [valor, setValor] = useState(url);
+function ModuloBloque({ modulo, clases, onCambio }: { modulo: ModuloRow; clases: ClaseRow[]; onCambio: () => void }) {
+  const [nombre, setNombre] = useState(modulo.nombre);
+  const [nuevaClase, setNuevaClase] = useState("");
+  const [editando, setEditando] = useState(false);
+  const inputC = "bg-bg border border-border rounded-lg px-3 py-2 text-[13px] outline-none focus:border-accent";
+
+  async function guardarNombre() { await actualizarModulo(modulo.id, nombre, modulo.descripcion, modulo.color); setEditando(false); onCambio(); }
+  async function borrar() { if (!confirm(`¿Borrar el módulo «${modulo.nombre}» y sus clases?`)) return; const r = await borrarModulo(modulo.id); if ("error" in r) { alert(r.error); return; } onCambio(); }
+  async function agregarClase() { if (!nuevaClase.trim()) return; const r = await crearClase(modulo.id, { titulo: nuevaClase }); if ("error" in r) { alert(r.error); return; } setNuevaClase(""); onCambio(); }
+
+  return (
+    <div className="border border-border rounded-2xl p-4 bg-surface shadow-sm">
+      <div className="flex items-center gap-2 mb-3">
+        {editando ? (
+          <>
+            <input value={nombre} onChange={(e) => setNombre(e.target.value)} className={`${inputC} flex-1 font-bold`} />
+            <button onClick={guardarNombre} className="text-[12px] font-bold text-accent">Guardar</button>
+          </>
+        ) : (
+          <>
+            <h3 className="font-display font-extrabold flex-1">{modulo.nombre} <span className="text-[12px] text-hint font-normal">({clases.length})</span></h3>
+            <button onClick={() => setEditando(true)} className="text-[12px] font-semibold text-accent">Renombrar</button>
+            <button onClick={borrar} className="text-[12px] font-semibold text-red-500">Borrar</button>
+          </>
+        )}
+      </div>
+      <div className="space-y-2">
+        {clases.map((c) => <ClaseCursoFila key={c.id} clase={c} onCambio={onCambio} />)}
+      </div>
+      <div className="flex gap-2 mt-3">
+        <input value={nuevaClase} onChange={(e) => setNuevaClase(e.target.value)} placeholder="Título de nueva clase" className={`${inputC} flex-1`} />
+        <button onClick={agregarClase} className="bg-surface border border-border rounded-lg px-3 py-2 text-[13px] font-semibold hover:bg-bg shrink-0">+ Clase</button>
+      </div>
+    </div>
+  );
+}
+
+function ClaseCursoFila({ clase, onCambio }: { clase: ClaseRow; onCambio: () => void }) {
+  const [abierto, setAbierto] = useState(false);
+  const [f, setF] = useState({ titulo: clase.titulo, instructor: clase.instructor || "", duracion_min: clase.duracion_min, nivel: clase.nivel || "basico", reto_texto: clase.reto_texto || "", video: clase.video_url || "" });
   const [subiendo, setSubiendo] = useState(false);
-  const [guardando, setGuardando] = useState(false);
   const [msg, setMsg] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const inputC = "w-full bg-bg border border-border rounded-lg px-3 py-2 text-[13px] outline-none focus:border-accent";
 
   async function subir(file: File) {
     const mb = file.size / (1024 * 1024);
-    if (mb > 50) { setMsg(`El video pesa ${mb.toFixed(0)} MB (máx 50 MB).`); return; }
+    if (mb > 50) { setMsg(`Video pesa ${mb.toFixed(0)} MB (máx 50).`); return; }
     setSubiendo(true); setMsg("");
     try {
       const supabase = createClient();
       const ext = (file.name.split(".").pop() || "mp4").toLowerCase();
       const path = `clases/${clase.id}-${Date.now()}.${ext}`;
       const { error } = await supabase.storage.from("retos").upload(path, file, { upsert: true });
-      if (error) { setMsg("No se pudo subir el video."); }
-      else {
-        const { data } = supabase.storage.from("retos").getPublicUrl(path);
-        setValor(data.publicUrl);
-        await setVideoClase(clase.id, data.publicUrl);
-        setMsg("✅ Subido y guardado"); onCambio();
-      }
+      if (error) setMsg("No se pudo subir.");
+      else { const { data } = supabase.storage.from("retos").getPublicUrl(path); setF((s) => ({ ...s, video: data.publicUrl })); await setVideoClaseDB(clase.id, data.publicUrl); setMsg("✅ Video subido"); onCambio(); }
     } catch { setMsg("Error al subir."); }
     setSubiendo(false);
   }
   async function guardar() {
-    setGuardando(true); setMsg("");
-    const r = await setVideoClase(clase.id, valor);
-    setGuardando(false);
+    const input: ClaseInput = { titulo: f.titulo, instructor: f.instructor, duracion_min: Number(f.duracion_min) || 12, nivel: f.nivel, reto_texto: f.reto_texto, video_url: f.video };
+    const r = await actualizarClase(clase.id, input);
     if ("error" in r) { setMsg(r.error); return; }
     setMsg("✅ Guardado"); onCambio();
   }
+  async function borrar() { if (!confirm("¿Borrar esta clase?")) return; const r = await borrarClase(clase.id); if ("error" in r) { alert(r.error); return; } onCambio(); }
 
   return (
-    <div className="bg-surface border border-border rounded-xl p-3">
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-[13px] font-bold text-hint w-8">{clase.id}</span>
+    <div className="border border-border rounded-xl bg-bg/40">
+      <button onClick={() => setAbierto((v) => !v)} className="w-full flex items-center gap-2 px-3 py-2 text-left">
         <span className="text-[13.5px] font-semibold flex-1 min-w-0 truncate">{clase.titulo}</span>
-        {url && <span className="text-[11px] font-bold text-green shrink-0">🎬 con video</span>}
-      </div>
-      <div className="flex flex-col sm:flex-row gap-2">
-        <input value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Pega un enlace .mp4 o sube un archivo →" className="flex-1 bg-bg border border-border rounded-lg px-3 py-2 text-[13px] outline-none focus:border-accent" />
-        <input ref={fileRef} type="file" accept="video/mp4,video/quicktime" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) subir(f); }} />
-        <button onClick={() => fileRef.current?.click()} disabled={subiendo} className="bg-surface border border-border rounded-lg px-3 py-2 text-[13px] font-semibold hover:bg-bg disabled:opacity-60 shrink-0">{subiendo ? "Subiendo…" : "Subir video"}</button>
-        <button onClick={guardar} disabled={guardando} className="bg-accent text-white rounded-lg px-4 py-2 text-[13px] font-bold hover:brightness-110 disabled:opacity-60 shrink-0">{guardando ? "…" : "Guardar"}</button>
-      </div>
-      {msg && <p className="text-[12px] text-sub mt-1.5">{msg}</p>}
+        {clase.video_url && <span className="text-[11px] font-bold text-green shrink-0">🎬</span>}
+        <span className="text-[11px] text-hint shrink-0">{clase.nivel}</span>
+        <span className={`text-hint transition-transform ${abierto ? "rotate-90" : ""}`}>›</span>
+      </button>
+      {abierto && (
+        <div className="px-3 pb-3 space-y-2 border-t border-border pt-3">
+          <input value={f.titulo} onChange={(e) => setF({ ...f, titulo: e.target.value })} className={inputC} placeholder="Título" />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <input value={f.instructor} onChange={(e) => setF({ ...f, instructor: e.target.value })} className={inputC} placeholder="Instructor" />
+            <input type="number" value={f.duracion_min} onChange={(e) => setF({ ...f, duracion_min: Number(e.target.value) })} className={inputC} placeholder="Min" />
+            <select value={f.nivel} onChange={(e) => setF({ ...f, nivel: e.target.value })} className={inputC}><option value="basico">Básico</option><option value="intermedio">Intermedio</option><option value="avanzado">Avanzado</option></select>
+          </div>
+          <input value={f.reto_texto} onChange={(e) => setF({ ...f, reto_texto: e.target.value })} className={inputC} placeholder="Texto del reto de esta clase" />
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input value={f.video} onChange={(e) => setF({ ...f, video: e.target.value })} className={`${inputC} flex-1`} placeholder="Enlace del video (.mp4) o sube →" />
+            <input ref={fileRef} type="file" accept="video/mp4,video/quicktime" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) subir(file); }} />
+            <button onClick={() => fileRef.current?.click()} disabled={subiendo} className="bg-surface border border-border rounded-lg px-3 py-2 text-[13px] font-semibold hover:bg-bg disabled:opacity-60 shrink-0">{subiendo ? "Subiendo…" : "Subir video"}</button>
+          </div>
+          {msg && <p className="text-[12px] text-sub">{msg}</p>}
+          <div className="flex gap-2">
+            <button onClick={guardar} className="bg-accent text-white rounded-lg px-4 py-2 text-[13px] font-bold hover:brightness-110">Guardar clase</button>
+            <button onClick={borrar} className="text-[13px] font-semibold text-red-500 px-2">Borrar</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

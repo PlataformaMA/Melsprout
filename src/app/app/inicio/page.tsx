@@ -3,7 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPerfil } from "@/lib/perfil-actions";
 import { getClasesCompletadas } from "@/lib/progreso-actions";
-import { ETAPA_1, TOTAL_CLASES, nivelPorXP } from "@/lib/data";
+import { getCursos } from "@/lib/cursos-db";
+import { nivelPorXP } from "@/lib/data";
 import { InicioVista } from "@/components/InicioVista";
 
 export default async function InicioPage() {
@@ -40,10 +41,14 @@ export default async function InicioPage() {
   }));
 
   const nivel = nivelPorXP(perfil.xp);
-  // Clase actual real = primera no completada (para "Continuar aprendiendo").
-  const clasesOrden = ETAPA_1.flatMap((m) => m.clases);
+  // Cursos de BD (con fallback) + clase actual real (primera no completada).
+  const cursos = await getCursos();
+  const clasesOrden = cursos.flatMap((m) => m.clases);
+  const totalClases = clasesOrden.length;
   const completadasSet = await getClasesCompletadas();
-  const cont = clasesOrden.find((c) => !completadasSet.has(c.id)) ?? clasesOrden[clasesOrden.length - 1];
+  const cont = clasesOrden.find((c) => !completadasSet.has(c.id)) ?? clasesOrden[clasesOrden.length - 1] ?? { id: "", titulo: "Empieza tu ruta" };
+  // Retos sugeridos = primeras 2 clases.
+  const retosSugeridos = clasesOrden.slice(0, 2).map((c) => ({ claseId: c.id, titulo: c.reto || `Reto: ${c.titulo}`, xp: 50 }));
 
   return (
     <InicioVista
@@ -58,7 +63,7 @@ export default async function InicioPage() {
       }}
       stats={{
         publicados,
-        totalClases: TOTAL_CLASES,
+        totalClases,
         nivelNombre: nivel.actual.nombre,
         nivelNum: nivel.actual.nivel,
         faltanXP: nivel.faltan,
@@ -66,6 +71,7 @@ export default async function InicioPage() {
       }}
       ranking={ranking}
       continuar={{ id: cont.id, titulo: cont.titulo }}
+      retosSugeridos={retosSugeridos}
     />
   );
 }
