@@ -72,6 +72,7 @@ export default async function InicioPage() {
       ranking={ranking}
       continuar={{ id: cont.id, titulo: cont.titulo }}
       retosSugeridos={retosSugeridos}
+      userId={user.id}
     />
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { crearCuenta, type EstadoAuth } from "@/lib/auth-actions";
 import { AuthShell } from "@/components/AuthShell";
 import { OAuthButtons, Separador } from "@/components/OAuthButtons";
@@ -12,6 +12,12 @@ export default function RegistroPage() {
     crearCuenta,
     {}
   );
+
+  // Guarda quién invitó (?ref=...) para dar +100 XP cuando este usuario entre.
+  useEffect(() => {
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (ref) localStorage.setItem("melsprout_ref", ref);
+  }, []);
 
   // Si ya se creó la cuenta, mostramos el aviso de "revisa tu correo".
   if (estado.mensaje) {

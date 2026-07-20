@@ -89,6 +89,20 @@ export function RetoVista({
 
   async function guardar(estado: "borrador" | "publicado") {
     setError("");
+    // Al PUBLICAR, exigir que todos los pasos estén completos (no publicar vacío).
+    if (estado === "publicado") {
+      const faltan = reto.pasos.filter((p) => {
+        if (p.tipo === "archivo") return !archivoUrl && !videoNombre;
+        return !(resp[p.id] || "").trim();
+      });
+      if (faltan.length > 0) {
+        // Lleva al primer paso incompleto y avisa.
+        const idxFalta = reto.pasos.findIndex((p) => p.id === faltan[0].id);
+        if (idxFalta >= 0) setPaso(idxFalta);
+        setError(`Completa todos los pasos antes de publicar (te falta: “${faltan[0].titulo}”).`);
+        return;
+      }
+    }
     setGuardando(estado);
     const r = await guardarReto(reto.claseId, resp, estado, archivoUrl, reto.xp);
     setGuardando(null);

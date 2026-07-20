@@ -1,10 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { InstagramIcon, TikTokIcon, YouTubeIcon } from "@/components/iconos-redes";
 import { PopupBienvenida } from "@/components/PopupCelebracion";
+import { procesarReferido } from "@/lib/referidos-actions";
 
 type Metricas = Record<string, { followers?: number; username?: string }>;
 
@@ -14,13 +16,26 @@ type Props = {
   ranking: { nombre: string; avatarUrl: string | null; xp: number; esTu: boolean }[];
   continuar: { id: string; titulo: string };
   retosSugeridos: { claseId: string; titulo: string; xp: number }[];
+  userId: string;
 };
 
 function fmt(n: number) { return n.toLocaleString("es-MX"); }
 
-export function InicioVista({ perfil, stats, ranking, continuar, retosSugeridos }: Props) {
+export function InicioVista({ perfil, stats, ranking, continuar, retosSugeridos, userId }: Props) {
   const pctCurso = stats.totalClases > 0 ? Math.min(100, Math.round((stats.publicados / stats.totalClases) * 100)) : 0;
   const nivelPct = stats.siguienteXP > 0 ? Math.min(100, Math.round((perfil.xp / stats.siguienteXP) * 100)) : 100;
+  const [copiado, setCopiado] = useState(false);
+
+  // Procesa el referido (si este usuario llegó por un link ?ref=...).
+  useEffect(() => {
+    const ref = localStorage.getItem("melsprout_ref");
+    if (ref && ref !== userId) procesarReferido(ref).finally(() => localStorage.removeItem("melsprout_ref"));
+  }, [userId]);
+
+  function invitar() {
+    const link = `${window.location.origin}/registro?ref=${userId}`;
+    navigator.clipboard?.writeText(link).then(() => { setCopiado(true); setTimeout(() => setCopiado(false), 2500); });
+  }
 
   const REDES = [
     { key: "instagram", nombre: "Instagram", icon: <InstagramIcon />, bg: "linear-gradient(45deg,#F58529,#DD2A7B,#8134AF)" },
@@ -119,9 +134,12 @@ export function InicioVista({ perfil, stats, ranking, continuar, retosSugeridos 
 
             <section className="rounded-3xl p-5 shadow-sm border border-accent/10" style={{ background: "linear-gradient(160deg,#F3F0FF,#FBFAFF)" }}>
               <h2 className="font-display font-extrabold mb-1">Invita a un amigo</h2>
-              <p className="text-[13px] text-sub mb-4">Comparte Melsprout y crezcan juntos 💜</p>
+              <p className="text-[13px] text-sub mb-3">Comparte Melsprout y gana <b className="text-accent">+100 XP</b> por cada amigo que se registre 💜</p>
               <div className="text-4xl text-center my-2">🎓</div>
-              <button className="w-full bg-accent text-white rounded-xl py-2.5 text-[13px] font-bold hover:brightness-110 transition">Invitar ahora</button>
+              <button onClick={invitar} className="w-full bg-accent text-white rounded-xl py-2.5 text-[13px] font-bold hover:brightness-110 transition">
+                {copiado ? "¡Link copiado! ✓" : "Invitar ahora"}
+              </button>
+              {copiado && <p className="text-[11px] text-sub text-center mt-2">Compártelo. Ganas +100 XP cuando se registren.</p>}
             </section>
           </div>
 
