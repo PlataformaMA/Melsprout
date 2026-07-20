@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getPerfil } from "@/lib/perfil-actions";
+import { getVideoClase } from "@/lib/clase-video-actions";
 import { ETAPA_1 } from "@/lib/data";
 import { ReproductorClase } from "@/components/ReproductorClase";
 
@@ -28,6 +29,8 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
     .eq("clase_id", clase.id)
     .maybeSingle();
 
+  const videoUrl = await getVideoClase(clase.id);
+
   return (
     <ReproductorClase
       clase={clase}
@@ -37,6 +40,7 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
       gemas={perfil.gemas}
       racha={perfil.racha}
       yaCompletada={prog?.completada === true}
+      videoUrl={videoUrl}
     />
   );
 }

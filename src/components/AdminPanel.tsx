@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cerrarSesion } from "@/lib/auth-actions";
@@ -22,6 +22,8 @@ import {
   type ComentarioAdmin,
 } from "@/lib/admin-actions";
 import { crearClaseVivo, actualizarClaseVivo, borrarClaseVivo, type ClaseVivo, type ClaseVivoInput } from "@/lib/vivo-actions";
+import { setVideoClase } from "@/lib/clase-video-actions";
+import { createClient } from "@/lib/supabase/client";
 
 const TIPOS: { v: RetoTipo; label: string }[] = [
   { v: "semanal", label: "Semanal" },
@@ -63,7 +65,7 @@ function rowToForm(r: RetoRow): FormReto {
   };
 }
 
-export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, adminEmail }: { retos: RetoRow[]; usuarios: UsuarioAdmin[]; avances: Avance[]; comentarios: ComentarioAdmin[]; clasesVivo: ClaseVivo[]; adminEmail: string }) {
+export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, videos, adminEmail }: { retos: RetoRow[]; usuarios: UsuarioAdmin[]; avances: Avance[]; comentarios: ComentarioAdmin[]; clasesVivo: ClaseVivo[]; videos: Record<string, string>; adminEmail: string }) {
   const router = useRouter();
   const [tab, setTab] = useState<AdminTab>("retos");
   const [form, setForm] = useState<FormReto | null>(null);
@@ -101,7 +103,7 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
     personal: "bg-pink-soft text-pink", curso: "bg-amber-100 text-amber-700",
   };
 
-  const TITULOS: Record<string, string> = { retos: "Retos", vivo: "Clases en vivo", avances: "Avances de usuarios", comentarios: "Comentarios", usuarios: "Usuarios" };
+  const TITULOS: Record<string, string> = { retos: "Retos", clases: "Videos de clases", vivo: "Clases en vivo", avances: "Avances de usuarios", comentarios: "Comentarios", usuarios: "Usuarios" };
 
   return (
     <div className="min-h-screen bg-bg flex">
@@ -158,6 +160,8 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
                 <RetoForm form={form} setForm={setForm} guardar={guardar} guardando={guardando} cancelar={() => setForm(null)} msg={msg} />
               )}
             </div>
+          ) : tab === "clases" ? (
+            <ClasesVideoTab videos={videos} onCambio={() => router.refresh()} />
           ) : tab === "vivo" ? (
             <VivoTab clases={clasesVivo} onCambio={() => router.refresh()} />
           ) : tab === "avances" ? (
@@ -174,13 +178,14 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
 }
 
 // ————— Barra lateral del admin —————
-type AdminTab = "retos" | "vivo" | "avances" | "comentarios" | "usuarios";
+type AdminTab = "retos" | "clases" | "vivo" | "avances" | "comentarios" | "usuarios";
 function AdminSidebar({ tab, setTab, adminEmail, counts }: {
   tab: AdminTab; setTab: (t: AdminTab) => void; adminEmail: string;
   counts: { retos: number; vivo: number; avances: number; comentarios: number; usuarios: number };
 }) {
   const items: { id: AdminTab; label: string; icon: string; count: number }[] = [
     { id: "retos", label: "Retos", icon: "🎯", count: counts.retos },
+    { id: "clases", label: "Clases (videos)", icon: "🎬", count: -1 },
     { id: "vivo", label: "Clases en vivo", icon: "📡", count: counts.vivo },
     { id: "avances", label: "Avances", icon: "📊", count: counts.avances },
     { id: "comentarios", label: "Comentarios", icon: "💬", count: counts.comentarios },
@@ -202,12 +207,11 @@ function AdminSidebar({ tab, setTab, adminEmail, counts }: {
             className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-semibold transition ${tab === it.id ? "bg-accent-soft text-accent" : "text-sub hover:bg-bg"}`}>
             <span>{it.icon}</span>
             <span className="flex-1 text-left">{it.label}</span>
-            <span className={`text-[11px] font-bold rounded-full px-2 py-0.5 ${tab === it.id ? "bg-accent text-white" : "bg-bg text-hint"}`}>{it.count}</span>
+            {it.count >= 0 && <span className={`text-[11px] font-bold rounded-full px-2 py-0.5 ${tab === it.id ? "bg-accent text-white" : "bg-bg text-hint"}`}>{it.count}</span>}
           </button>
         ))}
         <div className="text-[11px] text-hint font-semibold px-3 pt-4 pb-1 uppercase">Próximamente</div>
-        <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-semibold text-hint/70 cursor-default"><span>📚</span> Clases y cursos</div>
-        <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-semibold text-hint/70 cursor-default"><span>👥</span> Comunidad</div>
+        <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-semibold text-hint/70 cursor-default"><span>👥</span> Comunidad (retos grupales)</div>
       </nav>
 
       <div className="mt-auto pt-4 border-t border-border">
@@ -229,7 +233,7 @@ function AdminSidebar({ tab, setTab, adminEmail, counts }: {
 function AdminTabsMovil({ tab, setTab }: { tab: AdminTab; setTab: (t: AdminTab) => void }) {
   return (
     <div className="md:hidden flex flex-wrap gap-1 bg-surface border border-border rounded-2xl p-1 mb-5 shadow-sm">
-      {(["retos", "vivo", "avances", "comentarios", "usuarios"] as AdminTab[]).map((t) => (
+      {(["retos", "clases", "vivo", "avances", "comentarios", "usuarios"] as AdminTab[]).map((t) => (
         <button key={t} onClick={() => setTab(t)}
           className={`px-3 py-2 rounded-xl text-[13px] font-bold transition ${tab === t ? "bg-accent text-white" : "text-sub"}`}>
           {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -441,6 +445,77 @@ function RetoForm({ form, setForm, guardar, guardando, cancelar, msg }: {
         </button>
         <button onClick={cancelar} className="bg-surface border border-border rounded-xl px-4 py-2.5 text-[14px] font-semibold">Cancelar</button>
       </div>
+    </div>
+  );
+}
+
+// ————— Videos de clases —————
+function ClasesVideoTab({ videos, onCambio }: { videos: Record<string, string>; onCambio: () => void }) {
+  return (
+    <div>
+      <p className="text-sub text-[13.5px] mb-4">Sube o pega el enlace del video de cada clase. El alumno debe ver el <b>85%</b> para completarla y ganar +100 XP.</p>
+      <div className="space-y-6">
+        {ETAPA_1.map((m) => (
+          <div key={m.id}>
+            <h3 className="font-display font-extrabold mb-2">{m.nombre}</h3>
+            <div className="space-y-2">
+              {m.clases.map((c) => <ClaseVideoFila key={c.id} clase={c} url={videos[c.id] || ""} onCambio={onCambio} />)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ClaseVideoFila({ clase, url, onCambio }: { clase: { id: string; titulo: string }; url: string; onCambio: () => void }) {
+  const [valor, setValor] = useState(url);
+  const [subiendo, setSubiendo] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+  const [msg, setMsg] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function subir(file: File) {
+    const mb = file.size / (1024 * 1024);
+    if (mb > 50) { setMsg(`El video pesa ${mb.toFixed(0)} MB (máx 50 MB).`); return; }
+    setSubiendo(true); setMsg("");
+    try {
+      const supabase = createClient();
+      const ext = (file.name.split(".").pop() || "mp4").toLowerCase();
+      const path = `clases/${clase.id}-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("retos").upload(path, file, { upsert: true });
+      if (error) { setMsg("No se pudo subir el video."); }
+      else {
+        const { data } = supabase.storage.from("retos").getPublicUrl(path);
+        setValor(data.publicUrl);
+        await setVideoClase(clase.id, data.publicUrl);
+        setMsg("✅ Subido y guardado"); onCambio();
+      }
+    } catch { setMsg("Error al subir."); }
+    setSubiendo(false);
+  }
+  async function guardar() {
+    setGuardando(true); setMsg("");
+    const r = await setVideoClase(clase.id, valor);
+    setGuardando(false);
+    if ("error" in r) { setMsg(r.error); return; }
+    setMsg("✅ Guardado"); onCambio();
+  }
+
+  return (
+    <div className="bg-surface border border-border rounded-xl p-3">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-[13px] font-bold text-hint w-8">{clase.id}</span>
+        <span className="text-[13.5px] font-semibold flex-1 min-w-0 truncate">{clase.titulo}</span>
+        {url && <span className="text-[11px] font-bold text-green shrink-0">🎬 con video</span>}
+      </div>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <input value={valor} onChange={(e) => setValor(e.target.value)} placeholder="Pega un enlace .mp4 o sube un archivo →" className="flex-1 bg-bg border border-border rounded-lg px-3 py-2 text-[13px] outline-none focus:border-accent" />
+        <input ref={fileRef} type="file" accept="video/mp4,video/quicktime" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) subir(f); }} />
+        <button onClick={() => fileRef.current?.click()} disabled={subiendo} className="bg-surface border border-border rounded-lg px-3 py-2 text-[13px] font-semibold hover:bg-bg disabled:opacity-60 shrink-0">{subiendo ? "Subiendo…" : "Subir video"}</button>
+        <button onClick={guardar} disabled={guardando} className="bg-accent text-white rounded-lg px-4 py-2 text-[13px] font-bold hover:brightness-110 disabled:opacity-60 shrink-0">{guardando ? "…" : "Guardar"}</button>
+      </div>
+      {msg && <p className="text-[12px] text-sub mt-1.5">{msg}</p>}
     </div>
   );
 }

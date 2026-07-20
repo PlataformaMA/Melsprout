@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { esAdminUsuario } from "@/lib/admin";
 import { listarRetosAdmin, listarUsuariosAdmin, listarAvances, listarComentariosAdmin } from "@/lib/admin-actions";
 import { listarClasesVivoAdmin } from "@/lib/vivo-actions";
+import { getVideosClases } from "@/lib/clase-video-actions";
 import { AdminPanel } from "@/components/AdminPanel";
 
 export default async function AdminPage() {
@@ -35,13 +36,14 @@ export default async function AdminPage() {
     );
   }
 
-  const [retos, usuarios, avances, comentarios, clasesVivo] = await Promise.all([
+  const [retos, usuarios, avances, comentarios, clasesVivo, videos] = await Promise.all([
     listarRetosAdmin(),
     listarUsuariosAdmin(),
     listarAvances(),
     listarComentariosAdmin(),
     listarClasesVivoAdmin(),
+    getVideosClases(),
   ]);
 
-  return <AdminPanel retos={retos} usuarios={usuarios} avances={avances} comentarios={comentarios} clasesVivo={clasesVivo} adminEmail={user.email ?? ""} />;
+  return <AdminPanel retos={retos} usuarios={usuarios} avances={avances} comentarios={comentarios} clasesVivo={clasesVivo} videos={videos} adminEmail={user.email ?? ""} />;
 }
