@@ -83,12 +83,6 @@ export function RutaAprendizaje({
     ? cursos.find((m) => m.clases.includes((elementos[idxActual] as { clase: Clase }).clase))
     : cursos[0];
 
-  // Octi va a la izquierda: lo anclamos a la altura de un nodo del CENTRO/derecha
-  // (nunca a la altura de un nodo del extremo izquierdo, para que no se encime).
-  let octiAncla = idxActual >= 0 ? idxActual : 3;
-  if (serpX(octiAncla) < W * 0.45) octiAncla = Math.max(1, octiAncla - 1);
-  const octiY = pts[octiAncla].y;
-
   return (
     <div className="min-h-screen bg-bg flex">
       <AppSidebar active="clases" />
@@ -142,8 +136,8 @@ export function RutaAprendizaje({
                   </div>
                 ))}
 
-                {/* Octi con burbuja (arriba) a la izquierda, a la altura de un nodo del centro */}
-                <div className="absolute z-10 hidden lg:block" style={{ left: "-13%", top: octiY - 120 }}>
+                {/* Octi con burbuja: arriba a la derecha (espacio libre, no tapa nodos). Visible en móvil y desktop. */}
+                <div className="absolute z-10 top-0 right-0 sm:right-1">
                   <OctiRuta nombre={nombre} />
                 </div>
               </div>
@@ -366,15 +360,15 @@ function OctiRuta({ nombre }: { nombre: string }) {
   ];
   const [i, setI] = useState(0);
   return (
-    <button onClick={() => setI((n) => (n + 1) % MENSAJES.length)} className="flex flex-col items-center text-left hover:scale-[1.02] active:scale-95 transition" title="Tócame 🐙">
+    <button onClick={() => setI((n) => (n + 1) % MENSAJES.length)} className="flex flex-col items-center text-right hover:scale-[1.02] active:scale-95 transition" title="Tócame 🐙">
       {/* Burbuja ARRIBA de Octi (compacta, no tapa los nodos) */}
-      <div key={i} className="octi-fade relative bg-white rounded-2xl shadow-lg flex items-center gap-2 px-3 py-2 mb-1 max-w-[190px] z-10">
-        <span className="w-6 h-6 rounded-full bg-amber-soft grid place-items-center text-[13px] shrink-0">⭐</span>
-        <span className="text-[12px] font-bold text-[#3C1A6B] leading-snug">{MENSAJES[i]}</span>
-        <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rotate-45" />
+      <div key={i} className="octi-fade relative bg-white rounded-2xl shadow-lg flex items-center gap-1.5 px-2.5 py-1.5 mb-1 max-w-[130px] sm:max-w-[180px] z-10">
+        <span className="w-5 h-5 rounded-full bg-amber-soft grid place-items-center text-[11px] shrink-0">⭐</span>
+        <span className="text-[10.5px] sm:text-[12px] font-bold text-[#3C1A6B] leading-snug">{MENSAJES[i]}</span>
+        <span className="absolute -bottom-1.5 right-6 w-3 h-3 bg-white rotate-45" />
       </div>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/octi.webp" alt="Octi" width={200} className="octi-float select-none shrink-0" draggable={false} />
+      <img src="/octi.webp" alt="Octi" className="octi-float select-none shrink-0 w-20 sm:w-32 lg:w-40" draggable={false} />
     </button>
   );
 }
