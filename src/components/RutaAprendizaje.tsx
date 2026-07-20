@@ -151,7 +151,7 @@ export function RutaAprendizaje({
                 {/* Octi acompaña a la clase actual, del lado opuesto al nodo (sin taparlo). Se desliza al avanzar. */}
                 {/* Móvil: más arriba (-mt) y más a la derecha. Desktop: más abajo (mt-8) y un poco menos a la derecha. */}
                 <div className={`absolute z-10 -translate-x-1/2 -translate-y-1/2 transition-all duration-700 ease-out -mt-1 lg:mt-8 ${
-                  nodeIzq ? "left-[75%] lg:left-[69%]" : "left-[47%] lg:left-[43%]"
+                  nodeIzq ? "left-[66%] lg:left-[69%]" : "left-[50%] lg:left-[43%]"
                 }`}
                      style={{ top: octiY }}>
                   <OctiRuta nombre={nombre} claseTitulo={claseActual?.titulo ?? null} />
@@ -398,13 +398,13 @@ function OctiRuta({ nombre, claseTitulo }: { nombre: string; claseTitulo: string
       title="Tócame 🐙"
     >
       {/* Burbuja ARRIBA de Octi (compacta, no tapa los nodos) */}
-      <div key={i} className="octi-fade relative bg-white rounded-2xl shadow-lg flex items-center gap-1.5 px-3 py-2 mb-1 max-w-[160px] sm:max-w-[210px] z-10">
+      <div key={i} className="octi-fade relative bg-white rounded-2xl shadow-lg flex items-center gap-1.5 px-3 py-2 mb-1 w-max max-w-[215px] sm:max-w-[210px] z-10">
         <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-soft grid place-items-center text-[11px] sm:text-[13px] shrink-0">⭐</span>
         <span className="text-[11px] sm:text-[13px] font-bold text-[#3C1A6B] leading-snug">{MENSAJES[i]}</span>
         <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rotate-45" />
       </div>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/octi.webp" alt="Octi" className={`octi-float select-none shrink-0 w-32 sm:w-36 lg:w-44 drop-shadow-lg ${wiggle ? "octi-wiggle" : ""}`} draggable={false} />
+      <img src="/octi.webp" alt="Octi" className={`octi-float select-none shrink-0 w-40 lg:w-44 drop-shadow-lg ${wiggle ? "octi-wiggle" : ""}`} draggable={false} />
     </button>
   );
 }
