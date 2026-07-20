@@ -11,7 +11,7 @@ export async function GET() {
   } = await supabase.auth.getUser();
 
   return NextResponse.json({
-    build: "admin-v3-session",
+    build: "mobile-nav-v4",
     logueado: !!user,
     tuCorreo: user?.email ?? null,
     esAdminPorCorreo: esAdmin(user?.email),
