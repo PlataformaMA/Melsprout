@@ -1,11 +1,5 @@
-import { MobileNav } from "@/components/MobileNav";
-
-// Layout de la app: agrega la navegación inferior en móvil y el espacio para ella.
+// Layout de la app: agrega el espacio inferior para la barra de navegación móvil
+// (la barra en sí la renderiza AppSidebar en cada página, para que siempre aparezca).
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      <div className="pb-16 lg:pb-0">{children}</div>
-      <MobileNav />
-    </>
-  );
+  return <div className="pb-16 lg:pb-0">{children}</div>;
 }

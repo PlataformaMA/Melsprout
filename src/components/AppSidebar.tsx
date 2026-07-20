@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { MobileNav } from "@/components/MobileNav";
 
 type Item = { id: string; label: string; href: string; icon: React.ReactNode };
 
@@ -19,6 +20,7 @@ export function AppSidebar({ active }: { active: string }) {
   const [hover, setHover] = useState(false);
   const abierto = fijado || hover; // se despliega al pasar el mouse o al fijarlo
   return (
+    <>
     <div
       className="hidden lg:block shrink-0"
       style={{ width: abierto ? 264 : 92 }}
@@ -57,6 +59,8 @@ export function AppSidebar({ active }: { active: string }) {
         </div>
       </div>
     </div>
+    <MobileNav />
+    </>
   );
 }
 
