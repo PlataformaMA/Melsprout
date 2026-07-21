@@ -296,7 +296,7 @@ function NodoElemento({ el }: { el: Elemento }) {
           {/* Indicador "toca aquí": deja claro dónde debe picar la persona */}
           <div className="absolute left-1/2 -translate-x-1/2 -top-9 z-10 pointer-events-none">
             <span className="ruta-toca inline-block whitespace-nowrap bg-accent text-white text-[10.5px] font-extrabold rounded-full px-2.5 py-1 shadow-lg">
-              👆 ¡Toca aquí!
+              👇 ¡Toca aquí!
             </span>
           </div>
           <Link href={`/app/clase/${el.clase.id}`} title={el.clase.titulo}
@@ -374,14 +374,15 @@ function TrofeoBurbuja({ apagado }: { apagado?: boolean }) {
 }
 
 function HieloNivel({ bloqueado }: { bloqueado?: boolean }) {
+  // Isla = frontera de "mundo"/nivel (como el mockup). Si no hay asset propio,
+  // usamos el emoji 🏝️ (se ve bien en móvil/escritorio).
   return (
     <div className="relative grid place-items-center">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/hielo.webp" alt="Siguiente nivel" width={212} className="select-none" draggable={false} />
+      <div className={`text-[92px] leading-none select-none ${bloqueado ? "grayscale opacity-80" : ""}`} aria-label="Siguiente mundo">🏝️</div>
       {bloqueado && (
         <>
-          <span className="absolute top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 w-9 h-9 rounded-full bg-white/90 grid place-items-center shadow-md"><LockIcon /></span>
-          <span className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-accent text-white text-[11px] font-bold rounded-lg px-3 py-1 shadow whitespace-nowrap">Siguiente Nivel</span>
+          <span className="absolute top-[34%] left-1/2 -translate-x-1/2 w-9 h-9 rounded-full bg-white/90 grid place-items-center shadow-md"><LockIcon /></span>
+          <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-accent text-white text-[11px] font-bold rounded-lg px-3 py-1 shadow whitespace-nowrap">Siguiente mundo</span>
         </>
       )}
     </div>
