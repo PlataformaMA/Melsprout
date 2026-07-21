@@ -35,6 +35,15 @@ export default async function RutaPage() {
     esTu: r.id === user.id,
   }));
 
+  // Tu posición global en el ranking (cuántos tienen más XP que tú, +1).
+  const miXp = perfil.xp ?? 0;
+  const { count: mejores } = await admin
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("onboarding_completo", true)
+    .gt("xp", miXp);
+  const tuRanking = { pos: (mejores ?? 0) + 1, xp: miXp };
+
   const tieneRedes = ["instagram", "tiktok", "youtube"].some((k) => perfil.redes?.[k]);
   const items = [
     !!perfil.avatar_url, !!perfil.cover_url, !!perfil.headline, !!perfil.bio,
@@ -74,6 +83,7 @@ export default async function RutaPage() {
       completadas={completadas}
       retoEstados={retoEstados}
       cursos={cursos}
+      tuRanking={tuRanking}
     />
   );
 }

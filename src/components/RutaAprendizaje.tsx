@@ -64,10 +64,10 @@ function construirElementos(cursos: ModuloCurso[], completadas: number, retoEsta
 export type TopCreador = { id: string; nombre: string; avatarUrl: string | null; xp: number; esTu: boolean };
 
 export function RutaAprendizaje({
-  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [], completadas = 0, retoEstados = {}, cursos,
+  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [], completadas = 0, retoEstados = {}, cursos, tuRanking,
 }: {
   nombre: string; avatarUrl: string | null; gemas: number; racha: number; perfilPct: number; topCreadores?: TopCreador[];
-  completadas?: number; retoEstados?: Record<string, EReto>; cursos: ModuloCurso[];
+  completadas?: number; retoEstados?: Record<string, EReto>; cursos: ModuloCurso[]; tuRanking?: { pos: number; xp: number };
 }) {
   const elementos = construirElementos(cursos, completadas, retoEstados);
   // TODOS los nodos siguen la misma onda senoidal → serpentina continua y suave (sin codos).
@@ -95,6 +95,15 @@ export function RutaAprendizaje({
   // Móvil y desktop usan posiciones distintas (móvil más a la derecha).
   const nodeIzq = serpX(idxOcti) < CX;
 
+  // Progreso del MÓDULO actual (para el banner "Tu progreso").
+  const modIdx = Math.max(0, cursos.indexOf(moduloActual ?? cursos[0]));
+  const mod = moduloActual ?? cursos[0];
+  const startIdx = cursos.slice(0, modIdx).reduce((a, m) => a + m.clases.length, 0);
+  const totalMod = mod?.clases.length ?? 0;
+  const clasesMod = Math.max(0, Math.min(totalMod, completadas - startIdx));
+  const retosMod = (mod?.clases ?? []).filter((c) => retoEstados[c.id] === "completada").length;
+  const pctMod = totalMod ? Math.round((clasesMod / totalMod) * 100) : 0;
+
   return (
     <div className="min-h-screen bg-bg flex">
       <AppSidebar active="clases" />
@@ -117,21 +126,46 @@ export function RutaAprendizaje({
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
             {/* ——— Mapa ——— */}
             <div className="min-w-0">
-              {/* Banner del módulo */}
-              <div className="relative overflow-hidden rounded-2xl px-6 py-5 flex items-center justify-between text-white shadow-lg shadow-accent/20 mb-4"
-                style={{ background: "linear-gradient(120deg,#6D28D9,#7C3AED)" }}>
-                {/* Destellos decorativos */}
-                <Sparkle4 className="absolute right-24 top-1/2 -translate-y-1/2 opacity-30" size={64} />
-                <Sparkle4 className="absolute right-16 top-3 opacity-20" size={26} />
-                <Sparkle4 className="absolute right-40 bottom-2 opacity-15" size={20} />
-
-                <div className="relative font-display text-lg font-extrabold">
-                  Modulo {cursos.indexOf(moduloActual ?? cursos[0]) + 1}: {(moduloActual ?? cursos[0]).nombre}
+              {/* Banner "Tu progreso" */}
+              <div className="relative overflow-hidden rounded-2xl px-5 sm:px-6 py-5 mb-4 border border-accent/15 shadow-sm"
+                style={{ background: "linear-gradient(135deg,#EEE9FF,#F8F5FF)" }}>
+                <Sparkle4 className="absolute right-6 top-3 opacity-20 text-accent" size={40} />
+                <div className="relative flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-[11px] font-extrabold text-accent/80 uppercase tracking-wider">Tu progreso</div>
+                    <h2 className="font-display text-base sm:text-lg font-extrabold mt-0.5 truncate">
+                      Módulo {modIdx + 1}: {mod?.nombre}
+                    </h2>
+                    <p className="text-[12.5px] text-sub mt-0.5">
+                      {clasesMod}/{totalMod} clases completadas · {retosMod}/{totalMod} retos completados
+                    </p>
+                  </div>
+                  {claseActual ? (
+                    <Link href={`/app/clase/${claseActual.id}`} className="shrink-0 flex items-center gap-2 bg-accent text-white rounded-full pl-4 pr-1.5 py-1.5 text-[13px] font-bold shadow hover:brightness-110 transition">
+                      Recursos
+                      <span className="w-6 h-6 rounded-full bg-white/25 grid place-items-center"><PlayMini /></span>
+                    </Link>
+                  ) : (
+                    <span className="shrink-0 flex items-center gap-2 bg-accent/60 text-white rounded-full pl-4 pr-1.5 py-1.5 text-[13px] font-bold">
+                      Recursos
+                      <span className="w-6 h-6 rounded-full bg-white/25 grid place-items-center"><PlayMini /></span>
+                    </span>
+                  )}
                 </div>
-                <span className="relative flex items-center gap-2 bg-white rounded-full pl-4 pr-1.5 py-1.5 text-[13px] font-bold text-[#5B21B6]">
-                  Guía
-                  <span className="w-6 h-6 rounded-full bg-accent grid place-items-center text-white"><PlayMini /></span>
-                </span>
+
+                {/* Barra con Octi como marcador + hexágono "Mundo" al final */}
+                <div className="relative mt-5 flex items-center gap-2">
+                  <div className="relative flex-1 h-3 rounded-full bg-white/70 border border-accent/10">
+                    <div className="absolute inset-y-0 left-0 rounded-full bg-accent transition-all duration-700" style={{ width: `${pctMod}%` }} />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/octi.webp" alt="" className="absolute -top-4 w-8 -translate-x-1/2 transition-all duration-700 drop-shadow" style={{ left: `${pctMod}%` }} draggable={false} />
+                  </div>
+                  <div className="shrink-0 flex items-center gap-1.5">
+                    <span className="hidden sm:inline text-[11px] font-bold text-accent">Mundo {modIdx + 1}</span>
+                    <span className="w-8 h-8 grid place-items-center text-white text-[13px] shrink-0"
+                      style={{ background: "#7C3AED", clipPath: "polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)" }}>★</span>
+                  </div>
+                </div>
               </div>
 
               {/* Camino */}
@@ -161,20 +195,21 @@ export function RutaAprendizaje({
 
             {/* ——— Sidebar derecha ——— */}
             <aside className="space-y-4 lg:sticky lg:top-5">
-              {/* Top 5 creadores */}
+              {/* Top colaboradores + Tu ranking */}
               {topCreadores.length > 0 && (
                 <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-lg">🏆</span>
-                    <h3 className="font-display font-extrabold text-[15px]">Top creadores</h3>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🏆</span>
+                      <h3 className="font-display font-extrabold text-[15px]">Top colaboradores</h3>
+                    </div>
+                    <span className="text-[12px] text-accent font-semibold cursor-default">Ver top</span>
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     {topCreadores.map((c, i) => (
                       <div key={c.id}
                         className={`flex items-center gap-2.5 rounded-xl px-2 py-1.5 ${c.esTu ? "bg-accent-soft" : ""}`}>
-                        <span className={`w-6 text-center text-[13px] font-extrabold shrink-0 ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : i === 2 ? "text-amber-700" : "text-hint"}`}>
-                          {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : i + 1}
-                        </span>
+                        <span className="w-5 text-center text-[13px] font-extrabold text-hint shrink-0">{i + 1}</span>
                         {c.avatarUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={c.avatarUrl} alt={c.nombre} className="w-8 h-8 rounded-full object-cover shrink-0" />
@@ -183,13 +218,35 @@ export function RutaAprendizaje({
                             {c.nombre.slice(0, 2).toUpperCase()}
                           </span>
                         )}
-                        <span className="flex-1 min-w-0 text-[13px] font-semibold truncate">
-                          {c.nombre}{c.esTu && <span className="text-accent"> · Tú</span>}
-                        </span>
-                        <span className="text-[12px] font-bold text-accent shrink-0">{c.xp} XP</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[13px] font-semibold truncate leading-tight">{c.nombre}{c.esTu && <span className="text-accent"> · Tú</span>}</div>
+                          <div className="text-[11px] text-sub leading-tight">{c.xp.toLocaleString()} XP</div>
+                        </div>
+                        {i < 3 && <span className={`shrink-0 text-[15px] ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : "text-amber-700"}`}>👑</span>}
                       </div>
                     ))}
                   </div>
+
+                  {tuRanking && (
+                    <div className="mt-3 pt-3 border-t border-border">
+                      <div className="text-[11px] font-bold text-hint uppercase tracking-wide mb-1.5">Tu ranking</div>
+                      <div className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 bg-accent-soft/60">
+                        <span className="w-7 text-center text-[13px] font-extrabold text-accent shrink-0">{tuRanking.pos}</span>
+                        {avatarUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={avatarUrl} alt="Tú" className="w-8 h-8 rounded-full object-cover shrink-0" />
+                        ) : (
+                          <span className="w-8 h-8 rounded-full bg-accent/15 text-accent grid place-items-center text-[11px] font-bold shrink-0">
+                            {nombre.slice(0, 2).toUpperCase()}
+                          </span>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[13px] font-semibold truncate leading-tight">{nombre} <span className="text-accent">· Tú</span></div>
+                          <div className="text-[11px] text-sub leading-tight">{tuRanking.xp.toLocaleString()} XP</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
