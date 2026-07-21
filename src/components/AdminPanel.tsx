@@ -546,7 +546,7 @@ function ClaseCursoFila({ clase, onCambio }: { clase: ClaseRow; onCambio: () => 
 
   async function subir(file: File) {
     const mb = file.size / (1024 * 1024);
-    if (mb > 50) { setMsg(`Video pesa ${mb.toFixed(0)} MB (máx 50).`); return; }
+    if (mb > 200) { setMsg(`Video pesa ${mb.toFixed(0)} MB (máx 200). Comprímelo o usa YouTube.`); return; }
     setSubiendo(true); setMsg("");
     try {
       const supabase = createClient();
