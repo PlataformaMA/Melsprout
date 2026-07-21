@@ -7,6 +7,7 @@ export type RetoGuardado = {
   respuestas: Record<string, string>;
   archivo_url: string | null;
   estado: "borrador" | "publicado";
+  revision: "aprobado" | "rechazado" | null;
 } | null;
 
 // Lee la respuesta guardada del usuario para un reto.
@@ -18,7 +19,7 @@ export async function getRetoSubmission(retoId: string): Promise<RetoGuardado> {
   if (!user) return null;
   const { data } = await supabase
     .from("reto_submissions")
-    .select("respuestas, archivo_url, estado")
+    .select("respuestas, archivo_url, estado, revision")
     .eq("user_id", user.id)
     .eq("reto_id", retoId)
     .maybeSingle();
@@ -27,6 +28,7 @@ export async function getRetoSubmission(retoId: string): Promise<RetoGuardado> {
     respuestas: (data.respuestas as Record<string, string>) || {},
     archivo_url: data.archivo_url ?? null,
     estado: (data.estado as "borrador" | "publicado") || "borrador",
+    revision: (data.revision as "aprobado" | "rechazado" | null) ?? null,
   };
 }
 

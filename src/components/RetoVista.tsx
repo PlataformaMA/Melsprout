@@ -39,6 +39,13 @@ export function RetoVista({
   const [modal, setModal] = useState<"borrador" | "publicado" | null>(null);
   const [error, setError] = useState("");
   const [paso, setPaso] = useState(0);
+  const [reintentar, setReintentar] = useState(false);
+
+  // Estado del envío: si ya se publicó, mostramos su estado y NO dejamos re-contestar
+  // (salvo que esté "rechazado" → puede volver a intentar).
+  const enviado = guardado?.estado === "publicado";
+  const revision = guardado?.revision ?? null;
+  const mostrarEstado = enviado && !reintentar;
 
   const total = reto.pasos.length;
   const esUltimo = paso >= total - 1;
@@ -162,20 +169,28 @@ export function RetoVista({
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img key={esUltimo ? "fin" : paso} src="/octi.webp" alt="Octi" className="octi-pop shrink-0 w-16 sm:w-24" />
                   <div className="relative flex-1 bg-white text-accent text-[13px] sm:text-[14px] font-semibold rounded-2xl px-4 py-3 leading-snug shadow-sm">
-                    {esUltimo
+                    {mostrarEstado
+                      ? "¡Ya enviaste este reto! Aquí abajo ves en qué estado va. 💜"
+                      : esUltimo
                       ? "¡Vas increíble! Revisa tu último paso y publícalo. Estoy súper orgulloso de ti 🎉"
                       : pasoActual.octi || "Tú puedes con esto. Un paso a la vez. 💜"}
                     <span className="absolute -left-1.5 top-5 w-3 h-3 bg-white rotate-45" />
                   </div>
                 </div>
-                <div className="flex items-center justify-end gap-2.5 mt-3">
-                  <span className="text-[11.5px] sm:text-[12.5px] font-bold text-accent text-right">Al completarlo y publicarlo en la comunidad ganarás:</span>
-                  <span className="flex items-center gap-1.5 bg-accent text-white text-[13px] font-extrabold rounded-full pl-1.5 pr-3 py-1 shrink-0">
-                    <span className="w-6 h-6 rounded-full bg-white/25 grid place-items-center text-[13px]">⭐</span>+{reto.xp} XP
-                  </span>
-                </div>
+                {!mostrarEstado && (
+                  <div className="flex items-center justify-end gap-2.5 mt-3">
+                    <span className="text-[11.5px] sm:text-[12.5px] font-bold text-accent text-right">Al completarlo y publicarlo en la comunidad ganarás:</span>
+                    <span className="flex items-center gap-1.5 bg-accent text-white text-[13px] font-extrabold rounded-full pl-1.5 pr-3 py-1 shrink-0">
+                      <span className="w-6 h-6 rounded-full bg-white/25 grid place-items-center text-[13px]">⭐</span>+{reto.xp} XP
+                    </span>
+                  </div>
+                )}
               </div>
 
+              {mostrarEstado ? (
+                <EstadoReto revision={revision} respuestas={resp} pasos={reto.pasos} archivoUrl={archivoUrl} xp={reto.xp} onReintentar={() => setReintentar(true)} />
+              ) : (
+              <>
               {/* Progreso del flujo */}
               <div className="mt-6 mb-5">
                 <div className="flex items-center justify-between text-[12px] mb-2">
@@ -278,6 +293,8 @@ export function RetoVista({
                   </div>
                 )}
               </div>
+              </>
+              )}
             </div>
 
             {/* ——— Columna derecha ——— */}
@@ -389,6 +406,65 @@ export function RetoVista({
 }
 
 // ————————————— Subcomponentes —————————————
+// Muestra el ESTADO de un reto ya enviado (enviado/en revisión, aprobado, rechazado)
+// en vez del formulario, para que no se vuelva a contestar.
+function EstadoReto({
+  revision, respuestas, pasos, archivoUrl, xp, onReintentar,
+}: {
+  revision: "aprobado" | "rechazado" | null;
+  respuestas: Record<string, string>;
+  pasos: PasoReto[];
+  archivoUrl: string | null;
+  xp: number;
+  onReintentar: () => void;
+}) {
+  const info =
+    revision === "aprobado"
+      ? { emoji: "✅", titulo: "¡Reto aprobado!", sub: `Ganaste +${xp} XP. ¡Excelente trabajo!`, clase: "bg-green-soft border-green/30 text-green" }
+      : revision === "rechazado"
+      ? { emoji: "✕", titulo: "Reto rechazado", sub: "Revisa lo enviado y vuelve a intentarlo. ¡Tú puedes!", clase: "bg-pink-soft border-pink/30 text-pink" }
+      : { emoji: "⏳", titulo: "Enviado · En revisión", sub: "El equipo lo revisará en las próximas 48h. Te avisaremos. 💜", clase: "bg-accent-soft border-accent/30 text-accent" };
+
+  return (
+    <div className="mt-6">
+      <div className={`rounded-2xl border p-5 ${info.clase}`}>
+        <div className="flex items-center gap-3">
+          <span className="text-2xl shrink-0">{info.emoji}</span>
+          <div>
+            <div className="font-display font-extrabold text-lg leading-tight">{info.titulo}</div>
+            <div className="text-[13px] opacity-90 mt-0.5">{info.sub}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Lo que enviaste (solo lectura) */}
+      <div className="mt-5 bg-surface border border-border rounded-2xl p-5 space-y-4">
+        <h3 className="font-display font-extrabold text-[15px]">Tu respuesta enviada</h3>
+        {pasos.map((p) => (
+          <div key={p.id}>
+            <div className="text-[13px] font-bold text-text">{p.titulo}</div>
+            {p.tipo === "archivo" ? (
+              archivoUrl ? (
+                <a href={archivoUrl} target="_blank" rel="noreferrer" className="text-[13px] text-accent font-semibold hover:underline">Ver archivo subido ↗</a>
+              ) : (
+                <span className="text-[13px] text-hint">Sin archivo</span>
+              )
+            ) : (
+              <p className="text-[13px] text-sub whitespace-pre-wrap leading-relaxed">{respuestas[p.id] || "—"}</p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {revision === "rechazado" && (
+        <button onClick={onReintentar} className="mt-5 flex items-center gap-2 bg-accent text-white rounded-xl px-5 py-3 text-[14px] font-bold hover:brightness-110 transition shadow-sm">
+          <UploadIcon /> Volver a intentar
+        </button>
+      )}
+    </div>
+  );
+}
+
 function FileField({ paso, archivoUrl, videoNombre, subiendo, onFile }: {
   paso: PasoReto; archivoUrl: string | null; videoNombre: string; subiendo: boolean; onFile: (f: File) => void;
 }) {

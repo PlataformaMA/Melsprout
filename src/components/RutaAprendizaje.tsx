@@ -374,18 +374,65 @@ function TrofeoBurbuja({ apagado }: { apagado?: boolean }) {
 }
 
 function HieloNivel({ bloqueado }: { bloqueado?: boolean }) {
-  // Isla = frontera de "mundo"/nivel (como el mockup). Si no hay asset propio,
-  // usamos el emoji 🏝️ (se ve bien en móvil/escritorio).
+  // Isla = frontera de "mundo"/nivel (réplica del asset gris con palmeras).
   return (
     <div className="relative grid place-items-center">
-      <div className={`text-[92px] leading-none select-none ${bloqueado ? "grayscale opacity-80" : ""}`} aria-label="Siguiente mundo">🏝️</div>
+      <IslaMundoSvg apagado={bloqueado} />
       {bloqueado && (
         <>
-          <span className="absolute top-[34%] left-1/2 -translate-x-1/2 w-9 h-9 rounded-full bg-white/90 grid place-items-center shadow-md"><LockIcon /></span>
-          <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-accent text-white text-[11px] font-bold rounded-lg px-3 py-1 shadow whitespace-nowrap">Siguiente mundo</span>
+          <span className="absolute top-[38%] left-1/2 -translate-x-1/2 w-9 h-9 rounded-full bg-white/90 grid place-items-center shadow-md"><LockIcon /></span>
+          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-accent text-white text-[11px] font-bold rounded-lg px-3 py-1 shadow whitespace-nowrap">Siguiente mundo</span>
         </>
       )}
     </div>
+  );
+}
+
+// Isla con palmeras (réplica en SVG del asset gris). Más grande en desktop.
+function IslaMundoSvg({ apagado }: { apagado?: boolean }) {
+  return (
+    <svg viewBox="0 0 220 180" className={`w-44 sm:w-52 select-none ${apagado ? "opacity-90" : ""}`} fill="none">
+      <defs>
+        <linearGradient id="islaHumo" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#A7A7AF" />
+          <stop offset="1" stopColor="#6C6C76" />
+        </linearGradient>
+        <linearGradient id="islaPalma" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#B7B7BE" />
+          <stop offset="1" stopColor="#7C7C86" />
+        </linearGradient>
+        <linearGradient id="islaTronco" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#A2A2AA" />
+          <stop offset="1" stopColor="#75757E" />
+        </linearGradient>
+      </defs>
+      {/* Sombra / arena rosada */}
+      <ellipse cx="110" cy="158" rx="98" ry="16" fill="#EAD9D9" opacity="0.85" />
+      <ellipse cx="150" cy="150" rx="40" ry="9" fill="#EAD9D9" opacity="0.7" />
+      {/* Troncos (curvos) */}
+      <path d="M104 148 C98 110 92 80 96 46" stroke="url(#islaTronco)" strokeWidth="10" strokeLinecap="round" />
+      <path d="M138 150 C142 120 148 100 150 78" stroke="url(#islaTronco)" strokeWidth="9" strokeLinecap="round" />
+      {/* Palmera 1 (grande, izq) */}
+      <g fill="url(#islaPalma)">
+        <path d="M96 46 C74 30 52 30 40 40 C60 40 78 44 96 52 Z" />
+        <path d="M96 46 C118 28 142 30 156 42 C134 40 114 44 96 52 Z" />
+        <path d="M96 48 C80 24 60 16 44 18 C64 26 82 38 96 54 Z" />
+        <path d="M96 48 C112 22 134 14 150 18 C130 26 112 38 96 54 Z" />
+        <path d="M96 50 C92 30 92 18 98 8 C104 22 104 40 100 54 Z" />
+      </g>
+      {/* Palmera 2 (mediana, der) */}
+      <g fill="url(#islaPalma)">
+        <path d="M150 78 C132 66 114 66 104 74 C122 74 138 78 152 84 Z" />
+        <path d="M150 78 C168 64 188 66 200 76 C182 74 164 78 152 84 Z" />
+        <path d="M150 80 C138 60 122 54 108 56 C126 62 142 72 152 86 Z" />
+        <path d="M150 80 C164 58 184 52 198 56 C178 62 162 72 152 86 Z" />
+        <path d="M150 82 C148 64 150 52 156 44 C160 58 158 74 154 86 Z" />
+      </g>
+      {/* Humos (montículos) */}
+      <path d="M20 150 C20 118 44 100 70 100 C96 100 116 118 116 150 Z" fill="url(#islaHumo)" />
+      <path d="M120 150 C120 122 140 106 162 106 C186 106 204 124 204 150 Z" fill="url(#islaHumo)" />
+      <path d="M62 152 C62 116 90 94 118 94 C148 94 172 116 172 152 Z" fill="url(#islaHumo)" />
+    </svg>
   );
 }
 
