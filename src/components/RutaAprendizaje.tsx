@@ -236,6 +236,12 @@ function NodoElemento({ el }: { el: Elemento }) {
     if (el.estado === "actual")
       return (
         <div className="relative">
+          {/* Indicador "toca aquí": deja claro dónde debe picar la persona */}
+          <div className="absolute left-1/2 -translate-x-1/2 -top-9 z-10 pointer-events-none">
+            <span className="ruta-toca inline-block whitespace-nowrap bg-accent text-white text-[10.5px] font-extrabold rounded-full px-2.5 py-1 shadow-lg">
+              👆 ¡Toca aquí!
+            </span>
+          </div>
           <Link href={`/app/clase/${el.clase.id}`} title={el.clase.titulo}
             className="ruta-pulse grid place-items-center rounded-full w-[84px] h-[84px] bg-accent text-white border-[5px] border-white hover:scale-105 transition-transform"
             style={{ boxShadow: "0 7px 0 #5B21B6, 0 14px 18px rgba(124,58,237,.3)" }}>

@@ -81,6 +81,15 @@ body {
   animation: octi-wiggle 0.65s ease-in-out;
 }
 
+/* Indicador "toca aquí" del nodo actual: rebota para llamar la atención */
+@keyframes ruta-toca {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+.ruta-toca {
+  animation: ruta-toca 1s ease-in-out infinite;
+}
+
 @keyframes octi-blink {
   0%,
   90%,

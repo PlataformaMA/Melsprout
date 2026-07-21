@@ -130,22 +130,6 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, gemas, racha }
             {/* Sidebar */}
             <aside className="space-y-5">
               <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-3"><h3 className="font-display font-extrabold text-[15px]">Grabaciones recientes</h3></div>
-                {grabaciones.slice(0, 3).length === 0 ? (
-                  <p className="text-[13px] text-sub">Aún no hay grabaciones.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {grabaciones.slice(0, 3).map((c) => (
-                      <a key={c.id} href={c.grabacion_url!} target="_blank" rel="noreferrer" className="flex items-center gap-2.5 group">
-                        <span className="w-12 h-9 rounded-lg bg-accent/15 grid place-items-center text-accent shrink-0">▶</span>
-                        <span className="flex-1 min-w-0 text-[13px] font-semibold truncate group-hover:text-accent transition">{c.titulo}</span>
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
                 <h3 className="font-display font-extrabold text-[15px] mb-3">Beneficios por asistir</h3>
                 <ul className="space-y-2.5 text-[13px] text-sub">
                   {["+50 XP por clase (mín. 10 min)", "Acceso a grabaciones 24h", "Participas en retos relacionados", "Conectas con la comunidad"].map((b) => (
