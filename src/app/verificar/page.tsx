@@ -39,8 +39,10 @@ export default function VerificarPage() {
       if ("error" in r) {
         setError(r.error);
       } else {
-        // El 2FA se retiró: entra y le pedimos reconfigurarlo.
-        router.replace("/app/seguridad");
+        // El 2FA se retiró con el código de respaldo: entra directo a la app.
+        // (Antes caía en /app/seguridad, que muestra en grande "Activar 2FA" y
+        // se sentía como si te OBLIGARA a reconfigurarla. El 2FA es opcional.)
+        router.replace("/app");
         router.refresh();
       }
     });

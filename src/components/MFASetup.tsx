@@ -146,11 +146,16 @@ export function MFASetup({ estadoInicial }: { estadoInicial: EstadoMFA }) {
           🛡️
         </div>
         <div className="flex-1">
-          <h3 className="font-display font-extrabold">
-            Verificación en dos pasos
-          </h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-display font-extrabold">
+              Verificación en dos pasos
+            </h3>
+            <span className="text-[11px] font-semibold text-sub bg-bg border border-border rounded-full px-2 py-0.5">
+              Opcional
+            </span>
+          </div>
           <p className="text-sub text-sm mt-1">
-            Añade una capa extra de seguridad. Aunque alguien robe tu
+            Añade una capa extra de seguridad (opcional). Aunque alguien robe tu
             contraseña, no podrá entrar sin el código de tu celular.
           </p>
 
