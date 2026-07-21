@@ -76,9 +76,12 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (necesitaMFA) {
-    // Debe completar el 2FA antes de cualquier zona privada o de auth.
-    if (esProtegida || esAuth) return irA("/verificar");
-    return response; // ya está en /verificar
+    // Solo forzamos el 2do factor para entrar a ZONAS PRIVADAS (/app).
+    // NO bloqueamos /login ni /registro: si lo hiciéramos, al darle
+    // "Cancelar y cerrar sesión" en /verificar, el redirect a /login rebotaba
+    // de nuevo a /verificar (bucle) y no dejaba entrar con otro correo.
+    if (esProtegida) return irA("/verificar");
+    return response; // puede ver /verificar, /login o /registro
   }
 
   // Ya no hace falta 2FA (o no tiene): no dejamos ver /verificar, login ni registro.
