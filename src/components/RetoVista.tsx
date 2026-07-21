@@ -149,14 +149,31 @@ export function RetoVista({
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8">
             {/* ——— Columna principal (flujo paso a paso) ——— */}
             <div className="max-w-[620px]">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h1 className="font-display text-2xl sm:text-[26px] font-extrabold leading-tight">
-                    {reto.titulo} <span>{reto.emoji}</span>
-                  </h1>
-                  <p className="text-sub mt-1.5 text-[14px]">{reto.descripcion}</p>
+              <div>
+                <h1 className="font-display text-2xl sm:text-[26px] font-extrabold leading-tight">
+                  {reto.titulo} <span>{reto.emoji}</span>
+                </h1>
+                <p className="text-sub mt-1.5 text-[14px]">{reto.descripcion}</p>
+              </div>
+
+              {/* Octi ARRIBA (banner): guía + recompensa (móvil y desktop) */}
+              <div className="mt-5 rounded-3xl p-4 sm:p-5 border border-accent/15 shadow-sm relative overflow-hidden" style={{ background: "linear-gradient(160deg,#F3F0FF,#FBFAFF)" }}>
+                <div className="flex items-center gap-3 sm:gap-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img key={esUltimo ? "fin" : paso} src="/octi.webp" alt="Octi" className="octi-pop shrink-0 w-16 sm:w-24" />
+                  <div className="relative flex-1 bg-white text-accent text-[13px] sm:text-[14px] font-semibold rounded-2xl px-4 py-3 leading-snug shadow-sm">
+                    {esUltimo
+                      ? "¡Vas increíble! Revisa tu último paso y publícalo. Estoy súper orgulloso de ti 🎉"
+                      : pasoActual.octi || "Tú puedes con esto. Un paso a la vez. 💜"}
+                    <span className="absolute -left-1.5 top-5 w-3 h-3 bg-white rotate-45" />
+                  </div>
                 </div>
-                <span className="bg-accent-soft text-accent text-[13px] font-extrabold rounded-full px-3 py-1.5 shrink-0 mt-1">+{reto.xp} XP</span>
+                <div className="flex items-center justify-end gap-2.5 mt-3">
+                  <span className="text-[11.5px] sm:text-[12.5px] font-bold text-accent text-right">Al completarlo y publicarlo en la comunidad ganarás:</span>
+                  <span className="flex items-center gap-1.5 bg-accent text-white text-[13px] font-extrabold rounded-full pl-1.5 pr-3 py-1 shrink-0">
+                    <span className="w-6 h-6 rounded-full bg-white/25 grid place-items-center text-[13px]">⭐</span>+{reto.xp} XP
+                  </span>
+                </div>
               </div>
 
               {/* Progreso del flujo */}
@@ -171,16 +188,6 @@ export function RetoVista({
                       <div className={`h-full rounded-full transition-all ${i <= paso ? "bg-accent" : ""}`} style={{ width: i <= paso ? "100%" : "0%" }} />
                     </div>
                   ))}
-                </div>
-              </div>
-
-              {/* Octi guía el paso (versión móvil: arriba de la tarjeta) */}
-              <div className="lg:hidden flex items-end gap-2.5 mb-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/octi.webp" alt="Octi" width={52} height={52} className="shrink-0 octi-bob" />
-                <div className="relative bg-accent-soft text-accent text-[13px] font-semibold rounded-2xl rounded-bl-sm px-4 py-2.5 leading-snug">
-                  {pasoActual.octi || "Tú puedes con esto. Un paso a la vez. 💜"}
-                  <span className="absolute -left-1.5 bottom-2 w-3 h-3 bg-accent-soft rotate-45" />
                 </div>
               </div>
 
@@ -275,23 +282,6 @@ export function RetoVista({
 
             {/* ——— Columna derecha ——— */}
             <aside className="space-y-5 lg:sticky lg:top-5 self-start">
-              {/* Octi, compañero interactivo (desktop) */}
-              <section className="hidden lg:block rounded-3xl p-5 border border-accent/15 shadow-sm overflow-hidden relative" style={{ background: "linear-gradient(160deg,#F3F0FF,#FBFAFF)" }}>
-                <div className="flex flex-col items-center text-center">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img key={esUltimo ? "fin" : paso} src="/octi.webp" alt="Octi" width={92} height={92} className="octi-pop" />
-                  <div className="relative mt-2 bg-white text-accent text-[13.5px] font-semibold rounded-2xl px-4 py-3 leading-snug shadow-sm w-full">
-                    {esUltimo
-                      ? "¡Vas increíble! Revisa tu último paso y publícalo. Estoy súper orgulloso de ti 🎉"
-                      : pasoActual.octi || "Tú puedes con esto. Un paso a la vez. 💜"}
-                    <span className="absolute left-1/2 -translate-x-1/2 -top-1.5 w-3 h-3 bg-white rotate-45" />
-                  </div>
-                  <div className="mt-3 text-[11px] font-bold text-accent bg-white/70 rounded-full px-3 py-1">
-                    Paso {paso + 1} de {total}
-                  </div>
-                </div>
-              </section>
-
               {/* Sobre este reto */}
               <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
