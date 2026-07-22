@@ -48,6 +48,7 @@ export function RetoVista({
   const enviado = guardado?.estado === "publicado";
   const revision = guardado?.revision ?? null;
   const mostrarEstado = enviado && !reintentar;
+  const cerrarModal = () => { setModal(null); router.refresh(); };
 
   const total = reto.pasos.length;
   const esUltimo = paso >= total - 1;
@@ -121,8 +122,8 @@ export function RetoVista({
       return;
     }
     // Borrador → "guardado"; publicar 'sola' → "publicado" (comunidad); 'equipo' → "enviado" (revisión 48h).
+    // El refresh se hace al CERRAR el popup (si no, borra el popup antes de verlo).
     setModal(estado === "borrador" ? "guardado" : revisa === "sola" ? "publicado" : "enviado");
-    router.refresh();
   }
 
   const nombre = perfil.full_name || "Creador";
@@ -389,9 +390,9 @@ export function RetoVista({
         }[modal];
         const rechazado = modal === "rechazado";
         return (
-          <div className="fixed inset-0 z-50 bg-black/40 grid place-items-center p-4" onClick={() => setModal(null)}>
+          <div className="fixed inset-0 z-50 bg-black/40 grid place-items-center p-4" onClick={cerrarModal}>
             <div className="bg-surface rounded-3xl p-6 sm:p-8 max-w-md w-full text-center relative shadow-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-              <button onClick={() => setModal(null)} className="absolute top-4 right-4 text-hint hover:text-sub text-xl" aria-label="Cerrar">✕</button>
+              <button onClick={cerrarModal} className="absolute top-4 right-4 text-hint hover:text-sub text-xl" aria-label="Cerrar">✕</button>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/octi.webp" alt="Octi" width={124} height={124} className={`mx-auto octi-pop ${rechazado ? "grayscale opacity-90" : ""}`} />
               <h3 className={`font-display text-2xl font-extrabold mt-2 ${rechazado ? "text-pink" : ""}`}>{info.titulo}</h3>
