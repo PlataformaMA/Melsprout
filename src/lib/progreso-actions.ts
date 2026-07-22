@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { registrarRacha } from "@/lib/racha-actions";
 
 // Devuelve el set de clase_ids completadas por el usuario.
 export async function getClasesCompletadas(): Promise<Set<string>> {
@@ -54,6 +55,7 @@ export async function completarClase(
     const { data: p } = await admin.from("profiles").select("xp").eq("id", user.id).single();
     await admin.from("profiles").update({ xp: (p?.xp ?? 0) + 100 }).eq("id", user.id);
   }
+  await registrarRacha(); // cuenta actividad de hoy para la racha
   return { ok: true, xpDado: !yaTeniaXp };
 }
 

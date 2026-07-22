@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { registrarRacha } from "@/lib/racha-actions";
 
 export type RetoGuardado = {
   respuestas: Record<string, string>;
@@ -93,6 +94,7 @@ export async function guardarReto(
     const nuevaXp = (p?.xp ?? 0) + xp;
     await admin.from("profiles").update({ xp: nuevaXp }).eq("id", user.id);
   }
+  if (estado === "publicado") await registrarRacha(); // cuenta actividad de hoy
   return { ok: true };
 }
 

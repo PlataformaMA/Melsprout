@@ -121,7 +121,7 @@ export function RutaAprendizaje({
         <div className="max-w-[1180px] mx-auto px-4 sm:px-8 py-5">
           {/* Barra superior */}
           <header className="flex items-center justify-end gap-4 mb-4 h-10">
-            <Counter icon="🔥" valor={racha} />
+            <Link href="/app/racha" title="Mi racha" className="hover:scale-105 transition"><Counter icon="🔥" valor={racha} /></Link>
             <Counter icon="💎" valor={gemas} />
             <button className="relative w-9 h-9 grid place-items-center rounded-full hover:bg-surface transition" aria-label="Notificaciones">
               <BellIcon />
