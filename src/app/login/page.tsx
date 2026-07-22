@@ -15,7 +15,7 @@ export default function LoginPage() {
 
   return (
     <AuthShell
-      titulo="Bienvenido de vuelta"
+      titulo="Bienvenido"
       subtitulo="Entra para seguir tu camino como creador."
       pie={
         <p className="text-center text-[13px] text-sub">

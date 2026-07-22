@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Octi } from "./Octi";
+import { LogoMarca } from "./LogoMarca";
 
 // Marco visual de marca para las pantallas de login / registro / recuperar.
 export function AuthShell({
@@ -61,27 +62,15 @@ export function AuthShell({
       {/* Panel del formulario */}
       <section className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-[380px]">
-          <Link
-            href="/"
-            className="lg:hidden flex items-center gap-2.5 mb-8 justify-center w-fit mx-auto"
-          >
-            <div className="w-9 h-9 rounded-[10px] bg-accent grid place-items-center font-display font-extrabold text-lg text-white">
-              M
-            </div>
-            <span className="font-display font-extrabold text-lg">
-              Mel<span className="text-accent">sprout</span>
-            </span>
+          {/* Logo de marca (centrado en celular, como el mockup) */}
+          <Link href="/" className="lg:hidden flex justify-center mb-8">
+            <LogoMarca />
           </Link>
 
-          {/* Octi compacto solo en celular */}
-          <div className="lg:hidden flex justify-center mb-6">
-            <Octi size={110} conBurbuja={false} />
-          </div>
-
-          <h2 className="font-display text-2xl font-extrabold text-text">
+          <h2 className="font-display text-2xl font-extrabold text-text text-center lg:text-left">
             {titulo}
           </h2>
-          <p className="text-sub text-sm mt-1.5">{subtitulo}</p>
+          <p className="text-sub text-sm mt-1.5 text-center lg:text-left">{subtitulo}</p>
 
           <div className="mt-7">{children}</div>
 
