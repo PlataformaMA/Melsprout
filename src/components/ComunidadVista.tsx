@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { CATEGORIAS_FORO } from "@/lib/data";
 import {
   getForoPosts, crearPost, toggleLike, getRespuestas, crearRespuesta,
@@ -33,9 +34,24 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
   const [posts, setPosts] = useState<ForoPost[]>(postsIniciales);
   const [cargando, setCargando] = useState(false);
   const [texto, setTexto] = useState("");
-  const [enlace, setEnlace] = useState("");
-  const [mostrarEnlace, setMostrarEnlace] = useState(false);
+  const [videoUrl, setVideoUrl] = useState("");
+  const [mostrarVideo, setMostrarVideo] = useState(false);
+  const [imagenUrl, setImagenUrl] = useState("");
+  const [subiendoImg, setSubiendoImg] = useState(false);
+  const [avisoEncuesta, setAvisoEncuesta] = useState(false);
   const [publicando, setPublicando] = useState(false);
+  const imgRef = useRef<HTMLInputElement>(null);
+
+  async function subirImagen(file: File) {
+    setSubiendoImg(true);
+    try {
+      const supabase = createClient();
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const path = `comunidad/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("retos").upload(path, file, { upsert: true });
+      if (!error) { const { data } = supabase.storage.from("retos").getPublicUrl(path); setImagenUrl(data.publicUrl); }
+    } finally { setSubiendoImg(false); }
+  }
 
   async function cambiarCat(c: string) {
     setCat(c); setCargando(true);
@@ -43,12 +59,12 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
     setCargando(false);
   }
   async function publicar() {
-    if (!texto.trim()) return;
+    if (!texto.trim() && !imagenUrl && !videoUrl.trim()) return;
     setPublicando(true);
-    const r = await crearPost(cat, texto, { enlaceUrl: enlace || undefined });
+    const r = await crearPost(cat, texto || "", { imagenUrl: imagenUrl || undefined, videoUrl: videoUrl.trim() || undefined });
     setPublicando(false);
     if ("error" in r) { alert(r.error); return; }
-    setTexto(""); setEnlace(""); setMostrarEnlace(false);
+    setTexto(""); setVideoUrl(""); setImagenUrl(""); setMostrarVideo(false); setAvisoEncuesta(false);
     setPosts(await getForoPosts(cat));
     router.refresh(); // XP +10
   }
@@ -64,18 +80,28 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
             <UserMenu avatarUrl={avatarUrl} nombre={nombre} />
           </header>
 
-          <h1 className="font-display text-2xl sm:text-[28px] font-extrabold">Comunidad</h1>
-          <p className="text-sub mt-1">Conecta, aprende y crece junto a otros creadores.</p>
+          {/* Liderboard + avatares */}
+          <div className="flex items-center justify-between mb-4">
+            <span className="inline-flex items-center gap-1.5 bg-accent text-white text-[13px] font-bold rounded-full px-3.5 py-1.5 shadow-sm">✦ Liderboard</span>
+            <div className="flex -space-x-2">
+              {topColaboradores.slice(0, 4).map((c, i) => (
+                c.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={i} src={c.avatar} alt="" className="w-8 h-8 rounded-full object-cover border-2 border-bg" />
+                ) : <span key={i} className="w-8 h-8 rounded-full bg-accent/20 text-accent grid place-items-center text-[10px] font-bold border-2 border-bg">{c.nombre.slice(0, 2).toUpperCase()}</span>
+              ))}
+            </div>
+          </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 mt-5">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
             <div>
               {/* Banner Octi */}
               <div className="rounded-3xl p-5 flex items-center gap-4 shadow-sm mb-5" style={{ background: "linear-gradient(120deg,#F3F0FF,#FBFAFF)" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/octi.webp" alt="Octi" width={72} height={72} className="shrink-0 hidden sm:block" />
                 <div>
-                  <p className="text-accent font-bold text-[15px]">Se aprende mejor en comunidad. ¡Comparte tu aporte!</p>
-                  <p className="text-[13.5px] text-sub mt-1">Publica y gana <b className="text-accent">+10 XP</b> 💎</p>
+                  <p className="text-accent font-extrabold text-[15px]">¡Se aprende mejor en comunidad!</p>
+                  <p className="text-[13.5px] text-sub mt-0.5">Comparte, conecta y crece. Publica y gana <b className="text-accent">+10 XP</b> 💎</p>
                 </div>
               </div>
 
@@ -84,7 +110,7 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
                 {(["foros", "retos"] as const).map((t) => (
                   <button key={t} onClick={() => setTab(t)}
                     className={`pb-2.5 text-[14px] font-bold transition -mb-px border-b-2 ${tab === t ? "text-accent border-accent" : "text-sub border-transparent hover:text-text"}`}>
-                    {t === "foros" ? "Foros" : "Retos en comunidad"}
+                    {t === "foros" ? "Grupos" : "Retos en comunidad"}
                   </button>
                 ))}
               </div>
@@ -106,19 +132,33 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
                     <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={2}
                       placeholder={`Escribe algo en ${cat === "General" ? "el foro general" : cat}…`}
                       className="w-full bg-bg border border-border rounded-xl px-4 py-3 text-[14px] outline-none focus:border-accent resize-none" />
-                    {mostrarEnlace && (
-                      <input value={enlace} onChange={(e) => setEnlace(e.target.value)} placeholder="https://…" className="w-full mt-2 bg-bg border border-border rounded-xl px-4 py-2.5 text-[13px] outline-none focus:border-accent" />
+                    {mostrarVideo && (
+                      <input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="Link de YouTube o video…" className="w-full mt-2 bg-bg border border-border rounded-xl px-4 py-2.5 text-[13px] outline-none focus:border-accent" />
                     )}
-                    <div className="flex items-center gap-4 mt-3">
-                      <button onClick={() => setMostrarEnlace((v) => !v)} className="text-[13px] font-semibold text-sub hover:text-accent transition">🔗 Enlace</button>
-                      <button onClick={publicar} disabled={publicando || !texto.trim()} className="ml-auto bg-accent text-white rounded-xl px-5 py-2 text-[13px] font-bold hover:brightness-110 disabled:opacity-50 transition">
+                    {imagenUrl && (
+                      <div className="relative mt-2 inline-block">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={imagenUrl} alt="" className="max-h-40 rounded-xl border border-border" />
+                        <button onClick={() => setImagenUrl("")} className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-black/60 text-white text-xs">✕</button>
+                      </div>
+                    )}
+                    {avisoEncuesta && <p className="text-[12px] text-sub mt-2">📊 Las encuestas llegan muy pronto ✨</p>}
+                    <input ref={imgRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) subirImagen(f); }} />
+                    <div className="flex items-center gap-3 sm:gap-4 mt-3 flex-wrap">
+                      <button onClick={() => imgRef.current?.click()} disabled={subiendoImg} className="text-[13px] font-semibold text-sub hover:text-accent transition disabled:opacity-60">📷 {subiendoImg ? "Subiendo…" : "Imagen"}</button>
+                      <button onClick={() => setMostrarVideo((v) => !v)} className="text-[13px] font-semibold text-sub hover:text-accent transition">🎬 Video</button>
+                      <button onClick={() => setAvisoEncuesta((v) => !v)} className="text-[13px] font-semibold text-sub hover:text-accent transition">📊 Encuesta</button>
+                      <button onClick={publicar} disabled={publicando || (!texto.trim() && !imagenUrl && !videoUrl.trim())} className="ml-auto bg-accent text-white rounded-xl px-5 py-2 text-[13px] font-bold hover:brightness-110 disabled:opacity-50 transition">
                         {publicando ? "Publicando…" : "Publicar"}
                       </button>
                     </div>
                   </div>
 
                   {/* Publicaciones */}
-                  <h2 className="font-display font-extrabold text-lg mb-3">Publicaciones recientes</h2>
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="font-display font-extrabold text-lg">Publicaciones recientes</h2>
+                    <span className="text-[13px] font-semibold text-sub flex items-center gap-1.5">⚙ Filtrar</span>
+                  </div>
                   {cargando ? (
                     <p className="text-sub text-[14px]">Cargando…</p>
                   ) : posts.length === 0 ? (
@@ -233,7 +273,19 @@ function PostCard({ post }: { post: ForoPost }) {
           <div className="text-[12px] text-hint">{haceRato(post.fecha)}</div>
         </div>
       </div>
-      <p className="text-[14px] text-text leading-relaxed whitespace-pre-wrap">{post.texto}</p>
+      {post.texto && <p className="text-[14px] text-text leading-relaxed whitespace-pre-wrap">{post.texto}</p>}
+      {post.imagenUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={post.imagenUrl} alt="" className="mt-2 rounded-xl border border-border max-h-80 w-auto" />
+      )}
+      {post.videoUrl && (
+        (() => {
+          const yt = post.videoUrl.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
+          return yt
+            ? <div className="mt-2 aspect-video rounded-xl overflow-hidden border border-border"><iframe src={`https://www.youtube.com/embed/${yt[1]}`} className="w-full h-full" allowFullScreen title="video" /></div>
+            : <a href={post.videoUrl} target="_blank" rel="noreferrer" className="text-accent text-[13px] font-semibold underline break-all mt-1 inline-block">🎬 Ver video</a>;
+        })()
+      )}
       {post.enlaceUrl && <a href={post.enlaceUrl} target="_blank" rel="noreferrer" className="text-accent text-[13px] font-semibold underline break-all mt-1 inline-block">{post.enlaceUrl}</a>}
 
       <div className="flex items-center gap-5 mt-3 text-[13px]">
