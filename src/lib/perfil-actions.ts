@@ -105,24 +105,30 @@ export async function guardarOnboarding(
   const xpBase = actual?.xp ?? 0;
   const nuevoXP = yaCompleto ? xpBase : xpBase + XP_BIENVENIDA;
 
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      pais: datos.pais ?? null,
-      fecha_nacimiento: datos.fecha_nacimiento || null,
-      whatsapp: datos.whatsapp || null,
-      whatsapp_optin: !!datos.whatsapp_optin,
-      nicho: datos.nicho,
-      objetivo: datos.objetivo,
-      plataforma_principal: datos.plataforma_principal,
-      tamano_audiencia: datos.tamano_audiencia,
-      redes: datos.redes ?? {},
-      onboarding_completo: true,
-      xp: nuevoXP,
-    })
-    .eq("id", user.id);
+  const campos: Record<string, unknown> = {
+    pais: datos.pais ?? null,
+    fecha_nacimiento: datos.fecha_nacimiento || null,
+    whatsapp: datos.whatsapp || null,
+    whatsapp_optin: !!datos.whatsapp_optin,
+    nicho: datos.nicho,
+    objetivo: datos.objetivo,
+    plataforma_principal: datos.plataforma_principal,
+    tamano_audiencia: datos.tamano_audiencia,
+    redes: datos.redes ?? {},
+    onboarding_completo: true,
+    xp: nuevoXP,
+  };
 
-  if (error) return { error: "No se pudo guardar. Inténtalo de nuevo." };
+  const { error } = await supabase.from("profiles").update(campos).eq("id", user.id);
+  if (error) {
+    // Reintento sin 'nicho' por si un CHECK viejo de la BD rechaza el valor
+    // (ej. "Tecnología"/"Marketing"). Así el onboarding no se traba; el nicho
+    // se guarda bien una vez que se corre supabase/21_fix_nicho.sql.
+    const sinNicho = { ...campos };
+    delete sinNicho.nicho;
+    const { error: e2 } = await supabase.from("profiles").update(sinNicho).eq("id", user.id);
+    if (e2) return { error: "No se pudo guardar. Inténtalo de nuevo." };
+  }
 
   revalidatePath("/", "layout");
   return { ok: true, xp: nuevoXP };
