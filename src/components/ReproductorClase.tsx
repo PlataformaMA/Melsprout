@@ -56,6 +56,7 @@ export function ReproductorClase({
   const [progreso, setProgreso] = useState(0); // 0–100 del video
   const [terminado, setTerminado] = useState(false);
   const [popup, setPopup] = useState(false);
+  const [tabRep, setTabRep] = useState<"recursos" | "clases">("clases");
   const completadoRef = useRef(yaCompletada); // ya alcanzó el 85% (guarda anti-repetición)
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -214,6 +215,67 @@ export function ReproductorClase({
                 </div>
               </div>
 
+              {/* ——— Bloque MÓVIL: progreso + tabs (Recursos | Clases) ——— */}
+              <div className="lg:hidden mt-5">
+                {/* Progreso */}
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-display font-extrabold">Progreso</h3>
+                  <span className="text-accent font-display font-extrabold">{posicion}/{total}</span>
+                </div>
+                <div className="relative flex items-center gap-2 mb-5">
+                  <div className="relative flex-1 h-3 rounded-full bg-[#E7E3F3]">
+                    <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#8B5CF6] to-accent" style={{ width: `${(posicion / total) * 100}%` }} />
+                    <div className="absolute top-1/2 -translate-y-1/2" style={{ left: `calc(${(posicion / total) * 100}% - 16px)` }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src="/octi.webp" alt="Octi" width={32} className="select-none" draggable={false} />
+                    </div>
+                  </div>
+                  <span className="text-xl">🏆</span>
+                </div>
+                {/* Tabs */}
+                <div className="flex gap-6 border-b border-border mb-4">
+                  {(["recursos", "clases"] as const).map((t) => (
+                    <button key={t} onClick={() => setTabRep(t)}
+                      className={`pb-2.5 text-[14px] font-bold transition -mb-px border-b-2 ${tabRep === t ? "text-accent border-accent" : "text-sub border-transparent hover:text-text"}`}>
+                      {t === "recursos" ? "Recursos" : "Clases"}
+                    </button>
+                  ))}
+                </div>
+                {tabRep === "clases" ? (
+                  <div className="space-y-3">
+                    {modulo.clases.map((c, i) => {
+                      const estado = i < idx ? "completada" : i === idx ? "actual" : "bloqueada";
+                      return (
+                        <Link key={c.id} href={estado === "bloqueada" ? "#" : `/app/clase/${c.id}`}
+                          className={`flex items-center gap-3 ${estado === "bloqueada" ? "opacity-60 cursor-default" : "hover:bg-bg"} rounded-xl p-1.5 -m-1.5 transition`}>
+                          <div className="relative w-16 h-11 rounded-lg overflow-hidden shrink-0 grid place-items-center text-white" style={{ background: "linear-gradient(120deg,#7C3AED,#2563EB)" }}>
+                            <span className="text-[7px] font-bold leading-none text-center px-1 opacity-90">EN VIVO</span>
+                            {estado !== "completada" && (
+                              <span className="absolute inset-0 grid place-items-center bg-black/25">{estado === "actual" ? <PlayIcon /> : <MiniLock />}</span>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-sm font-semibold leading-tight ${estado === "actual" ? "text-accent" : "text-text"}`}>{titleCase(c.titulo)}</div>
+                          </div>
+                          {estado === "completada" ? <span className="w-5 h-5 rounded-full bg-green text-white grid place-items-center text-[11px] shrink-0">✓</span> : estado === "bloqueada" ? <MiniLock /> : null}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex items-center gap-3 bg-accent-soft/60 rounded-xl px-3.5 py-3">
+                      <span className="text-accent"><DocIcon /></span>
+                      <span className="flex-1 text-sm font-semibold">{titleCase(clase.titulo).split(" ")[0]}.Pdf</span>
+                      <button className="text-accent" aria-label="Descargar"><DownloadIcon /></button>
+                    </div>
+                    <button onClick={() => fileRef.current?.click()} className="w-full flex items-center justify-center gap-2 border border-dashed border-accent/40 text-accent font-bold text-sm rounded-xl py-2.5 mt-3 hover:bg-accent-soft transition">
+                      <UploadIcon /> Subir recurso
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {/* Reto de esta clase */}
               <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm mt-5">
                 <h3 className="font-display font-extrabold mb-1.5">🎯 Reto de la clase</h3>
@@ -222,8 +284,8 @@ export function ReproductorClase({
 
             </div>
 
-            {/* ——— Columna derecha ——— */}
-            <aside className="space-y-5 lg:sticky lg:top-5">
+            {/* ——— Columna derecha (desktop) ——— */}
+            <aside className="hidden lg:block space-y-5 lg:sticky lg:top-5">
               {/* Progreso */}
               <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
                 <h3 className="font-display font-extrabold mb-3">Progreso</h3>
