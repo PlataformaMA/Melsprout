@@ -197,7 +197,7 @@ export function RutaAprendizaje({
                   nodeIzq ? "left-[66%] lg:left-[69%]" : "left-[50%] lg:left-[43%]"
                 }`}
                      style={{ top: octiY }}>
-                  <OctiRuta nombre={nombre} claseTitulo={claseActual?.titulo ?? null} />
+                  <OctiRuta nombre={nombre} />
                 </div>
               </div>
             </div>
@@ -549,21 +549,14 @@ function DecorMar({ altura }: { altura: number }) {
   );
 }
 
-function OctiRuta({ nombre, claseTitulo }: { nombre: string; claseTitulo: string | null }) {
+function OctiRuta({ nombre }: { nombre: string }) {
   const primer = nombre.split(" ")[0];
-  const corto = claseTitulo && claseTitulo.length > 40 ? claseTitulo.slice(0, 38) + "…" : claseTitulo;
-  const MENSAJES = corto
-    ? [
-        `Vas aquí 👇 «${corto}»`,
-        `¡Tú puedes, ${primer}! 💪`,
-        `Termínala y ganas +100 XP ⭐`,
-        `Una clase al día 🚀🔥`,
-      ]
-    : [
-        `¡Hola, ${primer}! Soy Octi 🐙`,
-        `Toca una clase para empezar ✨`,
-        `¡Vamos a crear contenido! 🎬`,
-      ];
+  const MENSAJES = [
+    `¡Tú puedes, ${primer}! 💪`,
+    `Termínala y ganas +100 XP ⭐`,
+    `Una clase al día 🚀🔥`,
+    `¡Vamos con todo! 🐙`,
+  ];
   const [i, setI] = useState(0);
   const [wiggle, setWiggle] = useState(false);
 
