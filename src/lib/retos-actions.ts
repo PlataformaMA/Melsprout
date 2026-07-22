@@ -18,19 +18,32 @@ export async function getRetoSubmission(retoId: string): Promise<RetoGuardado> {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
+  // Nota: NO seleccionamos 'revision_comentario' aquí para no depender del SQL 19.
+  // El comentario de rechazo se lee aparte de forma resiliente más abajo.
   const { data } = await supabase
     .from("reto_submissions")
-    .select("respuestas, archivo_url, estado, revision, revision_comentario")
+    .select("respuestas, archivo_url, estado, revision")
     .eq("user_id", user.id)
     .eq("reto_id", retoId)
     .maybeSingle();
   if (!data) return null;
+
+  // Comentario de rechazo (opcional; solo si existe la columna del SQL 19).
+  let comentario: string | null = null;
+  const cm = await supabase
+    .from("reto_submissions")
+    .select("revision_comentario")
+    .eq("user_id", user.id)
+    .eq("reto_id", retoId)
+    .maybeSingle();
+  if (!cm.error) comentario = (cm.data?.revision_comentario as string) ?? null;
+
   return {
     respuestas: (data.respuestas as Record<string, string>) || {},
     archivo_url: data.archivo_url ?? null,
     estado: (data.estado as "borrador" | "publicado") || "borrador",
     revision: (data.revision as "aprobado" | "rechazado" | null) ?? null,
-    revision_comentario: (data.revision_comentario as string) ?? null,
+    revision_comentario: comentario,
   };
 }
 
@@ -69,7 +82,6 @@ export async function guardarReto(
     archivo_url: archivoUrl,
     estado,
     revision,
-    revision_comentario: null,
     updated_at: new Date().toISOString(),
   });
   if (error) return { error: "No se pudo guardar el reto." };
