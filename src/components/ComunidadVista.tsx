@@ -10,10 +10,12 @@ import {
   getForoPosts, crearPost, toggleLike, getRespuestas, crearRespuesta,
   type ForoPost, type ForoRespuesta,
 } from "@/lib/foros-actions";
+import { type RetoComunidad } from "@/lib/comunidad-retos-actions";
 
 type Props = {
   postsIniciales: ForoPost[];
   topColaboradores: { nombre: string; avatar: string | null; xp: number }[];
+  retosComunidad: RetoComunidad[];
   nombre: string; avatarUrl: string | null; gemas: number; racha: number;
 };
 
@@ -24,7 +26,7 @@ function haceRato(iso: string): string {
   return `hace ${Math.floor(h / 24)} d`;
 }
 
-export function ComunidadVista({ postsIniciales, topColaboradores, nombre, avatarUrl, gemas, racha }: Props) {
+export function ComunidadVista({ postsIniciales, topColaboradores, retosComunidad, nombre, avatarUrl, gemas, racha }: Props) {
   const router = useRouter();
   const [tab, setTab] = useState<"foros" | "retos">("foros");
   const [cat, setCat] = useState("General");
@@ -128,11 +130,42 @@ export function ComunidadVista({ postsIniciales, topColaboradores, nombre, avata
                   )}
                 </>
               ) : (
-                <div className="bg-surface border border-dashed border-border rounded-3xl p-10 text-center text-sub">
-                  <div className="text-4xl mb-2">🔥</div>
-                  <h3 className="font-display font-extrabold text-lg text-text">Retos en comunidad</h3>
-                  <p className="text-[14px] mt-1">Muy pronto: inscríbete a retos grupales, sigue tu progreso diario y compite en el tablero.</p>
-                  <Link href="/app/retos" className="inline-block mt-4 text-accent font-semibold text-[14px]">Mientras tanto, ve tus retos →</Link>
+                <div className="space-y-4">
+                  {retosComunidad.length === 0 ? (
+                    <div className="bg-surface border border-dashed border-border rounded-3xl p-10 text-center text-sub">
+                      <div className="text-4xl mb-2">🔥</div>
+                      <p className="text-[14px]">Aún no hay retos en comunidad. ¡Pronto habrá!</p>
+                    </div>
+                  ) : retosComunidad.map((r, i) => (
+                    <Link key={r.id} href={`/app/comunidad/reto/${r.id}`}
+                      className="block bg-surface border border-border rounded-2xl overflow-hidden shadow-sm hover:border-accent/30 hover:shadow-md transition group">
+                      <div className="relative h-28 p-4 flex items-end text-white" style={{ background: "linear-gradient(120deg,#2b1055,#7c1fa0 60%,#c026d3)" }}>
+                        <span className="absolute right-4 top-3 text-5xl opacity-30">{r.emoji}</span>
+                        <span className="absolute left-4 top-3 bg-white/20 text-[11px] font-bold rounded px-2 py-0.5">{String(i + 1).padStart(2, "0")}</span>
+                        <h3 className="relative font-display text-xl font-extrabold leading-tight">{r.titulo}</h3>
+                      </div>
+                      <div className="p-4">
+                        <p className="text-[13px] text-sub">{r.descripcion}</p>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 text-[12px] font-semibold text-sub">
+                          <span>👥 {r.inscritos} inscritos</span>
+                          <span>🗓️ {r.dias} días</span>
+                          <span className="text-accent">⭐ +{r.xp_dia} XP/día</span>
+                        </div>
+                        {r.miInscrito && (
+                          <div className="mt-3">
+                            <div className="flex items-center justify-between text-[11px] font-bold mb-1">
+                              <span className="text-accent">Tu progreso</span>
+                              <span className="text-sub">{r.misDias}/{r.dias} días</span>
+                            </div>
+                            <div className="h-2 rounded-full bg-bg overflow-hidden">
+                              <div className="h-full bg-accent rounded-full" style={{ width: `${r.dias ? (r.misDias / r.dias) * 100 : 0}%` }} />
+                            </div>
+                          </div>
+                        )}
+                        <div className="mt-3 text-[13px] font-bold text-accent group-hover:underline">{r.miInscrito ? "Continuar reto →" : "Ver reto →"}</div>
+                      </div>
+                    </Link>
+                  ))}
                 </div>
               )}
             </div>
