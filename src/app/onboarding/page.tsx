@@ -15,7 +15,7 @@ const PAISES = [
 
 // Nichos en el orden del mockup (grid de 2 columnas fila por fila):
 // Moda | Belleza  ·  Salud | Tech  ·  Lifestyle | Marketing
-const NICHOS = ["Moda", "Belleza", "Salud", "Tech", "Lifestyle", "Marketing"];
+const NICHOS = ["Moda", "Salud", "Lifestyle", "Belleza", "Tecnología", "Marketing"];
 const OBJETIVOS = ["Empezar desde cero", "Crecer mi audiencia", "Monetizar"];
 const PLATAFORMAS = ["Instagram", "TikTok", "YouTube"];
 const AUDIENCIAS = ["0–500", "500–5K", "5K–50K", "50K+"];
@@ -152,8 +152,16 @@ export default function OnboardingPage() {
             </button>
           </div>
 
+          {/* Barra de progreso (ARRIBA, como el mockup) */}
+          <div className="px-6 sm:px-8 mt-4">
+            <div className="h-2.5 w-full max-w-md mx-auto bg-black/[0.06] rounded-full overflow-hidden">
+              <div className="h-full bg-accent rounded-full transition-all duration-500" style={{ width: `${((paso + 1) / total) * 100}%` }} />
+            </div>
+          </div>
+
           {/* Contenido central */}
-          <div className="flex-1 flex flex-col justify-center max-w-2xl w-full mx-auto px-6 pb-4">
+          <div className="flex-1 flex flex-col max-w-2xl w-full mx-auto px-6 py-5">
+           <div className="flex-1 flex flex-col justify-center">
             {/* Burbuja de pregunta + Octi (Octi a la derecha en desktop, arriba en móvil) */}
             <div key={paso} className="onb-slide flex flex-col-reverse sm:flex-row items-center justify-center gap-4 sm:gap-7 mb-8">
               <div className="relative bg-accent-soft/70 border-2 border-accent/25 rounded-[30px] px-7 py-5 max-w-[360px] w-full sm:w-auto">
@@ -199,9 +207,10 @@ export default function OnboardingPage() {
             )}
 
             {error && <p className="mt-5 text-[13px] text-pink bg-pink-soft rounded-lg px-3 py-2.5 text-center max-w-md mx-auto w-full">{error}</p>}
+           </div>
 
-            {/* Navegación */}
-            <div className="flex items-center justify-between gap-3 mt-8 max-w-xl mx-auto w-full">
+            {/* Navegación (abajo) */}
+            <div className="flex items-center justify-between gap-3 mt-6 max-w-xl mx-auto w-full">
               <button onClick={masTarde} disabled={pendiente}
                 className="text-[15px] font-semibold text-sub rounded-2xl px-6 py-3.5 bg-white/60 hover:bg-white transition disabled:opacity-60">
                 Más tarde
@@ -210,14 +219,6 @@ export default function OnboardingPage() {
                 className="bg-accent text-white font-bold text-[15px] rounded-2xl px-8 py-3.5 shadow-lg shadow-accent/25 hover:brightness-110 hover:scale-[1.02] active:scale-95 disabled:opacity-40 disabled:shadow-none disabled:scale-100 transition">
                 {pendiente ? "Guardando…" : esUltimo ? "¡Empezar! 🚀" : "Siguiente"}
               </button>
-            </div>
-          </div>
-
-          {/* Barra de progreso (abajo, ancho completo) */}
-          <div className="px-0 pb-0">
-            <div className="h-2.5 w-full bg-white/50">
-              <div className="h-full bg-accent transition-all duration-500 rounded-r-full"
-                style={{ width: `${((paso + 1) / total) * 100}%` }} />
             </div>
           </div>
         </div>
