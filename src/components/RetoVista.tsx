@@ -390,7 +390,7 @@ export function RetoVista({
         const rechazado = modal === "rechazado";
         return (
           <div className="fixed inset-0 z-50 bg-black/40 grid place-items-center p-4" onClick={() => setModal(null)}>
-            <div className="bg-surface rounded-3xl p-8 max-w-md w-full text-center relative shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-surface rounded-3xl p-6 sm:p-8 max-w-md w-full text-center relative shadow-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               <button onClick={() => setModal(null)} className="absolute top-4 right-4 text-hint hover:text-sub text-xl" aria-label="Cerrar">✕</button>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/octi.webp" alt="Octi" width={124} height={124} className={`mx-auto octi-pop ${rechazado ? "grayscale opacity-90" : ""}`} />
@@ -403,17 +403,17 @@ export function RetoVista({
                 </div>
               )}
 
-              <div className="flex items-center justify-center gap-3 mt-6">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 mt-6">
                 {rechazado ? (
-                  <button onClick={() => { setModal(null); setReintentar(true); }} className="flex items-center gap-2 bg-surface border border-border rounded-xl px-4 py-3 text-[14px] font-semibold hover:bg-bg transition">
+                  <button onClick={() => { setModal(null); setReintentar(true); }} className="flex items-center justify-center gap-2 bg-surface border border-border rounded-xl px-4 py-3 text-[14px] font-semibold hover:bg-bg transition">
                     <MapMini /> Volver a intentar
                   </button>
                 ) : (
-                  <Link href="/app/ruta" className="flex items-center gap-2 bg-surface border border-border rounded-xl px-4 py-3 text-[14px] font-semibold hover:bg-bg transition">
+                  <Link href="/app/ruta" className="flex items-center justify-center gap-2 bg-surface border border-border rounded-xl px-4 py-3 text-[14px] font-semibold hover:bg-bg transition">
                     <MapMini /> Volver al camino
                   </Link>
                 )}
-                <Link href="/app/ruta" className="flex items-center gap-2 bg-accent text-white rounded-xl px-4 py-3 text-[14px] font-bold hover:brightness-110 transition">
+                <Link href="/app/ruta" className="flex items-center justify-center gap-2 bg-accent text-white rounded-xl px-4 py-3 text-[14px] font-bold hover:brightness-110 transition">
                   Ver siguiente clase ›
                 </Link>
               </div>

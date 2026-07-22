@@ -104,6 +104,15 @@ export function RutaAprendizaje({
   const retosMod = (mod?.clases ?? []).filter((c) => retoEstados[c.id] === "completada").length;
   const pctMod = totalMod ? Math.round((clasesMod / totalMod) * 100) : 0;
 
+  // ——— Mundos (cada módulo = un mundo temático) ———
+  const [mundosAbierto, setMundosAbierto] = useState(false);
+  const mundos = cursos.map((m, i) => {
+    const start = cursos.slice(0, i).reduce((a, x) => a + x.clases.length, 0);
+    const done = start + m.clases.length <= completadas;
+    const estado: "completado" | "actual" | "bloqueado" = done ? "completado" : i === modIdx ? "actual" : "bloqueado";
+    return { nombre: m.nombre, estado };
+  });
+
   return (
     <div className="min-h-screen bg-bg flex">
       <AppSidebar active="clases" />
@@ -160,11 +169,11 @@ export function RutaAprendizaje({
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/octi.webp" alt="" className="absolute -top-4 w-8 -translate-x-1/2 transition-all duration-700 drop-shadow" style={{ left: `${pctMod}%` }} draggable={false} />
                   </div>
-                  <div className="shrink-0 flex items-center gap-1.5">
+                  <button onClick={() => setMundosAbierto(true)} className="shrink-0 flex items-center gap-1.5 hover:scale-105 active:scale-95 transition" title="Ver mundos">
                     <span className="hidden sm:inline text-[11px] font-bold text-accent">Mundo {modIdx + 1}</span>
                     <span className="w-8 h-8 grid place-items-center text-white text-[13px] shrink-0"
                       style={{ background: "#7C3AED", clipPath: "polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)" }}>★</span>
-                  </div>
+                  </button>
                 </div>
               </div>
 
@@ -275,6 +284,68 @@ export function RutaAprendizaje({
           </div>
         </div>
       </main>
+
+      {mundosAbierto && <MundosModal mundos={mundos} onClose={() => setMundosAbierto(false)} />}
+    </div>
+  );
+}
+
+// ————— Modal de Mundos (cada módulo = una isla temática) —————
+type MundoEstado = "completado" | "actual" | "bloqueado";
+// Temas por mundo (de abajo hacia arriba: empiezas en el mar y avanzas al espacio).
+const TEMAS = [
+  { emoji: "🐠", bg: "linear-gradient(160deg,#5EC8D8,#2A7A9E)" },
+  { emoji: "🏖️", bg: "linear-gradient(160deg,#FCD9A0,#E8A85C)" },
+  { emoji: "🏜️", bg: "linear-gradient(160deg,#F2C079,#D98A3D)" },
+  { emoji: "🌴", bg: "linear-gradient(160deg,#7FD08B,#2F8F5B)" },
+  { emoji: "🏙️", bg: "linear-gradient(160deg,#B5A6E8,#6D5AB8)" },
+  { emoji: "🚀", bg: "linear-gradient(160deg,#8B7FD8,#4B3B9E)" },
+];
+
+function MundosModal({ mundos, onClose }: { mundos: { nombre: string; estado: MundoEstado }[]; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/45 grid place-items-center p-3" onClick={onClose}>
+      <div className="bg-surface rounded-3xl w-full max-w-sm max-h-[90vh] overflow-y-auto relative shadow-2xl p-5 sm:p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-display text-lg font-extrabold">Tus mundos 🌍</h3>
+          <button onClick={onClose} className="w-8 h-8 grid place-items-center rounded-full hover:bg-bg text-hint" aria-label="Cerrar">✕</button>
+        </div>
+
+        {/* Serpentina vertical de islas (de arriba = más avanzado, a abajo = inicio) */}
+        <div className="flex flex-col items-stretch gap-1">
+          {mundos.map((m, i) => {
+            const tema = TEMAS[i % TEMAS.length];
+            const izq = i % 2 === 0;
+            return (
+              <div key={i}>
+                <div className={`flex ${izq ? "justify-start" : "justify-end"}`}>
+                  <div className="flex flex-col items-center w-[62%]">
+                    <div className={`relative w-full rounded-3xl px-4 py-5 grid place-items-center shadow-md ${m.estado === "bloqueado" ? "grayscale opacity-60" : ""}`}
+                      style={{ background: tema.bg }}>
+                      <span className="text-4xl drop-shadow">{tema.emoji}</span>
+                    </div>
+                    {/* Indicador de estado */}
+                    <span className={`-mt-3 w-7 h-7 rounded-full border-4 border-white grid place-items-center text-[11px] shrink-0 shadow ${
+                      m.estado === "completado" ? "bg-green text-white" : m.estado === "actual" ? "bg-accent text-white" : "bg-[#B9BDC7] text-white"
+                    }`}>
+                      {m.estado === "completado" ? "✓" : m.estado === "bloqueado" ? "🔒" : ""}
+                    </span>
+                    <div className="mt-1 text-center">
+                      <div className="text-[10px] font-bold text-hint uppercase tracking-wide">Mundo {i + 1}</div>
+                      <div className="text-[12.5px] font-semibold leading-tight">{m.nombre}</div>
+                    </div>
+                  </div>
+                </div>
+                {i < mundos.length - 1 && (
+                  <div className={`h-6 flex ${izq ? "justify-start pl-[31%]" : "justify-end pr-[31%]"}`}>
+                    <div className="w-0.5 h-full border-l-2 border-dashed border-accent/40" />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
