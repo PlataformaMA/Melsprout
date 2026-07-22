@@ -21,10 +21,10 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
   const modulo = cursos.find((m) => m.clases.some((c) => c.id === id)) ?? cursos[0];
   const clase = modulo.clases.find((c) => c.id === id) ?? modulo.clases[0];
 
-  // ¿Ya está completada esta clase? (para no volver a dar XP visualmente)
+  // Progreso guardado (para restaurar la barra y no arrancar en 0).
   const { data: prog } = await supabase
     .from("clase_progreso")
-    .select("completada")
+    .select("completada, segundos_vistos")
     .eq("user_id", user.id)
     .eq("clase_id", clase.id)
     .maybeSingle();
@@ -40,6 +40,7 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
       gemas={perfil.gemas}
       racha={perfil.racha}
       yaCompletada={prog?.completada === true}
+      vistoInicial={(prog?.segundos_vistos as number) ?? 0}
       videoUrl={videoUrl}
     />
   );

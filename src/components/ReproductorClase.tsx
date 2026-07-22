@@ -6,10 +6,10 @@ import { useRouter } from "next/navigation";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { PopupClaseCompletada } from "@/components/PopupCelebracion";
-import { completarClase } from "@/lib/progreso-actions";
+import { completarClase, guardarPosicion } from "@/lib/progreso-actions";
 import { type Clase, type ModuloCurso } from "@/lib/data";
 
-type YtPlayer = { getCurrentTime: () => number; getDuration: () => number; getPlayerState: () => number; destroy: () => void };
+type YtPlayer = { getCurrentTime: () => number; getDuration: () => number; getPlayerState: () => number; seekTo: (s: number, allow: boolean) => void; destroy: () => void };
 declare global {
   interface Window {
     YT?: { Player: new (el: HTMLElement, opts: unknown) => YtPlayer };
@@ -35,12 +35,12 @@ function fmtTiempo(seg: number): string {
 }
 
 export function ReproductorClase({
-  clase, modulo, avatarUrl, nombre, gemas, racha, yaCompletada = false, videoUrl = null,
+  clase, modulo, avatarUrl, nombre, gemas, racha, yaCompletada = false, vistoInicial = 0, videoUrl = null,
 }: {
-  clase: Clase; modulo: ModuloCurso; avatarUrl: string | null; nombre: string; gemas: number; racha: number; yaCompletada?: boolean; videoUrl?: string | null;
+  clase: Clase; modulo: ModuloCurso; avatarUrl: string | null; nombre: string; gemas: number; racha: number; yaCompletada?: boolean; vistoInicial?: number; videoUrl?: string | null;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const vistoRef = useRef(0);   // segundos REALMENTE vistos (ignora adelantar)
+  const vistoRef = useRef(vistoInicial);   // segundos REALMENTE vistos (arranca de lo ya guardado)
   const lastTimeRef = useRef(0);
 
   // Mide el 85% por tiempo reproducido real (adelantar la barrita no cuenta).
@@ -53,7 +53,11 @@ export function ReproductorClase({
   }
   const router = useRouter();
   const [reproduciendo, setReproduciendo] = useState(false);
-  const [progreso, setProgreso] = useState(0); // 0–100 del video
+  // Restaura la barra desde lo ya visto (no arranca en 0 al entrar/recargar).
+  const [progreso, setProgreso] = useState(() => {
+    const ts = clase.duracionMin * 60;
+    return yaCompletada ? 100 : ts > 0 ? Math.min(100, (vistoInicial / ts) * 100) : 0;
+  });
   const [terminado, setTerminado] = useState(false);
   const [popup, setPopup] = useState(false);
   const [tabRep, setTabRep] = useState<"recursos" | "clases">("clases");
@@ -81,6 +85,13 @@ export function ReproductorClase({
     }, 200);
     return () => clearInterval(t);
   }, [reproduciendo, terminado]);
+
+  // Guarda el avance (segundos vistos) cada 15s y al salir, para que NO se pierda.
+  useEffect(() => {
+    const guardar = () => { if (vistoRef.current > 0) guardarPosicion(clase.id, vistoRef.current); };
+    const t = setInterval(guardar, 15000);
+    return () => { clearInterval(t); guardar(); };
+  }, [clase.id]);
 
   // Al llegar al 85% real: clase completada (+100 XP una sola vez) y desbloquea la siguiente.
   useEffect(() => {
@@ -141,13 +152,15 @@ export function ReproductorClase({
               {video && videoUrl ? (
                 <div className="relative">
                   {video.tipo === "youtube" && video.id ? (
-                    <YouTubePlayer videoId={video.id} onProgress={setProgreso} />
+                    <YouTubePlayer videoId={video.id} vistoInicial={vistoInicial}
+                      onProgress={(pct, seg) => { setProgreso(pct); vistoRef.current = seg; }} />
                   ) : video.tipo === "vimeo" && video.id ? (
                     <iframe src={`https://player.vimeo.com/video/${video.id}`} allow="autoplay; fullscreen; picture-in-picture"
                       className="w-full aspect-video rounded-2xl bg-black shadow-lg" title={clase.titulo} />
                   ) : (
                     <video ref={videoRef} src={videoUrl} controls playsInline
                       onTimeUpdate={onTimeUpdate}
+                      onLoadedMetadata={(e) => { const v = e.currentTarget; if (vistoInicial > 0 && vistoInicial < v.duration) { v.currentTime = vistoInicial; lastTimeRef.current = vistoInicial; } }}
                       className="w-full rounded-2xl aspect-video bg-black shadow-lg" />
                   )}
                   <div className="mt-2 h-1.5 rounded-full bg-[#EEEBF6] overflow-hidden">
@@ -356,9 +369,9 @@ export function ReproductorClase({
 }
 
 // Reproductor de YouTube con medición de tiempo REALMENTE visto (adelantar no cuenta) → 85%.
-function YouTubePlayer({ videoId, onProgress }: { videoId: string; onProgress: (p: number) => void }) {
+function YouTubePlayer({ videoId, vistoInicial = 0, onProgress }: { videoId: string; vistoInicial?: number; onProgress: (p: number, seg: number) => void }) {
   const ref = useRef<HTMLDivElement>(null);
-  const vistoRef = useRef(0);
+  const vistoRef = useRef(vistoInicial);
   const lastRef = useRef(0);
 
   useEffect(() => {
@@ -373,6 +386,8 @@ function YouTubePlayer({ videoId, onProgress }: { videoId: string; onProgress: (
         playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
         events: {
           onReady: () => {
+            // Reanuda donde se quedó.
+            if (vistoInicial > 0) { try { player?.seekTo(vistoInicial, true); } catch { /* noop */ } }
             intervalo = setInterval(() => {
               if (!player) return;
               const t = player.getCurrentTime();
@@ -382,7 +397,7 @@ function YouTubePlayer({ videoId, onProgress }: { videoId: string; onProgress: (
                 if (delta > 0 && delta < 1.5) vistoRef.current += delta; // solo reproducción normal
               }
               lastRef.current = t;
-              if (d > 0) onProgress(Math.min(100, (vistoRef.current / d) * 100));
+              if (d > 0) onProgress(Math.min(100, (vistoRef.current / d) * 100), vistoRef.current);
             }, 1000);
           },
         },
@@ -407,7 +422,7 @@ function YouTubePlayer({ videoId, onProgress }: { videoId: string; onProgress: (
       if (intervalo) clearInterval(intervalo);
       try { player?.destroy(); } catch { /* noop */ }
     };
-  }, [videoId, onProgress]);
+  }, [videoId, vistoInicial, onProgress]);
 
   return (
     <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black shadow-lg">
