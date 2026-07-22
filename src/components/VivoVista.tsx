@@ -272,6 +272,7 @@ function CalendarioModal({ clases, asist, onAsistir, onClose }: {
   const hoy = new Date();
   const [ref, setRef] = useState({ y: hoy.getFullYear(), m: hoy.getMonth() });
   const [sel, setSel] = useState<string | null>(null);
+  const [host] = useState(() => (typeof window !== "undefined" ? window.location.host : ""));
 
   const claveDia = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
   const clasesPorDia: Record<string, ClaseVivo[]> = {};
@@ -321,9 +322,9 @@ function CalendarioModal({ clases, asist, onAsistir, onClose }: {
                 const esHoy = k === claveDia(hoy);
                 const activo = k === sel;
                 return (
-                  <button key={i} onClick={() => tiene && setSel(k)} disabled={!tiene}
-                    className={`aspect-square rounded-full grid place-items-center text-[13px] relative transition ${
-                      activo ? "bg-accent text-white font-bold" : tiene ? "bg-accent-soft text-accent font-bold hover:bg-accent/20" : "text-sub"
+                  <button key={i} onClick={() => setSel(k)}
+                    className={`aspect-square rounded-full grid place-items-center text-[13px] relative transition hover:bg-bg ${
+                      activo ? "bg-accent text-white font-bold" : tiene ? "bg-accent-soft text-accent font-bold" : "text-sub"
                     } ${esHoy && !activo ? "ring-1 ring-accent/40" : ""}`}>
                     {n}
                     {tiene && !activo && <span className="absolute bottom-1 w-1 h-1 rounded-full bg-accent" />}
@@ -364,12 +365,22 @@ function CalendarioModal({ clases, asist, onAsistir, onClose }: {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/octi.webp" alt="Octi" width={70} height={70} className="mx-auto" />
               <div className="font-display font-extrabold text-accent mt-1">¡Octi quiere ayudarte!</div>
-              <p className="text-[12.5px] text-sub mt-1">Sincroniza tu calendario para que nunca te pierdas una clase.</p>
-              <button onClick={() => descargarICS(clases)} disabled={clases.length === 0}
-                className="w-full mt-3 bg-accent text-white rounded-xl py-2.5 text-[13px] font-bold hover:brightness-110 disabled:opacity-50 transition flex items-center justify-center gap-2">
-                <CalIcon /> Sincronizar calendario
-              </button>
-              <p className="text-[11px] text-hint mt-1.5">Descarga un archivo .ics · Apple Calendar, Google y Outlook</p>
+              <p className="text-[12.5px] text-sub mt-1">Suscríbete y tu calendario se actualiza solo cuando haya nuevas clases.</p>
+              <div className="mt-3 space-y-2">
+                <a href={host ? `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(`https://${host}/api/calendario`)}` : "#"} target="_blank" rel="noreferrer"
+                  className="w-full bg-accent text-white rounded-xl py-2.5 text-[13px] font-bold hover:brightness-110 transition flex items-center justify-center gap-2">
+                  <CalIcon /> Google Calendar
+                </a>
+                <a href={host ? `webcal://${host}/api/calendario` : "#"}
+                  className="w-full bg-surface border border-border rounded-xl py-2.5 text-[13px] font-bold text-text hover:bg-bg transition flex items-center justify-center gap-2">
+                  🍎 Apple Calendar
+                </a>
+                <button onClick={() => descargarICS(clases)} disabled={clases.length === 0}
+                  className="w-full text-[12px] font-semibold text-sub hover:text-text disabled:opacity-50 transition">
+                  o descargar archivo (.ics)
+                </button>
+              </div>
+              <p className="text-[11px] text-hint mt-2">Se suscribe y se actualiza cada hora. Outlook: usa el .ics.</p>
             </div>
           </div>
         </div>
