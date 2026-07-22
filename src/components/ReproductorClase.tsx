@@ -9,6 +9,23 @@ import { PopupClaseCompletada } from "@/components/PopupCelebracion";
 import { completarClase } from "@/lib/progreso-actions";
 import { type Clase, type ModuloCurso } from "@/lib/data";
 
+type YtPlayer = { getCurrentTime: () => number; getDuration: () => number; getPlayerState: () => number; destroy: () => void };
+declare global {
+  interface Window {
+    YT?: { Player: new (el: HTMLElement, opts: unknown) => YtPlayer };
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
+
+// Detecta el tipo de video por su URL (YouTube, Vimeo o archivo directo).
+function parseVideo(url: string): { tipo: "youtube" | "vimeo" | "file"; id?: string } {
+  const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/);
+  if (yt) return { tipo: "youtube", id: yt[1] };
+  const vm = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  if (vm) return { tipo: "vimeo", id: vm[1] };
+  return { tipo: "file" };
+}
+
 function titleCase(s: string): string {
   return s.split(" ").map((w) => (w.length > 2 ? w[0].toUpperCase() + w.slice(1) : w)).join(" ");
 }
@@ -49,6 +66,7 @@ export function ReproductorClase({
 
   const totalSeg = clase.duracionMin * 60;
   const curSeg = (progreso / 100) * totalSeg;
+  const video = videoUrl ? parseVideo(videoUrl) : null;
 
   // Avance del video (simulado hasta conectar el video real).
   useEffect(() => {
@@ -119,15 +137,29 @@ export function ReproductorClase({
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start">
             {/* ——— Reproductor ——— */}
             <div className="min-w-0">
-              {videoUrl ? (
+              {video && videoUrl ? (
                 <div className="relative">
-                  <video ref={videoRef} src={videoUrl} controls playsInline
-                    onTimeUpdate={onTimeUpdate}
-                    className="w-full rounded-2xl aspect-video bg-black shadow-lg" />
+                  {video.tipo === "youtube" && video.id ? (
+                    <YouTubePlayer videoId={video.id} onProgress={setProgreso} />
+                  ) : video.tipo === "vimeo" && video.id ? (
+                    <iframe src={`https://player.vimeo.com/video/${video.id}`} allow="autoplay; fullscreen; picture-in-picture"
+                      className="w-full aspect-video rounded-2xl bg-black shadow-lg" title={clase.titulo} />
+                  ) : (
+                    <video ref={videoRef} src={videoUrl} controls playsInline
+                      onTimeUpdate={onTimeUpdate}
+                      className="w-full rounded-2xl aspect-video bg-black shadow-lg" />
+                  )}
                   <div className="mt-2 h-1.5 rounded-full bg-[#EEEBF6] overflow-hidden">
                     <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${Math.round(progreso)}%` }} />
                   </div>
-                  <div className="text-[12px] text-sub mt-1">{Math.round(progreso)}% visto {progreso >= 85 ? "· ✅ completada" : "· la clase se completa al 85%"}</div>
+                  {video.tipo === "vimeo" ? (
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-[12px] text-sub">{progreso >= 85 ? "✅ completada" : "Marca la clase cuando la termines"}</span>
+                      {progreso < 85 && <button onClick={() => setProgreso(100)} className="text-[12px] font-bold text-accent hover:underline">Marcar como vista ✓</button>}
+                    </div>
+                  ) : (
+                    <div className="text-[12px] text-sub mt-1">{Math.round(progreso)}% visto {progreso >= 85 ? "· ✅ completada" : "· la clase se completa al 85%"}</div>
+                  )}
                 </div>
               ) : (
                 <div className="relative rounded-2xl overflow-hidden shadow-lg aspect-video"
@@ -257,6 +289,67 @@ export function ReproductorClase({
           </div>
         </div>
       </main>
+    </div>
+  );
+}
+
+// Reproductor de YouTube con medición de tiempo REALMENTE visto (adelantar no cuenta) → 85%.
+function YouTubePlayer({ videoId, onProgress }: { videoId: string; onProgress: (p: number) => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const vistoRef = useRef(0);
+  const lastRef = useRef(0);
+
+  useEffect(() => {
+    let player: YtPlayer | undefined;
+    let intervalo: ReturnType<typeof setInterval> | undefined;
+    let cancelado = false;
+
+    function iniciar() {
+      if (cancelado || !ref.current || !window.YT) return;
+      player = new window.YT.Player(ref.current, {
+        videoId,
+        playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
+        events: {
+          onReady: () => {
+            intervalo = setInterval(() => {
+              if (!player) return;
+              const t = player.getCurrentTime();
+              const d = player.getDuration();
+              if (player.getPlayerState() === 1) {
+                const delta = t - lastRef.current;
+                if (delta > 0 && delta < 1.5) vistoRef.current += delta; // solo reproducción normal
+              }
+              lastRef.current = t;
+              if (d > 0) onProgress(Math.min(100, (vistoRef.current / d) * 100));
+            }, 1000);
+          },
+        },
+      });
+    }
+
+    if (window.YT?.Player) {
+      iniciar();
+    } else {
+      const prev = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => { prev?.(); iniciar(); };
+      if (!document.getElementById("yt-iframe-api")) {
+        const s = document.createElement("script");
+        s.id = "yt-iframe-api";
+        s.src = "https://www.youtube.com/iframe_api";
+        document.body.appendChild(s);
+      }
+    }
+
+    return () => {
+      cancelado = true;
+      if (intervalo) clearInterval(intervalo);
+      try { player?.destroy(); } catch { /* noop */ }
+    };
+  }, [videoId, onProgress]);
+
+  return (
+    <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black shadow-lg">
+      <div ref={ref} className="w-full h-full" />
     </div>
   );
 }
