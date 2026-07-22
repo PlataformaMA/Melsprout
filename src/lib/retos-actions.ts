@@ -8,6 +8,7 @@ export type RetoGuardado = {
   archivo_url: string | null;
   estado: "borrador" | "publicado";
   revision: "aprobado" | "rechazado" | null;
+  revision_comentario: string | null;
 } | null;
 
 // Lee la respuesta guardada del usuario para un reto.
@@ -19,7 +20,7 @@ export async function getRetoSubmission(retoId: string): Promise<RetoGuardado> {
   if (!user) return null;
   const { data } = await supabase
     .from("reto_submissions")
-    .select("respuestas, archivo_url, estado, revision")
+    .select("respuestas, archivo_url, estado, revision, revision_comentario")
     .eq("user_id", user.id)
     .eq("reto_id", retoId)
     .maybeSingle();
@@ -29,6 +30,7 @@ export async function getRetoSubmission(retoId: string): Promise<RetoGuardado> {
     archivo_url: data.archivo_url ?? null,
     estado: (data.estado as "borrador" | "publicado") || "borrador",
     revision: (data.revision as "aprobado" | "rechazado" | null) ?? null,
+    revision_comentario: (data.revision_comentario as string) ?? null,
   };
 }
 
@@ -38,7 +40,8 @@ export async function guardarReto(
   respuestas: Record<string, string>,
   estado: "borrador" | "publicado",
   archivoUrl: string | null,
-  xp: number
+  xp: number,
+  revisa: "sola" | "equipo" = "equipo"
 ): Promise<{ ok: true } | { error: string }> {
   const supabase = await createClient();
   const {
@@ -55,12 +58,18 @@ export async function guardarReto(
     .maybeSingle();
   const yaPublicado = prev?.estado === "publicado";
 
+  // Al PUBLICAR: si es 'sola' se auto-aprueba (va directo a la comunidad);
+  // si es 'equipo' queda 'pendiente' (revisión 48h). Borrador → pendiente.
+  const revision = estado === "publicado" ? (revisa === "sola" ? "aprobado" : "pendiente") : "pendiente";
+
   const { error } = await supabase.from("reto_submissions").upsert({
     user_id: user.id,
     reto_id: retoId,
     respuestas,
     archivo_url: archivoUrl,
     estado,
+    revision,
+    revision_comentario: null,
     updated_at: new Date().toISOString(),
   });
   if (error) return { error: "No se pudo guardar el reto." };

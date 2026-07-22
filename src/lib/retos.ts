@@ -24,6 +24,7 @@ export type RetoDef = {
   descripcion: string;
   intro: string;
   accion: string; // "publicarlo" | "compartirlo" | "compartir tu captura"
+  revisa?: "sola" | "equipo"; // 'sola' = auto-publica; 'equipo' = revisión 48h
   xp: number;
   pasos: PasoReto[];
   tips: { titulo: string; items: string[] };

@@ -14,6 +14,7 @@ export type RetoRow = {
   descripcion: string | null;
   intro: string | null;
   accion: string | null;
+  revisa: string | null;
   xp: number;
   pasos: PasoReto[] | null;
   tips: { titulo: string; items: string[] } | null;
@@ -54,6 +55,7 @@ export function rowToDef(r: RetoRow): RetoDef {
     descripcion: r.descripcion || "",
     intro: r.intro || "",
     accion: r.accion || "compartirlo",
+    revisa: (r.revisa as "sola" | "equipo") || "equipo",
     xp: r.xp ?? 50,
     pasos: (r.pasos && r.pasos.length ? r.pasos : [{ id: "respuesta", titulo: "Tu respuesta", tipo: "textarea", placeholder: "Escribe aquí...", max: 500 }]) as PasoReto[],
     tips: r.tips || { titulo: "Tips:", items: ["Sé claro", "Aplica lo aprendido", "Comparte con la comunidad"] },
@@ -87,6 +89,7 @@ async function getRetoDeClase(id: string): Promise<RetoDef | null> {
     descripcion: "Pon en práctica lo de la clase y compártelo con la comunidad.",
     intro: "Completa este reto para afianzar lo aprendido y ganar XP.",
     accion: "compartirlo",
+    revisa: "equipo",
     xp: 50,
     pasos: [{ id: "respuesta", titulo: "Tu respuesta al reto", subtitulo: reto, tipo: "textarea", placeholder: "Escribe aquí tu respuesta...", max: 500 }],
     tips: { titulo: "Tips:", items: ["Sé claro", "Aplica lo de la clase", "Comparte con la comunidad"] },

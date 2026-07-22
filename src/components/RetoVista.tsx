@@ -36,7 +36,9 @@ export function RetoVista({
   const [videoNombre, setVideoNombre] = useState<string>("");
   const [subiendo, setSubiendo] = useState(false);
   const [guardando, setGuardando] = useState<"borrador" | "publicado" | null>(null);
-  const [modal, setModal] = useState<"borrador" | "publicado" | null>(null);
+  const [modal, setModal] = useState<"guardado" | "publicado" | "enviado" | "rechazado" | null>(
+    guardado?.revision === "rechazado" ? "rechazado" : null
+  );
   const [error, setError] = useState("");
   const [paso, setPaso] = useState(0);
   const [reintentar, setReintentar] = useState(false);
@@ -111,13 +113,15 @@ export function RetoVista({
       }
     }
     setGuardando(estado);
-    const r = await guardarReto(reto.claseId, resp, estado, archivoUrl, reto.xp);
+    const revisa = reto.revisa ?? "equipo";
+    const r = await guardarReto(reto.claseId, resp, estado, archivoUrl, reto.xp, revisa);
     setGuardando(null);
     if ("error" in r) {
       setError(r.error);
       return;
     }
-    setModal(estado);
+    // Borrador → "guardado"; publicar 'sola' → "publicado" (comunidad); 'equipo' → "enviado" (revisión 48h).
+    setModal(estado === "borrador" ? "guardado" : revisa === "sola" ? "publicado" : "enviado");
     router.refresh();
   }
 
@@ -375,32 +379,48 @@ export function RetoVista({
         </div>
       </div>
 
-      {/* Modal Octi */}
-      {modal && (
-        <div className="fixed inset-0 z-50 bg-black/40 grid place-items-center p-4" onClick={() => setModal(null)}>
-          <div className="bg-surface rounded-3xl p-8 max-w-md w-full text-center relative shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setModal(null)} className="absolute top-4 right-4 text-hint hover:text-sub text-xl" aria-label="Cerrar">✕</button>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/octi.webp" alt="Octi" width={130} height={130} className="mx-auto" />
-            <h3 className="font-display text-2xl font-extrabold mt-2">
-              {modal === "publicado" ? "¡Reto publicado! 🎉" : "¡Reto guardado! 🎉"}
-            </h3>
-            <p className="text-sub text-[14px] mt-1.5">
-              {modal === "publicado"
-                ? `Ganaste +${reto.xp} XP. Tu avance se compartió con la comunidad.`
-                : "Tu avance se guardó como borrador."}
-            </p>
-            <div className="flex items-center justify-center gap-3 mt-6">
-              <Link href="/app/ruta" className="flex items-center gap-2 bg-surface border border-border rounded-xl px-4 py-3 text-[14px] font-semibold hover:bg-bg transition">
-                <MapMini /> Volver al camino
-              </Link>
-              <Link href="/app/retos" className="flex items-center gap-2 bg-accent text-white rounded-xl px-4 py-3 text-[14px] font-bold hover:brightness-110 transition">
-                Ver más retos ›
-              </Link>
+      {/* Modales de estado del reto (guardado / publicado / enviado / rechazado) */}
+      {modal && (() => {
+        const info = {
+          guardado: { titulo: "¡Reto guardado! 🎉", sub: "Tu avance se guardó. Puedes completarlo más tarde." },
+          publicado: { titulo: "¡Reto Publicado! 🎉", sub: "Tu reto fue publicado en la comunidad. ¡Bien hecho!" },
+          enviado: { titulo: "¡Reto Enviado! 🎉", sub: "Tu reto fue enviado correctamente. Ahora nuestro equipo lo revisará. Tiempo estimado: 48 horas." },
+          rechazado: { titulo: "¡Reto Rechazado!", sub: "Casi lo logras. Solo necesitas mejorar algunos puntos. Comentarios del equipo:" },
+        }[modal];
+        const rechazado = modal === "rechazado";
+        return (
+          <div className="fixed inset-0 z-50 bg-black/40 grid place-items-center p-4" onClick={() => setModal(null)}>
+            <div className="bg-surface rounded-3xl p-8 max-w-md w-full text-center relative shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => setModal(null)} className="absolute top-4 right-4 text-hint hover:text-sub text-xl" aria-label="Cerrar">✕</button>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/octi.webp" alt="Octi" width={124} height={124} className={`mx-auto octi-pop ${rechazado ? "grayscale opacity-90" : ""}`} />
+              <h3 className={`font-display text-2xl font-extrabold mt-2 ${rechazado ? "text-pink" : ""}`}>{info.titulo}</h3>
+              <p className="text-sub text-[14px] mt-1.5 leading-relaxed">{info.sub}</p>
+
+              {rechazado && (
+                <div className="mt-3 bg-bg border border-border rounded-xl px-4 py-3 text-[13px] text-sub text-left whitespace-pre-wrap">
+                  {guardado?.revision_comentario || "Tu equipo dejará aquí sus comentarios. Ajusta lo necesario y vuelve a intentarlo. 💜"}
+                </div>
+              )}
+
+              <div className="flex items-center justify-center gap-3 mt-6">
+                {rechazado ? (
+                  <button onClick={() => { setModal(null); setReintentar(true); }} className="flex items-center gap-2 bg-surface border border-border rounded-xl px-4 py-3 text-[14px] font-semibold hover:bg-bg transition">
+                    <MapMini /> Volver a intentar
+                  </button>
+                ) : (
+                  <Link href="/app/ruta" className="flex items-center gap-2 bg-surface border border-border rounded-xl px-4 py-3 text-[14px] font-semibold hover:bg-bg transition">
+                    <MapMini /> Volver al camino
+                  </Link>
+                )}
+                <Link href="/app/ruta" className="flex items-center gap-2 bg-accent text-white rounded-xl px-4 py-3 text-[14px] font-bold hover:brightness-110 transition">
+                  Ver siguiente clase ›
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
