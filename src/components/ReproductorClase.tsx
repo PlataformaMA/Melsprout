@@ -35,9 +35,9 @@ function fmtTiempo(seg: number): string {
 }
 
 export function ReproductorClase({
-  clase, modulo, avatarUrl, nombre, gemas, racha, yaCompletada = false, vistoInicial = 0, videoUrl = null,
+  clase, modulo, avatarUrl, nombre, gemas, racha, yaCompletada = false, vistoInicial = 0, completadasIds = [], videoUrl = null,
 }: {
-  clase: Clase; modulo: ModuloCurso; avatarUrl: string | null; nombre: string; gemas: number; racha: number; yaCompletada?: boolean; vistoInicial?: number; videoUrl?: string | null;
+  clase: Clase; modulo: ModuloCurso; avatarUrl: string | null; nombre: string; gemas: number; racha: number; yaCompletada?: boolean; vistoInicial?: number; completadasIds?: string[]; videoUrl?: string | null;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const vistoRef = useRef(vistoInicial);   // segundos REALMENTE vistos (arranca de lo ya guardado)
@@ -65,9 +65,18 @@ export function ReproductorClase({
   const fileRef = useRef<HTMLInputElement>(null);
 
   const idx = modulo.clases.findIndex((c) => c.id === clase.id);
-  const siguiente = modulo.clases[idx + 1];
+  const siguiente = idx >= 0 ? modulo.clases[idx + 1] : undefined;
   const total = modulo.clases.length;
   const posicion = idx + 1;
+
+  // Completación REAL del módulo (para checks + desbloqueo en vivo).
+  const [completadas, setCompletadas] = useState<Set<string>>(() => new Set(completadasIds));
+  function estadoClase(i: number): "completada" | "actual" | "bloqueada" {
+    const c = modulo.clases[i];
+    if (completadas.has(c.id)) return "completada";
+    if (i === 0 || completadas.has(modulo.clases[i - 1].id)) return "actual"; // desbloqueada (la que sigue)
+    return "bloqueada";
+  }
 
   const totalSeg = clase.duracionMin * 60;
   const curSeg = (progreso / 100) * totalSeg;
@@ -100,9 +109,10 @@ export function ReproductorClase({
     (async () => {
       setTerminado(true);
       const r = await completarClase(clase.id);
-      if (!("error" in r) && r.xpDado) {
-        setPopup(true); // muestra +100 XP solo la primera vez
-        router.refresh();
+      if (!("error" in r)) {
+        // Marca la clase como completada (check) y desbloquea la siguiente en vivo.
+        setCompletadas((prev) => new Set(prev).add(clase.id));
+        if (r.xpDado) { setPopup(true); router.refresh(); } // +100 XP solo la primera vez
       }
     })();
   }, [progreso, clase.id, router]);
@@ -257,7 +267,7 @@ export function ReproductorClase({
                 {tabRep === "clases" ? (
                   <div className="space-y-3">
                     {modulo.clases.map((c, i) => {
-                      const estado = i < idx ? "completada" : i === idx ? "actual" : "bloqueada";
+                      const estado = estadoClase(i);
                       return (
                         <Link key={c.id} href={estado === "bloqueada" ? "#" : `/app/clase/${c.id}`}
                           className={`flex items-center gap-3 ${estado === "bloqueada" ? "opacity-60 cursor-default" : "hover:bg-bg"} rounded-xl p-1.5 -m-1.5 transition`}>
@@ -320,7 +330,7 @@ export function ReproductorClase({
                 <h3 className="font-display font-extrabold mb-4">Clases Del Módulo</h3>
                 <div className="space-y-3">
                   {modulo.clases.map((c, i) => {
-                    const estado = i < idx ? "completada" : i === idx ? "actual" : "bloqueada";
+                    const estado = estadoClase(i);
                     return (
                       <Link key={c.id} href={estado === "bloqueada" ? "#" : `/app/clase/${c.id}`}
                         className={`flex items-center gap-3 ${estado === "bloqueada" ? "opacity-60 cursor-default" : "hover:bg-bg"} rounded-xl p-1.5 -m-1.5 transition`}>

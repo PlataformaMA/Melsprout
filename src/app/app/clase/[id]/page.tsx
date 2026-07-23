@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getPerfil } from "@/lib/perfil-actions";
 import { getCursos, getVideoClaseDB } from "@/lib/cursos-db";
+import { getClasesCompletadas } from "@/lib/progreso-actions";
 import { ReproductorClase } from "@/components/ReproductorClase";
 
 export default async function ClasePage({ params }: { params: Promise<{ id: string }> }) {
@@ -30,6 +31,8 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
     .maybeSingle();
 
   const videoUrl = await getVideoClaseDB(clase.id);
+  const completadasSet = await getClasesCompletadas();
+  const completadasIds = modulo.clases.map((c) => c.id).filter((id) => completadasSet.has(id));
 
   return (
     <ReproductorClase
@@ -41,6 +44,7 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
       racha={perfil.racha}
       yaCompletada={prog?.completada === true}
       vistoInicial={(prog?.segundos_vistos as number) ?? 0}
+      completadasIds={completadasIds}
       videoUrl={videoUrl}
     />
   );
