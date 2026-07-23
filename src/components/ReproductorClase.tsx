@@ -53,11 +53,9 @@ export function ReproductorClase({
   }
   const router = useRouter();
   const [reproduciendo, setReproduciendo] = useState(false);
-  // Restaura la barra desde lo ya visto (no arranca en 0 al entrar/recargar).
-  const [progreso, setProgreso] = useState(() => {
-    const ts = clase.duracionMin * 60;
-    return yaCompletada ? 100 : ts > 0 ? Math.min(100, (vistoInicial / ts) * 100) : 0;
-  });
+  // La barra se restaura con la duración REAL del video (al cargar), no con el
+  // estimado (duracionMin), para no inflar el % y marcar "ya visto" de más.
+  const [progreso, setProgreso] = useState(yaCompletada ? 100 : 0);
   const [terminado, setTerminado] = useState(false);
   const [popup, setPopup] = useState(false);
   const [tabRep, setTabRep] = useState<"recursos" | "clases">("clases");
@@ -170,7 +168,13 @@ export function ReproductorClase({
                   ) : (
                     <video ref={videoRef} src={videoUrl} controls playsInline
                       onTimeUpdate={onTimeUpdate}
-                      onLoadedMetadata={(e) => { const v = e.currentTarget; if (vistoInicial > 0 && vistoInicial < v.duration) { v.currentTime = vistoInicial; lastTimeRef.current = vistoInicial; } }}
+                      onLoadedMetadata={(e) => {
+                        const v = e.currentTarget;
+                        if (v.duration > 0 && vistoInicial > 0) {
+                          if (vistoInicial < v.duration) { v.currentTime = vistoInicial; lastTimeRef.current = vistoInicial; }
+                          setProgreso(Math.min(100, (vistoInicial / v.duration) * 100)); // % con duración REAL
+                        }
+                      }}
                       className="w-full rounded-2xl aspect-video bg-black shadow-lg" />
                   )}
                   <div className="mt-2 h-1.5 rounded-full bg-[#EEEBF6] overflow-hidden">
