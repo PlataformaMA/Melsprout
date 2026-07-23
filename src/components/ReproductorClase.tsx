@@ -234,8 +234,8 @@ export function ReproductorClase({
                   <Link href="/app/ruta" className="flex items-center gap-2 bg-accent text-white font-bold text-sm rounded-xl px-5 py-2.5 hover:brightness-110 transition shadow-sm shadow-accent/30">
                     <SparkleMini /> Continuar al reto
                   </Link>
-                  {terminado && siguiente && (
-                    <Link href={`/app/clase/${siguiente.id}`} className="flex items-center gap-2 border border-border rounded-xl px-4 py-2.5 font-bold text-sm text-sub hover:bg-surface transition">
+                  {(terminado || completadas.has(clase.id)) && siguiente && (
+                    <Link href={`/app/clase/${siguiente.id}`} className="flex items-center gap-2 bg-green text-white border border-green rounded-xl px-4 py-2.5 font-bold text-sm hover:brightness-110 transition shadow-sm">
                       Siguiente clase <NextIcon small />
                     </Link>
                   )}
