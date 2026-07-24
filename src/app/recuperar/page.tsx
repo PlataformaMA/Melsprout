@@ -1,16 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
-import { pedirReset, type EstadoAuth } from "@/lib/auth-actions";
+import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { emailValido } from "@/lib/validacion";
 import { AuthShell } from "@/components/AuthShell";
 import { TextField, SubmitButton, Aviso } from "@/components/fields";
 
 export default function RecuperarPage() {
-  const [estado, formAction, pendiente] = useActionState<EstadoAuth, FormData>(
-    pedirReset,
-    {}
-  );
+  const [pendiente, setPendiente] = useState(false);
+  const [mensaje, setMensaje] = useState("");
+  const [error, setError] = useState("");
+
+  async function enviar(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError("");
+    const email = String(new FormData(e.currentTarget).get("email") ?? "").trim();
+    if (!emailValido(email)) { setError("Escribe un correo válido."); return; }
+    setPendiente(true);
+    // Se dispara desde el NAVEGADOR: así el "verificador" de seguridad (PKCE)
+    // queda en este mismo navegador y el enlace del correo funciona al regresar.
+    const supabase = createClient();
+    await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/restablecer`,
+    });
+    setPendiente(false);
+    // Respondemos igual exista o no la cuenta (no filtra qué correos están registrados).
+    setMensaje("Si ese correo tiene una cuenta, te enviamos un enlace para crear una nueva contraseña. Revisa tu bandeja y el spam.");
+  }
 
   return (
     <AuthShell
@@ -18,16 +35,14 @@ export default function RecuperarPage() {
       subtitulo="Te enviamos un enlace para crear una nueva."
       pie={
         <p className="text-center text-[13px] text-sub">
-          <Link href="/login" className="text-accent font-semibold">
-            ← Volver a iniciar sesión
-          </Link>
+          <Link href="/login" className="text-accent font-semibold">← Volver a iniciar sesión</Link>
         </p>
       }
     >
-      {estado.mensaje ? (
-        <Aviso mensaje={estado.mensaje} />
+      {mensaje ? (
+        <Aviso mensaje={mensaje} />
       ) : (
-        <form action={formAction} className="space-y-3.5">
+        <form onSubmit={enviar} className="space-y-3.5">
           <TextField
             label="Email de tu cuenta"
             name="email"
@@ -35,7 +50,7 @@ export default function RecuperarPage() {
             placeholder="tucorreo@ejemplo.com"
             autoComplete="email"
           />
-          <Aviso error={estado.error} />
+          <Aviso error={error} />
           <SubmitButton pendiente={pendiente}>Enviarme el enlace</SubmitButton>
         </form>
       )}
