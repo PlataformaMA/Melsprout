@@ -19,5 +19,6 @@ export default async function Home() {
   }
 
   // redirect() se llama FUERA del try/catch (funciona lanzando una excepción).
-  redirect(logueado ? "/app" : "/bienvenida");
+  // Por ahora la primera pantalla es el login (la bienvenida queda oculta).
+  redirect(logueado ? "/app" : "/login");
 }
