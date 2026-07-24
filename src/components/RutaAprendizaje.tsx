@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
+import { RankingModal, type RankItem } from "@/components/RankingModal";
 import { type Clase, type ModuloCurso } from "@/lib/data";
 
 // ————— Geometría del camino serpenteante (S amplia y suave) —————
@@ -64,10 +65,11 @@ function construirElementos(cursos: ModuloCurso[], completadas: number, retoEsta
 export type TopCreador = { id: string; nombre: string; avatarUrl: string | null; xp: number; esTu: boolean };
 
 export function RutaAprendizaje({
-  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [], completadas = 0, retoEstados = {}, cursos, tuRanking,
+  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [], completadas = 0, retoEstados = {}, cursos, tuRanking, ranking = [],
 }: {
   nombre: string; avatarUrl: string | null; gemas: number; racha: number; perfilPct: number; topCreadores?: TopCreador[];
   completadas?: number; retoEstados?: Record<string, EReto>; cursos: ModuloCurso[]; tuRanking?: { pos: number; xp: number };
+  ranking?: RankItem[];
 }) {
   const elementos = construirElementos(cursos, completadas, retoEstados);
   // TODOS los nodos siguen la misma onda senoidal → serpentina continua y suave (sin codos).
@@ -103,6 +105,27 @@ export function RutaAprendizaje({
   const clasesMod = Math.max(0, Math.min(totalMod, completadas - startIdx));
   const retosMod = (mod?.clases ?? []).filter((c) => retoEstados[c.id] === "completada").length;
   const pctMod = totalMod ? Math.round((clasesMod / totalMod) * 100) : 0;
+
+  // ——— Modal de ranking: se abre 1 vez al día (nunca en el PRIMER login del usuario). ———
+  const [rankingAbierto, setRankingAbierto] = useState(false);
+  useEffect(() => {
+    if (ranking.length === 0) return;
+    try {
+      const hoy = new Date().toISOString().slice(0, 10); // AAAA-MM-DD
+      // Primer login del usuario en este navegador: solo lo marcamos, NO mostramos el ranking.
+      if (!localStorage.getItem("melsprout_visto")) {
+        localStorage.setItem("melsprout_visto", hoy);
+        return;
+      }
+      // Ya es usuario recurrente: mostrar 1 vez por día.
+      if (localStorage.getItem("melsprout_ranking_dia") !== hoy) {
+        localStorage.setItem("melsprout_ranking_dia", hoy);
+        setRankingAbierto(true);
+      }
+    } catch {
+      // Si el navegador bloquea localStorage, simplemente no auto-mostramos.
+    }
+  }, [ranking.length]);
 
   // ——— Mundos (cada módulo = un mundo temático) ———
   const [mundosAbierto, setMundosAbierto] = useState(false);
@@ -215,7 +238,11 @@ export function RutaAprendizaje({
                       <span className="text-lg">🏆</span>
                       <h3 className="font-display font-extrabold text-[15px]">Top colaboradores</h3>
                     </div>
-                    <span className="text-[12px] text-accent font-semibold cursor-default">Ver top</span>
+                    {ranking.length > 0 ? (
+                      <button onClick={() => setRankingAbierto(true)} className="text-[12px] text-accent font-semibold hover:underline">Ver top</button>
+                    ) : (
+                      <span className="text-[12px] text-accent font-semibold cursor-default">Ver top</span>
+                    )}
                   </div>
                   <div className="space-y-1">
                     {topCreadores.map((c, i) => (
@@ -289,6 +316,7 @@ export function RutaAprendizaje({
       </main>
 
       {mundosAbierto && <MundosModal mundos={mundos} onClose={() => setMundosAbierto(false)} />}
+      {rankingAbierto && <RankingModal ranking={ranking} onClose={() => setRankingAbierto(false)} />}
     </div>
   );
 }

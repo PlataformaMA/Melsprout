@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getPerfil } from "@/lib/perfil-actions";
 import { getClasesCompletadas } from "@/lib/progreso-actions";
 import { getCursos } from "@/lib/cursos-db";
+import { nivelPorXP } from "@/lib/data";
 import { RutaAprendizaje } from "@/components/RutaAprendizaje";
 
 type EReto = "completada" | "en-revision" | "rechazada" | "pendiente" | "bloqueada";
@@ -43,6 +44,24 @@ export default async function RutaPage() {
     .eq("onboarding_completo", true)
     .gt("xp", miXp);
   const tuRanking = { pos: (mejores ?? 0) + 1, xp: miXp };
+
+  // Ranking COMPLETO (modal "Ranking de estudiantes"): todos los estudiantes por XP, con su nivel.
+  const { data: rankRows } = await admin
+    .from("profiles")
+    .select("id, full_name, avatar_url, xp")
+    .eq("onboarding_completo", true)
+    .order("xp", { ascending: false })
+    .limit(100);
+  const ranking = (rankRows || []).map((r, i) => ({
+    pos: i + 1,
+    id: r.id as string,
+    nombre: (r.full_name as string) || "Creador",
+    avatarUrl: (r.avatar_url as string) || null,
+    xp: (r.xp as number) || 0,
+    nivelNum: nivelPorXP((r.xp as number) || 0).actual.nivel,
+    nivelNombre: nivelPorXP((r.xp as number) || 0).actual.nombre,
+    esTu: r.id === user.id,
+  }));
 
   const tieneRedes = ["instagram", "tiktok", "youtube"].some((k) => perfil.redes?.[k]);
   const items = [
@@ -84,6 +103,7 @@ export default async function RutaPage() {
       retoEstados={retoEstados}
       cursos={cursos}
       tuRanking={tuRanking}
+      ranking={ranking}
     />
   );
 }
