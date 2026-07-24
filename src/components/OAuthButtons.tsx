@@ -17,6 +17,9 @@ export function OAuthButtons() {
       provider,
       options: {
         redirectTo: `${window.location.origin}/auth/callback?next=/app`,
+        // Google: forzar el selector de cuenta (si no, reusa la última y no deja
+        // elegir otro Gmail).
+        ...(provider === "google" ? { queryParams: { prompt: "select_account" } } : {}),
         // Facebook: pedir solo public_profile (acceso avanzado automático) para que
         // TODOS puedan entrar. El permiso `email` sigue en revisión de Meta; cuando
         // lo aprueben, se puede volver a agregar "email" aquí para capturar el correo.
