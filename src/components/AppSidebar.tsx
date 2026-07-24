@@ -7,8 +7,7 @@ import { MobileNav } from "@/components/MobileNav";
 type Item = { id: string; label: string; href: string; icon: React.ReactNode };
 
 const ITEMS: Item[] = [
-  { id: "inicio", label: "Inicio", href: "/app/inicio", icon: <HomeIcon /> },
-  { id: "clases", label: "Todas las clases", href: "/app/ruta", icon: <MapIcon /> },
+  { id: "clases", label: "Ruta de aprendizaje", href: "/app/ruta", icon: <MapIcon /> },
   { id: "vivo", label: "Clases en vivo", href: "/app/vivo", icon: <LiveIcon /> },
   { id: "comunidad", label: "Comunidad", href: "/app/comunidad", icon: <PeopleIcon /> },
   { id: "retos", label: "Retos", href: "/app/retos", icon: <TrophyIcon /> },
@@ -66,7 +65,6 @@ export function AppSidebar({ active }: { active: string }) {
 
 const ICO = { width: 22, height: 22, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.9, strokeLinecap: "round", strokeLinejoin: "round" } as const;
 
-function HomeIcon() { return <svg {...ICO}><path d="M4 10 12 3.5 20 10v9.5a.9.9 0 0 1-.9.9H14.5V15h-5v5.4H4.9a.9.9 0 0 1-.9-.9z" /></svg>; }
 function MapIcon() { return <svg {...ICO}><path d="M9 4.5 3.7 6.4v13.1l5.3-1.9 6 1.9 5.3-1.9V4.5l-5.3 1.9-6-1.9z" /><path d="M9 4.5v13.1M15 6.4v13.1" /></svg>; }
 function LiveIcon() { return <svg {...ICO}><circle cx="12" cy="12" r="2.3" fill="currentColor" stroke="none" /><path d="M7.8 7.8a6 6 0 0 0 0 8.4" /><path d="M16.2 7.8a6 6 0 0 1 0 8.4" /><path d="M5.2 5.2a10 10 0 0 0 0 13.6" /><path d="M18.8 5.2a10 10 0 0 1 0 13.6" /></svg>; }
 function PeopleIcon() { return <svg {...ICO}><circle cx="9" cy="8.5" r="3" /><path d="M3.5 19.5a5.5 5.5 0 0 1 11 0" /><path d="M15.5 6a3 3 0 0 1 0 5.6M20.5 19.5a5.5 5.5 0 0 0-3.6-5.2" /></svg>; }

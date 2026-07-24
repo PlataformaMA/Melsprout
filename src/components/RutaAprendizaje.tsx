@@ -130,7 +130,10 @@ export function RutaAprendizaje({
             <UserMenu avatarUrl={avatarUrl} nombre={nombre} />
           </header>
 
-          <h1 className="font-display text-2xl font-extrabold mb-4">Ruta De Aprendizaje</h1>
+          <div className="mb-4">
+            <h1 className="font-display text-2xl font-extrabold">¡Hola, {nombre.split(" ")[0]}! 👋</h1>
+            <p className="text-sub text-[14px] mt-0.5">Tu ruta de aprendizaje. Sigue creciendo, un paso a la vez. 💜</p>
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
             {/* ——— Mapa ——— */}

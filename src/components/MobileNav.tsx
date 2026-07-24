@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { LogoMarca } from "@/components/LogoMarca";
 
 const ITEMS = [
-  { href: "/app/inicio", label: "Inicio", icon: "🏠" },
   { href: "/app/ruta", label: "Ruta de aprendizaje", icon: "🗺️" },
   { href: "/app/vivo", label: "Clases en vivo", icon: "📡" },
   { href: "/app/comunidad", label: "Comunidad", icon: "👥" },

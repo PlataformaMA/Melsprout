@@ -27,8 +27,7 @@ export function UserMenu({ avatarUrl, nombre, esAdmin = false }: { avatarUrl: st
             {/* Secciones (solo móvil — en escritorio están en el menú lateral) */}
             <div className="lg:hidden">
               <div className="text-[11px] text-hint font-semibold px-3 pt-1 pb-0.5 uppercase">Secciones</div>
-              <Item href="/app/inicio" icon={<span>🏠</span>}>Inicio</Item>
-              <Item href="/app/ruta" icon={<span>🗺️</span>}>Todas las clases</Item>
+              <Item href="/app/ruta" icon={<span>🗺️</span>}>Ruta de aprendizaje</Item>
               <Item href="/app/vivo" icon={<span>📡</span>}>Clases en vivo</Item>
               <Item href="/app/comunidad" icon={<span>👥</span>}>Comunidad</Item>
               <Item href="/app/retos" icon={<span>🎯</span>}>Retos</Item>
