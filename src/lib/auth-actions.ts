@@ -65,7 +65,7 @@ export async function crearCuenta(
   // Validación de contraseña en el SERVIDOR (no solo en el navegador).
   const fuerza = evaluarPassword(password);
   if (!fuerza.cumpleMinimo)
-    return { error: `Tu contraseña necesita: ${fuerza.faltantes.join(", ")}.` };
+    return { error: "La contraseña debe tener al menos 8 caracteres." };
 
   if (!acepta) return { error: "Debes aceptar los términos para continuar." };
 
@@ -116,7 +116,7 @@ export async function actualizarPassword(
   const password = String(formData.get("password") ?? "");
   const fuerza = evaluarPassword(password);
   if (!fuerza.cumpleMinimo)
-    return { error: `Tu contraseña necesita: ${fuerza.faltantes.join(", ")}.` };
+    return { error: "La contraseña debe tener al menos 8 caracteres." };
 
   const supabase = await createClient();
   const { error } = await supabase.auth.updateUser({ password });

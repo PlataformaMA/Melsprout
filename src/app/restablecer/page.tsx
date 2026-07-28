@@ -39,7 +39,7 @@ export default function RestablecerPage() {
     const password = String(fd.get("password") ?? "");
     const password2 = String(fd.get("password2") ?? "");
     const fuerza = evaluarPassword(password);
-    if (!fuerza.cumpleMinimo) { setError(`Tu contraseña necesita: ${fuerza.faltantes.join(", ")}.`); return; }
+    if (!fuerza.cumpleMinimo) { setError("La contraseña debe tener al menos 8 caracteres."); return; }
     if (password !== password2) { setError("Las contraseñas no coinciden."); return; }
     setPendiente(true);
     const { error } = await supabase.auth.updateUser({ password });
