@@ -27,6 +27,7 @@ export default async function RutaPage() {
     .select("id, full_name, avatar_url, xp")
     .eq("onboarding_completo", true)
     .order("xp", { ascending: false })
+    .order("created_at", { ascending: true }) // desempate estable: mismo orden para TODOS
     .limit(5);
   const topCreadores = (topRows || []).map((r) => ({
     id: r.id as string,
@@ -51,6 +52,7 @@ export default async function RutaPage() {
     .select("id, full_name, avatar_url, xp")
     .eq("onboarding_completo", true)
     .order("xp", { ascending: false })
+    .order("created_at", { ascending: true }) // desempate estable: mismo orden para TODOS
     .limit(100);
   const ranking = (rankRows || []).map((r, i) => ({
     pos: i + 1,

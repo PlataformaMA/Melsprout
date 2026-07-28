@@ -119,6 +119,6 @@ export async function crearRespuesta(postId: string, texto: string): Promise<{ o
 
 export async function getTopColaboradores(): Promise<{ nombre: string; avatar: string | null; xp: number }[]> {
   const admin = createAdminClient();
-  const { data } = await admin.from("profiles").select("full_name, avatar_url, xp").eq("onboarding_completo", true).order("xp", { ascending: false }).limit(3);
+  const { data } = await admin.from("profiles").select("full_name, avatar_url, xp").eq("onboarding_completo", true).order("xp", { ascending: false }).order("created_at", { ascending: true }).limit(3);
   return (data || []).map((p) => ({ nombre: (p.full_name as string) || "Creador", avatar: (p.avatar_url as string) || null, xp: (p.xp as number) || 0 }));
 }
