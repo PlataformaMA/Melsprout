@@ -67,12 +67,14 @@ export function AuthShell({
             <LogoMarca />
           </Link>
 
-          <h2 className="font-display text-2xl font-extrabold text-text text-center lg:text-left">
-            {titulo}
-          </h2>
-          <p className="text-sub text-sm mt-1.5 text-center lg:text-left">{subtitulo}</p>
+          {titulo && (
+            <h2 className="font-display text-2xl font-extrabold text-text text-center lg:text-left">
+              {titulo}
+            </h2>
+          )}
+          {subtitulo && <p className="text-sub text-sm mt-1.5 text-center lg:text-left">{subtitulo}</p>}
 
-          <div className="mt-7">{children}</div>
+          <div className={titulo ? "mt-7" : ""}>{children}</div>
 
           {pie && <div className="mt-6">{pie}</div>}
         </div>

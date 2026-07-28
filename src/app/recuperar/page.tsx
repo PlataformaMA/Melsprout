@@ -28,6 +28,38 @@ export default function RecuperarPage() {
     setEnviado(true);
   }
 
+  // ——— Pantalla de confirmación "¡Correo enviado!" ———
+  if (enviado) {
+    return (
+      <AuthShell titulo="" subtitulo="">
+        <div className="flex flex-col items-center text-center">
+          {/* Sobre con check */}
+          <div className="relative w-24 h-24 rounded-full bg-accent-soft grid place-items-center text-accent mb-5">
+            <SobreIcon grande />
+            <span className="absolute bottom-1 right-1 w-8 h-8 rounded-full bg-green border-4 border-white grid place-items-center text-white text-[13px] font-bold">✓</span>
+          </div>
+
+          <h2 className="font-display text-2xl font-extrabold text-text">¡Correo enviado!</h2>
+          <p className="text-sub text-sm mt-3">Hemos enviado un enlace de recuperación a:</p>
+          <p className="font-semibold text-text text-sm mt-1 break-all">{email}</p>
+          <p className="text-hint text-[13px] mt-5">El enlace expirará en 24 horas.</p>
+
+          <Link href="/login"
+            className="mt-7 w-full rounded-xl border-2 border-accent text-accent font-bold py-2.5 text-sm hover:bg-accent-soft transition">
+            Volver al inicio de sesión
+          </Link>
+
+          <button type="button" onClick={() => enviarEnlace(email)} disabled={pendiente}
+            className="mt-4 text-accent font-semibold text-[13px] hover:underline disabled:opacity-50">
+            {pendiente ? "Reenviando…" : "Reenviar enlace"}
+          </button>
+
+          <div className="mt-6 w-full"><NotaSpam /></div>
+        </div>
+      </AuthShell>
+    );
+  }
+
   return (
     <AuthShell
       titulo="Recupera tu contraseña"
@@ -45,43 +77,25 @@ export default function RecuperarPage() {
         </div>
       </div>
 
-      {enviado ? (
-        <div className="space-y-4">
-          <Aviso mensaje="Si ese correo tiene una cuenta, te enviamos un enlace para crear una nueva contraseña." />
-          <p className="text-center text-[13px] text-sub">
-            ¿No recibiste el correo?{" "}
-            <button
-              type="button"
-              onClick={() => enviarEnlace(email)}
-              disabled={pendiente}
-              className="text-accent font-semibold hover:underline disabled:opacity-50"
-            >
-              {pendiente ? "Reenviando…" : "Reenviar enlace"}
-            </button>
-          </p>
-          <NotaSpam />
-        </div>
-      ) : (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const correo = String(new FormData(e.currentTarget).get("email") ?? "").trim();
-            enviarEnlace(correo);
-          }}
-          className="space-y-3.5"
-        >
-          <TextField
-            label="Email de tu cuenta"
-            name="email"
-            type="email"
-            placeholder="tucorreo@ejemplo.com"
-            autoComplete="email"
-          />
-          <Aviso error={error} />
-          <SubmitButton pendiente={pendiente}>Enviar enlace de recuperación</SubmitButton>
-          <NotaSpam />
-        </form>
-      )}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          const correo = String(new FormData(e.currentTarget).get("email") ?? "").trim();
+          enviarEnlace(correo);
+        }}
+        className="space-y-3.5"
+      >
+        <TextField
+          label="Email de tu cuenta"
+          name="email"
+          type="email"
+          placeholder="tucorreo@ejemplo.com"
+          autoComplete="email"
+        />
+        <Aviso error={error} />
+        <SubmitButton pendiente={pendiente}>Enviar enlace de recuperación</SubmitButton>
+        <NotaSpam />
+      </form>
     </AuthShell>
   );
 }
@@ -95,9 +109,10 @@ function NotaSpam() {
   );
 }
 
-function SobreIcon() {
+function SobreIcon({ grande = false }: { grande?: boolean }) {
+  const s = grande ? 42 : 34;
   return (
-    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="5" width="18" height="14" rx="2" />
       <path d="m3 7 9 6 9-6" />
     </svg>
