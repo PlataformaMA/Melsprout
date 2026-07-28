@@ -58,6 +58,7 @@ export async function crearCuenta(
   const password = String(formData.get("password") ?? "");
   const acepta = formData.get("acepta") === "on";
   const noticias = formData.get("noticias") === "on";
+  const captchaToken = String(formData.get("captchaToken") ?? "");
 
   if (nombre.length < 2) return { error: "Escribe tu nombre completo." };
   if (!emailValido(email)) return { error: "Escribe un correo válido." };
@@ -76,6 +77,8 @@ export async function crearCuenta(
     options: {
       data: { full_name: nombre, acepta_noticias: noticias },
       emailRedirectTo: `${await urlSitio()}/auth/callback?next=/app`,
+      // Filtro anti-robots (solo se valida si el captcha está activo en Supabase).
+      ...(captchaToken ? { captchaToken } : {}),
     },
   });
 

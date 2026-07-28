@@ -1,17 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { crearCuenta, type EstadoAuth } from "@/lib/auth-actions";
 import { AuthShell } from "@/components/AuthShell";
 import { OAuthButtons, Separador } from "@/components/OAuthButtons";
 import { TextField, PasswordField, SubmitButton, Aviso } from "@/components/fields";
+import { Turnstile } from "@/components/Turnstile";
 
 export default function RegistroPage() {
   const [estado, formAction, pendiente] = useActionState<EstadoAuth, FormData>(
     crearCuenta,
     {}
   );
+  const [captchaToken, setCaptchaToken] = useState("");
 
   // Guarda quién invitó (?ref=...) para dar +100 XP, y el canal de origen
   // (?utm_source/medium/campaign=...) para saber de qué anuncio o red llegó.
@@ -116,6 +118,10 @@ export default function RegistroPage() {
           />
           <span>Quiero recibir noticias y recordatorios (opcional).</span>
         </label>
+
+        {/* Filtro invisible anti-robots (solo aparece si está configurado) */}
+        <Turnstile onToken={setCaptchaToken} />
+        <input type="hidden" name="captchaToken" value={captchaToken} />
 
         <Aviso error={estado.error} />
         <SubmitButton pendiente={pendiente}>Crear cuenta gratis</SubmitButton>
