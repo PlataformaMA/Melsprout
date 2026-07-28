@@ -1,5 +1,15 @@
 "use client";
 
+import { useState } from "react";
+
+// Ícono del cofre con respaldo a emoji si aún no se sube la imagen.
+function CofreIcono() {
+  const [err, setErr] = useState(false);
+  if (err) return <span className="text-3xl">🧰</span>;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src="/cofre.png" alt="Cofre" onError={() => setErr(true)} className="w-11 h-11 object-contain" />;
+}
+
 // Niveles de recompensa del cofre (por XP acumulado).
 const COFRES = [
   { xp: 500, emoji: "🗓️", tipo: "Plantilla", titulo: "Calendario de contenido" },
@@ -22,7 +32,7 @@ export function CofreModal({ xp, onClose }: { xp: number; onClose: () => void })
       <div className="relative w-full max-w-2xl bg-surface rounded-3xl shadow-2xl my-4 onb-slide">
         {/* Cabecera */}
         <div className="flex items-start gap-3 p-5 sm:p-6 pb-3">
-          <div className="w-12 h-12 rounded-2xl bg-amber-soft grid place-items-center text-3xl shrink-0">🧰</div>
+          <div className="w-12 h-12 rounded-2xl bg-amber-soft grid place-items-center shrink-0"><CofreIcono /></div>
           <div className="flex-1 min-w-0">
             <h2 className="font-display font-extrabold text-lg sm:text-xl leading-tight">El cofre de recompensas</h2>
             <p className="text-sub text-[13px] mt-0.5">Aprende, gana XP y desbloquea increíbles premios ✨</p>
