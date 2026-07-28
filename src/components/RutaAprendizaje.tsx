@@ -324,14 +324,35 @@ export function RutaAprendizaje({
 // ————— Modal de Mundos (cada módulo = una isla temática) —————
 type MundoEstado = "completado" | "actual" | "bloqueado";
 // Temas por mundo (de abajo hacia arriba: empiezas en el mar y avanzas al espacio).
+// Cada mundo tiene su ilustración (en /public/mundos). Si falta el archivo,
+// se muestra el emoji como respaldo, así el modal nunca se rompe.
 const TEMAS = [
-  { emoji: "🐠", bg: "linear-gradient(160deg,#5EC8D8,#2A7A9E)" },
-  { emoji: "🏖️", bg: "linear-gradient(160deg,#FCD9A0,#E8A85C)" },
-  { emoji: "🏜️", bg: "linear-gradient(160deg,#F2C079,#D98A3D)" },
-  { emoji: "🌴", bg: "linear-gradient(160deg,#7FD08B,#2F8F5B)" },
-  { emoji: "🏙️", bg: "linear-gradient(160deg,#B5A6E8,#6D5AB8)" },
-  { emoji: "🚀", bg: "linear-gradient(160deg,#8B7FD8,#4B3B9E)" },
+  { emoji: "🐠", img: "/mundos/mundo1-oceano.png", glow: "#38BDF8" },
+  { emoji: "🏖️", img: "/mundos/mundo2-playa.png", glow: "#F59E0B" },
+  { emoji: "🏜️", img: "/mundos/mundo3-desierto.png", glow: "#D98A3D" },
+  { emoji: "🌴", img: "/mundos/mundo4-selva.png", glow: "#22C55E" },
+  { emoji: "🏙️", img: "/mundos/mundo5-ciudad.png", glow: "#6366F1" },
+  { emoji: "🚀", img: "/mundos/mundo6-espacio.png", glow: "#7C3AED" },
 ];
+
+// Ilustración de una isla, con respaldo a emoji si la imagen no carga.
+function Isla({ img, emoji, glow, bloqueado, resaltar }: { img: string; emoji: string; glow: string; bloqueado: boolean; resaltar: boolean }) {
+  const [err, setErr] = useState(false);
+  return (
+    <div className={`relative grid place-items-center h-28 sm:h-32 w-full transition ${bloqueado ? "grayscale opacity-45" : ""}`}>
+      {resaltar && !bloqueado && (
+        <span className="absolute inset-0 rounded-full blur-2xl opacity-40" style={{ background: glow }} />
+      )}
+      {err ? (
+        <span className="relative text-5xl drop-shadow-lg">{emoji}</span>
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={img} alt="" onError={() => setErr(true)} draggable={false}
+          className="relative max-h-full w-auto object-contain drop-shadow-xl" />
+      )}
+    </div>
+  );
+}
 
 function MundosModal({ mundos, onClose }: { mundos: { nombre: string; estado: MundoEstado }[]; onClose: () => void }) {
   return (
@@ -342,33 +363,31 @@ function MundosModal({ mundos, onClose }: { mundos: { nombre: string; estado: Mu
           <button onClick={onClose} className="w-8 h-8 grid place-items-center rounded-full hover:bg-bg text-hint" aria-label="Cerrar">✕</button>
         </div>
 
-        {/* Serpentina vertical de islas (de arriba = más avanzado, a abajo = inicio) */}
+        {/* Serpentina vertical de islas: el Mundo 1 abajo (inicio) subiendo hacia los bloqueados. */}
         <div className="flex flex-col items-stretch gap-1">
-          {mundos.map((m, i) => {
-            const tema = TEMAS[i % TEMAS.length];
-            const izq = i % 2 === 0;
+          {mundos.map((m, idx) => ({ m, num: idx + 1 })).reverse().map(({ m, num }, pos, arr) => {
+            const tema = TEMAS[(num - 1) % TEMAS.length];
+            const izq = num % 2 === 0; // alterna el lado según el número de mundo
             return (
-              <div key={i}>
+              <div key={num}>
                 <div className={`flex ${izq ? "justify-start" : "justify-end"}`}>
-                  <div className="flex flex-col items-center w-[62%]">
-                    <div className={`relative w-full rounded-3xl px-4 py-5 grid place-items-center shadow-md ${m.estado === "bloqueado" ? "grayscale opacity-60" : ""}`}
-                      style={{ background: tema.bg }}>
-                      <span className="text-4xl drop-shadow">{tema.emoji}</span>
-                    </div>
+                  <div className="flex flex-col items-center w-[72%]">
+                    <Isla img={tema.img} emoji={tema.emoji} glow={tema.glow}
+                      bloqueado={m.estado === "bloqueado"} resaltar={m.estado === "actual"} />
                     {/* Indicador de estado */}
-                    <span className={`-mt-3 w-7 h-7 rounded-full border-4 border-white grid place-items-center text-[11px] shrink-0 shadow ${
+                    <span className={`-mt-2 w-8 h-8 rounded-full border-4 border-white grid place-items-center text-[12px] font-extrabold shrink-0 shadow ${
                       m.estado === "completado" ? "bg-green text-white" : m.estado === "actual" ? "bg-accent text-white" : "bg-[#B9BDC7] text-white"
                     }`}>
-                      {m.estado === "completado" ? "✓" : m.estado === "bloqueado" ? "🔒" : ""}
+                      {m.estado === "completado" ? "✓" : m.estado === "bloqueado" ? "🔒" : num}
                     </span>
                     <div className="mt-1 text-center">
-                      <div className="text-[10px] font-bold text-hint uppercase tracking-wide">Mundo {i + 1}</div>
+                      <div className="text-[10px] font-bold text-hint uppercase tracking-wide">Mundo {num}</div>
                       <div className="text-[12.5px] font-semibold leading-tight">{m.nombre}</div>
                     </div>
                   </div>
                 </div>
-                {i < mundos.length - 1 && (
-                  <div className={`h-6 flex ${izq ? "justify-start pl-[31%]" : "justify-end pr-[31%]"}`}>
+                {pos < arr.length - 1 && (
+                  <div className={`h-6 flex ${izq ? "justify-start pl-[36%]" : "justify-end pr-[36%]"}`}>
                     <div className="w-0.5 h-full border-l-2 border-dashed border-accent/40" />
                   </div>
                 )}
