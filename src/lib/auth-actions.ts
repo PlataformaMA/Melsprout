@@ -71,7 +71,7 @@ export async function crearCuenta(
   if (!acepta) return { error: "Debes aceptar los términos para continuar." };
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -84,9 +84,23 @@ export async function crearCuenta(
 
   if (error) return { error: traducirError(error.message) };
 
+  // Enviamos NUESTRO correo de verificación (marca propia, vía Resend).
+  if (data.user) {
+    const { enviarVerificacionAUsuario } = await import("@/lib/verificacion-actions");
+    await enviarVerificacionAUsuario(data.user.id, email, nombre);
+  }
+
+  // Si "Confirm email" está apagado en Supabase, ya hay sesión → entra directo
+  // (puede usar la plataforma sin verificar; el ranking/diploma se gatean aparte).
+  if (data.session) {
+    revalidatePath("/", "layout");
+    redirect("/onboarding");
+  }
+
+  // Si Supabase aún exige confirmar (Confirm email ON): mostramos el aviso.
   return {
     mensaje:
-      "¡Cuenta creada! Te enviamos un correo para confirmar tu cuenta. Revisa tu bandeja (y el spam).",
+      "¡Cuenta creada! Te enviamos un correo de verificación. Revisa tu bandeja (y el spam).",
   };
 }
 

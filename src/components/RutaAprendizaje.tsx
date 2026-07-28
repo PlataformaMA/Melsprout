@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { RankingModal, type RankItem } from "@/components/RankingModal";
+import { VerificarBanner } from "@/components/VerificarBanner";
 import { type Clase, type ModuloCurso } from "@/lib/data";
 
 // ————— Geometría del camino serpenteante (S amplia y suave) —————
@@ -65,11 +66,11 @@ function construirElementos(cursos: ModuloCurso[], completadas: number, retoEsta
 export type TopCreador = { id: string; nombre: string; avatarUrl: string | null; xp: number; esTu: boolean };
 
 export function RutaAprendizaje({
-  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [], completadas = 0, retoEstados = {}, cursos, tuRanking, ranking = [],
+  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [], completadas = 0, retoEstados = {}, cursos, tuRanking, ranking = [], emailVerificado = true,
 }: {
   nombre: string; avatarUrl: string | null; gemas: number; racha: number; perfilPct: number; topCreadores?: TopCreador[];
   completadas?: number; retoEstados?: Record<string, EReto>; cursos: ModuloCurso[]; tuRanking?: { pos: number; xp: number };
-  ranking?: RankItem[];
+  ranking?: RankItem[]; emailVerificado?: boolean;
 }) {
   const elementos = construirElementos(cursos, completadas, retoEstados);
   // TODOS los nodos siguen la misma onda senoidal → serpentina continua y suave (sin codos).
@@ -230,6 +231,8 @@ export function RutaAprendizaje({
 
             {/* ——— Sidebar derecha ——— */}
             <aside className="space-y-4 lg:sticky lg:top-5">
+              {!emailVerificado && <VerificarBanner />}
+
               {/* Top colaboradores + Tu ranking */}
               {topCreadores.length > 0 && (
                 <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm">

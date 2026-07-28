@@ -20,12 +20,18 @@ export default async function RutaPage() {
   if (!perfil) redirect("/onboarding");
   if (!perfil.onboarding_completo) redirect("/onboarding");
 
-  // Top 5 creadores por XP (progreso: clases + retos completados).
+  // ¿El usuario ya verificó su correo? (gatea aparecer en el ranking).
   const admin = createAdminClient();
+  const { data: verifRow } = await admin
+    .from("profiles").select("email_verificado").eq("id", user.id).maybeSingle();
+  const emailVerificado = !!verifRow?.email_verificado;
+
+  // Top 5 creadores por XP — SOLO verificados (así los robots no ensucian el ranking).
   const { data: topRows } = await admin
     .from("profiles")
     .select("id, full_name, avatar_url, xp")
     .eq("onboarding_completo", true)
+    .eq("email_verificado", true)
     .order("xp", { ascending: false })
     .order("created_at", { ascending: true }) // desempate estable: mismo orden para TODOS
     .limit(5);
@@ -43,6 +49,7 @@ export default async function RutaPage() {
     .from("profiles")
     .select("id", { count: "exact", head: true })
     .eq("onboarding_completo", true)
+    .eq("email_verificado", true)
     .gt("xp", miXp);
   const tuRanking = { pos: (mejores ?? 0) + 1, xp: miXp };
 
@@ -51,6 +58,7 @@ export default async function RutaPage() {
     .from("profiles")
     .select("id, full_name, avatar_url, xp")
     .eq("onboarding_completo", true)
+    .eq("email_verificado", true)
     .order("xp", { ascending: false })
     .order("created_at", { ascending: true }) // desempate estable: mismo orden para TODOS
     .limit(100);
@@ -106,6 +114,7 @@ export default async function RutaPage() {
       cursos={cursos}
       tuRanking={tuRanking}
       ranking={ranking}
+      emailVerificado={emailVerificado}
     />
   );
 }
