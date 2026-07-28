@@ -16,18 +16,26 @@ export async function GET(request: Request) {
 
   const supabase = await createClient();
 
-  // 1) Enlaces de correo (recovery, signup, email_change, magiclink…)
+  // 1) Enlaces de correo (signup, email_change, magiclink…)
   if (token_hash && type) {
     const { error } = await supabase.auth.verifyOtp({ type, token_hash });
-    if (!error) return NextResponse.redirect(`${origin}${next}`);
+    if (error) {
+      // Enlace inválido o expirado → pantalla dedicada.
+      return NextResponse.redirect(`${origin}/enlace-expirado`);
+    }
+    // La recuperación de contraseña continúa a crear la nueva; el resto muestra
+    // la pantalla "¡Correo verificado!".
+    if (type === "recovery") return NextResponse.redirect(`${origin}/restablecer`);
+    return NextResponse.redirect(`${origin}/verificado`);
   }
 
   // 2) Login social u otros flujos con código (PKCE)
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) return NextResponse.redirect(`${origin}${next}`);
+    return NextResponse.redirect(`${origin}/login?error=enlace`);
   }
 
-  // Algo falló: de vuelta al login con un aviso.
-  return NextResponse.redirect(`${origin}/login?error=enlace`);
+  // Sin token ni código válido: enlace inválido o expirado.
+  return NextResponse.redirect(`${origin}/enlace-expirado`);
 }
