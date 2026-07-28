@@ -185,3 +185,26 @@ export async function cerrarSesion() {
   revalidatePath("/", "layout");
   redirect("/login");
 }
+
+// ===== Eliminar cuenta y todos los datos (desde Configuración) =====
+export async function eliminarCuenta(
+  _prev: EstadoAuth,
+  _formData: FormData
+): Promise<EstadoAuth> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Inicia sesión de nuevo." };
+
+  // El cliente admin (service role) borra el usuario; las tablas ligadas con
+  // ON DELETE CASCADE (perfil, progreso, retos…) se eliminan solas.
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const admin = createAdminClient();
+  const { error } = await admin.auth.admin.deleteUser(user.id);
+  if (error) return { error: "No se pudo eliminar la cuenta. Intenta de nuevo." };
+
+  await supabase.auth.signOut();
+  revalidatePath("/", "layout");
+  redirect("/"); // fuera de try/catch: redirect() lanza NEXT_REDIRECT
+}

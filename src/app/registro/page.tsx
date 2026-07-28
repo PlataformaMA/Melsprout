@@ -13,10 +13,17 @@ export default function RegistroPage() {
     {}
   );
 
-  // Guarda quién invitó (?ref=...) para dar +100 XP cuando este usuario entre.
+  // Guarda quién invitó (?ref=...) para dar +100 XP, y el canal de origen
+  // (?utm_source/medium/campaign=...) para saber de qué anuncio o red llegó.
   useEffect(() => {
-    const ref = new URLSearchParams(window.location.search).get("ref");
+    const p = new URLSearchParams(window.location.search);
+    const ref = p.get("ref");
     if (ref) localStorage.setItem("melsprout_ref", ref);
+    const canal = ["utm_source", "utm_medium", "utm_campaign"]
+      .map((k) => p.get(k))
+      .filter(Boolean)
+      .join(" / ");
+    if (canal) localStorage.setItem("melsprout_canal", canal);
   }, []);
 
   // Si ya se creó la cuenta, mostramos el aviso de "revisa tu correo".

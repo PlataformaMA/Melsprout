@@ -8,6 +8,7 @@ import { BACKUP_CONFIGURADO } from "@/lib/supabase/env";
 import { MFASetup } from "@/components/MFASetup";
 import { BackupCodes } from "@/components/BackupCodes";
 import { CambiarContrasena, CambiarEmail } from "@/components/CambiarCredenciales";
+import { EliminarCuentaBoton } from "@/components/EliminarCuentaBoton";
 
 export default async function ConfigPage() {
   const supabase = await createClient();
@@ -67,6 +68,10 @@ export default async function ConfigPage() {
             Cerrar sesión
           </button>
         </form>
+
+        {/* Zona peligrosa · eliminar cuenta */}
+        <div className="mt-8 mb-2 text-[11px] font-bold tracking-widest uppercase text-pink">Zona peligrosa</div>
+        <EliminarCuentaBoton />
       </div>
     </main>
   );
