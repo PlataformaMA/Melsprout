@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getPerfil } from "@/lib/perfil-actions";
 import { getClasesCompletadas } from "@/lib/progreso-actions";
 import { getCursos } from "@/lib/cursos-db";
+import { getRachaInfo } from "@/lib/racha-actions";
 import { nivelPorXP } from "@/lib/data";
 import { RutaAprendizaje } from "@/components/RutaAprendizaje";
 
@@ -52,6 +53,9 @@ export default async function RutaPage() {
     .eq("email_verificado", true)
     .gt("xp", miXp);
   const tuRanking = { pos: (mejores ?? 0) + 1, xp: miXp };
+
+  // Info de racha (para el pop-up "cada nuevo día").
+  const rachaInfo = await getRachaInfo();
 
   // Ranking COMPLETO (modal "Ranking de estudiantes"): todos los estudiantes por XP, con su nivel.
   const { data: rankRows } = await admin
@@ -116,6 +120,7 @@ export default async function RutaPage() {
       ranking={ranking}
       emailVerificado={emailVerificado}
       xp={miXp}
+      rachaInfo={rachaInfo}
     />
   );
 }

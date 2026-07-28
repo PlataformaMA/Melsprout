@@ -6,8 +6,10 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { RankingModal, type RankItem } from "@/components/RankingModal";
 import { CofreModal } from "@/components/CofreModal";
+import { RachaModal } from "@/components/RachaModal";
 import { VerificarBanner } from "@/components/VerificarBanner";
 import { type Clase, type ModuloCurso } from "@/lib/data";
+import { type RachaInfo } from "@/lib/racha-actions";
 
 // ————— Geometría del camino serpenteante (S amplia y suave) —————
 // W debe COINCIDIR con el maxWidth del contenedor para que el SVG no se deforme.
@@ -67,11 +69,11 @@ function construirElementos(cursos: ModuloCurso[], completadas: number, retoEsta
 export type TopCreador = { id: string; nombre: string; avatarUrl: string | null; xp: number; esTu: boolean };
 
 export function RutaAprendizaje({
-  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [], completadas = 0, retoEstados = {}, cursos, tuRanking, ranking = [], emailVerificado = true, xp = 0,
+  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [], completadas = 0, retoEstados = {}, cursos, tuRanking, ranking = [], emailVerificado = true, xp = 0, rachaInfo,
 }: {
   nombre: string; avatarUrl: string | null; gemas: number; racha: number; perfilPct: number; topCreadores?: TopCreador[];
   completadas?: number; retoEstados?: Record<string, EReto>; cursos: ModuloCurso[]; tuRanking?: { pos: number; xp: number };
-  ranking?: RankItem[]; emailVerificado?: boolean; xp?: number;
+  ranking?: RankItem[]; emailVerificado?: boolean; xp?: number; rachaInfo?: RachaInfo;
 }) {
   const elementos = construirElementos(cursos, completadas, retoEstados);
   // TODOS los nodos siguen la misma onda senoidal → serpentina continua y suave (sin codos).
@@ -108,26 +110,41 @@ export function RutaAprendizaje({
   const retosMod = (mod?.clases ?? []).filter((c) => retoEstados[c.id] === "completada").length;
   const pctMod = totalMod ? Math.round((clasesMod / totalMod) * 100) : 0;
 
-  // ——— Modal de ranking: se abre 1 vez al día (nunca en el PRIMER login del usuario). ———
+  // ——— Pop-ups diarios: racha (check-in) y ranking, 1 vez al día. ———
+  // Nunca en el PRIMER login del usuario. La racha sale primero; al cerrarla,
+  // sale el ranking (si toca hoy) — así no se encima uno con otro.
   const [rankingAbierto, setRankingAbierto] = useState(false);
-  useEffect(() => {
-    if (ranking.length === 0) return;
+  const [rachaAbierto, setRachaAbierto] = useState(false);
+
+  const hoyStr = () => new Date().toISOString().slice(0, 10); // AAAA-MM-DD
+  const abrirRankingSiToca = () => {
     try {
-      const hoy = new Date().toISOString().slice(0, 10); // AAAA-MM-DD
-      // Primer login del usuario en este navegador: solo lo marcamos, NO mostramos el ranking.
+      if (ranking.length > 0 && localStorage.getItem("melsprout_ranking_dia") !== hoyStr()) {
+        localStorage.setItem("melsprout_ranking_dia", hoyStr());
+        setRankingAbierto(true);
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    try {
+      const hoy = hoyStr();
+      // Primer login en este navegador: solo lo marcamos, no mostramos nada.
       if (!localStorage.getItem("melsprout_visto")) {
         localStorage.setItem("melsprout_visto", hoy);
         return;
       }
-      // Ya es usuario recurrente: mostrar 1 vez por día.
-      if (localStorage.getItem("melsprout_ranking_dia") !== hoy) {
-        localStorage.setItem("melsprout_ranking_dia", hoy);
-        setRankingAbierto(true);
+      // Racha: 1 vez al día. Al cerrarla, se muestra el ranking.
+      if (rachaInfo && localStorage.getItem("melsprout_racha_dia") !== hoy) {
+        localStorage.setItem("melsprout_racha_dia", hoy);
+        setRachaAbierto(true);
+        return;
       }
-    } catch {
-      // Si el navegador bloquea localStorage, simplemente no auto-mostramos.
-    }
-  }, [ranking.length]);
+      // Si la racha ya salió hoy, mostramos el ranking directo.
+      abrirRankingSiToca();
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ranking.length, rachaInfo]);
 
   // ——— Mundos (cada módulo = un mundo temático) + Cofre de recompensas ———
   const [mundosAbierto, setMundosAbierto] = useState(false);
@@ -343,6 +360,9 @@ export function RutaAprendizaje({
       {mundosAbierto && <MundosModal mundos={mundos} onClose={() => setMundosAbierto(false)} />}
       {rankingAbierto && <RankingModal ranking={ranking} onClose={() => setRankingAbierto(false)} />}
       {cofreAbierto && <CofreModal xp={xp} onClose={() => setCofreAbierto(false)} />}
+      {rachaAbierto && rachaInfo && (
+        <RachaModal info={rachaInfo} onClose={() => { setRachaAbierto(false); abrirRankingSiToca(); }} />
+      )}
     </div>
   );
 }
