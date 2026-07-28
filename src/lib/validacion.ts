@@ -53,6 +53,9 @@ export function traducirError(mensaje: string): string {
     return "Enviamos demasiados correos. Espera un momento.";
   if (m.includes("rate limit") || m.includes("too many"))
     return "Demasiados intentos. Espera unos minutos e inténtalo de nuevo.";
+  // Captcha (anti-robots) no verificado.
+  if (m.includes("captcha"))
+    return "No pudimos verificar que eres humano. Recarga la página e inténtalo de nuevo.";
   // Fallas de red / conexión con el servidor.
   if (m.includes("fetch") || m.includes("network") || m.includes("failed to fetch") || m.includes("timeout"))
     return "No pudimos conectar con el servidor. Verifica tu conexión e inténtalo de nuevo.";

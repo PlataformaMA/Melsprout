@@ -110,7 +110,10 @@ export async function crearCuenta(
     },
   });
 
-  if (error) return { error: traducirError(error.message) };
+  if (error) {
+    console.error("[crearCuenta] signUp error:", error.message);
+    return { error: traducirError(error.message) };
+  }
 
   // Enviamos NUESTRO correo de verificación (marca propia, vía Resend).
   if (data.user) {
