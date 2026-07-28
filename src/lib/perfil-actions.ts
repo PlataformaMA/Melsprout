@@ -61,6 +61,10 @@ export type DatosOnboarding = {
   objetivo: string;
   plataforma_principal: string;
   tamano_audiencia: string;
+  experiencia?: string;
+  tiempo_semanal?: string;
+  habilidades?: string[];
+  como_conocio?: string;
   redes?: Record<string, string>;
 };
 
@@ -114,6 +118,10 @@ export async function guardarOnboarding(
     objetivo: datos.objetivo,
     plataforma_principal: datos.plataforma_principal,
     tamano_audiencia: datos.tamano_audiencia,
+    experiencia: datos.experiencia ?? null,
+    tiempo_semanal: datos.tiempo_semanal ?? null,
+    habilidades: datos.habilidades ?? [],
+    como_conocio: datos.como_conocio ?? null,
     redes: datos.redes ?? {},
     onboarding_completo: true,
     xp: nuevoXP,
@@ -121,12 +129,16 @@ export async function guardarOnboarding(
 
   const { error } = await supabase.from("profiles").update(campos).eq("id", user.id);
   if (error) {
-    // Reintento sin 'nicho' por si un CHECK viejo de la BD rechaza el valor
-    // (ej. "Tecnología"/"Marketing"). Así el onboarding no se traba; el nicho
-    // se guarda bien una vez que se corre supabase/21_fix_nicho.sql.
-    const sinNicho = { ...campos };
-    delete sinNicho.nicho;
-    const { error: e2 } = await supabase.from("profiles").update(sinNicho).eq("id", user.id);
+    // Reintento seguro: quita 'nicho' (por un CHECK viejo) y las columnas nuevas
+    // del onboarding por si aún no se corre la migración 24. Así nunca se traba;
+    // esos campos se guardan bien una vez aplicada supabase/24_onboarding_campos.sql.
+    const seguro = { ...campos };
+    delete seguro.nicho;
+    delete seguro.experiencia;
+    delete seguro.tiempo_semanal;
+    delete seguro.habilidades;
+    delete seguro.como_conocio;
+    const { error: e2 } = await supabase.from("profiles").update(seguro).eq("id", user.id);
     if (e2) return { error: "No se pudo guardar. Inténtalo de nuevo." };
   }
 

@@ -16,24 +16,40 @@ const PAISES = [
 // Nichos en el orden del mockup (grid de 2 columnas fila por fila):
 // Moda | Belleza  ·  Salud | Tech  ·  Lifestyle | Marketing
 const NICHOS = ["Moda", "Salud", "Lifestyle", "Belleza", "Tecnología", "Marketing"];
-const OBJETIVOS = ["Empezar desde cero", "Crecer mi audiencia", "Monetizar"];
+const OBJETIVOS = ["Crear contenido", "Crecer en redes", "Conseguir colaboraciones", "Monetizar", "Aún no estoy seguro"];
+const EXPERIENCIA = ["Nunca he publicado", "He publicado algunas veces", "Publico constantemente", "Ya soy creador"];
+const TIEMPO = ["1 hora", "3 horas", "5 horas", "Más de 5 horas"];
+const HABILIDADES = ["💡 Tener ideas", "🎥 Grabar videos", "✂️ Editar videos", "📱 Publicar en redes", "📊 Analizar resultados"];
+const COMO_CONOCIO = ["TikTok", "Instagram", "YouTube", "Un amigo", "Google", "Otro"];
 const PLATAFORMAS = ["Instagram", "TikTok", "YouTube"];
 const AUDIENCIAS = ["0–500", "500–5K", "5K–50K", "50K+"];
 
-type Clave = "nicho" | "objetivo" | "plataforma" | "audiencia" | "datos";
-type Pregunta = { clave: Clave; pregunta: string; opciones: string[] | null; octi: string };
+type Clave = "nicho" | "objetivo" | "experiencia" | "tiempo" | "habilidades" | "como_conocio" | "plataforma" | "audiencia" | "datos";
+type Pregunta = { clave: Clave; pregunta: string; opciones: string[] | null; octi: string; multi?: boolean };
 
 const PREGUNTAS: Pregunta[] = [
   { clave: "nicho", pregunta: "¿Cuál es tu mundo?", opciones: NICHOS, octi: "Toca el tema que más te late. ✨" },
-  { clave: "objetivo", pregunta: "¿A dónde quieres llegar?", opciones: OBJETIVOS, octi: "No hay respuesta mala. Elige la tuya. 🚀" },
+  { clave: "objetivo", pregunta: "¿Cuál es tu objetivo?", opciones: OBJETIVOS, octi: "No hay respuesta mala. Elige la tuya. 🚀" },
+  { clave: "experiencia", pregunta: "¿Qué experiencia tienes?", opciones: EXPERIENCIA, octi: "Todos empezamos en algún punto. 💜" },
+  { clave: "tiempo", pregunta: "¿Cuánto tiempo puedes dedicar por semana?", opciones: TIEMPO, octi: "Con esto ajusto tu ritmo. ⏰" },
+  { clave: "habilidades", pregunta: "¿Qué se te da bien hoy?", opciones: HABILIDADES, octi: "Elige todas las que quieras. 😉", multi: true },
+  { clave: "como_conocio", pregunta: "¿Cómo conociste Melsprout?", opciones: COMO_CONOCIO, octi: "Nos ayuda a mejorar. 🙌" },
   { clave: "plataforma", pregunta: "¿Cuál es tu plataforma?", opciones: PLATAFORMAS, octi: "¿Dónde quieres brillar primero? 📱" },
   { clave: "audiencia", pregunta: "¿Cuántos te siguen hoy?", opciones: AUDIENCIAS, octi: "Todos empezamos en algún punto. 💜" },
   { clave: "datos", pregunta: "Solo un par de datos más", opciones: null, octi: "Con esto personalizo tu experiencia. 🐙" },
 ];
 
+// Nivel inicial a partir de la experiencia (para el resumen "Tu camino está listo").
+function nivelInicial(exp: string): string {
+  if (exp === "Ya soy creador") return "Creador";
+  if (exp === "Publico constantemente") return "Creador activo";
+  if (exp === "He publicado algunas veces") return "Explorador";
+  return "Principiante";
+}
+
 export default function OnboardingPage() {
   const router = useRouter();
-  const [fase, setFase] = useState<"intro" | "form" | "celebrando">("intro");
+  const [fase, setFase] = useState<"intro" | "form" | "resumen" | "celebrando">("intro");
   const [paso, setPaso] = useState(0);
   const [pendiente, startTransition] = useTransition();
   const [error, setError] = useState("");
@@ -41,6 +57,10 @@ export default function OnboardingPage() {
 
   const [nicho, setNicho] = useState("");
   const [objetivo, setObjetivo] = useState("");
+  const [experiencia, setExperiencia] = useState("");
+  const [tiempo, setTiempo] = useState("");
+  const [habilidades, setHabilidades] = useState<string[]>([]);
+  const [comoConocio, setComoConocio] = useState("");
   const [plataforma, setPlataforma] = useState("");
   const [audiencia, setAudiencia] = useState("");
   const [pais, setPais] = useState("México");
@@ -48,15 +68,18 @@ export default function OnboardingPage() {
   const [whatsapp, setWhatsapp] = useState("");
   const [waOptin, setWaOptin] = useState(true);
 
-  const valores: Record<string, string> = { nicho, objetivo, plataforma, audiencia };
+  const valores: Record<string, string> = { nicho, objetivo, experiencia, tiempo, como_conocio: comoConocio, plataforma, audiencia };
   const setters: Record<string, (v: string) => void> = {
-    nicho: setNicho, objetivo: setObjetivo, plataforma: setPlataforma, audiencia: setAudiencia,
+    nicho: setNicho, objetivo: setObjetivo, experiencia: setExperiencia, tiempo: setTiempo,
+    como_conocio: setComoConocio, plataforma: setPlataforma, audiencia: setAudiencia,
   };
+  const toggleHabilidad = (op: string) =>
+    setHabilidades((prev) => (prev.includes(op) ? prev.filter((x) => x !== op) : [...prev, op]));
 
   const total = PREGUNTAS.length;
   const actual = PREGUNTAS[paso];
   const esUltimo = paso >= total - 1;
-  const puedeSiguiente = actual.opciones ? !!valores[actual.clave] : true;
+  const puedeSiguiente = actual.clave === "datos" || actual.multi ? true : !!valores[actual.clave];
 
   // Cuenta el XP hacia arriba al celebrar (0 → 50)
   useEffect(() => {
@@ -69,8 +92,10 @@ export default function OnboardingPage() {
     () => ({
       pais, fecha_nacimiento: nacimiento || undefined, whatsapp: whatsapp || undefined,
       whatsapp_optin: waOptin, nicho, objetivo, plataforma_principal: plataforma, tamano_audiencia: audiencia,
+      experiencia: experiencia || undefined, tiempo_semanal: tiempo || undefined,
+      habilidades, como_conocio: comoConocio || undefined,
     }),
-    [pais, nacimiento, whatsapp, waOptin, nicho, objetivo, plataforma, audiencia]
+    [pais, nacimiento, whatsapp, waOptin, nicho, objetivo, plataforma, audiencia, experiencia, tiempo, habilidades, comoConocio]
   );
 
   function guardar(conCelebracion: boolean) {
@@ -88,12 +113,12 @@ export default function OnboardingPage() {
   }
 
   function siguiente() {
-    if (esUltimo) { guardar(true); return; }
+    if (esUltimo) { setError(""); setFase("resumen"); return; }
     setError("");
     setPaso((p) => Math.min(total - 1, p + 1));
   }
   function masTarde() {
-    if (esUltimo) { guardar(true); return; }
+    if (esUltimo) { setError(""); setFase("resumen"); return; }
     setError("");
     setPaso((p) => Math.min(total - 1, p + 1));
   }
@@ -137,6 +162,34 @@ export default function OnboardingPage() {
         </div>
       )}
 
+      {/* ===== RESUMEN "Tu camino está listo" ===== */}
+      {fase === "resumen" && (
+        <div className="flex-1 flex flex-col items-center justify-center px-6 py-8 onb-slide">
+          <img src="/octi.webp" alt="Octi" className="octi-float w-24 sm:w-28 drop-shadow-lg" draggable={false} />
+          <h2 className="font-display text-2xl sm:text-3xl font-extrabold mt-4 text-center">🎉 ¡Tu camino está listo!</h2>
+          <p className="text-sub mt-1.5 text-center">Con base en tus respuestas:</p>
+
+          <div className="mt-6 w-full max-w-md bg-white/85 backdrop-blur rounded-3xl border border-white shadow-lg p-5 sm:p-6 space-y-3">
+            <ResumenFila etiqueta="Nivel inicial" valor={nivelInicial(experiencia)} />
+            <ResumenFila etiqueta="Objetivo" valor={objetivo || "Crear contenido"} />
+            <ResumenFila etiqueta="Tiempo disponible" valor={tiempo ? `${tiempo} por semana` : "A tu ritmo"} />
+            <ResumenFila etiqueta="Recomendación" valor="Empieza por Fundamentos" />
+            <ResumenFila etiqueta="Primer reto" valor="Completa tu primera clase" />
+          </div>
+
+          {error && <p className="mt-4 text-[13px] text-pink bg-pink-soft rounded-lg px-3 py-2.5 text-center max-w-md w-full">{error}</p>}
+
+          <button onClick={() => guardar(true)} disabled={pendiente}
+            className="mt-7 bg-accent text-white font-bold rounded-2xl px-8 py-4 text-base shadow-lg shadow-accent/30 hover:brightness-110 hover:scale-[1.03] active:scale-95 transition disabled:opacity-60">
+            {pendiente ? "Guardando…" : "¡Empezar! 🚀"}
+          </button>
+          <button onClick={() => { setError(""); setFase("form"); }} disabled={pendiente}
+            className="mt-3 text-[13px] font-semibold text-sub hover:underline disabled:opacity-60">
+            ← Volver a las preguntas
+          </button>
+        </div>
+      )}
+
       {/* ===== FORM (pregunta por pantalla, estilo mockup) ===== */}
       {fase === "form" && (
         <div className="flex-1 flex flex-col">
@@ -175,7 +228,18 @@ export default function OnboardingPage() {
             </div>
 
             {/* Opciones (píldoras) o campos */}
-            {actual.opciones ? (
+            {actual.multi && actual.opciones ? (
+              <div className="max-w-xl mx-auto w-full">
+                <p className="text-center text-[12.5px] text-sub mb-3">Puedes elegir varias 👇</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  {actual.opciones.map((op) => (
+                    <Pastilla key={op} activa={habilidades.includes(op)} onClick={() => toggleHabilidad(op)}>
+                      {op}
+                    </Pastilla>
+                  ))}
+                </div>
+              </div>
+            ) : actual.opciones ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-w-xl mx-auto w-full">
                 {actual.opciones.map((op) => (
                   <Pastilla key={op} activa={valores[actual.clave] === op} onClick={() => setters[actual.clave](op)}>
@@ -217,7 +281,7 @@ export default function OnboardingPage() {
               </button>
               <button onClick={siguiente} disabled={!puedeSiguiente || pendiente}
                 className="bg-accent text-white font-bold text-[15px] rounded-2xl px-8 py-3.5 shadow-lg shadow-accent/25 hover:brightness-110 hover:scale-[1.02] active:scale-95 disabled:opacity-40 disabled:shadow-none disabled:scale-100 transition">
-                {pendiente ? "Guardando…" : esUltimo ? "¡Empezar! 🚀" : "Siguiente"}
+                {pendiente ? "Guardando…" : esUltimo ? "Ver mi camino 🗺️" : "Siguiente"}
               </button>
             </div>
           </div>
@@ -237,6 +301,15 @@ function Pastilla({ activa, onClick, children }: { activa: boolean; onClick: () 
       }`}>
       {children}
     </button>
+  );
+}
+
+function ResumenFila({ etiqueta, valor }: { etiqueta: string; valor: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-border/60 last:border-0 pb-2.5 last:pb-0">
+      <span className="text-[13px] text-sub">{etiqueta}</span>
+      <span className="text-[13.5px] font-bold text-text text-right">{valor}</span>
+    </div>
   );
 }
 
