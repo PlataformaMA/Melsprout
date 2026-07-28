@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { RankingModal, type RankItem } from "@/components/RankingModal";
+import { CofreModal } from "@/components/CofreModal";
 import { VerificarBanner } from "@/components/VerificarBanner";
 import { type Clase, type ModuloCurso } from "@/lib/data";
 
@@ -66,11 +67,11 @@ function construirElementos(cursos: ModuloCurso[], completadas: number, retoEsta
 export type TopCreador = { id: string; nombre: string; avatarUrl: string | null; xp: number; esTu: boolean };
 
 export function RutaAprendizaje({
-  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [], completadas = 0, retoEstados = {}, cursos, tuRanking, ranking = [], emailVerificado = true,
+  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [], completadas = 0, retoEstados = {}, cursos, tuRanking, ranking = [], emailVerificado = true, xp = 0,
 }: {
   nombre: string; avatarUrl: string | null; gemas: number; racha: number; perfilPct: number; topCreadores?: TopCreador[];
   completadas?: number; retoEstados?: Record<string, EReto>; cursos: ModuloCurso[]; tuRanking?: { pos: number; xp: number };
-  ranking?: RankItem[]; emailVerificado?: boolean;
+  ranking?: RankItem[]; emailVerificado?: boolean; xp?: number;
 }) {
   const elementos = construirElementos(cursos, completadas, retoEstados);
   // TODOS los nodos siguen la misma onda senoidal → serpentina continua y suave (sin codos).
@@ -128,8 +129,9 @@ export function RutaAprendizaje({
     }
   }, [ranking.length]);
 
-  // ——— Mundos (cada módulo = un mundo temático) ———
+  // ——— Mundos (cada módulo = un mundo temático) + Cofre de recompensas ———
   const [mundosAbierto, setMundosAbierto] = useState(false);
+  const [cofreAbierto, setCofreAbierto] = useState(false);
   const mundos = cursos.map((m, i) => {
     const start = cursos.slice(0, i).reduce((a, x) => a + x.clases.length, 0);
     const done = start + m.clases.length <= completadas;
@@ -233,6 +235,26 @@ export function RutaAprendizaje({
             <aside className="space-y-4 lg:sticky lg:top-5">
               {!emailVerificado && <VerificarBanner />}
 
+              {/* Botones rápidos: Cofre (recompensas) + Brújula (mundos) */}
+              <div className="flex gap-3">
+                <button onClick={() => setCofreAbierto(true)}
+                  className="flex-1 flex items-center gap-2.5 rounded-2xl bg-surface border border-border shadow-sm px-3.5 py-3 hover:border-accent/40 hover:-translate-y-0.5 transition">
+                  <span className="text-2xl">🧰</span>
+                  <div className="text-left leading-tight">
+                    <div className="text-[13px] font-extrabold">Cofre</div>
+                    <div className="text-[11px] text-sub">Recompensas</div>
+                  </div>
+                </button>
+                <button onClick={() => setMundosAbierto(true)}
+                  className="flex-1 flex items-center gap-2.5 rounded-2xl bg-surface border border-border shadow-sm px-3.5 py-3 hover:border-accent/40 hover:-translate-y-0.5 transition">
+                  <span className="text-2xl">🧭</span>
+                  <div className="text-left leading-tight">
+                    <div className="text-[13px] font-extrabold">Brújula</div>
+                    <div className="text-[11px] text-sub">Tus mundos</div>
+                  </div>
+                </button>
+              </div>
+
               {/* Top colaboradores + Tu ranking */}
               {topCreadores.length > 0 && (
                 <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm">
@@ -320,6 +342,7 @@ export function RutaAprendizaje({
 
       {mundosAbierto && <MundosModal mundos={mundos} onClose={() => setMundosAbierto(false)} />}
       {rankingAbierto && <RankingModal ranking={ranking} onClose={() => setRankingAbierto(false)} />}
+      {cofreAbierto && <CofreModal xp={xp} onClose={() => setCofreAbierto(false)} />}
     </div>
   );
 }

@@ -115,6 +115,7 @@ export default async function RutaPage() {
       tuRanking={tuRanking}
       ranking={ranking}
       emailVerificado={emailVerificado}
+      xp={miXp}
     />
   );
 }
