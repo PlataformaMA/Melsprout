@@ -104,10 +104,9 @@ export default function RegistroPage() {
           <input
             type="checkbox"
             name="noticias"
-            defaultChecked
             className="mt-0.5 w-4 h-4 accent-[#7c3aed]"
           />
-          <span>Quiero recibir noticias y recordatorios.</span>
+          <span>Quiero recibir noticias, recordatorios y novedades (opcional).</span>
         </label>
 
         <Aviso error={estado.error} />
