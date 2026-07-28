@@ -42,10 +42,38 @@ export async function iniciarSesion(
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: traducirError(error.message) };
+  if (error) {
+    // Caso borde: la cuenta existe pero se creó con Google/Facebook (sin
+    // contraseña). Le decimos con qué método debe entrar.
+    if (error.message.toLowerCase().includes("invalid login credentials")) {
+      const metodo = await metodoDeCuenta(email);
+      if (metodo && metodo !== "email") {
+        const nombre = metodo === "google" ? "Google" : metodo === "facebook" ? "Facebook" : metodo;
+        return { error: `Esta cuenta se creó con ${nombre}. Inicia sesión con el botón de ${nombre}.` };
+      }
+    }
+    return { error: traducirError(error.message) };
+  }
 
   revalidatePath("/", "layout");
   redirect("/app");
+}
+
+// Devuelve el método de acceso de una cuenta ("email", "google", "facebook"…)
+// o null si no existe. Sirve para guiar al usuario al método correcto.
+async function metodoDeCuenta(email: string): Promise<string | null> {
+  try {
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    const admin = createAdminClient();
+    const { data } = await admin.auth.admin.listUsers();
+    const u = data?.users.find((x) => x.email?.toLowerCase() === email.toLowerCase());
+    if (!u) return null;
+    const provs = (u.identities ?? []).map((i) => i.provider);
+    if (provs.includes("email")) return "email"; // tiene contraseña
+    return provs[0] ?? null;
+  } catch {
+    return null;
+  }
 }
 
 // ===== Crear cuenta con email + contraseña =====
