@@ -252,24 +252,10 @@ export function RutaAprendizaje({
             <aside className="space-y-4 lg:sticky lg:top-5">
               {!emailVerificado && <VerificarBanner />}
 
-              {/* Botones rápidos: Cofre (recompensas) + Brújula (mundos) */}
+              {/* Botones rápidos (solo íconos): Cofre (recompensas) + Brújula (mundos) */}
               <div className="flex gap-3">
-                <button onClick={() => setCofreAbierto(true)}
-                  className="flex-1 flex items-center gap-2.5 rounded-2xl bg-surface border border-border shadow-sm px-3.5 py-3 hover:border-accent/40 hover:-translate-y-0.5 transition">
-                  <span className="text-2xl">🧰</span>
-                  <div className="text-left leading-tight">
-                    <div className="text-[13px] font-extrabold">Cofre</div>
-                    <div className="text-[11px] text-sub">Recompensas</div>
-                  </div>
-                </button>
-                <button onClick={() => setMundosAbierto(true)}
-                  className="flex-1 flex items-center gap-2.5 rounded-2xl bg-surface border border-border shadow-sm px-3.5 py-3 hover:border-accent/40 hover:-translate-y-0.5 transition">
-                  <span className="text-2xl">🧭</span>
-                  <div className="text-left leading-tight">
-                    <div className="text-[13px] font-extrabold">Brújula</div>
-                    <div className="text-[11px] text-sub">Tus mundos</div>
-                  </div>
-                </button>
+                <BotonIcono img="/cofre.png" emoji="🧰" label="Cofre · recompensas" onClick={() => setCofreAbierto(true)} />
+                <BotonIcono img="/brujula.png" emoji="🧭" label="Brújula · tus mundos" onClick={() => setMundosAbierto(true)} />
               </div>
 
               {/* Top colaboradores + Tu ranking */}
@@ -397,6 +383,22 @@ function Isla({ img, emoji, glow, bloqueado, resaltar }: { img: string; emoji: s
           className="relative max-h-full w-auto object-contain drop-shadow-xl" />
       )}
     </div>
+  );
+}
+
+// Botón de ícono (solo la ilustración) con respaldo a emoji si falta la imagen.
+function BotonIcono({ img, emoji, label, onClick }: { img: string; emoji: string; label: string; onClick: () => void }) {
+  const [err, setErr] = useState(false);
+  return (
+    <button onClick={onClick} title={label} aria-label={label}
+      className="w-16 h-16 rounded-2xl bg-surface border border-border shadow-sm grid place-items-center hover:border-accent/40 hover:-translate-y-0.5 active:scale-95 transition">
+      {err ? (
+        <span className="text-3xl">{emoji}</span>
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={img} alt={label} onError={() => setErr(true)} className="w-11 h-11 object-contain" draggable={false} />
+      )}
+    </button>
   );
 }
 
