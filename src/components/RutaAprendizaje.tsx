@@ -325,8 +325,8 @@ export function RutaAprendizaje({
               )}
 
               <Tarjeta titulo="Desafíos del día" extra={<span className="text-[12px] text-accent font-semibold cursor-default">Ver todos</span>}>
-                <Desafio icon={<span className="text-amber">⚡</span>} texto="Gana 10 EXP" progreso={0} total={10} />
-                <Desafio icon={<span className="text-green">🎯</span>} texto="Obtén un puntaje de 90% o más en 1 lección" progreso={0} total={1} />
+                <Desafio iconSrc="/desafios/rayo.png" texto="Gana 10 EXP" progreso={0} total={10} />
+                <Desafio iconSrc="/desafios/diana.png" texto="Obtén un puntaje de 90% o más en 1 lección" progreso={0} total={1} />
               </Tarjeta>
 
               <Tarjeta titulo="Recursos">
@@ -686,18 +686,21 @@ function Tarjeta({ titulo, children, extra }: { titulo: string; children: React.
     </div>
   );
 }
-function Desafio({ icon, texto, progreso, total }: { icon: React.ReactNode; texto: string; progreso: number; total: number }) {
+function Desafio({ iconSrc, texto, progreso, total }: { iconSrc: string; texto: string; progreso: number; total: number }) {
+  const pct = Math.min(100, (progreso / total) * 100);
   return (
-    <div className="flex items-center gap-2.5">
-      <div className="text-xl w-7 grid place-items-center shrink-0">{icon}</div>
+    <div className="flex items-center gap-3">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={iconSrc} alt="" className="w-9 h-9 object-contain shrink-0" draggable={false} />
       <div className="flex-1 min-w-0">
-        <div className="text-[12px] font-bold text-text leading-tight">{texto}</div>
-        <div className="flex items-center gap-2 mt-1">
-          <div className="flex-1 h-2 rounded-full bg-bg overflow-hidden"><div className="h-full bg-amber rounded-full" style={{ width: `${(progreso / total) * 100}%` }} /></div>
-          <span className="text-[10px] text-hint shrink-0">{progreso} / {total}</span>
+        <div className="text-[12.5px] font-bold text-text leading-tight">{texto}</div>
+        <div className="relative mt-1.5 h-5 rounded-full bg-bg overflow-hidden">
+          <div className="absolute inset-y-0 left-0 bg-amber/70 rounded-full" style={{ width: `${pct}%` }} />
+          <span className="absolute inset-0 grid place-items-center text-[10.5px] font-semibold text-sub">{progreso} / {total}</span>
         </div>
       </div>
-      <ChestIcon />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/desafios/cofre.png" alt="" className="w-9 h-9 object-contain shrink-0" draggable={false} />
     </div>
   );
 }
