@@ -497,7 +497,7 @@ function NodoElemento({ el }: { el: Elemento }) {
     if (el.estado === "en-revision")
       return (
         <div className="relative">
-          <div className="absolute -top-5 -right-6"><Burbujas /></div>
+          <div className="absolute -top-16 -right-3"><Burbujas /></div>
           <div className={base} style={{ boxShadow: sombraGris }} title="Reto en revisión"><SparkleIcon color="#9AA0AD" /></div>
           <EtiquetaReto texto="En revisión" clase="bg-accent-soft text-accent" />
         </div>
@@ -514,7 +514,7 @@ function NodoElemento({ el }: { el: Elemento }) {
       return (
         <div className="relative">
           <div className={base} style={{ boxShadow: sombraGris }} title="Reto pendiente"><SparkleIcon color="#9AA0AD" /></div>
-          <div className="absolute -top-4 -right-5"><Burbujas /></div>
+          <div className="absolute -top-16 -right-3"><Burbujas /></div>
         </div>
       );
     return <div className={base} style={{ boxShadow: sombraGris }} title="Reto bloqueado"><SparkleIcon color="#C6CAD3" /></div>;
@@ -608,7 +608,7 @@ function IslaMundoSvg({ apagado }: { apagado?: boolean }) {
 
 function AlgaRoja() {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src="/alga-roja.png" alt="" width={120} height={182} className="select-none w-24 sm:w-32" draggable={false} />;
+  return <img src="/alga-roja.png" alt="" width={140} height={212} className="select-none w-28 sm:w-36" draggable={false} />;
 }
 function CoralTurquesa() {
   // eslint-disable-next-line @next/next/no-img-element
