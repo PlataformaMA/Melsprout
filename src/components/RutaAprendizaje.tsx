@@ -211,11 +211,11 @@ export function RutaAprendizaje({
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src="/octi.png" alt="" className="absolute -top-4 w-8 -translate-x-1/2 transition-all duration-700 drop-shadow" style={{ left: `${pctMod}%` }} draggable={false} />
                   </div>
-                  <button onClick={() => setMundosAbierto(true)} className="shrink-0 flex items-center gap-1.5 hover:scale-105 active:scale-95 transition" title="Ver mundos">
+                  <div className="shrink-0 flex items-center gap-1.5">
                     <span className="hidden sm:inline text-[11px] font-bold text-accent">Mundo {modIdx + 1}</span>
                     <span className="w-8 h-8 grid place-items-center text-white text-[13px] shrink-0"
                       style={{ background: "#7C3AED", clipPath: "polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)" }}>★</span>
-                  </button>
+                  </div>
                 </div>
               </div>
 
