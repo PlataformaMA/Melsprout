@@ -165,7 +165,7 @@ export default function OnboardingPage() {
       {/* ===== RESUMEN "Tu camino está listo" ===== */}
       {fase === "resumen" && (
         <div className="flex-1 flex flex-col items-center justify-center px-6 py-8 onb-slide">
-          <img src="/octi.webp" alt="Octi" className="octi-float w-24 sm:w-28 drop-shadow-lg" draggable={false} />
+          <img src="/octi.png" alt="Octi" className="octi-float w-24 sm:w-28 drop-shadow-lg" draggable={false} />
           <h2 className="font-display text-2xl sm:text-3xl font-extrabold mt-4 text-center">🎉 ¡Tu camino está listo!</h2>
           <p className="text-sub mt-1.5 text-center">Con base en tus respuestas:</p>
 
@@ -224,7 +224,7 @@ export default function OnboardingPage() {
                 <span className="hidden sm:block absolute top-1/2 -right-2 -translate-y-1/2 w-4 h-4 bg-accent-soft/70 border-r-2 border-t-2 border-accent/25 rotate-45" />
               </div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/octi.webp" alt="Octi" className="octi-float w-24 sm:w-40 shrink-0 drop-shadow-lg" draggable={false} />
+              <img src="/octi.png" alt="Octi" className="octi-float w-24 sm:w-40 shrink-0 drop-shadow-lg" draggable={false} />
             </div>
 
             {/* Opciones (píldoras) o campos */}

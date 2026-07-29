@@ -129,7 +129,7 @@ export function PerfilVista({ perfil, creadoEn, insightiq }: { perfil: Perfil; c
                     <div className="absolute inset-y-0 left-0 rounded-full bg-accent" style={{ width: `${xpPct}%` }} />
                     <div className="absolute z-10" style={{ left: `calc(${xpPct}% - 25px)`, top: "50%", transform: "translateY(-50%)" }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/octi.webp" alt="Octi" width={50} className="select-none drop-shadow-[0_3px_4px_rgba(124,58,237,0.25)]" draggable={false} />
+                      <img src="/octi.png" alt="Octi" width={50} className="select-none drop-shadow-[0_3px_4px_rgba(124,58,237,0.25)]" draggable={false} />
                     </div>
                   </div>
                   <span className="text-[13px] text-sub shrink-0">

@@ -172,7 +172,7 @@ export function RetoVista({
               <div className="mt-5 rounded-3xl p-4 sm:p-5 border border-accent/15 shadow-sm relative overflow-hidden" style={{ background: "linear-gradient(160deg,#F3F0FF,#FBFAFF)" }}>
                 <div className="flex items-center gap-3 sm:gap-4">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img key={esUltimo ? "fin" : paso} src="/octi.webp" alt="Octi" className="octi-pop shrink-0 w-16 sm:w-24" />
+                  <img key={esUltimo ? "fin" : paso} src="/octi.png" alt="Octi" className="octi-pop shrink-0 w-16 sm:w-24" />
                   <div className="relative flex-1 bg-white text-accent text-[13px] sm:text-[14px] font-semibold rounded-2xl px-4 py-3 leading-snug shadow-sm">
                     {mostrarEstado
                       ? "¡Ya enviaste este reto! Aquí abajo ves en qué estado va. 💜"
@@ -394,7 +394,7 @@ export function RetoVista({
             <div className="bg-surface rounded-3xl p-6 sm:p-8 max-w-md w-full text-center relative shadow-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               <button onClick={cerrarModal} className="absolute top-4 right-4 text-hint hover:text-sub text-xl" aria-label="Cerrar">✕</button>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/octi.webp" alt="Octi" width={124} height={124} className={`mx-auto octi-pop ${rechazado ? "grayscale opacity-90" : ""}`} />
+              <img src="/octi.png" alt="Octi" width={124} height={124} className={`mx-auto octi-pop ${rechazado ? "grayscale opacity-90" : ""}`} />
               <h3 className={`font-display text-2xl font-extrabold mt-2 ${rechazado ? "text-pink" : ""}`}>{info.titulo}</h3>
               <p className="text-sub text-[14px] mt-1.5 leading-relaxed">{info.sub}</p>
 

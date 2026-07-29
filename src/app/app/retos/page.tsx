@@ -72,7 +72,7 @@ export default async function RetosPage() {
                 {/* Encabezado con Octi */}
                 <div className="flex items-center gap-4 mb-7">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/octi.webp" alt="Octi" width={64} height={64} className="shrink-0" />
+                  <img src="/octi.png" alt="Octi" width={64} height={64} className="shrink-0" />
                   <div>
                     <h1 className="font-display text-2xl sm:text-[26px] font-extrabold leading-tight">Retos de la semana</h1>
                     <p className="text-sub text-[14px] mt-1">Enfócate en estos. Yo te acompaño paso a paso 💜</p>

@@ -20,7 +20,7 @@ export function RachaModal({ info, onClose }: { info: RachaInfo; onClose: () => 
         {/* Octi + número */}
         <div className="flex items-center justify-center gap-4 px-6 pt-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/octi.webp" alt="Octi" className="octi-float w-28 sm:w-32 drop-shadow-lg" draggable={false} />
+          <img src="/octi.png" alt="Octi" className="octi-float w-28 sm:w-32 drop-shadow-lg" draggable={false} />
           <div className="text-center">
             <div className="font-display text-[64px] leading-none font-extrabold text-accent">{racha}</div>
             <div className="font-display text-lg font-extrabold">{racha === 1 ? "día" : "días"} de racha 🔥</div>

@@ -26,7 +26,7 @@ export function RachaVista({ info }: { info: RachaInfo }) {
         {/* Octi + número */}
         <div className="flex items-center justify-center gap-3 mt-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/octi.webp" alt="Octi" className="w-32 shrink-0 drop-shadow-lg" draggable={false} />
+          <img src="/octi.png" alt="Octi" className="w-32 shrink-0 drop-shadow-lg" draggable={false} />
           <div className="text-center">
             <div className="font-display text-[64px] leading-none font-extrabold text-accent">{racha}</div>
           </div>

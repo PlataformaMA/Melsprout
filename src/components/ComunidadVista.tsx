@@ -98,7 +98,7 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
               {/* Banner Octi */}
               <div className="rounded-3xl p-5 flex items-center gap-4 shadow-sm mb-5" style={{ background: "linear-gradient(120deg,#F3F0FF,#FBFAFF)" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/octi.webp" alt="Octi" width={72} height={72} className="shrink-0 hidden sm:block" />
+                <img src="/octi.png" alt="Octi" width={72} height={72} className="shrink-0 hidden sm:block" />
                 <div>
                   <p className="text-accent font-extrabold text-[15px]">¡Se aprende mejor en comunidad!</p>
                   <p className="text-[13.5px] text-sub mt-0.5">Comparte, conecta y crece. Publica y gana <b className="text-accent">+10 XP</b> 💎</p>

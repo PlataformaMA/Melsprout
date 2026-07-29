@@ -213,7 +213,7 @@ export function RutaAprendizaje({
                   <div className="relative flex-1 h-3 rounded-full bg-white/70 border border-accent/10">
                     <div className="absolute inset-y-0 left-0 rounded-full bg-accent transition-all duration-700" style={{ width: `${pctMod}%` }} />
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/octi.webp" alt="" className="absolute -top-4 w-8 -translate-x-1/2 transition-all duration-700 drop-shadow" style={{ left: `${pctMod}%` }} draggable={false} />
+                    <img src="/octi.png" alt="" className="absolute -top-4 w-8 -translate-x-1/2 transition-all duration-700 drop-shadow" style={{ left: `${pctMod}%` }} draggable={false} />
                   </div>
                   <button onClick={() => setMundosAbierto(true)} className="shrink-0 flex items-center gap-1.5 hover:scale-105 active:scale-95 transition" title="Ver mundos">
                     <span className="hidden sm:inline text-[11px] font-bold text-accent">Mundo {modIdx + 1}</span>
@@ -454,9 +454,9 @@ function NodoElemento({ el }: { el: Elemento }) {
     if (el.estado === "completada")
       return (
         <Link href={`/app/clase/${el.clase.id}`} title={el.clase.titulo}
-          className="grid place-items-center rounded-full w-[80px] h-[80px] bg-green text-white border-[5px] border-white hover:scale-105 transition-transform"
-          style={{ boxShadow: "0 7px 0 #047857, 0 12px 16px rgba(0,0,0,.14)" }}>
-          <StarIcon />
+          className="block hover:scale-105 transition-transform">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/nodo-completado.png" alt="" className="w-[84px] h-[84px] select-none" draggable={false} />
         </Link>
       );
     if (el.estado === "actual")
@@ -469,9 +469,9 @@ function NodoElemento({ el }: { el: Elemento }) {
             </span>
           </div>
           <Link href={`/app/clase/${el.clase.id}`} title={el.clase.titulo}
-            className="ruta-pulse grid place-items-center rounded-full w-[84px] h-[84px] bg-accent text-white border-[5px] border-white hover:scale-105 transition-transform"
-            style={{ boxShadow: "0 7px 0 #5B21B6, 0 14px 18px rgba(124,58,237,.3)" }}>
-            <PlayIcon />
+            className="ruta-pulse block rounded-full hover:scale-105 transition-transform">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/nodo-actual.png" alt="" className="w-[88px] h-[88px] select-none" draggable={false} />
           </Link>
           <div className="absolute left-1/2 -translate-x-1/2 top-[92px] whitespace-nowrap bg-white text-[11px] font-bold text-accent rounded-full px-3 py-1.5 shadow-md">
             {el.clase.titulo}
@@ -505,7 +505,8 @@ function NodoElemento({ el }: { el: Elemento }) {
     if (el.estado === "rechazada")
       return (
         <div className="relative">
-          <div className={base} style={{ boxShadow: "0 5px 0 #F3C4C9, 0 8px 12px rgba(0,0,0,.08)" }} title="Reto rechazado"><SparkleIcon color="#EF4444" /></div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/nodo-rechazado.png" alt="" className="w-[68px] h-[68px] select-none" title="Reto rechazado" draggable={false} />
           <EtiquetaReto texto="✕ Rechazado" clase="bg-pink-soft text-pink" />
         </div>
       );
@@ -537,7 +538,7 @@ function EtiquetaReto({ texto, clase }: { texto: string; clase: string }) {
 function TrofeoBurbuja({ apagado }: { apagado?: boolean }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src="/trofeo.webp" alt="Hito de nivel" width={124} height={124}
+    <img src="/trofeo.png" alt="Hito de nivel" width={124} height={124}
       className={`select-none ${apagado ? "opacity-45 grayscale" : ""}`} draggable={false} />
   );
 }
@@ -606,32 +607,17 @@ function IslaMundoSvg({ apagado }: { apagado?: boolean }) {
 }
 
 function AlgaRoja() {
-  return (
-    <svg width="58" height="87" viewBox="0 0 52 78" fill="none">
-      <path d="M14 76 C7 60 19 52 11 38 C4 25 18 18 13 4" stroke="#E8586A" strokeWidth="5.5" strokeLinecap="round" />
-      <path d="M26 76 C33 58 21 48 29 34 C36 21 24 12 31 2" stroke="#D63F52" strokeWidth="5.5" strokeLinecap="round" />
-      <path d="M38 76 C31 62 41 52 35 42 C30 33 39 26 37 16" stroke="#F27A88" strokeWidth="5.5" strokeLinecap="round" />
-      <ellipse cx="26" cy="76" rx="16" ry="3.5" fill="#E8586A" opacity="0.18" />
-    </svg>
-  );
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src="/alga-roja.png" alt="" width={58} height={90} className="select-none" draggable={false} />;
 }
 function CoralTurquesa() {
-  return (
-    <svg width="92" height="76" viewBox="0 0 80 66" fill="none" stroke="#2CA6A4" strokeWidth="7" strokeLinecap="round">
-      <path d="M40 64 L40 30" /><path d="M40 42 C31 34 24 36 22 24" /><path d="M40 38 C49 32 56 34 58 22" />
-      <path d="M22 24 C19 17 24 13 22 5" /><path d="M58 22 C61 15 56 11 58 4" /><path d="M40 30 C37 22 43 17 40 8" />
-      <ellipse cx="40" cy="64" rx="20" ry="3.5" fill="#2CA6A4" stroke="none" opacity="0.18" />
-    </svg>
-  );
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src="/coral-turquesa.png" alt="" width={96} height={80} className="select-none" draggable={false} />;
 }
 function Burbujas() {
   return (
-    <svg width="52" height="48" viewBox="0 0 62 58" fill="none" className="burbujas-anim">
-      <circle cx="26" cy="34" r="12" stroke="#7DD3FC" strokeWidth="3" opacity="0.75" />
-      <circle cx="46" cy="20" r="7" stroke="#7DD3FC" strokeWidth="2.6" opacity="0.65" />
-      <circle cx="44" cy="42" r="4.5" stroke="#7DD3FC" strokeWidth="2.2" opacity="0.55" />
-      <circle cx="22" cy="29" r="3" fill="#BAE6FD" opacity="0.8" />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src="/burbujas.png" alt="" width={52} height={44} className="select-none burbujas-anim" draggable={false} />
   );
 }
 function DecorMar({ altura }: { altura: number }) {
@@ -677,7 +663,7 @@ function OctiRuta({ nombre }: { nombre: string }) {
         <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rotate-45" />
       </div>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/octi.webp" alt="Octi" className={`octi-float select-none shrink-0 w-40 lg:w-44 drop-shadow-lg ${wiggle ? "octi-wiggle" : ""}`} draggable={false} />
+      <img src="/octi.png" alt="Octi" className={`octi-float select-none shrink-0 w-40 lg:w-44 drop-shadow-lg ${wiggle ? "octi-wiggle" : ""}`} draggable={false} />
     </button>
   );
 }

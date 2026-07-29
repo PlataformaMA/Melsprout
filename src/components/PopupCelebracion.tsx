@@ -22,7 +22,7 @@ export function PopupCelebracion({ titulo, lineas, primaryLabel, primaryHref, on
       <div className="bg-surface rounded-3xl p-8 max-w-md w-full text-center relative shadow-2xl popup-in" onClick={(e) => e.stopPropagation()}>
         <button onClick={onClose} className="absolute top-4 right-4 text-hint hover:text-sub text-xl" aria-label="Cerrar">✕</button>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/octi.webp" alt="Octi" width={120} height={120} className="mx-auto popup-bob" />
+        <img src="/octi.png" alt="Octi" width={120} height={120} className="mx-auto popup-bob" />
         <h3 className="font-display text-2xl font-extrabold mt-2">{titulo}</h3>
         <div className="mt-2 space-y-0.5">
           {lineas.map((l, i) => (
