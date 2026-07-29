@@ -608,7 +608,7 @@ function IslaMundoSvg({ apagado }: { apagado?: boolean }) {
 
 function AlgaRoja() {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src="/alga-roja.png" alt="" width={104} height={158} className="select-none w-20 sm:w-28" draggable={false} />;
+  return <img src="/alga-roja.png" alt="" width={120} height={182} className="select-none w-24 sm:w-32" draggable={false} />;
 }
 function CoralTurquesa() {
   // eslint-disable-next-line @next/next/no-img-element
