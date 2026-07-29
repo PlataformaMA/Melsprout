@@ -235,7 +235,7 @@ export function RutaAprendizaje({
                   <path d={construirPath(pts)} stroke="#C7B8EF" strokeWidth="5.5" strokeLinecap="round" strokeDasharray="10 15" vectorEffect="non-scaling-stroke" />
                 </svg>
 
-                <DecorMar altura={altura} />
+                <DecorMar pts={pts} />
 
                 {elementos.map((el, i) => (
                   <div key={i} className="absolute z-[5]" style={{ left: pctX(pts[i].x), top: pts[i].y, transform: "translate(-50%,-50%)" }}>
@@ -620,23 +620,25 @@ function Burbujas() {
     <img src="/burbujas.png" alt="" width={64} height={54} className="select-none burbujas-anim" draggable={false} />
   );
 }
-function DecorMar({ altura }: { altura: number }) {
-  // Decoraciones en las ORILLAS (izq/der) repartidas por TODO el camino,
-  // alternando alga · coral · burbujas. Van detrás de los nodos.
+function DecorMar({ pts }: { pts: { x: number; y: number }[] }) {
+  // Decoraciones en los HUECOS entre filas y del lado OPUESTO al nodo,
+  // para que NUNCA choquen con los nodos ni sus etiquetas.
   const decos: React.ReactNode[] = [];
-  const PASO = 250; // separación vertical entre decoraciones
-  let i = 0;
-  for (let y = 170; y < altura - 90; y += PASO) {
-    const izq = i % 2 === 0;
-    const tipo = i % 3; // 0 alga · 1 coral · 2 burbujas
-    const offsetY = tipo === 0 ? 55 : 0; // las algas rojas van un poco más abajo
+  let d = 0;
+  for (let g = 1; g < pts.length - 1; g += 2) {
+    const yMid = (pts[g].y + pts[g + 1].y) / 2;
+    // ¿Hay un nodo pegado a la derecha en este hueco? Si sí, la decoración va a la izquierda.
+    const hayNodoDerecha = pts[g].x > CX + 40 || pts[g + 1].x > CX + 40;
+    const izq = hayNodoDerecha;
+    const tipo = d % 3; // 0 alga · 1 coral · 2 burbujas
+    const offsetY = tipo === 0 ? 18 : 0; // las algas un poco más abajo
     decos.push(
-      <div key={i} className="absolute mar-vaiven"
-        style={{ [izq ? "left" : "right"]: 0, top: y + offsetY, animationDelay: `${(i % 4) * 0.4}s` }}>
+      <div key={g} className="absolute mar-vaiven"
+        style={{ [izq ? "left" : "right"]: -8, top: yMid + offsetY, animationDelay: `${(d % 4) * 0.4}s` }}>
         {tipo === 0 ? <AlgaRoja /> : tipo === 1 ? <CoralTurquesa /> : <Burbujas />}
       </div>
     );
-    i++;
+    d++;
   }
   return <div className="absolute inset-0 pointer-events-none z-[1] overflow-hidden">{decos}</div>;
 }
