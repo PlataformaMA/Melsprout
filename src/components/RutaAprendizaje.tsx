@@ -621,21 +621,20 @@ function Burbujas() {
   );
 }
 function DecorMar({ pts }: { pts: { x: number; y: number }[] }) {
-  // Decoraciones en los HUECOS entre filas y del lado OPUESTO al nodo,
-  // para que NUNCA choquen con los nodos ni sus etiquetas.
+  // Las filas CENTRALES (índices impares = retos) tienen el nodo al centro, así
+  // las ORILLAS quedan libres. Ahí van las decoraciones, alternando lado y
+  // espaciadas (cada 2 filas centrales) para que nunca choquen entre sí ni con nodos.
   const decos: React.ReactNode[] = [];
   let d = 0;
-  for (let g = 1; g < pts.length - 1; g += 2) {
-    const yMid = (pts[g].y + pts[g + 1].y) / 2;
-    // ¿Hay un nodo pegado a la derecha en este hueco? Si sí, la decoración va a la izquierda.
-    const hayNodoDerecha = pts[g].x > CX + 40 || pts[g + 1].x > CX + 40;
-    const izq = hayNodoDerecha;
+  for (let i = 1; i < pts.length; i += 4) {
+    const izq = d % 2 === 0;
     const tipo = d % 3; // 0 alga · 1 coral · 2 burbujas
-    const offsetY = tipo === 0 ? 18 : 0; // las algas un poco más abajo
     decos.push(
-      <div key={g} className="absolute mar-vaiven"
-        style={{ [izq ? "left" : "right"]: -8, top: yMid + offsetY, animationDelay: `${(d % 4) * 0.4}s` }}>
-        {tipo === 0 ? <AlgaRoja /> : tipo === 1 ? <CoralTurquesa /> : <Burbujas />}
+      <div key={i} className="absolute"
+        style={{ [izq ? "left" : "right"]: -6, top: pts[i].y, transform: "translateY(-50%)" }}>
+        <div className="mar-vaiven" style={{ animationDelay: `${(d % 4) * 0.4}s` }}>
+          {tipo === 0 ? <AlgaRoja /> : tipo === 1 ? <CoralTurquesa /> : <Burbujas />}
+        </div>
       </div>
     );
     d++;
