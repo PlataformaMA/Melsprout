@@ -10,15 +10,23 @@ function CofreIcono() {
   return <img src="/cofre.png" alt="Cofre" onError={() => setErr(true)} className="w-11 h-11 object-contain" />;
 }
 
-// Niveles de recompensa del cofre (por XP acumulado).
+// Niveles de recompensa del cofre (por XP acumulado). img = ilustración 3D real.
 const COFRES = [
-  { xp: 500, emoji: "🗓️", tipo: "Plantilla", titulo: "Calendario de contenido" },
-  { xp: 1800, emoji: "📘", tipo: "Ebook", titulo: "Guía de contenido viral" },
-  { xp: 3500, emoji: "📗", tipo: "Guía", titulo: "Estrategias de crecimiento en redes" },
-  { xp: 5000, emoji: "🧰", tipo: "Pack", titulo: "Pack de plantillas para Instagram" },
-  { xp: 7000, emoji: "📹", tipo: "Ebook", titulo: "Edición de videos para redes sociales" },
-  { xp: 10000, emoji: "🏆", tipo: "Mega cofre", titulo: "¡Sorpresa especial!" },
+  { xp: 500, emoji: "🗓️", img: "/recompensas/r500.png", tipo: "Plantilla", titulo: "Calendario de contenido" },
+  { xp: 1800, emoji: "📘", img: "/recompensas/r1800.png", tipo: "Ebook", titulo: "Guía de contenido viral" },
+  { xp: 3500, emoji: "📗", img: "/recompensas/r3500.png", tipo: "Guía", titulo: "Estrategias de crecimiento en redes" },
+  { xp: 5000, emoji: "🧰", img: null, tipo: "Pack", titulo: "Pack de plantillas para Instagram" },
+  { xp: 7000, emoji: "📹", img: null, tipo: "Ebook", titulo: "Edición de videos para redes sociales" },
+  { xp: 10000, emoji: "🏆", img: "/recompensas/r10000.png", tipo: "Mega cofre", titulo: "¡Sorpresa especial!" },
 ];
+
+// Imagen 3D de la recompensa con respaldo a emoji si aún no hay archivo.
+function RecompensaImg({ img, emoji }: { img: string | null; emoji: string }) {
+  const [err, setErr] = useState(false);
+  if (!img || err) return <span className="text-3xl">{emoji}</span>;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={img} alt="" onError={() => setErr(true)} className="w-full h-full object-contain" draggable={false} />;
+}
 
 // Modal "El cofre de recompensas": muestra los niveles y cuáles desbloqueaste.
 export function CofreModal({ xp, onClose }: { xp: number; onClose: () => void }) {
@@ -69,8 +77,8 @@ export function CofreModal({ xp, onClose }: { xp: number; onClose: () => void })
                     }`}>
                       {/* Ícono con estado */}
                       <div className="relative shrink-0">
-                        <div className={`w-14 h-14 rounded-2xl grid place-items-center text-3xl ${desbloqueado ? "bg-accent-soft" : "bg-surface grayscale opacity-70"}`}>
-                          {c.emoji}
+                        <div className={`w-16 h-16 rounded-2xl grid place-items-center p-1.5 ${desbloqueado ? "bg-accent-soft" : "bg-surface grayscale opacity-70"}`}>
+                          <RecompensaImg img={c.img} emoji={c.emoji} />
                         </div>
                         <span className={`absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full border-2 border-white grid place-items-center text-[11px] shadow ${
                           desbloqueado ? "bg-green text-white" : "bg-[#B9BDC7] text-white"
