@@ -391,12 +391,12 @@ function BotonIcono({ img, emoji, label, onClick }: { img: string; emoji: string
   const [err, setErr] = useState(false);
   return (
     <button onClick={onClick} title={label} aria-label={label}
-      className="w-16 h-16 rounded-2xl bg-surface border border-border shadow-sm grid place-items-center hover:border-accent/40 hover:-translate-y-0.5 active:scale-95 transition">
+      className="w-[76px] h-[76px] rounded-2xl bg-surface border border-border shadow-sm grid place-items-center hover:border-accent/40 hover:-translate-y-0.5 active:scale-95 transition">
       {err ? (
-        <span className="text-3xl">{emoji}</span>
+        <span className="text-[34px]">{emoji}</span>
       ) : (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={img} alt={label} onError={() => setErr(true)} className="w-11 h-11 object-contain" draggable={false} />
+        <img src={img} alt={label} onError={() => setErr(true)} className="w-14 h-14 object-contain" draggable={false} />
       )}
     </button>
   );
@@ -608,11 +608,11 @@ function IslaMundoSvg({ apagado }: { apagado?: boolean }) {
 
 function AlgaRoja() {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src="/alga-roja.png" alt="" width={92} height={140} className="select-none w-16 sm:w-24" draggable={false} />;
+  return <img src="/alga-roja.png" alt="" width={104} height={158} className="select-none w-20 sm:w-28" draggable={false} />;
 }
 function CoralTurquesa() {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src="/coral-turquesa.png" alt="" width={150} height={124} className="select-none w-28 sm:w-40" draggable={false} />;
+  return <img src="/coral-turquesa.png" alt="" width={124} height={102} className="select-none w-24 sm:w-32" draggable={false} />;
 }
 function Burbujas() {
   return (
@@ -629,9 +629,10 @@ function DecorMar({ altura }: { altura: number }) {
   for (let y = 170; y < altura - 90; y += PASO) {
     const izq = i % 2 === 0;
     const tipo = i % 3; // 0 alga · 1 coral · 2 burbujas
+    const offsetY = tipo === 0 ? 55 : 0; // las algas rojas van un poco más abajo
     decos.push(
       <div key={i} className="absolute mar-vaiven"
-        style={{ [izq ? "left" : "right"]: 0, top: y, animationDelay: `${(i % 4) * 0.4}s` }}>
+        style={{ [izq ? "left" : "right"]: 0, top: y + offsetY, animationDelay: `${(i % 4) * 0.4}s` }}>
         {tipo === 0 ? <AlgaRoja /> : tipo === 1 ? <CoralTurquesa /> : <Burbujas />}
       </div>
     );
