@@ -254,6 +254,11 @@ export function RutaAprendizaje({
             <aside className="space-y-4 lg:sticky lg:top-5">
               {!emailVerificado && <VerificarBanner />}
 
+              <Tarjeta titulo="Desafíos del día" extra={<span className="text-[12px] text-accent font-semibold cursor-default">Ver todos</span>}>
+                <Desafio iconSrc="/desafios/rayo.png" texto="Gana 10 EXP" progreso={0} total={10} />
+                <Desafio iconSrc="/desafios/diana.png" texto="Obtén un puntaje de 90% o más en 1 lección" progreso={0} total={1} />
+              </Tarjeta>
+
               {/* Top colaboradores + Tu ranking */}
               {topCreadores.length > 0 && (
                 <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm">
@@ -324,16 +329,6 @@ export function RutaAprendizaje({
                 </Link>
               )}
 
-              <Tarjeta titulo="Desafíos del día" extra={<span className="text-[12px] text-accent font-semibold cursor-default">Ver todos</span>}>
-                <Desafio iconSrc="/desafios/rayo.png" texto="Gana 10 EXP" progreso={0} total={10} />
-                <Desafio iconSrc="/desafios/diana.png" texto="Obtén un puntaje de 90% o más en 1 lección" progreso={0} total={1} />
-              </Tarjeta>
-
-              <Tarjeta titulo="Recursos">
-                <Recurso icon={<DocIcon />} titulo="Plantillas" sub="para creadores" />
-                <Recurso icon={<BookIcon />} titulo="Guías" sub="rápidas" />
-                <Recurso icon={<ToolIcon />} titulo="Herramientas" sub="recomendadas" />
-              </Tarjeta>
             </aside>
           </div>
         </div>
