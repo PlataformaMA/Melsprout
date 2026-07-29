@@ -223,8 +223,8 @@ export function RutaAprendizaje({
                 </div>
               </div>
 
-              {/* Botones rápidos (solo íconos): Cofre + Brújula, debajo de "Tu progreso" */}
-              <div className="flex gap-3 mb-4">
+              {/* Botones rápidos (solo íconos): Cofre + Brújula, debajo de "Tu progreso", a la derecha */}
+              <div className="flex gap-3 mb-4 justify-end">
                 <BotonIcono img="/cofre.png" emoji="🧰" label="Cofre · recompensas" onClick={() => setCofreAbierto(true)} />
                 <BotonIcono img="/brujula.png" emoji="🧭" label="Brújula · tus mundos" onClick={() => setMundosAbierto(true)} />
               </div>
