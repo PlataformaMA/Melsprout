@@ -392,9 +392,9 @@ function CalendarioModal({ clases, asist, onAsistir, onClose }: {
 function ComoFuncionaPopup({ onClose }: { onClose: () => void }) {
   const items = [
     { icon: "📅", t: "Consulta la lista de próximas lives", s: "Título, quién lo da, fecha y hora en tu hora local." },
-    { icon: "🔔", t: "Recibe recordatorios", s: "1 hora antes por correo y WhatsApp." },
-    { icon: "📡", t: "Entra cuando esté en vivo", s: "Se abrirá la transmisión para que participes." },
-    { icon: "⭐", t: "Asiste al live semanal fijo", s: "El live de la semana. Asistir da +50 XP." },
+    { icon: "🔔", t: "Recibe recordatorios", s: "1 hora antes por correo y WhatsApp (vía Alexi)." },
+    { icon: "📡", t: "Entra cuando esté en vivo", s: "Se abrirá la transmisión en vivo para que puedas participar." },
+    { icon: "⭐", t: "Asiste al live semanal fijo", s: "El live de la semana con Melissa. Asistir da +50 XP." },
   ];
   return (
     <div className="fixed inset-0 z-[60] bg-black/40 grid place-items-center p-4" onClick={onClose}>
