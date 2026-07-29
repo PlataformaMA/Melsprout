@@ -7,6 +7,7 @@ import { UserMenu } from "@/components/UserMenu";
 import { RankingModal, type RankItem } from "@/components/RankingModal";
 import { CofreModal } from "@/components/CofreModal";
 import { RachaModal } from "@/components/RachaModal";
+import { RecursosModal } from "@/components/RecursosModal";
 import { VerificarBanner } from "@/components/VerificarBanner";
 import { type Clase, type ModuloCurso } from "@/lib/data";
 import { type RachaInfo } from "@/lib/racha-actions";
@@ -149,6 +150,7 @@ export function RutaAprendizaje({
   // ——— Mundos (cada módulo = un mundo temático) + Cofre de recompensas ———
   const [mundosAbierto, setMundosAbierto] = useState(false);
   const [cofreAbierto, setCofreAbierto] = useState(false);
+  const [recursosAbierto, setRecursosAbierto] = useState(false);
   const mundos = cursos.map((m, i) => {
     const start = cursos.slice(0, i).reduce((a, x) => a + x.clases.length, 0);
     const done = start + m.clases.length <= completadas;
@@ -195,17 +197,11 @@ export function RutaAprendizaje({
                       {clasesMod}/{totalMod} clases completadas · {retosMod}/{totalMod} retos completados
                     </p>
                   </div>
-                  {claseActual ? (
-                    <Link href={`/app/clase/${claseActual.id}`} className="shrink-0 flex items-center gap-2 bg-accent text-white rounded-full pl-4 pr-1.5 py-1.5 text-[13px] font-bold shadow hover:brightness-110 transition">
-                      Recursos
-                      <span className="w-6 h-6 rounded-full bg-white/25 grid place-items-center"><PlayMini /></span>
-                    </Link>
-                  ) : (
-                    <span className="shrink-0 flex items-center gap-2 bg-accent/60 text-white rounded-full pl-4 pr-1.5 py-1.5 text-[13px] font-bold">
-                      Recursos
-                      <span className="w-6 h-6 rounded-full bg-white/25 grid place-items-center"><PlayMini /></span>
-                    </span>
-                  )}
+                  <button onClick={() => setRecursosAbierto(true)}
+                    className="shrink-0 flex items-center gap-2 bg-accent text-white rounded-full pl-4 pr-1.5 py-1.5 text-[13px] font-bold shadow hover:brightness-110 active:scale-95 transition">
+                    Recursos
+                    <span className="w-6 h-6 rounded-full bg-white/25 grid place-items-center"><PlayMini /></span>
+                  </button>
                 </div>
 
                 {/* Barra con Octi como marcador + hexágono "Mundo" al final */}
@@ -346,6 +342,7 @@ export function RutaAprendizaje({
       {mundosAbierto && <MundosModal mundos={mundos} onClose={() => setMundosAbierto(false)} />}
       {rankingAbierto && <RankingModal ranking={ranking} onClose={() => setRankingAbierto(false)} />}
       {cofreAbierto && <CofreModal xp={xp} onClose={() => setCofreAbierto(false)} />}
+      {recursosAbierto && <RecursosModal onClose={() => setRecursosAbierto(false)} />}
       {rachaAbierto && rachaInfo && (
         <RachaModal info={rachaInfo} onClose={() => { setRachaAbierto(false); abrirRankingSiToca(); }} />
       )}
