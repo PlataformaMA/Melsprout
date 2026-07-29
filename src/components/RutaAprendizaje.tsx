@@ -223,6 +223,12 @@ export function RutaAprendizaje({
                 </div>
               </div>
 
+              {/* Botones rápidos (solo íconos): Cofre + Brújula, debajo de "Tu progreso" */}
+              <div className="flex gap-3 mb-4">
+                <BotonIcono img="/cofre.png" emoji="🧰" label="Cofre · recompensas" onClick={() => setCofreAbierto(true)} />
+                <BotonIcono img="/brujula.png" emoji="🧭" label="Brújula · tus mundos" onClick={() => setMundosAbierto(true)} />
+              </div>
+
               {/* Camino */}
               <div className="relative mx-auto w-full overflow-x-hidden" style={{ maxWidth: 640, height: altura }}>
                 <svg viewBox={`0 0 ${W} ${altura}`} className="absolute inset-0 w-full h-full" fill="none" preserveAspectRatio="none">
@@ -251,12 +257,6 @@ export function RutaAprendizaje({
             {/* ——— Sidebar derecha ——— */}
             <aside className="space-y-4 lg:sticky lg:top-5">
               {!emailVerificado && <VerificarBanner />}
-
-              {/* Botones rápidos (solo íconos): Cofre (recompensas) + Brújula (mundos) */}
-              <div className="flex gap-3">
-                <BotonIcono img="/cofre.png" emoji="🧰" label="Cofre · recompensas" onClick={() => setCofreAbierto(true)} />
-                <BotonIcono img="/brujula.png" emoji="🧭" label="Brújula · tus mundos" onClick={() => setMundosAbierto(true)} />
-              </div>
 
               {/* Top colaboradores + Tu ranking */}
               {topCreadores.length > 0 && (
