@@ -9,7 +9,6 @@ const ITEMS = [
   { href: "/app/ruta", label: "Ruta de aprendizaje", icon: "🗺️" },
   { href: "/app/vivo", label: "Clases en vivo", icon: "📡" },
   { href: "/app/comunidad", label: "Comunidad", icon: "👥" },
-  { href: "/app/retos", label: "Retos", icon: "🎯" },
   { href: "/app/perfil", label: "Mi perfil", icon: "🙂" },
 ];
 

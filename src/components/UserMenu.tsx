@@ -30,7 +30,6 @@ export function UserMenu({ avatarUrl, nombre, esAdmin = false }: { avatarUrl: st
               <Item href="/app/ruta" icon={<span>🗺️</span>}>Ruta de aprendizaje</Item>
               <Item href="/app/vivo" icon={<span>📡</span>}>Clases en vivo</Item>
               <Item href="/app/comunidad" icon={<span>👥</span>}>Comunidad</Item>
-              <Item href="/app/retos" icon={<span>🎯</span>}>Retos</Item>
               <div className="h-px bg-border my-1" />
             </div>
             <Item href="/app/perfil" icon={<UserIcon />}>Mi perfil</Item>
