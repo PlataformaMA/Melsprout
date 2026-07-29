@@ -608,29 +608,36 @@ function IslaMundoSvg({ apagado }: { apagado?: boolean }) {
 
 function AlgaRoja() {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src="/alga-roja.png" alt="" width={58} height={90} className="select-none" draggable={false} />;
+  return <img src="/alga-roja.png" alt="" width={92} height={140} className="select-none w-16 sm:w-24" draggable={false} />;
 }
 function CoralTurquesa() {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src="/coral-turquesa.png" alt="" width={96} height={80} className="select-none" draggable={false} />;
+  return <img src="/coral-turquesa.png" alt="" width={150} height={124} className="select-none w-28 sm:w-40" draggable={false} />;
 }
 function Burbujas() {
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src="/burbujas.png" alt="" width={52} height={44} className="select-none burbujas-anim" draggable={false} />
+    <img src="/burbujas.png" alt="" width={64} height={54} className="select-none burbujas-anim" draggable={false} />
   );
 }
 function DecorMar({ altura }: { altura: number }) {
-  // Decoraciones SIEMPRE en las orillas (fuera del rango de los nodos, 24%–76%) y detrás de ellos.
-  return (
-    <div className="absolute inset-0 pointer-events-none z-[1] overflow-hidden">
-      {/* Pegadas a la orilla y en los HUECOS entre filas (no a la altura de un nodo), para que no las tape ni las corte. */}
-      <div className="absolute mar-vaiven" style={{ left: 0, top: 240 }}><AlgaRoja /></div>
-      <div className="absolute mar-vaiven" style={{ right: 0, top: 489, animationDelay: "1s" }}><CoralTurquesa /></div>
-      <div className="absolute mar-vaiven" style={{ left: 0, top: altura * 0.64, animationDelay: ".5s" }}><AlgaRoja /></div>
-      <div className="absolute mar-vaiven" style={{ right: 0, top: altura - 120, animationDelay: "1.4s" }}><CoralTurquesa /></div>
-    </div>
-  );
+  // Decoraciones en las ORILLAS (izq/der) repartidas por TODO el camino,
+  // alternando alga · coral · burbujas. Van detrás de los nodos.
+  const decos: React.ReactNode[] = [];
+  const PASO = 250; // separación vertical entre decoraciones
+  let i = 0;
+  for (let y = 170; y < altura - 90; y += PASO) {
+    const izq = i % 2 === 0;
+    const tipo = i % 3; // 0 alga · 1 coral · 2 burbujas
+    decos.push(
+      <div key={i} className="absolute mar-vaiven"
+        style={{ [izq ? "left" : "right"]: 0, top: y, animationDelay: `${(i % 4) * 0.4}s` }}>
+        {tipo === 0 ? <AlgaRoja /> : tipo === 1 ? <CoralTurquesa /> : <Burbujas />}
+      </div>
+    );
+    i++;
+  }
+  return <div className="absolute inset-0 pointer-events-none z-[1] overflow-hidden">{decos}</div>;
 }
 
 function OctiRuta({ nombre }: { nombre: string }) {
