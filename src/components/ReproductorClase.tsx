@@ -57,6 +57,7 @@ export function ReproductorClase({
   // estimado (duracionMin), para no inflar el % y marcar "ya visto" de más.
   const [progreso, setProgreso] = useState(yaCompletada ? 100 : 0);
   const [terminado, setTerminado] = useState(false);
+  const [velocidad, setVelocidad] = useState(1); // velocidad de reproducción visible
   const [popup, setPopup] = useState(false);
   const [tabRep, setTabRep] = useState<"recursos" | "clases">("clases");
   const completadoRef = useRef(yaCompletada); // ya alcanzó el 85% (guarda anti-repetición)
@@ -176,6 +177,18 @@ export function ReproductorClase({
                         }
                       }}
                       className="w-full rounded-2xl aspect-video bg-black shadow-lg" />
+                  )}
+                  {/* Selector de velocidad — visible directo (solo en video propio) */}
+                  {video.tipo !== "youtube" && video.tipo !== "vimeo" && (
+                    <div className="absolute top-3 right-3 z-10 flex items-center gap-0.5 bg-black/55 backdrop-blur rounded-full p-1 shadow">
+                      {[1, 1.25, 1.5, 2].map((v) => (
+                        <button key={v} type="button"
+                          onClick={() => { setVelocidad(v); if (videoRef.current) videoRef.current.playbackRate = v; }}
+                          className={`text-[11px] font-bold rounded-full px-2 py-0.5 transition ${velocidad === v ? "bg-white text-accent" : "text-white/90 hover:bg-white/20"}`}>
+                          {v}x
+                        </button>
+                      ))}
+                    </div>
                   )}
                   <div className="mt-2 h-1.5 rounded-full bg-[#EEEBF6] overflow-hidden">
                     <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${Math.round(progreso)}%` }} />
