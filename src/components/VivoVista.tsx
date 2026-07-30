@@ -105,12 +105,12 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, gemas, racha }
           <h1 className="font-display text-2xl sm:text-[28px] font-extrabold">Clases en vivo</h1>
 
           {/* Banner Octi */}
-          <div className="mt-4 rounded-3xl p-5 flex items-center gap-4 shadow-sm" style={{ background: "linear-gradient(120deg,#F3F0FF,#FBFAFF)" }}>
+          <div className="mt-4 rounded-3xl p-6 sm:p-8 flex items-center gap-5 sm:gap-7 shadow-sm" style={{ background: "linear-gradient(120deg,#F3F0FF,#FBFAFF)" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/octi.png" alt="Octi" width={80} height={80} className="shrink-0 hidden sm:block" />
-            <div>
-              <p className="text-accent font-bold text-[15px]">Aprende en tiempo real con los mejores creadores.</p>
-              <p className="text-[13.5px] text-sub mt-1">Asistir da <b className="text-accent">+50 XP</b> (mínimo 10 minutos dentro; entrar y salirse no cuenta). 💎</p>
+            <img src="/octi.png" alt="Octi" className="shrink-0 w-24 sm:w-36 drop-shadow-lg" draggable={false} />
+            <div className="flex-1 min-w-0">
+              <p className="text-accent font-extrabold text-lg sm:text-2xl leading-snug">Aprende en tiempo real con los mejores creadores.</p>
+              <p className="text-sub text-[14px] sm:text-[15px] mt-1.5">Asistir da <b className="text-accent">+50 XP</b> (mínimo 10 minutos dentro; entrar y salirse no cuenta). 💎</p>
             </div>
           </div>
 
