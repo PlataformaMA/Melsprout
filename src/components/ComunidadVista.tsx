@@ -96,12 +96,12 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
             <div>
               {/* Banner Octi */}
-              <div className="rounded-3xl p-5 flex items-center gap-4 shadow-sm mb-5" style={{ background: "linear-gradient(120deg,#F3F0FF,#FBFAFF)" }}>
+              <div className="rounded-3xl p-6 sm:p-8 flex items-center gap-5 sm:gap-7 shadow-sm mb-5" style={{ background: "linear-gradient(120deg,#F3F0FF,#FBFAFF)" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/octi.png" alt="Octi" width={72} height={72} className="shrink-0 hidden sm:block" />
-                <div>
-                  <p className="text-accent font-extrabold text-[15px]">¡Se aprende mejor en comunidad!</p>
-                  <p className="text-[13.5px] text-sub mt-0.5">Comparte, conecta y crece. Publica y gana <b className="text-accent">+10 XP</b> 💎</p>
+                <img src="/octi.png" alt="Octi" className="shrink-0 w-24 sm:w-36 drop-shadow-lg" draggable={false} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-accent font-extrabold text-lg sm:text-2xl leading-snug">¡Se aprende mejor en comunidad!</p>
+                  <p className="text-sub text-[14px] sm:text-[15px] mt-1.5">Comparte, conecta y crece. Publica y gana <b className="text-accent">+10 XP</b> 💎</p>
                 </div>
               </div>
 
