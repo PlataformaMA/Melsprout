@@ -34,6 +34,11 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
   const completadasSet = await getClasesCompletadas();
   const completadasIds = modulo.clases.map((c) => c.id).filter((id) => completadasSet.has(id));
 
+  // Siguiente clase GLOBAL (a través de todos los módulos); null si es la última.
+  const orden = cursos.flatMap((m) => m.clases.map((c) => c.id));
+  const pos = orden.indexOf(clase.id);
+  const siguienteHref = pos >= 0 && pos < orden.length - 1 ? `/app/clase/${orden[pos + 1]}` : null;
+
   return (
     <ReproductorClase
       clase={clase}
@@ -46,6 +51,7 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
       vistoInicial={(prog?.segundos_vistos as number) ?? 0}
       completadasIds={completadasIds}
       videoUrl={videoUrl}
+      siguienteHref={siguienteHref}
     />
   );
 }

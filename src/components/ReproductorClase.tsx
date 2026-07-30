@@ -35,9 +35,9 @@ function fmtTiempo(seg: number): string {
 }
 
 export function ReproductorClase({
-  clase, modulo, avatarUrl, nombre, gemas, racha, yaCompletada = false, vistoInicial = 0, completadasIds = [], videoUrl = null,
+  clase, modulo, avatarUrl, nombre, gemas, racha, yaCompletada = false, vistoInicial = 0, completadasIds = [], videoUrl = null, siguienteHref = null,
 }: {
-  clase: Clase; modulo: ModuloCurso; avatarUrl: string | null; nombre: string; gemas: number; racha: number; yaCompletada?: boolean; vistoInicial?: number; completadasIds?: string[]; videoUrl?: string | null;
+  clase: Clase; modulo: ModuloCurso; avatarUrl: string | null; nombre: string; gemas: number; racha: number; yaCompletada?: boolean; vistoInicial?: number; completadasIds?: string[]; videoUrl?: string | null; siguienteHref?: string | null;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const vistoRef = useRef(vistoInicial);   // segundos REALMENTE vistos (arranca de lo ya guardado)
@@ -132,7 +132,7 @@ export function ReproductorClase({
         <PopupClaseCompletada
           completadas={posicion}
           total={total}
-          onContinuar={() => { setPopup(false); router.push(siguiente ? `/app/clase/${siguiente.id}` : "/app/ruta"); }}
+          onContinuar={() => { setPopup(false); router.push(siguienteHref ?? "/app/ruta"); }}
           onClose={() => setPopup(false)}
         />
       )}
@@ -231,11 +231,11 @@ export function ReproductorClase({
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Link href="/app/ruta" className="flex items-center gap-2 bg-accent text-white font-bold text-sm rounded-xl px-5 py-2.5 hover:brightness-110 transition shadow-sm shadow-accent/30">
+                  <Link href={`/app/reto/${clase.id}`} className="flex items-center gap-2 bg-accent text-white font-bold text-sm rounded-xl px-5 py-2.5 hover:brightness-110 transition shadow-sm shadow-accent/30">
                     <SparkleMini /> Continuar al reto
                   </Link>
-                  {(terminado || completadas.has(clase.id)) && siguiente && (
-                    <Link href={`/app/clase/${siguiente.id}`} className="flex items-center gap-2 bg-green text-white border border-green rounded-xl px-4 py-2.5 font-bold text-sm hover:brightness-110 transition shadow-sm">
+                  {(terminado || completadas.has(clase.id)) && siguienteHref && (
+                    <Link href={siguienteHref} className="flex items-center gap-2 bg-green text-white border border-green rounded-xl px-4 py-2.5 font-bold text-sm hover:brightness-110 transition shadow-sm">
                       Siguiente clase <NextIcon small />
                     </Link>
                   )}
