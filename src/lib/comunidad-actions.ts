@@ -122,3 +122,70 @@ export async function crearComentario(
   if (error) return { error: "No se pudo publicar el comentario." };
   return { ok: true };
 }
+
+// ————— Actividad reciente (datos REALES: retos completados + nuevos miembros) —————
+export type Actividad = {
+  id: string;
+  nombre: string;
+  avatar: string | null;
+  texto: string;   // "completó el reto «X»" | "se unió a Melsprout"
+  xp?: number;
+  hace: string;
+};
+
+function haceCorto(iso: string): string {
+  const min = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (min < 1) return "ahora";
+  if (min < 60) return `hace ${min}m`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `hace ${h}h`;
+  const d = Math.floor(h / 24);
+  return d === 1 ? "ayer" : `hace ${d}d`;
+}
+
+export async function getActividadReciente(): Promise<Actividad[]> {
+  const admin = createAdminClient();
+  const items: (Actividad & { ts: number })[] = [];
+
+  // Retos completados (publicados, no rechazados)
+  const { data: subs } = await admin
+    .from("reto_submissions")
+    .select("user_id, reto_id, updated_at, revision")
+    .eq("estado", "publicado")
+    .order("updated_at", { ascending: false })
+    .limit(10);
+  const uids = [...new Set((subs || []).filter((s) => s.revision !== "rechazado").map((s) => s.user_id as string))];
+
+  // Nuevos miembros
+  const { data: nuevos } = await admin
+    .from("profiles")
+    .select("id, full_name, avatar_url, created_at")
+    .eq("onboarding_completo", true)
+    .order("created_at", { ascending: false })
+    .limit(5);
+  const nuevosIds = (nuevos || []).map((n) => n.id as string);
+
+  const { data: perfiles } = await admin.from("profiles").select("id, full_name, avatar_url").in("id", [...uids, ...nuevosIds]);
+  const pMap = new Map((perfiles || []).map((p) => [p.id as string, p]));
+
+  const retoCache = new Map<string, { titulo: string; xp: number }>();
+  for (const s of subs || []) {
+    if (s.revision === "rechazado") continue;
+    const rid = s.reto_id as string;
+    if (!retoCache.has(rid)) {
+      const r = await getRetoUnificado(rid);
+      retoCache.set(rid, { titulo: r?.titulo || rid, xp: r?.xp || 50 });
+    }
+    const info = retoCache.get(rid)!;
+    const p = pMap.get(s.user_id as string);
+    const ts = new Date(s.updated_at as string).getTime();
+    items.push({ id: `r-${s.user_id}-${rid}`, nombre: (p?.full_name as string) || "Creador", avatar: (p?.avatar_url as string) || null, texto: `completó el reto «${info.titulo}»`, xp: info.xp, hace: haceCorto(s.updated_at as string), ts });
+  }
+  for (const n of nuevos || []) {
+    const ts = new Date(n.created_at as string).getTime();
+    items.push({ id: `n-${n.id}`, nombre: (n.full_name as string) || "Creador", avatar: (n.avatar_url as string) || null, texto: "se unió a Melsprout", hace: haceCorto(n.created_at as string), ts });
+  }
+
+  items.sort((a, b) => b.ts - a.ts);
+  return items.slice(0, 6).map((a) => ({ id: a.id, nombre: a.nombre, avatar: a.avatar, texto: a.texto, xp: a.xp, hace: a.hace }));
+}

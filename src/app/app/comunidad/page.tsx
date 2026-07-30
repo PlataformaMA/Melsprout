@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getPerfil } from "@/lib/perfil-actions";
 import { getForoPosts, getTopColaboradores } from "@/lib/foros-actions";
 import { listarRetosComunidad } from "@/lib/comunidad-retos-actions";
+import { getActividadReciente } from "@/lib/comunidad-actions";
 import { ComunidadVista } from "@/components/ComunidadVista";
 
 export default async function ComunidadPage() {
@@ -16,10 +17,11 @@ export default async function ComunidadPage() {
   if (!perfil) redirect("/onboarding");
   if (!perfil.onboarding_completo) redirect("/onboarding");
 
-  const [posts, top, retosComunidad] = await Promise.all([
+  const [posts, top, retosComunidad, actividad] = await Promise.all([
     getForoPosts("General"),
     getTopColaboradores(),
     listarRetosComunidad(),
+    getActividadReciente(),
   ]);
 
   return (
@@ -27,6 +29,7 @@ export default async function ComunidadPage() {
       postsIniciales={posts}
       topColaboradores={top}
       retosComunidad={retosComunidad}
+      actividad={actividad}
       nombre={perfil.full_name ?? "Creador"}
       avatarUrl={perfil.avatar_url}
       gemas={perfil.gemas}
