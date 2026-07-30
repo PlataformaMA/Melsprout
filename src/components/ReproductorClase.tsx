@@ -168,6 +168,7 @@ export function ReproductorClase({
                   ) : (
                     <video ref={videoRef} src={videoUrl} controls playsInline
                       onTimeUpdate={onTimeUpdate}
+                      onEnded={() => setTerminado(true)}
                       onLoadedMetadata={(e) => {
                         const v = e.currentTarget;
                         if (v.duration > 0 && vistoInicial > 0) {

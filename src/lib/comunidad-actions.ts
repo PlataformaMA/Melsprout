@@ -165,7 +165,8 @@ export async function getActividadReciente(): Promise<Actividad[]> {
     .limit(5);
   const nuevosIds = (nuevos || []).map((n) => n.id as string);
 
-  const { data: perfiles } = await admin.from("profiles").select("id, full_name, avatar_url").in("id", [...uids, ...nuevosIds]);
+  const idsPerfiles = [...uids, ...nuevosIds];
+  const { data: perfiles } = await admin.from("profiles").select("id, full_name, avatar_url").in("id", idsPerfiles.length ? idsPerfiles : ["_"]);
   const pMap = new Map((perfiles || []).map((p) => [p.id as string, p]));
 
   const retoCache = new Map<string, { titulo: string; xp: number }>();
