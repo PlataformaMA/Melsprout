@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type Perfil, guardarNicho } from "@/lib/perfil-actions";
+import { type Perfil, guardarNicho, guardarCampos } from "@/lib/perfil-actions";
 import { NICHOS, banderaUrl } from "@/lib/catalogos";
 import { nivelPorXP, TOTAL_CLASES } from "@/lib/data";
 import { AvatarUploader } from "@/components/AvatarUploader";
@@ -51,6 +51,17 @@ const REDES = [
 export function PerfilVista({ perfil, creadoEn, insightiq }: { perfil: Perfil; creadoEn: string | null; insightiq?: InsightIQProps | null }) {
   const [tab, setTab] = useState<"Resumen" | "Métricas">("Resumen");
   const { abrir, cargando, disponible } = useConectarInsightIQ(insightiq ?? null);
+
+  // Editar "Sobre mí" con el lápiz.
+  const [editBio, setEditBio] = useState(false);
+  const [bioGuardada, setBioGuardada] = useState(perfil.bio ?? "");
+  const [bioEdit, setBioEdit] = useState("");
+  const [guardandoBio, startBio] = useTransition();
+  const guardarBio = () => startBio(async () => {
+    await guardarCampos({ bio: bioEdit });
+    setBioGuardada(bioEdit.trim());
+    setEditBio(false);
+  });
 
   // Al volver de conectar una red (redirect de InsightIQ), refrescar para que
   // aparezcan las métricas sin tener que recargar a mano (incluye caché móvil bfcache).
@@ -140,11 +151,39 @@ export function PerfilVista({ perfil, creadoEn, insightiq }: { perfil: Perfil; c
 
               {/* Sobre mí */}
               <div className="mt-6">
-                <h2 className="font-display text-lg font-extrabold mb-2">Sobre mi</h2>
-                <p className="text-sub text-sm leading-relaxed whitespace-pre-line">
-                  {perfil.bio || "Cuéntale al mundo quién eres y qué creas. ✍️"}
-                </p>
+                <div className="flex items-center gap-2 mb-2">
+                  <h2 className="font-display text-lg font-extrabold">Sobre mi</h2>
+                  {!editBio && (
+                    <button onClick={() => { setBioEdit(bioGuardada); setEditBio(true); }} aria-label="Editar sobre mí"
+                      className="text-hint hover:text-accent transition"><LapizIcon /></button>
+                  )}
+                </div>
+                {editBio ? (
+                  <div>
+                    <textarea value={bioEdit} onChange={(e) => setBioEdit(e.target.value)} maxLength={400} rows={4}
+                      autoFocus placeholder="Cuéntale al mundo quién eres y qué creas."
+                      className="w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 transition" />
+                    <div className="flex items-center gap-2 mt-2">
+                      <button onClick={guardarBio} disabled={guardandoBio}
+                        className="bg-accent text-white rounded-lg px-4 py-2 text-[13px] font-bold hover:brightness-110 disabled:opacity-60 transition">
+                        {guardandoBio ? "Guardando…" : "Guardar"}
+                      </button>
+                      <button onClick={() => setEditBio(false)} disabled={guardandoBio}
+                        className="rounded-lg px-4 py-2 text-[13px] font-semibold text-sub hover:bg-bg transition">Cancelar</button>
+                      <span className="text-[11px] text-hint ml-auto">{bioEdit.length}/400</span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sub text-sm leading-relaxed whitespace-pre-line">
+                    {bioGuardada || "Cuéntale al mundo quién eres y qué creas. ✍️"}
+                  </p>
+                )}
                 <p className="text-hint text-[13px] mt-4">Se unió en {mesAnio(creadoEn)}</p>
+              </div>
+
+              {/* En MÓVIL: Redes sociales justo debajo de "Sobre mí" */}
+              <div className="mt-6 lg:hidden">
+                <RedesCard perfil={perfil} REDES={REDES} tieneRedes={tieneRedes} abrir={abrir} cargando={cargando} disponible={disponible} />
               </div>
 
               {/* Tabs */}
@@ -162,57 +201,10 @@ export function PerfilVista({ perfil, creadoEn, insightiq }: { perfil: Perfil; c
 
             {/* ═══════ Columna derecha ═══════ */}
             <aside className="space-y-6 lg:sticky lg:top-5">
-              {/* Redes sociales — cuentas REALES del usuario */}
-              <section className="bg-surface border border-border rounded-3xl p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-display font-extrabold">Redes sociales</h2>
-                  <span className="text-[11px] font-semibold rounded-full px-2.5 py-1 text-sub bg-bg">
-                    {tieneRedes ? "Conectadas" : "Conecta"}
-                  </span>
-                </div>
-                <div className="space-y-4">
-                  {REDES.map((r) => {
-                    const handle = perfil.metricas?.[r.key as string]?.username || perfil.redes?.[r.key as string];
-                    return (
-                      <div key={r.key} className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-2xl grid place-items-center text-white shrink-0"
-                          style={r.color === "grad-ig" ? { background: "linear-gradient(45deg,#F58529,#DD2A7B,#8134AF)" } : { background: r.color }}>
-                          {r.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-bold text-[14px] leading-tight">{r.nombre}</div>
-                          <div className="text-[13px] text-sub truncate">{handle ? `@${handle}` : "Sin conectar"}</div>
-                        </div>
-                        {handle ? (
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="w-6 h-6 rounded-full bg-green text-white grid place-items-center text-[12px]">✓</span>
-                            <a
-                              href={`/api/insightiq/disconnect?provider=${r.key}`}
-                              onClick={(e) => { if (!confirm(`¿Desconectar ${r.nombre}? Dejarás de ver sus métricas.`)) e.preventDefault(); }}
-                              className="text-[11px] font-semibold text-sub hover:text-red-500 transition"
-                            >
-                              Desconectar
-                            </a>
-                          </div>
-                        ) : disponible ? (
-                          <button
-                            type="button"
-                            disabled={cargando}
-                            onClick={() => abrir(r.wp)}
-                            className="text-[12px] font-bold text-accent bg-accent-soft rounded-lg px-3 py-1.5 shrink-0 hover:brightness-105 transition disabled:opacity-60"
-                          >
-                            {cargando ? "Abriendo…" : "Conectar"}
-                          </button>
-                        ) : (
-                          <a href={`/api/${r.key}/connect`} className="text-[12px] font-bold text-accent bg-accent-soft rounded-lg px-3 py-1.5 shrink-0 hover:brightness-105 transition">
-                            Conectar
-                          </a>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
+              {/* Redes sociales — solo DESKTOP (en móvil va debajo de "Sobre mí") */}
+              <div className="hidden lg:block">
+                <RedesCard perfil={perfil} REDES={REDES} tieneRedes={tieneRedes} abrir={abrir} cargando={cargando} disponible={disponible} />
+              </div>
 
               {/* Completa tu perfil (anillo) */}
               <section className="rounded-3xl p-6 shadow-sm border border-accent/10" style={{ background: "linear-gradient(160deg,#F3F0FF,#FBFAFF)" }}>
@@ -550,6 +542,59 @@ function StatBars() { return <svg width="20" height="20" viewBox="0 0 24 24" fil
 function PinIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z" /><circle cx="12" cy="10" r="2.5" /></svg>; }
 function BuildingIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="3" width="12" height="18" rx="1.5" /><path d="M16 8h4v13M8 7h1M12 7h1M8 11h1M12 11h1M8 15h1M12 15h1" /></svg>; }
 function BarsIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 20v-5M10 20V8M15 20v-9M20 20V5" /></svg>; }
+type RedItem = { key: string; nombre: string; color: string; icon: React.ReactNode; wp: string };
+function RedesCard({ perfil, REDES, tieneRedes, abrir, cargando, disponible }: {
+  perfil: Perfil; REDES: readonly RedItem[]; tieneRedes: boolean;
+  abrir: (wp: string) => void; cargando: boolean; disponible: boolean;
+}) {
+  return (
+    <section className="bg-surface border border-border rounded-3xl p-5 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-display font-extrabold">Redes sociales</h2>
+        <span className="text-[11px] font-semibold rounded-full px-2.5 py-1 text-sub bg-bg">
+          {tieneRedes ? "Conectadas" : "Conecta"}
+        </span>
+      </div>
+      <div className="space-y-4">
+        {REDES.map((r) => {
+          const handle = perfil.metricas?.[r.key]?.username || perfil.redes?.[r.key];
+          return (
+            <div key={r.key} className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl grid place-items-center text-white shrink-0"
+                style={r.color === "grad-ig" ? { background: "linear-gradient(45deg,#F58529,#DD2A7B,#8134AF)" } : { background: r.color }}>
+                {r.icon}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-bold text-[14px] leading-tight">{r.nombre}</div>
+                <div className="text-[13px] text-sub truncate">{handle ? `@${handle}` : "Sin conectar"}</div>
+              </div>
+              {handle ? (
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="w-6 h-6 rounded-full bg-green text-white grid place-items-center text-[12px]">✓</span>
+                  <a href={`/api/insightiq/disconnect?provider=${r.key}`}
+                    onClick={(e) => { if (!confirm(`¿Desconectar ${r.nombre}? Dejarás de ver sus métricas.`)) e.preventDefault(); }}
+                    className="text-[11px] font-semibold text-sub hover:text-red-500 transition">Desconectar</a>
+                </div>
+              ) : disponible ? (
+                <button type="button" disabled={cargando} onClick={() => abrir(r.wp)}
+                  className="text-[12px] font-bold text-accent bg-accent-soft rounded-lg px-3 py-1.5 shrink-0 hover:brightness-105 transition disabled:opacity-60">
+                  {cargando ? "Abriendo…" : "Conectar"}
+                </button>
+              ) : (
+                <a href={`/api/${r.key}/connect`} className="text-[12px] font-bold text-accent bg-accent-soft rounded-lg px-3 py-1.5 shrink-0 hover:brightness-105 transition">Conectar</a>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function LapizIcon() {
+  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>;
+}
+
 function InstagramIcon() { return <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" /></svg>; }
 function FacebookIcon() { return <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M14 9V7c0-1 .3-1.5 1.6-1.5H17V2.2C16.6 2.1 15.5 2 14.4 2 11.8 2 10 3.6 10 6.5V9H7.5v3.5H10V22h4v-9.5h2.7l.4-3.5z" /></svg>; }
 function TikTokIcon() { return <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3c.3 2.3 1.9 4 4 4.3v3c-1.5 0-2.9-.4-4-1.1V15a6 6 0 1 1-6-6c.3 0 .7 0 1 .1v3.1a3 3 0 1 0 2 2.8V3z" /></svg>; }
