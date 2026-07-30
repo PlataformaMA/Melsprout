@@ -61,7 +61,6 @@ export function ReproductorClase({
   const [popup, setPopup] = useState(false);
   const [tabRep, setTabRep] = useState<"recursos" | "clases">("clases");
   const completadoRef = useRef(yaCompletada); // ya alcanzó el 85% (guarda anti-repetición)
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const idx = modulo.clases.findIndex((c) => c.id === clase.id);
   const siguiente = idx >= 0 ? modulo.clases[idx + 1] : undefined;
@@ -309,9 +308,6 @@ export function ReproductorClase({
                       <span className="flex-1 text-sm font-semibold">{titleCase(clase.titulo).split(" ")[0]}.Pdf</span>
                       <button className="text-accent" aria-label="Descargar"><DownloadIcon /></button>
                     </div>
-                    <button onClick={() => fileRef.current?.click()} className="w-full flex items-center justify-center gap-2 border border-dashed border-accent/40 text-accent font-bold text-sm rounded-xl py-2.5 mt-3 hover:bg-accent-soft transition">
-                      <UploadIcon /> Subir recurso
-                    </button>
                   </div>
                 )}
               </div>
@@ -380,12 +376,6 @@ export function ReproductorClase({
                   <span className="flex-1 text-sm font-semibold">{titleCase(clase.titulo).split(" ")[0]}.Pdf</span>
                   <button className="text-accent" aria-label="Descargar"><DownloadIcon /></button>
                 </div>
-                {/* Subir recurso */}
-                <button onClick={() => fileRef.current?.click()}
-                  className="w-full flex items-center justify-center gap-2 border border-dashed border-accent/40 text-accent font-bold text-sm rounded-xl py-2.5 mt-3 hover:bg-accent-soft transition">
-                  <UploadIcon /> Subir recurso
-                </button>
-                <input ref={fileRef} type="file" className="hidden" />
               </section>
             </aside>
           </div>
