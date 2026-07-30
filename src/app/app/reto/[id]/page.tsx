@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getPerfil } from "@/lib/perfil-actions";
 import { getRetoUnificado } from "@/lib/retos-db";
 import { getRetoSubmission } from "@/lib/retos-actions";
+import { getCursos } from "@/lib/cursos-db";
 import { RetoVista } from "@/components/RetoVista";
 
 export default async function RetoPage({ params }: { params: Promise<{ id: string }> }) {
@@ -23,6 +24,13 @@ export default async function RetoPage({ params }: { params: Promise<{ id: strin
 
   const guardado = await getRetoSubmission(id);
 
+  // Siguiente clase (para el botón "Ver siguiente clase"): la que sigue a esta
+  // en el orden del curso; si es la última, vuelve a la Ruta.
+  const cursos = await getCursos();
+  const orden = cursos.flatMap((m) => m.clases.map((c) => c.id));
+  const idx = orden.indexOf(reto.claseId);
+  const siguienteHref = idx >= 0 && idx < orden.length - 1 ? `/app/clase/${orden[idx + 1]}` : "/app/ruta";
+
   return (
     <RetoVista
       reto={reto}
@@ -33,6 +41,7 @@ export default async function RetoPage({ params }: { params: Promise<{ id: strin
         gemas: perfil.gemas,
       }}
       guardado={guardado}
+      siguienteHref={siguienteHref}
     />
   );
 }

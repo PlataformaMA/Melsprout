@@ -25,10 +25,12 @@ export function RetoVista({
   reto,
   perfil,
   guardado,
+  siguienteHref = "/app/ruta",
 }: {
   reto: RetoDef;
   perfil: Perfil;
   guardado: RetoGuardado;
+  siguienteHref?: string;
 }) {
   const router = useRouter();
   const [resp, setResp] = useState<Record<string, string>>(guardado?.respuestas || {});
@@ -414,7 +416,7 @@ export function RetoVista({
                     <MapMini /> Volver al camino
                   </Link>
                 )}
-                <Link href="/app/ruta" className="flex items-center justify-center gap-2 bg-accent text-white rounded-xl px-4 py-3 text-[14px] font-bold hover:brightness-110 transition">
+                <Link href={siguienteHref} className="flex items-center justify-center gap-2 bg-accent text-white rounded-xl px-4 py-3 text-[14px] font-bold hover:brightness-110 transition">
                   Ver siguiente clase ›
                 </Link>
               </div>
