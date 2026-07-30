@@ -13,10 +13,12 @@ import {
 } from "@/lib/foros-actions";
 import { type RetoComunidad } from "@/lib/comunidad-retos-actions";
 
+type Actividad = { id: string; nombre: string; avatar: string | null; texto: string; xp?: number; hace: string };
 type Props = {
   postsIniciales: ForoPost[];
   topColaboradores: { nombre: string; avatar: string | null; xp: number }[];
   retosComunidad: RetoComunidad[];
+  actividad?: Actividad[];
   nombre: string; avatarUrl: string | null; gemas: number; racha: number;
 };
 
@@ -27,7 +29,7 @@ function haceRato(iso: string): string {
   return `hace ${Math.floor(h / 24)} d`;
 }
 
-export function ComunidadVista({ postsIniciales, topColaboradores, retosComunidad, nombre, avatarUrl, gemas, racha }: Props) {
+export function ComunidadVista({ postsIniciales, topColaboradores, retosComunidad, actividad = [], nombre, avatarUrl, gemas, racha }: Props) {
   const router = useRouter();
   const [tab, setTab] = useState<"foros" | "retos">("foros");
   const [cat, setCat] = useState("General");
@@ -229,6 +231,29 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
                   ))}
                 </div>
               </section>
+
+              {/* Actividad reciente (datos reales) */}
+              {actividad.length > 0 && (
+                <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
+                  <h3 className="font-display font-extrabold text-[15px] mb-3">Actividad reciente</h3>
+                  <div className="space-y-3.5">
+                    {actividad.map((a) => (
+                      <div key={a.id} className="flex items-start gap-2.5">
+                        {a.avatar ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={a.avatar} alt={a.nombre} className="w-8 h-8 rounded-full object-cover shrink-0" />
+                        ) : <span className="w-8 h-8 rounded-full bg-accent/15 text-accent grid place-items-center text-[11px] font-bold shrink-0">{a.nombre.slice(0, 2).toUpperCase()}</span>}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] leading-snug"><b>{a.nombre}</b> {a.texto}</p>
+                          <p className="text-[12px] text-sub mt-0.5">
+                            {a.xp ? <b className="text-accent">+{a.xp} XP</b> : null}{a.xp ? " · " : ""}{a.hace}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
             </aside>
           </div>
         </div>
