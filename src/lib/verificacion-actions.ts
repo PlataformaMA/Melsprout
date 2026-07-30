@@ -28,7 +28,7 @@ function plantilla(nombre: string, link: string): string {
       <div style="padding:16px 32px 0;font-size:15px;color:#4B4B63;line-height:1.6;">
         <p style="margin:0 0 14px;">${hola}</p>
         <p style="margin:0 0 14px;">Gracias por registrarte en Melsprout.</p>
-        <p style="margin:0 0 22px;">Verifica tu correo para aparecer en el ranking y recibir tu diploma:</p>
+        <p style="margin:0 0 22px;">Verifica tu correo para <b>activar tu cuenta</b> y empezar a aprender en Melsprout:</p>
       </div>
       <div style="padding:0 32px;"><a href="${link}" style="display:block;text-align:center;padding:14px 24px;font-size:15px;font-weight:700;color:#fff;background:#7C3AED;text-decoration:none;border-radius:12px;">Verificar mi correo</a></div>
       <div style="padding:22px 32px 0;font-size:13px;color:#8A8AA0;line-height:1.6;">

@@ -3,8 +3,7 @@
 import { useState, useTransition } from "react";
 import { reenviarVerificacion } from "@/lib/verificacion-actions";
 
-// Banner para usuarios que aún NO verificaron su correo: pueden usar la app,
-// pero no aparecen en el ranking ni reciben diploma hasta verificar.
+// Banner para usuarios que aún NO verificaron su correo.
 export function VerificarBanner() {
   const [enviado, setEnviado] = useState(false);
   const [pendiente, startTransition] = useTransition();
@@ -21,7 +20,7 @@ export function VerificarBanner() {
       <div className="flex-1 min-w-0">
         <div className="font-bold text-[13.5px] text-text leading-tight">Verifica tu correo</div>
         <p className="text-[12.5px] text-sub mt-0.5">
-          Para aparecer en el <b>ranking</b> y recibir tu <b>diploma</b>, verifica tu correo.
+          Verifica tu correo para <b>activar tu cuenta</b> y acceder a todo Melsprout.
         </p>
         {enviado ? (
           <p className="text-[12.5px] text-green font-semibold mt-2">✓ Te reenviamos el correo. Revisa tu bandeja y el spam.</p>
