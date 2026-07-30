@@ -450,11 +450,11 @@ function Breakdown({ titulo, icon, filas }: { titulo: string; icon: React.ReactN
 // ————————————— Tab Resumen —————————————
 function TabResumen({ perfil, nivel }: { perfil: Perfil; nivel: ReturnType<typeof nivelPorXP> }) {
   const badges = [
-    { emoji: "🔥", bg: "linear-gradient(135deg,#a78bfa,#7c3aed)" },
-    { emoji: "🎬", bg: "linear-gradient(135deg,#60a5fa,#2563eb)" },
-    { emoji: "📸", bg: "linear-gradient(135deg,#34d399,#059669)" },
-    { emoji: "❤️", bg: "linear-gradient(135deg,#f472b6,#db2777)" },
-    { emoji: "👑", bg: "linear-gradient(135deg,#fbbf24,#d97706)" },
+    { img: "/badges/fuego.png", nombre: "Racha encendida" },
+    { img: "/badges/video.png", nombre: "Creador de video" },
+    { img: "/badges/camara.png", nombre: "Fotógrafo" },
+    { img: "/badges/corazon.png", nombre: "Favorito de la comunidad" },
+    { img: "/badges/corona.png", nombre: "Top creador" },
   ];
   const habilidades = [
     { nombre: "Creación De Contenido", nivel: 42 }, { nombre: "Grabación Y Edición", nivel: 30 },
@@ -476,8 +476,8 @@ function TabResumen({ perfil, nivel }: { perfil: Perfil; nivel: ReturnType<typeo
         <h3 className="font-display text-lg font-extrabold mb-3">Badgeds</h3>
         <div className="flex flex-wrap gap-3">
           {badges.map((b, i) => (
-            <div key={i} className="w-14 h-14 grid place-items-center text-white text-xl"
-              style={{ background: b.bg, clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)" }}>{b.emoji}</div>
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={i} src={b.img} alt={b.nombre} title={b.nombre} className="w-16 h-16 object-contain select-none" draggable={false} />
           ))}
         </div>
       </div>
