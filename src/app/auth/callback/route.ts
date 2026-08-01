@@ -23,9 +23,18 @@ export async function GET(request: Request) {
       // Enlace inválido o expirado → pantalla dedicada.
       return NextResponse.redirect(`${origin}/enlace-expirado`);
     }
-    // La recuperación de contraseña continúa a crear la nueva; el resto muestra
-    // la pantalla "¡Correo verificado!".
+    // La recuperación de contraseña continúa a crear la nueva.
     if (type === "recovery") return NextResponse.redirect(`${origin}/restablecer`);
+
+    // Confirmación de cuenta: marcamos email_verificado=true (para ranking/insignia).
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { createAdminClient } = await import("@/lib/supabase/admin");
+        await createAdminClient().from("profiles").update({ email_verificado: true }).eq("id", user.id);
+      }
+    } catch {}
+
     return NextResponse.redirect(`${origin}/verificado`);
   }
 
