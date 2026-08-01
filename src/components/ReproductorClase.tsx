@@ -58,6 +58,7 @@ export function ReproductorClase({
   const [progreso, setProgreso] = useState(yaCompletada ? 100 : 0);
   const [terminado, setTerminado] = useState(false);
   const [velocidad, setVelocidad] = useState(1); // velocidad de reproducción visible
+  const [velExpand, setVelExpand] = useState(false); // el selector de velocidad colapsa/expande
   const [popup, setPopup] = useState(false);
   const [tabRep, setTabRep] = useState<"recursos" | "clases">("clases");
   const completadoRef = useRef(yaCompletada); // ya alcanzó el 85% (guarda anti-repetición)
@@ -178,16 +179,25 @@ export function ReproductorClase({
                       }}
                       className="w-full rounded-2xl aspect-video bg-black shadow-lg" />
                   )}
-                  {/* Selector de velocidad — DENTRO del reproductor (esquina sup. der.), solo video propio MP4 */}
+                  {/* Selector de velocidad — colapsable (chico por defecto, se expande al tocar) */}
                   {video.tipo !== "youtube" && video.tipo !== "vimeo" && (
-                    <div className="absolute top-3 right-3 z-10 flex items-center gap-0.5 bg-black/60 backdrop-blur rounded-full px-1 py-1 shadow-lg">
-                      {[1, 1.25, 1.5, 2].map((v) => (
-                        <button key={v} type="button"
-                          onClick={() => { setVelocidad(v); if (videoRef.current) videoRef.current.playbackRate = v; }}
-                          className={`text-[11px] sm:text-[12px] font-bold rounded-full px-2 sm:px-2.5 py-0.5 transition ${velocidad === v ? "bg-white text-accent" : "text-white/90 hover:bg-white/25"}`}>
-                          {v}x
+                    <div className="absolute top-3 right-3 z-10">
+                      {velExpand ? (
+                        <div className="flex items-center gap-0.5 bg-black/60 backdrop-blur rounded-full px-1 py-1 shadow-lg">
+                          {[1, 1.25, 1.5, 2].map((v) => (
+                            <button key={v} type="button"
+                              onClick={() => { setVelocidad(v); if (videoRef.current) videoRef.current.playbackRate = v; setVelExpand(false); }}
+                              className={`text-[11px] sm:text-[12px] font-bold rounded-full px-2 sm:px-2.5 py-0.5 transition ${velocidad === v ? "bg-white text-accent" : "text-white/90 hover:bg-white/25"}`}>
+                              {v}x
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <button type="button" onClick={() => setVelExpand(true)} title="Velocidad de reproducción"
+                          className="flex items-center gap-1 bg-black/55 backdrop-blur rounded-full px-2.5 py-1 shadow-lg text-white text-[11px] sm:text-[12px] font-bold hover:bg-black/70 transition">
+                          <GaugeIcon /> {velocidad}x
                         </button>
-                      ))}
+                      )}
                     </div>
                   )}
                   <div className="mt-2 h-1.5 rounded-full bg-[#EEEBF6] overflow-hidden">
@@ -457,6 +467,7 @@ function PlayIcon({ big }: { big?: boolean }) { const s = big ? 30 : 20; return 
 function PauseIcon({ big }: { big?: boolean }) { const s = big ? 30 : 20; return <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>; }
 function NextIcon({ small }: { small?: boolean }) { const s = small ? 16 : 20; return <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5.5l10 6.5-10 6.5z" /></svg>; }
 function BellIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#71717a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" /></svg>; }
+function GaugeIcon() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" /><path d="m13.4 10.6 3.6-3.6" /><path d="M4.5 18a9 9 0 1 1 15 0" /></svg>; }
 function DocIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2h8l4 4v16H6z" /><path d="M14 2v4h4M9 13h6M9 17h6" /></svg>; }
 function DownloadIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12M7 11l5 5 5-5M4 21h16" /></svg>; }
 function UploadIcon() { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21V9M7 13l5-5 5 5M4 5h16" /></svg>; }
