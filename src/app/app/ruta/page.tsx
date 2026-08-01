@@ -21,11 +21,10 @@ export default async function RutaPage() {
   if (!perfil) redirect("/onboarding");
   if (!perfil.onboarding_completo) redirect("/onboarding");
 
-  // ¿El usuario ya verificó su correo? (gatea aparecer en el ranking).
+  // ¿El usuario ya verificó su correo? Usamos la verificación REAL de Supabase
+  // (email_confirmed_at): así el banner desaparece apenas confirman, siempre.
   const admin = createAdminClient();
-  const { data: verifRow } = await admin
-    .from("profiles").select("email_verificado").eq("id", user.id).maybeSingle();
-  const emailVerificado = !!verifRow?.email_verificado;
+  const emailVerificado = !!user.email_confirmed_at;
 
   // Top 5 creadores por XP — SOLO verificados (así los robots no ensucian el ranking).
   const { data: topRows } = await admin
