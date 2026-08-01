@@ -78,7 +78,7 @@ export default async function RutaPage() {
 
   const tieneRedes = ["instagram", "tiktok", "youtube"].some((k) => perfil.redes?.[k]);
   const items = [
-    !!perfil.avatar_url, !!perfil.cover_url, !!perfil.headline, !!perfil.bio,
+    !!perfil.avatar_url, !!perfil.headline, !!perfil.bio,
     !!perfil.ciudad, tieneRedes, !!perfil.nicho, !!perfil.objetivo, !!perfil.plataforma_principal,
   ];
   const perfilPct = Math.round((items.filter(Boolean).length / items.length) * 100);

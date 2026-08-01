@@ -78,7 +78,7 @@ export function PerfilVista({ perfil, creadoEn, insightiq }: { perfil: Perfil; c
 
   const tieneRedes = REDES.some((r) => perfil.redes?.[r.key]);
   const items = [
-    !!perfil.avatar_url, !!perfil.cover_url, !!perfil.headline, !!perfil.bio,
+    !!perfil.avatar_url, !!perfil.headline, !!perfil.bio,
     !!perfil.ciudad, tieneRedes, !!perfil.nicho, !!perfil.objetivo, !!perfil.plataforma_principal,
   ];
   const pct = Math.round((items.filter(Boolean).length / items.length) * 100);

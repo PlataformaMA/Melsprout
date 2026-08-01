@@ -167,7 +167,15 @@ export type EdicionPerfil = {
 // Limpia un @ de red social: sin espacios, sin @, sin URL.
 function limpiarHandle(v?: string): string {
   if (!v) return "";
-  return v.trim().replace(/^@+/, "").replace(/\s+/g, "").slice(0, 40);
+  let s = v.trim();
+  // Si pegaron el LINK del perfil, extraemos el usuario.
+  if (/^https?:\/\//i.test(s) || /\b(instagram|tiktok|youtube|facebook|twitter|x)\.com\//i.test(s)) {
+    s = s.replace(/^https?:\/\//i, "").replace(/^www\./i, "");
+    const segs = s.split("/").filter(Boolean).slice(1); // quita el dominio
+    // ignora segmentos genéricos de YouTube (channel/c/user)
+    s = segs.find((p) => !["channel", "c", "user"].includes(p.toLowerCase())) || segs[segs.length - 1] || "";
+  }
+  return s.replace(/^@+/, "").split(/[?#]/)[0].replace(/\s+/g, "").slice(0, 40);
 }
 
 export async function actualizarPerfil(
