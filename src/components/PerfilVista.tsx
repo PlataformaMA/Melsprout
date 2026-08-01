@@ -50,7 +50,8 @@ const REDES = [
 // ————————————— Componente principal —————————————
 export function PerfilVista({ perfil, creadoEn, insightiq }: { perfil: Perfil; creadoEn: string | null; insightiq?: InsightIQProps | null }) {
   const [tab, setTab] = useState<"Resumen" | "Métricas">("Resumen");
-  const { abrir, cargando, disponible } = useConectarInsightIQ(insightiq ?? null);
+  // Conexión de redes: "Próximamente" (aún no habilitada). Mantenemos el hook activo.
+  useConectarInsightIQ(insightiq ?? null);
 
   // Editar "Sobre mí" con el lápiz.
   const [editBio, setEditBio] = useState(false);
@@ -183,7 +184,7 @@ export function PerfilVista({ perfil, creadoEn, insightiq }: { perfil: Perfil; c
 
               {/* En MÓVIL: Redes sociales justo debajo de "Sobre mí" */}
               <div className="mt-6 lg:hidden">
-                <RedesCard perfil={perfil} REDES={REDES} tieneRedes={tieneRedes} abrir={abrir} cargando={cargando} disponible={disponible} />
+                <RedesCard perfil={perfil} REDES={REDES} />
               </div>
 
               {/* Tabs */}
@@ -203,7 +204,7 @@ export function PerfilVista({ perfil, creadoEn, insightiq }: { perfil: Perfil; c
             <aside className="space-y-6 lg:sticky lg:top-5">
               {/* Redes sociales — solo DESKTOP (en móvil va debajo de "Sobre mí") */}
               <div className="hidden lg:block">
-                <RedesCard perfil={perfil} REDES={REDES} tieneRedes={tieneRedes} abrir={abrir} cargando={cargando} disponible={disponible} />
+                <RedesCard perfil={perfil} REDES={REDES} />
               </div>
 
               {/* Completa tu perfil (anillo) */}
@@ -543,16 +544,15 @@ function PinIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill
 function BuildingIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="3" width="12" height="18" rx="1.5" /><path d="M16 8h4v13M8 7h1M12 7h1M8 11h1M12 11h1M8 15h1M12 15h1" /></svg>; }
 function BarsIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 20v-5M10 20V8M15 20v-9M20 20V5" /></svg>; }
 type RedItem = { key: string; nombre: string; color: string; icon: React.ReactNode; wp: string };
-function RedesCard({ perfil, REDES, tieneRedes, abrir, cargando, disponible }: {
-  perfil: Perfil; REDES: readonly RedItem[]; tieneRedes: boolean;
-  abrir: (wp: string) => void; cargando: boolean; disponible: boolean;
+function RedesCard({ perfil, REDES }: {
+  perfil: Perfil; REDES: readonly RedItem[]; tieneRedes?: boolean;
 }) {
   return (
     <section className="bg-surface border border-border rounded-3xl p-5 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-display font-extrabold">Redes sociales</h2>
-        <span className="text-[11px] font-semibold rounded-full px-2.5 py-1 text-sub bg-bg">
-          {tieneRedes ? "Conectadas" : "Conecta"}
+        <span className="text-[11px] font-semibold rounded-full px-2.5 py-1 text-accent bg-accent-soft">
+          Próximamente
         </span>
       </div>
       <div className="space-y-4">
@@ -566,22 +566,12 @@ function RedesCard({ perfil, REDES, tieneRedes, abrir, cargando, disponible }: {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-bold text-[14px] leading-tight">{r.nombre}</div>
-                <div className="text-[13px] text-sub truncate">{handle ? `@${handle}` : "Sin conectar"}</div>
+                <div className="text-[13px] text-sub truncate">{handle ? `@${handle}` : "Muy pronto podrás conectarla"}</div>
               </div>
               {handle ? (
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="w-6 h-6 rounded-full bg-green text-white grid place-items-center text-[12px]">✓</span>
-                  <a href={`/api/insightiq/disconnect?provider=${r.key}`}
-                    onClick={(e) => { if (!confirm(`¿Desconectar ${r.nombre}? Dejarás de ver sus métricas.`)) e.preventDefault(); }}
-                    className="text-[11px] font-semibold text-sub hover:text-red-500 transition">Desconectar</a>
-                </div>
-              ) : disponible ? (
-                <button type="button" disabled={cargando} onClick={() => abrir(r.wp)}
-                  className="text-[12px] font-bold text-accent bg-accent-soft rounded-lg px-3 py-1.5 shrink-0 hover:brightness-105 transition disabled:opacity-60">
-                  {cargando ? "Abriendo…" : "Conectar"}
-                </button>
+                <span className="w-6 h-6 rounded-full bg-green text-white grid place-items-center text-[12px] shrink-0">✓</span>
               ) : (
-                <a href={`/api/${r.key}/connect`} className="text-[12px] font-bold text-accent bg-accent-soft rounded-lg px-3 py-1.5 shrink-0 hover:brightness-105 transition">Conectar</a>
+                <span className="text-[11px] font-bold text-sub bg-bg rounded-lg px-2.5 py-1.5 shrink-0">Próximamente</span>
               )}
             </div>
           );

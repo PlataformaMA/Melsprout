@@ -178,24 +178,21 @@ export function ReproductorClase({
                       }}
                       className="w-full rounded-2xl aspect-video bg-black shadow-lg" />
                   )}
+                  {/* Selector de velocidad — DENTRO del reproductor (esquina sup. der.), solo video propio MP4 */}
+                  {video.tipo !== "youtube" && video.tipo !== "vimeo" && (
+                    <div className="absolute top-3 right-3 z-10 flex items-center gap-0.5 bg-black/60 backdrop-blur rounded-full px-1 py-1 shadow-lg">
+                      {[1, 1.25, 1.5, 2].map((v) => (
+                        <button key={v} type="button"
+                          onClick={() => { setVelocidad(v); if (videoRef.current) videoRef.current.playbackRate = v; }}
+                          className={`text-[11px] sm:text-[12px] font-bold rounded-full px-2 sm:px-2.5 py-0.5 transition ${velocidad === v ? "bg-white text-accent" : "text-white/90 hover:bg-white/25"}`}>
+                          {v}x
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <div className="mt-2 h-1.5 rounded-full bg-[#EEEBF6] overflow-hidden">
                     <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${Math.round(progreso)}%` }} />
                   </div>
-                  {/* Selector de velocidad — visible directo (solo en video propio MP4) */}
-                  {video.tipo !== "youtube" && video.tipo !== "vimeo" && (
-                    <div className="flex items-center gap-2 mt-2.5">
-                      <span className="text-[12px] font-semibold text-sub">Velocidad</span>
-                      <div className="flex items-center gap-1">
-                        {[1, 1.25, 1.5, 2].map((v) => (
-                          <button key={v} type="button"
-                            onClick={() => { setVelocidad(v); if (videoRef.current) videoRef.current.playbackRate = v; }}
-                            className={`text-[12px] font-bold rounded-lg px-2.5 py-1 transition ${velocidad === v ? "bg-accent text-white" : "bg-bg text-sub hover:bg-accent-soft hover:text-accent"}`}>
-                            {v}x
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                   {video.tipo === "vimeo" ? (
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-[12px] text-sub">{progreso >= 85 ? "✅ completada" : "Marca la clase cuando la termines"}</span>

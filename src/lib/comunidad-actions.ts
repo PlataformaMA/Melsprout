@@ -147,6 +147,7 @@ export async function getActividadReciente(): Promise<Actividad[]> {
   const admin = createAdminClient();
   const items: (Actividad & { ts: number })[] = [];
 
+  // Retos completados (publicados, no rechazados)
   const { data: subs } = await admin
     .from("reto_submissions")
     .select("user_id, reto_id, updated_at, revision")
@@ -155,6 +156,7 @@ export async function getActividadReciente(): Promise<Actividad[]> {
     .limit(10);
   const uids = [...new Set((subs || []).filter((s) => s.revision !== "rechazado").map((s) => s.user_id as string))];
 
+  // Nuevos miembros
   const { data: nuevos } = await admin
     .from("profiles")
     .select("id, full_name, avatar_url, created_at")
@@ -163,7 +165,8 @@ export async function getActividadReciente(): Promise<Actividad[]> {
     .limit(5);
   const nuevosIds = (nuevos || []).map((n) => n.id as string);
 
-  const { data: perfiles } = await admin.from("profiles").select("id, full_name, avatar_url").in("id", [...uids, ...nuevosIds].length ? [...uids, ...nuevosIds] : ["_"]);
+  const idsPerfiles = [...uids, ...nuevosIds];
+  const { data: perfiles } = await admin.from("profiles").select("id, full_name, avatar_url").in("id", idsPerfiles.length ? idsPerfiles : ["_"]);
   const pMap = new Map((perfiles || []).map((p) => [p.id as string, p]));
 
   const retoCache = new Map<string, { titulo: string; xp: number }>();
