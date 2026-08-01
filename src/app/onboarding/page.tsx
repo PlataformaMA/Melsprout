@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Octi } from "@/components/Octi";
 import { Confetti } from "@/components/Confetti";
 import { guardarOnboarding } from "@/lib/perfil-actions";
+import { NICHOS as CAT_NICHOS } from "@/lib/catalogos";
 
 const PAISES = [
   "México", "Colombia", "Argentina", "Perú", "Chile", "Ecuador",
@@ -13,9 +14,8 @@ const PAISES = [
   "Costa Rica", "Panamá", "Uruguay", "Puerto Rico", "Otro",
 ];
 
-// Nichos en el orden del mockup (grid de 2 columnas fila por fila):
-// Moda | Belleza  ·  Salud | Tech  ·  Lifestyle | Marketing
-const NICHOS = ["Moda", "Salud", "Lifestyle", "Belleza", "Tecnología", "Marketing"];
+// Catálogo estandarizado de nichos (incluye "Otro" al final).
+const NICHOS = CAT_NICHOS.map((n) => n.id);
 const OBJETIVOS = ["Crear contenido", "Crecer en redes", "Conseguir colaboraciones", "Monetizar", "Aún no estoy seguro"];
 const EXPERIENCIA = ["Nunca he publicado", "He publicado algunas veces", "Publico constantemente", "Ya soy creador"];
 const TIEMPO = ["1 hora", "3 horas", "5 horas", "Más de 5 horas"];
@@ -56,6 +56,7 @@ export default function OnboardingPage() {
   const [xpCount, setXpCount] = useState(0);
 
   const [nicho, setNicho] = useState("");
+  const [nichoOtro, setNichoOtro] = useState(""); // texto libre cuando eligen "Otro"
   const [objetivo, setObjetivo] = useState("");
   const [experiencia, setExperiencia] = useState("");
   const [tiempo, setTiempo] = useState("");
@@ -79,7 +80,8 @@ export default function OnboardingPage() {
   const total = PREGUNTAS.length;
   const actual = PREGUNTAS[paso];
   const esUltimo = paso >= total - 1;
-  const puedeSiguiente = actual.clave === "datos" || actual.multi ? true : !!valores[actual.clave];
+  const otroSinLlenar = actual.clave === "nicho" && nicho === "Otro" && !nichoOtro.trim();
+  const puedeSiguiente = (actual.clave === "datos" || actual.multi ? true : !!valores[actual.clave]) && !otroSinLlenar;
 
   // Cuenta el XP hacia arriba al celebrar (0 → 50)
   useEffect(() => {
@@ -91,11 +93,13 @@ export default function OnboardingPage() {
   const datosOnboarding = useMemo(
     () => ({
       pais, fecha_nacimiento: nacimiento || undefined, whatsapp: whatsapp || undefined,
-      whatsapp_optin: waOptin, nicho, objetivo, plataforma_principal: plataforma, tamano_audiencia: audiencia,
+      whatsapp_optin: waOptin,
+      nicho: nicho === "Otro" ? (nichoOtro.trim() || "Otro") : nicho,
+      objetivo, plataforma_principal: plataforma, tamano_audiencia: audiencia,
       experiencia: experiencia || undefined, tiempo_semanal: tiempo || undefined,
       habilidades, como_conocio: comoConocio || undefined,
     }),
-    [pais, nacimiento, whatsapp, waOptin, nicho, objetivo, plataforma, audiencia, experiencia, tiempo, habilidades, comoConocio]
+    [pais, nacimiento, whatsapp, waOptin, nicho, nichoOtro, objetivo, plataforma, audiencia, experiencia, tiempo, habilidades, comoConocio]
   );
 
   function guardar(conCelebracion: boolean) {
@@ -240,12 +244,20 @@ export default function OnboardingPage() {
                 </div>
               </div>
             ) : actual.opciones ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-w-xl mx-auto w-full">
-                {actual.opciones.map((op) => (
-                  <Pastilla key={op} activa={valores[actual.clave] === op} onClick={() => setters[actual.clave](op)}>
-                    {op}
-                  </Pastilla>
-                ))}
+              <div className="max-w-xl mx-auto w-full">
+                <div className={actual.clave === "nicho" ? "grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-3 max-h-[46vh] overflow-y-auto py-1" : "grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4"}>
+                  {actual.opciones.map((op) => (
+                    <Pastilla key={op} activa={valores[actual.clave] === op} onClick={() => setters[actual.clave](op)}>
+                      {op}
+                    </Pastilla>
+                  ))}
+                </div>
+                {/* Texto libre cuando eligen "Otro" en el nicho */}
+                {actual.clave === "nicho" && nicho === "Otro" && (
+                  <input value={nichoOtro} onChange={(e) => setNichoOtro(e.target.value)} maxLength={40} autoFocus
+                    placeholder="Escribe tu nicho…"
+                    className="mt-3 w-full rounded-xl border-2 border-accent/40 bg-white px-4 py-3 text-sm outline-none focus:border-accent transition" />
+                )}
               </div>
             ) : (
               <div className="max-w-md mx-auto w-full space-y-4 bg-white/80 backdrop-blur rounded-3xl border border-white shadow-lg p-5 sm:p-6">
