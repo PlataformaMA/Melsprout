@@ -12,13 +12,13 @@ import { VerificarBanner } from "@/components/VerificarBanner";
 import { type Clase, type ModuloCurso } from "@/lib/data";
 import { type RachaInfo } from "@/lib/racha-actions";
 
-// ————— Geometría del camino serpenteante (S amplia y suave) —————
+// ————— Geometría del camino serpenteante (compacto tipo Duolingo) —————
 // W debe COINCIDIR con el maxWidth del contenedor para que el SVG no se deforme.
-const W = 640;
-const CX = 310;                 // centro
-const AMP = 208;                // clases en ~16% (izq) y ~81% (der), como el mockup
-const SPACING = 158;            // separación vertical
-const TOP = 94;
+const W = 460;
+const CX = 230;                 // centro
+const AMP = 96;                 // vaivén suave y estrecho (nodos cerca del centro)
+const SPACING = 124;            // separación vertical compacta
+const TOP = 84;
 const FREQ = Math.PI / 2;       // período de 4 nodos → S regular y limpia
 const PHASE = -Math.PI / 2;     // el primer nodo arranca a la izquierda (valle)
 const serpX = (i: number) => CX + AMP * Math.sin(i * FREQ + PHASE);
@@ -238,7 +238,7 @@ export function RutaAprendizaje({
               <div className="lg:hidden mb-4">{desafiosCard}</div>
 
               {/* Camino */}
-              <div className="relative mx-auto w-full overflow-x-hidden" style={{ maxWidth: 640, height: altura }}>
+              <div className="relative mx-auto w-full overflow-x-hidden" style={{ maxWidth: 460, height: altura }}>
                 <svg viewBox={`0 0 ${W} ${altura}`} className="absolute inset-0 w-full h-full" fill="none" preserveAspectRatio="none">
                   <path d={construirPath(pts)} stroke="#C7B8EF" strokeWidth="5.5" strokeLinecap="round" strokeDasharray="10 15" vectorEffect="non-scaling-stroke" />
                 </svg>
