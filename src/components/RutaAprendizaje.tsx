@@ -147,6 +147,11 @@ export function RutaAprendizaje({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ranking.length, rachaInfo]);
 
+  // ——— Vista: "camino" (mapa) o "bloques" (tarjetas) ———
+  const [vista, setVista] = useState<"camino" | "bloques">("camino");
+  const [modBloque, setModBloque] = useState(modIdx); // módulo seleccionado en Bloques
+  const [modDropdown, setModDropdown] = useState(false);
+
   // ——— Mundos (cada módulo = un mundo temático) + Cofre de recompensas ———
   const [mundosAbierto, setMundosAbierto] = useState(false);
   const [cofreAbierto, setCofreAbierto] = useState(false);
@@ -184,9 +189,21 @@ export function RutaAprendizaje({
             <UserMenu avatarUrl={avatarUrl} nombre={nombre} />
           </header>
 
-          <div className="mb-4">
+          <div className="mb-3">
             <h1 className="font-display text-2xl font-extrabold">¡Hola, {nombre.split(" ")[0]}! 👋</h1>
             <p className="text-sub text-[14px] mt-0.5">Tu ruta de aprendizaje. Sigue creciendo, un paso a la vez. 💜</p>
+          </div>
+
+          {/* Pestañas: Camino (mapa) / Bloques (tarjetas) */}
+          <div className="inline-flex items-center gap-1 bg-surface border border-border rounded-full p-1 mb-4 shadow-sm">
+            <button onClick={() => setVista("camino")}
+              className={`text-[13px] font-bold rounded-full px-4 py-1.5 transition ${vista === "camino" ? "bg-accent text-white shadow" : "text-sub hover:text-text"}`}>
+              Camino
+            </button>
+            <button onClick={() => setVista("bloques")}
+              className={`flex items-center gap-1.5 text-[13px] font-bold rounded-full px-4 py-1.5 transition ${vista === "bloques" ? "bg-accent text-white shadow" : "text-sub hover:text-text"}`}>
+              <OjoIcon /> Bloques
+            </button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
@@ -228,16 +245,55 @@ export function RutaAprendizaje({
                 </div>
               </div>
 
-              {/* Botones rápidos (solo íconos): Cofre + Brújula, debajo de "Tu progreso", a la derecha */}
-              <div className="flex gap-3 mb-4 justify-end">
-                <BotonIcono img="/cofre.png" emoji="🧰" label="Cofre · recompensas" onClick={() => setCofreAbierto(true)} />
-                <BotonIcono img="/brujula.png" emoji="🧭" label="Brújula · tus mundos" onClick={() => setMundosAbierto(true)} />
+              {/* Botones rápidos (Cofre + Brújula). En Bloques, selector de módulo a la izquierda. */}
+              <div className={`flex gap-3 mb-4 items-center ${vista === "bloques" ? "justify-between" : "justify-end"}`}>
+                {vista === "bloques" && (
+                  <div className="relative">
+                    <button onClick={() => setModDropdown((v) => !v)}
+                      className="flex items-center gap-1.5 bg-accent-soft text-accent font-extrabold text-[14px] rounded-full px-4 py-2 hover:brightness-95 transition">
+                      Mundo {modBloque + 1} <span className={`transition-transform ${modDropdown ? "rotate-180" : ""}`}>▾</span>
+                    </button>
+                    {modDropdown && (
+                      <>
+                        <div className="fixed inset-0 z-20" onClick={() => setModDropdown(false)} />
+                        <div className="absolute left-0 top-full mt-1.5 z-30 w-52 bg-surface border border-border rounded-2xl shadow-lg p-1.5">
+                          {cursos.map((m, i) => (
+                            <button key={i} onClick={() => { setModBloque(i); setModDropdown(false); }}
+                              className={`w-full text-left text-[13px] rounded-xl px-3 py-2 transition ${i === modBloque ? "bg-accent-soft text-accent font-bold" : "hover:bg-bg text-text"}`}>
+                              Mundo {i + 1}: {m.nombre}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+                <div className="flex gap-3">
+                  <BotonIcono img="/cofre.png" emoji="🧰" label="Cofre · recompensas" onClick={() => setCofreAbierto(true)} />
+                  <BotonIcono img="/brujula.png" emoji="🧭" label="Brújula · tus mundos" onClick={() => setMundosAbierto(true)} />
+                </div>
               </div>
+
+              {/* ——— Vista BLOQUES: tarjetas de clases del módulo ——— */}
+              {vista === "bloques" && (() => {
+                const mm = cursos[modBloque] ?? cursos[0];
+                const startG = cursos.slice(0, modBloque).reduce((a, x) => a + x.clases.length, 0);
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    {mm.clases.map((c, j) => {
+                      const g = startG + j;
+                      const estado: "completada" | "actual" | "bloqueada" = g < completadas ? "completada" : g === completadas ? "actual" : "bloqueada";
+                      return <ClaseCard key={c.id} numero={j + 1} titulo={c.titulo} instructor={c.instructor} dur={fmtDur(c.duracionMin)} estado={estado} href={`/app/clase/${c.id}`} />;
+                    })}
+                  </div>
+                );
+              })()}
 
               {/* Desafíos del día — solo MÓVIL (en desktop van en la barra derecha) */}
               <div className="lg:hidden mb-4">{desafiosCard}</div>
 
-              {/* Camino */}
+              {/* ——— Vista CAMINO: el mapa serpenteante ——— */}
+              {vista === "camino" && (
               <div className="relative mx-auto w-full overflow-x-hidden" style={{ maxWidth: 460, height: altura }}>
                 <svg viewBox={`0 0 ${W} ${altura}`} className="absolute inset-0 w-full h-full" fill="none" preserveAspectRatio="none">
                   <path d={construirPath(pts)} stroke="#C7B8EF" strokeWidth="5.5" strokeLinecap="round" strokeDasharray="10 15" vectorEffect="non-scaling-stroke" />
@@ -252,14 +308,15 @@ export function RutaAprendizaje({
                 ))}
 
                 {/* Octi acompaña a la clase actual, del lado opuesto al nodo (sin taparlo). Se desliza al avanzar. */}
-                {/* Móvil: más arriba (-mt) y más a la derecha. Desktop: más abajo (mt-8) y un poco menos a la derecha. */}
+                {/* Móvil: más arriba (-mt) y un poco a la derecha para no encimar el nodo. Desktop: más abajo. */}
                 <div className={`absolute z-10 -translate-x-1/2 -translate-y-1/2 transition-all duration-700 ease-out -mt-1 lg:mt-8 ${
-                  nodeIzq ? "left-[66%] lg:left-[69%]" : "left-[50%] lg:left-[43%]"
+                  nodeIzq ? "left-[72%] lg:left-[69%]" : "left-[57%] lg:left-[43%]"
                 }`}
                      style={{ top: octiY }}>
                   <OctiRuta nombre={nombre} />
                 </div>
               </div>
+              )}
             </div>
 
             {/* ——— Sidebar derecha ——— */}
@@ -389,6 +446,39 @@ function Isla({ img, emoji, glow, bloqueado, resaltar }: { img: string; emoji: s
 }
 
 // Botón de ícono (solo la ilustración) con respaldo a emoji si falta la imagen.
+function fmtDur(min: number): string {
+  if (min >= 60) { const h = Math.floor(min / 60); const m = min % 60; return m ? `${h}h ${m}m` : `${h}h`; }
+  return `${min} min`;
+}
+function OjoIcon() { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" /><circle cx="12" cy="12" r="3" /></svg>; }
+function ClockMini() { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>; }
+
+// Tarjeta de clase (vista "Bloques").
+function ClaseCard({ numero, titulo, instructor, dur, estado, href }: { numero: number; titulo: string; instructor: string; dur: string; estado: "completada" | "actual" | "bloqueada"; href: string }) {
+  const bloqueada = estado === "bloqueada";
+  const inner = (
+    <div className={`bg-surface border border-border rounded-2xl overflow-hidden shadow-sm transition ${bloqueada ? "opacity-70" : "hover:border-accent/40 hover:shadow-md hover:-translate-y-0.5"}`}>
+      <div className={`relative aspect-video grid place-items-center ${bloqueada ? "grayscale" : ""}`} style={{ background: "linear-gradient(135deg,#7C3AED,#C084FC)" }}>
+        <span className="absolute top-2.5 left-2.5 bg-white/90 text-accent text-[12px] font-extrabold rounded-lg px-2 py-0.5">{String(numero).padStart(2, "0")}</span>
+        <span className="w-12 h-12 rounded-full bg-white/25 backdrop-blur grid place-items-center text-white">
+          {estado === "completada" ? <span className="text-[18px] font-bold">✓</span> : bloqueada ? <LockIcon /> : <span className="scale-150"><PlayMini /></span>}
+        </span>
+      </div>
+      <div className="p-3.5">
+        <div className="font-bold text-[14px] truncate">{titulo}</div>
+        <div className="flex items-center justify-between mt-2 gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="w-5 h-5 rounded-full bg-accent/15 text-accent grid place-items-center text-[9px] font-bold shrink-0">{instructor.slice(0, 1).toUpperCase()}</span>
+            <span className="text-[12px] text-sub truncate">{instructor}</span>
+          </div>
+          <span className="text-[12px] text-sub shrink-0 flex items-center gap-1"><ClockMini /> {dur}</span>
+        </div>
+      </div>
+    </div>
+  );
+  return bloqueada ? <div title="Completa la clase anterior">{inner}</div> : <Link href={href} className="block">{inner}</Link>;
+}
+
 function BotonIcono({ img, emoji, label, onClick }: { img: string; emoji: string; label: string; onClick: () => void }) {
   const [err, setErr] = useState(false);
   return (
