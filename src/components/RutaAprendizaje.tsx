@@ -310,7 +310,7 @@ export function RutaAprendizaje({
                 {/* Octi acompaña a la clase actual, del lado opuesto al nodo (sin taparlo). Se desliza al avanzar. */}
                 {/* Móvil: más arriba (-mt) y un poco a la derecha para no encimar el nodo. Desktop: más abajo. */}
                 <div className={`absolute z-10 -translate-x-1/2 -translate-y-1/2 transition-all duration-700 ease-out -mt-1 lg:mt-8 ${
-                  nodeIzq ? "left-[72%] lg:left-[69%]" : "left-[57%] lg:left-[43%]"
+                  nodeIzq ? "left-[80%] lg:left-[78%]" : "left-[64%] lg:left-[54%]"
                 }`}
                      style={{ top: octiY }}>
                   <OctiRuta nombre={nombre} />
