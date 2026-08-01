@@ -36,12 +36,18 @@ export async function iniciarSesion(
 ): Promise<EstadoAuth> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const captchaToken = String(formData.get("captchaToken") ?? "");
 
   if (!emailValido(email)) return { error: "Escribe un correo válido." };
   if (!password) return { error: "Escribe tu contraseña." };
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+    // Filtro anti-robots (solo se valida si el captcha está activo en Supabase).
+    ...(captchaToken ? { options: { captchaToken } } : {}),
+  });
   if (error) {
     // Caso borde: la cuenta existe pero se creó con Google/Facebook (sin
     // contraseña). Le decimos con qué método debe entrar.
