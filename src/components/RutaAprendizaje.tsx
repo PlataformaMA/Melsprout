@@ -158,6 +158,15 @@ export function RutaAprendizaje({
     return { nombre: m.nombre, estado };
   });
 
+  // Desafíos del día (2): completar una clase y enviar un reto. Cada uno da +10 XP.
+  const retoEnviado = Object.values(retoEstados).some((e) => e === "completada" || e === "en-revision" || e === "rechazada");
+  const desafiosCard = (
+    <Tarjeta titulo="Desafíos del día">
+      <Desafio iconSrc="/desafios/rayo.png" texto="Completa una clase" progreso={completadas > 0 ? 1 : 0} total={1} />
+      <Desafio iconSrc="/desafios/diana.png" texto="Envía un reto" progreso={retoEnviado ? 1 : 0} total={1} />
+    </Tarjeta>
+  );
+
   return (
     <div className="min-h-screen bg-bg flex">
       <AppSidebar active="clases" />
@@ -225,6 +234,9 @@ export function RutaAprendizaje({
                 <BotonIcono img="/brujula.png" emoji="🧭" label="Brújula · tus mundos" onClick={() => setMundosAbierto(true)} />
               </div>
 
+              {/* Desafíos del día — solo MÓVIL (en desktop van en la barra derecha) */}
+              <div className="lg:hidden mb-4">{desafiosCard}</div>
+
               {/* Camino */}
               <div className="relative mx-auto w-full overflow-x-hidden" style={{ maxWidth: 640, height: altura }}>
                 <svg viewBox={`0 0 ${W} ${altura}`} className="absolute inset-0 w-full h-full" fill="none" preserveAspectRatio="none">
@@ -254,10 +266,8 @@ export function RutaAprendizaje({
             <aside className="space-y-4 lg:sticky lg:top-5">
               {!emailVerificado && <VerificarBanner />}
 
-              <Tarjeta titulo="Desafíos del día" extra={<span className="text-[12px] text-accent font-semibold cursor-default">Ver todos</span>}>
-                <Desafio iconSrc="/desafios/rayo.png" texto="Gana 10 EXP" progreso={0} total={10} />
-                <Desafio iconSrc="/desafios/diana.png" texto="Obtén un puntaje de 90% o más en 1 lección" progreso={0} total={1} />
-              </Tarjeta>
+              {/* Desafíos: en DESKTOP van aquí (en móvil se muestran arriba del mapa). */}
+              <div className="hidden lg:block">{desafiosCard}</div>
 
               {/* Top colaboradores + Tu ranking */}
               {topCreadores.length > 0 && (
@@ -484,32 +494,41 @@ function NodoElemento({ el }: { el: Elemento }) {
     const sombraOk = "0 5px 0 #EADFbf, 0 8px 12px rgba(0,0,0,.08)";
     const sombraGris = "0 5px 0 #E7E4EC, 0 8px 12px rgba(0,0,0,.08)";
 
+    let inner: React.ReactNode;
     if (el.estado === "completada")
-      return <div className={base} style={{ boxShadow: sombraOk }} title="Reto completado"><SparkleIcon color="#F5B301" /></div>;
-    if (el.estado === "en-revision")
-      return (
+      inner = <div className={base} style={{ boxShadow: sombraOk }} title="Reto completado"><SparkleIcon color="#F5B301" /></div>;
+    else if (el.estado === "en-revision")
+      inner = (
         <div className="relative">
           <div className="absolute -top-16 -right-3"><Burbujas /></div>
           <div className={base} style={{ boxShadow: sombraGris }} title="Reto en revisión"><SparkleIcon color="#9AA0AD" /></div>
           <EtiquetaReto texto="En revisión" clase="bg-accent-soft text-accent" />
         </div>
       );
-    if (el.estado === "rechazada")
-      return (
+    else if (el.estado === "rechazada")
+      inner = (
         <div className="relative">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/nodo-rechazado.png" alt="" className="w-[68px] h-[68px] select-none" title="Reto rechazado" draggable={false} />
           <EtiquetaReto texto="✕ Rechazado" clase="bg-pink-soft text-pink" />
         </div>
       );
-    if (el.estado === "pendiente")
-      return (
+    else if (el.estado === "pendiente")
+      inner = (
         <div className="relative">
           <div className={base} style={{ boxShadow: sombraGris }} title="Reto pendiente"><SparkleIcon color="#9AA0AD" /></div>
           <div className="absolute -top-16 -right-3"><Burbujas /></div>
         </div>
       );
-    return <div className={base} style={{ boxShadow: sombraGris }} title="Reto bloqueado"><SparkleIcon color="#C6CAD3" /></div>;
+    else
+      return <div className={base} style={{ boxShadow: sombraGris }} title="Reto bloqueado"><SparkleIcon color="#C6CAD3" /></div>;
+
+    // Reto disponible → clickeable: abre el reto de esa clase.
+    return (
+      <Link href={`/app/reto/${el.clase.id}`} title="Abrir reto" className="block hover:scale-105 transition-transform">
+        {inner}
+      </Link>
+    );
   }
 
   if (el.tipo === "hito") {
