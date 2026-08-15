@@ -19,7 +19,7 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
   if (!perfil) redirect("/onboarding");
   if (!perfil.onboarding_completo) redirect("/onboarding");
 
-  const cursos = await getCursos();
+  const cursos = await getCursos(true);
   const modulo = cursos.find((m) => m.clases.some((c) => c.id === id)) ?? cursos[0];
   const clase = modulo.clases.find((c) => c.id === id) ?? modulo.clases[0];
 

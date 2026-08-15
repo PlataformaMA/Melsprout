@@ -93,7 +93,7 @@ export async function getActividadAmigos(): Promise<ActividadAmigo[]> {
 
   // Clases completadas: si con esa clase cerró un módulo, se anuncia el mundo.
   if ((clases || []).length) {
-    const cursos = await getCursos();
+    const cursos = await getCursos(true);
     const tituloDe = new Map<string, string>();
     const moduloDe = new Map<string, { n: number; ultima: string }>();
     cursos.forEach((m, i) => {

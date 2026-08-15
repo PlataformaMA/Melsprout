@@ -13,14 +13,17 @@ function portadaDe(portada: unknown, videoUrl: unknown): string | null {
 
 // Lee los cursos de la BD con la MISMA forma que ETAPA_1 (ModuloCurso[]).
 // Si aún no hay módulos en BD, usa el demo (fallback) para no romper nada.
-export async function getCursos(): Promise<ModuloCurso[]> {
+export async function getCursos(incluirEspeciales = false): Promise<ModuloCurso[]> {
   try {
     const admin = createAdminClient();
-    const { data: mods } = await admin
+    let q = admin
       .from("cursos_modulos")
       .select("*")
-      .eq("activo", true)
-      .order("orden", { ascending: true });
+      .eq("activo", true);
+    // Los cursos especiales viven en su propia seccion: no van en la Ruta ni
+    // cuentan para el avance del curso.
+    if (!incluirEspeciales) q = q.or("especial.is.null,especial.eq.false");
+    const { data: mods } = await q.order("orden", { ascending: true });
     if (!mods || mods.length === 0) return ETAPA_1;
 
     const { data: clases } = await admin
@@ -72,4 +75,85 @@ export async function getCursosAdmin(): Promise<{ modulos: ModuloRow[]; clases: 
   const { data: modulos } = await admin.from("cursos_modulos").select("*").order("orden");
   const { data: clases } = await admin.from("cursos_clases").select("*").order("orden");
   return { modulos: (modulos || []) as ModuloRow[], clases: (clases || []) as ClaseRow[] };
+}
+
+// ————— Cursos Especiales (patrocinados) —————
+export type CursoEspecial = {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  portada: string | null;
+  patrocinador: string | null;
+  patrocinadorLogo: string | null;
+  instructor: string;
+  clases: Clase[];
+  minutos: number;      // duración total
+  estudiantes: number;  // cuántas personas ya empezaron alguna clase
+};
+
+async function armarEspeciales(filtroId?: string): Promise<CursoEspecial[]> {
+  const admin = createAdminClient();
+  let q = admin.from("cursos_modulos").select("*").eq("activo", true).eq("especial", true);
+  if (filtroId) q = q.eq("id", filtroId);
+  const { data: mods } = await q.order("orden", { ascending: true });
+  if (!mods || mods.length === 0) return [];
+
+  const { data: clases } = await admin
+    .from("cursos_clases")
+    .select("*")
+    .in("modulo_id", mods.map((m) => m.id as string))
+    .eq("activo", true)
+    .order("orden", { ascending: true });
+
+  const ids = (clases || []).map((c) => c.id as string);
+  // Estudiantes reales: quienes ya tienen progreso en alguna clase del curso.
+  const { data: prog } = ids.length
+    ? await admin.from("clase_progreso").select("user_id, clase_id").in("clase_id", ids)
+    : { data: [] as { user_id: string; clase_id: string }[] };
+
+  return mods.map((m) => {
+    const suyas = (clases || []).filter((c) => c.modulo_id === m.id);
+    const suyasIds = new Set(suyas.map((c) => c.id as string));
+    const alumnos = new Set(
+      (prog || []).filter((p) => suyasIds.has(p.clase_id as string)).map((p) => p.user_id as string)
+    );
+    return {
+      id: m.id as string,
+      nombre: m.nombre as string,
+      descripcion: (m.descripcion as string) || "",
+      portada: (m.portada as string) || null,
+      patrocinador: (m.patrocinador as string) || null,
+      patrocinadorLogo: (m.patrocinador_logo as string) || null,
+      instructor: (suyas[0]?.instructor as string) || "Melissa",
+      minutos: suyas.reduce((n, c) => n + ((c.duracion_min as number) || 0), 0),
+      estudiantes: alumnos.size,
+      clases: suyas.map((c): Clase => ({
+        id: c.id as string,
+        titulo: c.titulo as string,
+        instructor: (c.instructor as string) || "Melissa",
+        duracionMin: (c.duracion_min as number) || 12,
+        reto: (c.reto_texto as string) || "",
+        revision: ((c.revision as string) || "auto") as Clase["revision"],
+        grabada: !!c.video_url,
+        portada: portadaDe(c.portada, c.video_url),
+      })),
+    };
+  });
+}
+
+export async function getCursosEspeciales(): Promise<CursoEspecial[]> {
+  try {
+    return await armarEspeciales();
+  } catch {
+    return [];
+  }
+}
+
+export async function getCursoEspecial(id: string): Promise<CursoEspecial | null> {
+  try {
+    const [c] = await armarEspeciales(id);
+    return c ?? null;
+  } catch {
+    return null;
+  }
 }
