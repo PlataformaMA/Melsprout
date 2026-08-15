@@ -18,9 +18,19 @@ export async function registrarRacha(): Promise<void> {
 
   const { data: p } = await supabase
     .from("profiles")
-    .select("racha, racha_fecha")
+    .select("racha, racha_fecha, racha_congelada")
     .eq("id", user.id)
     .single();
+
+  // Si estaba congelada y vuelve a haber actividad, se descongela y continúa
+  // desde donde se quedó — no se reinicia por los días sin clases disponibles.
+  if (p?.racha_congelada) {
+    await supabase
+      .from("profiles")
+      .update({ racha_congelada: false, racha_fecha: ymd(new Date()) })
+      .eq("id", user.id);
+    return;
+  }
 
   const hoy = new Date();
   const ayer = new Date(hoy.getTime() - 86400000);
@@ -37,6 +47,8 @@ export async function registrarRacha(): Promise<void> {
 export type RachaInfo = {
   racha: number;
   hoyContado: boolean;
+  // El alumno terminó todo lo disponible: la racha se guarda en vez de romperse.
+  congelada: boolean;
   // 7 posiciones (Lun..Dom): true si hubo actividad ese día de la semana actual
   semana: boolean[];
 };
@@ -45,9 +57,9 @@ export type RachaInfo = {
 export async function getRachaInfo(): Promise<RachaInfo> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { racha: 0, hoyContado: false, semana: Array(7).fill(false) };
+  if (!user) return { racha: 0, hoyContado: false, congelada: false, semana: Array(7).fill(false) };
 
-  const { data: p } = await supabase.from("profiles").select("racha, racha_fecha").eq("id", user.id).single();
+  const { data: p } = await supabase.from("profiles").select("racha, racha_fecha, racha_congelada").eq("id", user.id).single();
 
   // Inicio de semana = lunes 00:00 (hora del servidor).
   const now = new Date();
@@ -75,5 +87,20 @@ export async function getRachaInfo(): Promise<RachaInfo> {
   const hoyContado = (p?.racha_fecha as string) === hoyStr;
   if (hoyContado) semana[diaSemana] = true;
 
-  return { racha: (p?.racha as number) || 0, hoyContado, semana };
+  return {
+    racha: (p?.racha as number) || 0,
+    hoyContado,
+    congelada: !!p?.racha_congelada,
+    semana,
+  };
+}
+
+// Congela la racha cuando ya no queda nada por hacer. Se llama al terminar la
+// última clase disponible: sin contenido nuevo el alumno no puede mantenerla,
+// y perderla por eso sería castigarlo por ir al corriente.
+export async function congelarRacha(): Promise<void> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from("profiles").update({ racha_congelada: true }).eq("id", user.id);
 }

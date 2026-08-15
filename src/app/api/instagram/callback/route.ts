@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { exchangeCode, longLived, fetchProfile } from "@/lib/instagram";
+import {
+  exchangeCode,
+  longLived,
+  fetchProfile,
+  fetchAlcance,
+  fetchAudiencia,
+} from "@/lib/instagram";
 import { guardarConexion } from "@/lib/social-store";
 
 export async function GET(request: Request) {
@@ -23,10 +29,20 @@ export async function GET(request: Request) {
   const prof = await fetchProfile(token);
   if (!prof) return NextResponse.redirect(`${destino}&r=instagram_err`);
 
+  // Estadísticas: si la cuenta es nueva o chica, Instagram las niega. No es
+  // motivo para fallar la conexión, así que van aparte y pueden venir vacías.
+  const [alcance, audiencia] = await Promise.all([
+    fetchAlcance(token),
+    fetchAudiencia(token),
+  ]);
+
   await guardarConexion(user.id, "instagram", {
     externalId: String(prof.user_id),
     username: prof.username,
     followers: prof.followers_count ?? null,
+    posts: prof.media_count ?? null,
+    alcance,
+    audiencia,
     accessToken: token,
     expiresAt: long ? new Date(Date.now() + long.expires_in * 1000).toISOString() : null,
   });

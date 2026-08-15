@@ -37,7 +37,7 @@ export async function borrarModulo(id: string): Promise<{ ok: true } | { error: 
 }
 
 // ————— Clases —————
-export type ClaseInput = { titulo: string; instructor?: string; duracion_min?: number; nivel?: string; reto_texto?: string; revision?: string; video_url?: string };
+export type ClaseInput = { titulo: string; instructor?: string; duracion_min?: number; nivel?: string; reto_texto?: string; reto_instrucciones?: string; portada?: string; revision?: string; video_url?: string };
 
 export async function crearClase(moduloId: string, input: ClaseInput): Promise<{ ok: true } | { error: string }> {
   const admin = await comoAdmin();
@@ -47,7 +47,7 @@ export async function crearClase(moduloId: string, input: ClaseInput): Promise<{
   const { error } = await admin.from("cursos_clases").insert({
     modulo_id: moduloId, titulo: input.titulo.trim(), instructor: input.instructor || "Melissa",
     duracion_min: input.duracion_min ?? 12, nivel: input.nivel || "basico",
-    reto_texto: input.reto_texto || "", revision: input.revision || "auto",
+    reto_texto: input.reto_texto || "", reto_instrucciones: input.reto_instrucciones || "", portada: input.portada || null, revision: input.revision || "auto",
     video_url: input.video_url || null, orden: ((max?.orden as number) || 0) + 1,
   });
   if (error) return { error: "No se pudo crear la clase." };
@@ -56,7 +56,7 @@ export async function crearClase(moduloId: string, input: ClaseInput): Promise<{
 export async function actualizarClase(id: string, input: ClaseInput): Promise<{ ok: true } | { error: string }> {
   const admin = await comoAdmin();
   if (!admin) return { error: "No autorizado." };
-  const patch: Record<string, unknown> = { titulo: input.titulo.trim(), instructor: input.instructor, duracion_min: input.duracion_min, nivel: input.nivel, reto_texto: input.reto_texto, revision: input.revision };
+  const patch: Record<string, unknown> = { titulo: input.titulo.trim(), instructor: input.instructor, duracion_min: input.duracion_min, nivel: input.nivel, reto_texto: input.reto_texto, reto_instrucciones: input.reto_instrucciones, portada: input.portada || null, revision: input.revision };
   if (input.video_url !== undefined) patch.video_url = input.video_url || null;
   const { error } = await admin.from("cursos_clases").update(patch).eq("id", id);
   if (error) return { error: "No se pudo actualizar." };

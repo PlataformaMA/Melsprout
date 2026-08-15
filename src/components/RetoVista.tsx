@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AppSidebar } from "@/components/AppSidebar";
+import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import { UserMenu } from "@/components/UserMenu";
 import { createClient } from "@/lib/supabase/client";
 import type { RetoDef, PasoReto } from "@/lib/retos";
@@ -146,7 +147,8 @@ export function RetoVista({
           <header className="flex items-center justify-end gap-4 mb-5 h-10">
             <Counter icon="🔥" valor={perfil.racha} />
             <Counter icon="💎" valor={perfil.gemas} />
-            <button className="relative w-9 h-9 rounded-full bg-surface border border-border grid place-items-center" aria-label="Notificaciones">
+            <CampanaNotificaciones />
+            <button className="hidden" aria-hidden>
               <BellIcon />
               <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-accent" />
             </button>
@@ -169,6 +171,10 @@ export function RetoVista({
                 </h1>
                 <p className="text-sub mt-1.5 text-[14px]">{reto.descripcion}</p>
               </div>
+
+              {/* Instrucciones: qué se espera y cómo se evalúa. Sin esto las
+                  respuestas salen ambiguas — para el alumno y para quien revisa. */}
+              {reto.instrucciones && <Instrucciones texto={reto.instrucciones} />}
 
               {/* Octi ARRIBA (banner): guía + recompensa (móvil y desktop) */}
               <div className="mt-5 rounded-3xl p-4 sm:p-5 border border-accent/15 shadow-sm relative overflow-hidden" style={{ background: "linear-gradient(160deg,#F3F0FF,#FBFAFF)" }}>
@@ -536,6 +542,59 @@ function Counter({ icon, valor }: { icon: string; valor: number }) {
 }
 
 // ————————————— Iconos —————————————
+// Las instrucciones se guardan como texto plano; aquí las volvemos una lista
+// compacta. Volcarlas tal cual ocupaba media pantalla y nadie las leía.
+function parsearInstrucciones(texto: string) {
+  const [cuerpo, ...resto] = texto.split(/^[─-]{5,}$/m);
+  const nota = resto.join("\n").trim();
+  const lineas = cuerpo.trim().split("\n");
+
+  const intro: string[] = [];
+  const puntos: { n: string; titulo: string; desc: string[] }[] = [];
+  for (const l of lineas) {
+    const m = l.match(/^\s*(\d+)\.\s*(.+)$/);
+    if (m) puntos.push({ n: m[1], titulo: m[2].trim(), desc: [] });
+    else if (puntos.length) { if (l.trim()) puntos[puntos.length - 1].desc.push(l.trim()); }
+    else if (l.trim()) intro.push(l.trim());
+  }
+  return { intro: intro.join(" "), puntos, nota };
+}
+
+function Instrucciones({ texto }: { texto: string }) {
+  const { intro, puntos, nota } = parsearInstrucciones(texto);
+  return (
+    <section className="mt-5 rounded-2xl border border-blue/25 bg-blue/[0.05] px-4 py-3.5 sm:px-5 sm:py-4">
+      <h2 className="flex items-center gap-2 font-display font-extrabold text-[14px] text-blue">
+        📋 Qué se espera de ti
+      </h2>
+
+      {intro && <p className="text-[13px] text-sub leading-snug mt-1.5">{intro}</p>}
+
+      {puntos.length > 0 && (
+        <ol className="mt-3 grid sm:grid-cols-2 gap-x-5 gap-y-2">
+          {puntos.map((p) => (
+            <li key={p.n} className="flex gap-2.5">
+              <span className="shrink-0 w-5 h-5 rounded-full bg-blue/15 text-blue grid place-items-center text-[11px] font-extrabold mt-0.5">
+                {p.n}
+              </span>
+              <p className="text-[13px] leading-snug min-w-0">
+                <b className="text-text">{p.titulo}.</b>{" "}
+                <span className="text-sub">{p.desc.join(" ")}</span>
+              </p>
+            </li>
+          ))}
+        </ol>
+      )}
+
+      {nota && (
+        <p className="text-[12px] text-hint leading-snug mt-3 pt-2.5 border-t border-blue/15">
+          {nota.replace(/\s*\n\s*/g, " ")}
+        </p>
+      )}
+    </section>
+  );
+}
+
 function BellIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 0 0 4 0" /></svg>; }
 function HeartOutline() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z" /></svg>; }
 function CheckCircle() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="m8.5 12 2.5 2.5 4.5-5" /></svg>; }

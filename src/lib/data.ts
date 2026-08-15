@@ -11,6 +11,7 @@ export type Clase = {
   reto: string;
   revision: "auto" | "equipo";
   grabada: boolean;
+  portada?: string | null;
 };
 
 export type ModuloCurso = {

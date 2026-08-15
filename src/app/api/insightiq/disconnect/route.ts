@@ -6,7 +6,7 @@ import {
   obtenerCuentas,
   desconectarCuenta,
 } from "@/lib/insightiq";
-import { eliminarRedInsightIQ } from "@/lib/social-store";
+import { eliminarRedDelPerfil } from "@/lib/social-store";
 
 // Desconecta una red del usuario. Se navega aquí como página completa (lleva sesión).
 export async function GET(request: Request) {
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
         await desconectarCuenta(c.accountId);
       }
     }
-    await eliminarRedInsightIQ(user.id, provider);
+    await eliminarRedDelPerfil(user.id, provider);
   } catch (e) {
     console.error("InsightIQ disconnect error", e);
   }

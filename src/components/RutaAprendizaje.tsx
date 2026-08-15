@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
@@ -8,6 +8,9 @@ import { RankingModal, type RankItem } from "@/components/RankingModal";
 import { CofreModal } from "@/components/CofreModal";
 import { RachaModal } from "@/components/RachaModal";
 import { RecursosModal } from "@/components/RecursosModal";
+import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
+import type { Recurso } from "@/lib/recursos-actions";
+import { octiFrases, type Genero } from "@/lib/genero";
 import { VerificarBanner } from "@/components/VerificarBanner";
 import { type Clase, type ModuloCurso } from "@/lib/data";
 import { type RachaInfo } from "@/lib/racha-actions";
@@ -44,15 +47,20 @@ type Elemento =
   | { tipo: "hito"; modulo: ModuloCurso; estado: "completada" | "bloqueada" }
   | { tipo: "gate"; modulo: ModuloCurso; estado: "desbloqueada" | "bloqueada" };
 
-// Construye los nodos según el progreso REAL: `completadas` = # de clases
-// completadas en orden; `retoEstados` = estado del reto por clase.
-function construirElementos(cursos: ModuloCurso[], completadas: number, retoEstados: Record<string, EReto>): Elemento[] {
+// Construye los nodos según el progreso REAL. `completadas` es la FRONTERA:
+// hasta dónde llegó el alumno (la clase más avanzada que terminó, +1). `hechas`
+// dice cuáles terminó de verdad, para no pintar como vista una que se saltó.
+function construirElementos(cursos: ModuloCurso[], completadas: number, retoEstados: Record<string, EReto>, hechas: Set<string>): Elemento[] {
   const els: Elemento[] = [];
   let gi = 0;
   cursos.forEach((modulo) => {
     const inicioModulo = gi;
     modulo.clases.forEach((clase) => {
-      const ec: EClase = gi < completadas ? "completada" : gi === completadas ? "actual" : "bloqueada";
+      const ec: EClase = hechas.has(clase.id)
+        ? "completada"
+        : gi <= completadas
+          ? "actual"
+          : "bloqueada";
       // El reto se puede intentar si su clase ya está disponible (actual o completada).
       const disponible = gi <= completadas;
       const er: EReto = retoEstados[clase.id] ?? (disponible ? "pendiente" : "bloqueada");
@@ -70,13 +78,14 @@ function construirElementos(cursos: ModuloCurso[], completadas: number, retoEsta
 export type TopCreador = { id: string; nombre: string; avatarUrl: string | null; xp: number; esTu: boolean };
 
 export function RutaAprendizaje({
-  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [], completadas = 0, retoEstados = {}, cursos, tuRanking, ranking = [], emailVerificado = true, xp = 0, rachaInfo,
+  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [], completadas = 0, completadasIds = [], retoEstados = {}, cursos, recursos = [], genero = "neutro", notifSinLeer = 0, tuRanking, ranking = [], emailVerificado = true, xp = 0, rachaInfo,
 }: {
   nombre: string; avatarUrl: string | null; gemas: number; racha: number; perfilPct: number; topCreadores?: TopCreador[];
-  completadas?: number; retoEstados?: Record<string, EReto>; cursos: ModuloCurso[]; tuRanking?: { pos: number; xp: number };
+  completadas?: number; completadasIds?: string[]; recursos?: Recurso[]; genero?: Genero; notifSinLeer?: number; retoEstados?: Record<string, EReto>; cursos: ModuloCurso[]; tuRanking?: { pos: number; xp: number };
   ranking?: RankItem[]; emailVerificado?: boolean; xp?: number; rachaInfo?: RachaInfo;
 }) {
-  const elementos = construirElementos(cursos, completadas, retoEstados);
+  const hechas = new Set(completadasIds);
+  const elementos = construirElementos(cursos, completadas, retoEstados, hechas);
   // TODOS los nodos siguen la misma onda senoidal → serpentina continua y suave (sin codos).
   const pts = elementos.map((_, i) => ({
     x: serpX(i),
@@ -90,17 +99,22 @@ export function RutaAprendizaje({
     ? cursos.find((m) => m.clases.includes((elementos[idxActual] as { clase: Clase }).clase))
     : cursos[0];
 
-  // Octi ACOMPAÑA a la clase actual: se coloca a su altura en el carril central
-  // (~50%), donde nunca hay nodos (siempre están en ~16% y ~81%), así no los tapa.
+  // Octi ACOMPAÑA a la clase actual, a su misma altura. OJO: la serpentina pasa
+  // por TRES carriles (16%, 48% y 81%), no dos — el central también lleva nodos.
+  // Por eso Octi se coloca en el carril opuesto al del nodo actual, calculado,
+  // y nunca con un porcentaje fijo (así era como se encimaba en móvil).
   const idxOcti = idxActual >= 0 ? idxActual : 0;
-  const octiY = pts[idxOcti]?.y ?? TOP;
+  // A media distancia entre el nodo actual y el siguiente: en esa franja no
+  // hay nodos, así que Octi acompaña sin taparle el clic a nadie.
+  const octiY = (pts[idxOcti]?.y ?? TOP) + SPACING / 2;
   const claseActual = elementos[idxOcti]?.tipo === "clase"
     ? (elementos[idxOcti] as { clase: Clase }).clase
     : null;
-  // Octi se coloca del lado OPUESTO al nodo actual: si la clase va a la izquierda,
-  // Octi va a la derecha (y viceversa). Así nunca queda pegado al nodo.
-  // Móvil y desktop usan posiciones distintas (móvil más a la derecha).
-  const nodeIzq = serpX(idxOcti) < CX;
+  // Carril opuesto al nodo actual, acotado: en móvil el contenedor es angosto y
+  // sin este tope a Octi se le cortaba el cuerpo contra el borde.
+  const OCTI_MIN = 100, OCTI_MAX = 540;
+  const octiX = Math.min(OCTI_MAX, Math.max(OCTI_MIN,
+    serpX(idxOcti) >= CX ? CX - AMP : CX + AMP));
 
   // Progreso del MÓDULO actual (para el banner "Tu progreso").
   const modIdx = Math.max(0, cursos.indexOf(moduloActual ?? cursos[0]));
@@ -149,6 +163,31 @@ export function RutaAprendizaje({
 
   // ——— Mundos (cada módulo = un mundo temático) + Cofre de recompensas ———
   const [mundosAbierto, setMundosAbierto] = useState(false);
+  const [vista, setVista] = useState<"camino" | "bloques">("camino");
+  const [menuMundo, setMenuMundo] = useState(false);
+  // null = todos los mundos. En Bloques filtra; en Camino solo baja hasta ahí.
+  const [mundoFiltro, setMundoFiltro] = useState<number | null>(null);
+
+  // Índice global de la primera clase de cada módulo: sirve para saltar a un
+  // módulo dentro del camino sin recalcular toda la serpentina.
+  const inicioDeModulo = useMemo(() => {
+    const out: number[] = [];
+    let g = 0;
+    for (const m of cursos) { out.push(g); g += m.clases.length; }
+    return out;
+  }, [cursos]);
+
+  function irAModulo(i: number) {
+    setMenuMundo(false);
+    setMundoFiltro(i);
+    if (vista === "bloques") return; // en bloques basta con filtrar
+
+    const gi = inicioDeModulo[i] ?? 0;
+    // Cada clase ocupa 2 nodos (clase + reto) y cada módulo agrega hito + gate.
+    const idx = gi * 2 + i * 2;
+    const y = TOP + idx * SPACING;
+    window.scrollTo({ top: Math.max(0, y - 120), behavior: "smooth" });
+  }
   const [cofreAbierto, setCofreAbierto] = useState(false);
   const [recursosAbierto, setRecursosAbierto] = useState(false);
   const mundos = cursos.map((m, i) => {
@@ -168,16 +207,31 @@ export function RutaAprendizaje({
           <header className="flex items-center justify-end gap-4 mb-4 h-10">
             <Link href="/app/racha" title="Mi racha" className="hover:scale-105 transition"><Counter icon="🔥" valor={racha} /></Link>
             <Counter icon="💎" valor={gemas} />
-            <button className="relative w-9 h-9 grid place-items-center rounded-full hover:bg-surface transition" aria-label="Notificaciones">
+            <CampanaNotificaciones sinLeerInicial={notifSinLeer} />
+            <button className="hidden" aria-hidden>
               <BellIcon />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-accent" />
             </button>
             <UserMenu avatarUrl={avatarUrl} nombre={nombre} />
           </header>
 
-          <div className="mb-4">
-            <h1 className="font-display text-2xl font-extrabold">¡Hola, {nombre.split(" ")[0]}! 👋</h1>
-            <p className="text-sub text-[14px] mt-0.5">Tu ruta de aprendizaje. Sigue creciendo, un paso a la vez. 💜</p>
+          <div className="mb-4 flex items-end justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="font-display text-2xl font-extrabold">¡Hola, {nombre.split(" ")[0]}! 👋</h1>
+              <p className="text-sub text-[14px] mt-0.5">Tu ruta de aprendizaje. Sigue creciendo, un paso a la vez. 💜</p>
+            </div>
+            {/* Camino = el mapa serpenteante. Bloques = la misma ruta en lista,
+                para quien quiere ver todo de un vistazo sin hacer scroll. */}
+            <div className="shrink-0 flex items-center gap-1 bg-surface border border-border rounded-full p-1 shadow-sm">
+              {(["camino", "bloques"] as const).map((v) => (
+                <button key={v} onClick={() => setVista(v)}
+                  className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-bold transition ${
+                    vista === v ? "bg-accent text-white shadow-sm" : "text-sub hover:text-text"
+                  }`}>
+                  <OjoIcon />
+                  <span className="hidden sm:inline">{v === "camino" ? "Camino" : "Bloques"}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
@@ -225,7 +279,46 @@ export function RutaAprendizaje({
                 <BotonIcono img="/brujula.png" emoji="🧭" label="Brújula · tus mundos" onClick={() => setMundosAbierto(true)} />
               </div>
 
-              {/* Camino */}
+              {/* Selector de módulo */}
+              <div className="relative mb-3 flex items-center justify-between gap-3">
+                <div className="relative">
+                  <button onClick={() => setMenuMundo((v) => !v)}
+                    className="flex items-center gap-2 bg-surface border border-border rounded-2xl px-4 py-2.5 font-display font-extrabold shadow-sm hover:border-accent/40 transition">
+                    {mundoFiltro === null ? "Todos los mundos" : `Mundo ${mundoFiltro + 1}`}
+                    <span className={`text-sub transition-transform ${menuMundo ? "rotate-180" : ""}`}>⌄</span>
+                  </button>
+                  {menuMundo && (
+                    <div className="absolute left-0 top-12 z-30 w-[min(80vw,290px)] bg-surface border border-border rounded-2xl shadow-xl overflow-hidden max-h-[60vh] overflow-y-auto">
+                      <button onClick={() => { setMundoFiltro(null); setMenuMundo(false); }}
+                        className={`w-full px-4 py-2.5 text-left text-[13px] font-bold transition ${
+                          mundoFiltro === null ? "bg-accent-soft text-accent" : "hover:bg-bg"
+                        }`}>
+                        🌍 Todos los mundos
+                      </button>
+                      {cursos.map((m, i) => {
+                        const abierto = (inicioDeModulo[i] ?? 0) <= completadas;
+                        return (
+                          <button key={m.nombre} onClick={() => irAModulo(i)}
+                            className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-left transition ${
+                              mundoFiltro === i ? "bg-accent-soft" : "hover:bg-bg"
+                            }`}>
+                            <span className="shrink-0">{abierto ? "🌊" : "🔒"}</span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-[11px] font-bold text-hint uppercase tracking-wide">Mundo {i + 1}</span>
+                              <span className={`block text-[13px] font-semibold truncate ${abierto ? "" : "text-hint"}`}>{m.nombre}</span>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {vista === "bloques" ? (
+                <BloquesVista cursos={cursos} completadas={completadas} hechas={hechas} retoEstados={retoEstados} inicios={inicioDeModulo} filtro={mundoFiltro} />
+              ) : (
+              /* Camino */
               <div className="relative mx-auto w-full overflow-x-hidden" style={{ maxWidth: 640, height: altura }}>
                 <svg viewBox={`0 0 ${W} ${altura}`} className="absolute inset-0 w-full h-full" fill="none" preserveAspectRatio="none">
                   <path d={construirPath(pts)} stroke="#C7B8EF" strokeWidth="5.5" strokeLinecap="round" strokeDasharray="10 15" vectorEffect="non-scaling-stroke" />
@@ -239,15 +332,18 @@ export function RutaAprendizaje({
                   </div>
                 ))}
 
-                {/* Octi acompaña a la clase actual, del lado opuesto al nodo (sin taparlo). Se desliza al avanzar. */}
-                {/* Móvil: más arriba (-mt) y más a la derecha. Desktop: más abajo (mt-8) y un poco menos a la derecha. */}
-                <div className={`absolute z-10 -translate-x-1/2 -translate-y-1/2 transition-all duration-700 ease-out -mt-1 lg:mt-8 ${
-                  nodeIzq ? "left-[66%] lg:left-[69%]" : "left-[50%] lg:left-[43%]"
-                }`}
-                     style={{ top: octiY }}>
-                  <OctiRuta nombre={nombre} />
+                {/* Octi acompaña a la clase actual desde el carril opuesto, y se
+                    desliza al avanzar. `pointer-events-none` en el contenedor:
+                    su caja es grande (incluye el globo) y si no, se come los
+                    toques de los nodos que tiene debajo. */}
+                <div className="absolute z-10 -translate-x-1/2 -translate-y-1/2 transition-all duration-700 ease-out pointer-events-none"
+                     style={{ top: octiY, left: pctX(octiX) }}>
+                  <div className="pointer-events-auto">
+                    <OctiRuta nombre={nombre} genero={genero} />
+                  </div>
                 </div>
               </div>
+              )}
             </div>
 
             {/* ——— Sidebar derecha ——— */}
@@ -337,7 +433,7 @@ export function RutaAprendizaje({
       {mundosAbierto && <MundosModal mundos={mundos} onClose={() => setMundosAbierto(false)} />}
       {rankingAbierto && <RankingModal ranking={ranking} onClose={() => setRankingAbierto(false)} />}
       {cofreAbierto && <CofreModal xp={xp} onClose={() => setCofreAbierto(false)} />}
-      {recursosAbierto && <RecursosModal onClose={() => setRecursosAbierto(false)} />}
+      {recursosAbierto && <RecursosModal recursos={recursos} onClose={() => setRecursosAbierto(false)} />}
       {rachaAbierto && rachaInfo && (
         <RachaModal info={rachaInfo} onClose={() => { setRachaAbierto(false); abrirRankingSiToca(); }} />
       )}
@@ -441,14 +537,52 @@ function MundosModal({ mundos, onClose }: { mundos: { nombre: string; estado: Mu
 }
 
 // ————— Nodo según tipo/estado (la leyenda) —————
+
+// Tarjeta que aparece al pasar el mouse por una clase. `group-hover` la muestra
+// sin JS y `pointer-events-none` evita que tape el clic del nodo.
+function TipClase({ titulo, accion, href, bloqueada }: {
+  titulo: string; accion?: string; href?: string; bloqueada?: boolean;
+}) {
+  return (
+    <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[86px] z-30
+                    opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0
+                    transition duration-150 w-[186px]">
+      <div className="bg-surface rounded-2xl shadow-xl border border-border px-4 py-3 text-center">
+        <p className={`font-display font-extrabold text-[13.5px] leading-tight ${bloqueada ? "text-hint" : "text-accent"}`}>
+          {titulo}
+        </p>
+        {bloqueada ? (
+          <p className="text-[11.5px] text-hint mt-1.5">🔒 Termina la clase anterior</p>
+        ) : accion && href ? (
+          <span className="mt-2.5 flex items-center justify-center gap-2 bg-accent text-white rounded-xl py-2 text-[13px] font-bold">
+            {accion} <span className="w-5 h-5 rounded-full bg-white/25 grid place-items-center text-[9px]">▶</span>
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+// Píldora de estado del reto, también al pasar el mouse.
+function TipReto({ texto, clase }: { texto: string; clase: string }) {
+  return (
+    <div className={`pointer-events-none absolute left-[76px] top-1/2 -translate-y-1/2 z-30 whitespace-nowrap
+                     rounded-full px-4 py-2 text-[13px] font-bold shadow-lg
+                     opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0
+                     transition duration-150 ${clase}`}>
+      {texto}
+    </div>
+  );
+}
+
 function NodoElemento({ el }: { el: Elemento }) {
   if (el.tipo === "clase") {
     if (el.estado === "completada")
       return (
-        <Link href={`/app/clase/${el.clase.id}`} title={el.clase.titulo}
-          className="block hover:scale-105 transition-transform">
+        <Link href={`/app/clase/${el.clase.id}`} className="group relative block hover:scale-105 transition-transform">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/nodo-completado.png" alt="" className="w-[84px] h-[84px] select-none" draggable={false} />
+          <TipClase titulo={el.clase.titulo} accion="Repasar" href={`/app/clase/${el.clase.id}`} />
         </Link>
       );
     if (el.estado === "actual")
@@ -460,21 +594,22 @@ function NodoElemento({ el }: { el: Elemento }) {
               👇 ¡Toca aquí!
             </span>
           </div>
-          <Link href={`/app/clase/${el.clase.id}`} title={el.clase.titulo}
-            className="ruta-pulse block rounded-full hover:scale-105 transition-transform">
+          <Link href={`/app/clase/${el.clase.id}`}
+            className="ruta-pulse group relative block rounded-full hover:scale-105 transition-transform">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/nodo-actual.png" alt="" className="w-[88px] h-[88px] select-none" draggable={false} />
+            <TipClase titulo={el.clase.titulo} accion="Ver" href={`/app/clase/${el.clase.id}`} />
           </Link>
-          <div className="absolute left-1/2 -translate-x-1/2 top-[92px] whitespace-nowrap bg-white text-[11px] font-bold text-accent rounded-full px-3 py-1.5 shadow-md">
-            {el.clase.titulo}
-          </div>
         </div>
       );
     // bloqueada
     return (
-      <div className="grid place-items-center rounded-full w-[80px] h-[80px] bg-[#B9BDC7] text-white border-[5px] border-white"
-        style={{ boxShadow: "0 7px 0 #9AA0AD, 0 12px 14px rgba(0,0,0,.1)" }} title="Completa la clase anterior">
-        <PlayIcon />
+      <div className="group relative">
+        <div className="grid place-items-center rounded-full w-[80px] h-[80px] bg-[#B9BDC7] text-white border-[5px] border-white"
+          style={{ boxShadow: "0 7px 0 #9AA0AD, 0 12px 14px rgba(0,0,0,.1)" }}>
+          <PlayIcon />
+        </div>
+        <TipClase titulo={el.clase.titulo} bloqueada />
       </div>
     );
   }
@@ -485,31 +620,42 @@ function NodoElemento({ el }: { el: Elemento }) {
     const sombraGris = "0 5px 0 #E7E4EC, 0 8px 12px rgba(0,0,0,.08)";
 
     if (el.estado === "completada")
-      return <div className={base} style={{ boxShadow: sombraOk }} title="Reto completado"><SparkleIcon color="#F5B301" /></div>;
+      return (
+        <div className="group relative">
+          <div className={base} style={{ boxShadow: sombraOk }}><SparkleIcon color="#F5B301" /></div>
+          <TipReto texto="¡Reto completado!" clase="bg-amber text-white" />
+        </div>
+      );
     if (el.estado === "en-revision")
       return (
-        <div className="relative">
+        <div className="group relative">
           <div className="absolute -top-16 -right-3"><Burbujas /></div>
-          <div className={base} style={{ boxShadow: sombraGris }} title="Reto en revisión"><SparkleIcon color="#9AA0AD" /></div>
-          <EtiquetaReto texto="En revisión" clase="bg-accent-soft text-accent" />
+          <div className={base} style={{ boxShadow: sombraGris }}><SparkleIcon color="#9AA0AD" /></div>
+          <TipReto texto="En revisión" clase="bg-accent-soft text-accent" />
         </div>
       );
     if (el.estado === "rechazada")
       return (
-        <div className="relative">
+        <div className="group relative">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/nodo-rechazado.png" alt="" className="w-[68px] h-[68px] select-none" title="Reto rechazado" draggable={false} />
-          <EtiquetaReto texto="✕ Rechazado" clase="bg-pink-soft text-pink" />
+          <img src="/nodo-rechazado.png" alt="" className="w-[68px] h-[68px] select-none" draggable={false} />
+          <TipReto texto="Reto rechazado" clase="bg-pink text-white" />
         </div>
       );
     if (el.estado === "pendiente")
       return (
-        <div className="relative">
-          <div className={base} style={{ boxShadow: sombraGris }} title="Reto pendiente"><SparkleIcon color="#9AA0AD" /></div>
+        <div className="group relative">
+          <div className={base} style={{ boxShadow: sombraGris }}><SparkleIcon color="#9AA0AD" /></div>
           <div className="absolute -top-16 -right-3"><Burbujas /></div>
+          <TipReto texto="¡Completa este reto!" clase="bg-surface text-accent border border-border" />
         </div>
       );
-    return <div className={base} style={{ boxShadow: sombraGris }} title="Reto bloqueado"><SparkleIcon color="#C6CAD3" /></div>;
+    return (
+      <div className="group relative">
+        <div className={base} style={{ boxShadow: sombraGris }}><SparkleIcon color="#C6CAD3" /></div>
+        <TipReto texto="🔒 Bloqueado" clase="bg-bg text-hint border border-border" />
+      </div>
+    );
   }
 
   if (el.tipo === "hito") {
@@ -634,14 +780,8 @@ function DecorMar({ pts }: { pts: { x: number; y: number }[] }) {
   return <div className="absolute inset-0 pointer-events-none z-[1] overflow-hidden">{decos}</div>;
 }
 
-function OctiRuta({ nombre }: { nombre: string }) {
-  const primer = nombre.split(" ")[0];
-  const MENSAJES = [
-    `¡Tú puedes, ${primer}! 💪`,
-    `Termínala y ganas +100 XP ⭐`,
-    `Una clase al día 🚀🔥`,
-    `¡Vamos con todo! 🐙`,
-  ];
+function OctiRuta({ nombre, genero }: { nombre: string; genero: Genero }) {
+  const MENSAJES = octiFrases(genero, nombre).animo;
   const [i, setI] = useState(0);
   const [wiggle, setWiggle] = useState(false);
 
@@ -658,13 +798,13 @@ function OctiRuta({ nombre }: { nombre: string }) {
       title="Tócame 🐙"
     >
       {/* Burbuja ARRIBA de Octi (compacta, no tapa los nodos) */}
-      <div key={i} className="octi-fade relative bg-white rounded-2xl shadow-lg flex items-center gap-1.5 px-3 py-2 mb-1 w-max max-w-[215px] sm:max-w-[210px] z-10">
+      <div key={i} className="octi-fade relative bg-white rounded-2xl shadow-lg flex items-center gap-1.5 px-3 py-2 mb-1 w-max max-w-[150px] sm:max-w-[200px] z-10">
         <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-amber-soft grid place-items-center text-[11px] sm:text-[13px] shrink-0">⭐</span>
         <span className="text-[11px] sm:text-[13px] font-bold text-[#3C1A6B] leading-snug">{MENSAJES[i]}</span>
         <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rotate-45" />
       </div>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/octi.png" alt="Octi" className={`octi-float select-none shrink-0 w-40 lg:w-44 drop-shadow-lg ${wiggle ? "octi-wiggle" : ""}`} draggable={false} />
+      <img src="/octi.png" alt="Octi" className={`octi-float select-none shrink-0 w-24 sm:w-32 lg:w-44 drop-shadow-lg ${wiggle ? "octi-wiggle" : ""}`} draggable={false} />
     </button>
   );
 }
@@ -745,3 +885,124 @@ function BellIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fil
 function DocIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2h8l4 4v16H6z" /><path d="M14 2v4h4M9 13h6M9 17h6" /></svg>; }
 function BookIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 5a2 2 0 0 1 2-2h5v16H6a2 2 0 0 0-2 2z" /><path d="M20 5a2 2 0 0 0-2-2h-5v16h5a2 2 0 0 1 2 2z" /></svg>; }
 function ToolIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-2.5z" /></svg>; }
+
+
+// ————— Vista BLOQUES: la misma ruta en cuadrícula, sin scroll infinito —————
+// Cada clase es una tarjeta con su estado, y debajo el reto que le corresponde.
+function OjoIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function BloquesVista({
+  cursos, completadas, hechas, retoEstados, inicios, filtro,
+}: {
+  cursos: ModuloCurso[];
+  completadas: number;
+  hechas: Set<string>;
+  retoEstados: Record<string, EReto>;
+  inicios: number[];
+  filtro: number | null;   // null = todos los mundos
+}) {
+  const RETO_LABEL: Record<EReto, string> = {
+    completada: "Completado",
+    "en-revision": "En revisión",
+    rechazada: "Corrige y reenvía",
+    pendiente: "Pendiente",
+    bloqueada: "Bloqueado",
+  };
+
+  return (
+    <div className="space-y-8">
+      {cursos.map((m, mi) => {
+        if (filtro !== null && filtro !== mi) return null;
+        const base = inicios[mi] ?? 0;
+        const moduloAbierto = base <= completadas;
+        return (
+          <section key={m.nombre}>
+            <div className="flex items-center gap-2 mb-3">
+              <span>{moduloAbierto ? "🌊" : "🔒"}</span>
+              <h3 className={`font-display font-extrabold ${moduloAbierto ? "" : "text-hint"}`}>
+                Módulo {mi + 1}: {m.nombre}
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {m.clases.map((c, ci) => {
+                const gi = base + ci;
+                const hecha = hechas.has(c.id);
+                const abierta = hecha || gi <= completadas;
+                const er: EReto = retoEstados[c.id] ?? (abierta ? "pendiente" : "bloqueada");
+
+                const tarjeta = (
+                  <>
+                    <div className="relative aspect-square rounded-xl overflow-hidden"
+                      style={{ background: "linear-gradient(150deg,#7C3AED,#4F46E5 60%,#2563EB)" }}>
+                      {c.portada && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={c.portada} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                      )}
+                      {!c.portada && (
+                        <div className="absolute inset-0 p-3 flex items-end">
+                          <span className="font-display font-extrabold text-white text-[13px] leading-tight drop-shadow line-clamp-3">
+                            {c.titulo}
+                          </span>
+                        </div>
+                      )}
+                      {!abierta && (
+                        <div className="absolute inset-0 bg-black/45 grid place-items-center backdrop-blur-[1px]">
+                          <span className="text-3xl">🔒</span>
+                        </div>
+                      )}
+                    </div>
+                    <p className={`font-bold text-[13.5px] leading-tight mt-2.5 line-clamp-2 ${abierta ? "" : "text-hint"}`}>
+                      {c.titulo}
+                    </p>
+                    <span className={`inline-block mt-1.5 rounded-full px-2.5 py-0.5 text-[11.5px] font-bold ${
+                      hecha ? "bg-green/15 text-green"
+                        : abierta ? "bg-accent-soft text-accent"
+                        : "bg-bg text-hint border border-border"
+                    }`}>
+                      {hecha ? "Completado" : abierta ? "Pendiente" : "Bloqueado"}
+                    </span>
+
+                    {/* El reto de esta clase: su nombre y en qué va */}
+                    <div className="flex items-start gap-2 mt-3 pt-2.5 border-t border-border">
+                      <span className="text-[15px] shrink-0 leading-none mt-0.5">
+                        {er === "completada" ? "✅" : er === "en-revision" ? "⏳" : er === "rechazada" ? "🔁" : er === "bloqueada" ? "🔒" : "✨"}
+                      </span>
+                      <span className="min-w-0">
+                        <span className={`block text-[12px] font-bold leading-tight line-clamp-2 ${er === "bloqueada" ? "text-hint" : ""}`}>
+                          {er === "bloqueada" ? "Bloqueado" : (c.reto || "Reto de la clase")}
+                        </span>
+                        {er !== "bloqueada" && (
+                          <span className="block text-[11px] text-sub mt-0.5">{RETO_LABEL[er]}</span>
+                        )}
+                      </span>
+                    </div>
+                  </>
+                );
+
+                return abierta ? (
+                  <Link key={c.id} href={`/app/clase/${c.id}`}
+                    className="bg-surface border border-border rounded-2xl p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
+                    {tarjeta}
+                  </Link>
+                ) : (
+                  <div key={c.id} className="bg-surface border border-border rounded-2xl p-3 shadow-sm opacity-70 cursor-not-allowed">
+                    {tarjeta}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
+    </div>
+  );
+}

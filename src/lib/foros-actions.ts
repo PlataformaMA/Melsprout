@@ -2,10 +2,12 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { notificar } from "@/lib/notificaciones-actions";
 import { nivelPorXP } from "@/lib/data";
 
 export type ForoPost = {
   id: string;
+  autorId: string;
   autorNombre: string;
   autorAvatar: string | null;
   autorNivel: number;
@@ -20,7 +22,7 @@ export type ForoPost = {
   fecha: string;
 };
 
-export type ForoRespuesta = { id: string; autorNombre: string; autorAvatar: string | null; texto: string; fecha: string };
+export type ForoRespuesta = { id: string; autorId: string; autorNombre: string; autorAvatar: string | null; texto: string; fecha: string; likes: number; meGusta: boolean };
 
 async function perfilMap(admin: ReturnType<typeof createAdminClient>, ids: string[]) {
   const { data } = await admin.from("profiles").select("id, full_name, avatar_url, xp").in("id", ids.length ? ids : ["_"]);
@@ -52,6 +54,7 @@ export async function getForoPosts(categoria: string): Promise<ForoPost[]> {
     const per = pMap.get(p.autor_id as string);
     return {
       id: p.id as string,
+      autorId: p.autor_id as string,
       autorNombre: (per?.full_name as string) || "Creador",
       autorAvatar: (per?.avatar_url as string) || null,
       autorNivel: nivelPorXP((per?.xp as number) || 0).actual.nivel,
@@ -99,10 +102,36 @@ export async function toggleLike(postId: string): Promise<{ ok: true; meGusta: b
 
 export async function getRespuestas(postId: string): Promise<ForoRespuesta[]> {
   const admin = createAdminClient();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   const { data } = await admin.from("foros_respuestas").select("id, autor_id, texto, created_at").eq("post_id", postId).eq("oculto", false).order("created_at", { ascending: true });
   if (!data || data.length === 0) return [];
   const pMap = await perfilMap(admin, [...new Set(data.map((r) => r.autor_id as string))]);
-  return data.map((r) => { const p = pMap.get(r.autor_id as string); return { id: r.id as string, autorNombre: (p?.full_name as string) || "Creador", autorAvatar: (p?.avatar_url as string) || null, texto: r.texto as string, fecha: r.created_at as string }; });
+  const { data: likes } = await admin
+    .from("foros_respuesta_likes")
+    .select("respuesta_id, user_id")
+    .in("respuesta_id", data.map((r) => r.id as string));
+  const conteo = new Map<string, number>();
+  const mios = new Set<string>();
+  for (const l of likes || []) {
+    const rid = l.respuesta_id as string;
+    conteo.set(rid, (conteo.get(rid) || 0) + 1);
+    if (user && l.user_id === user.id) mios.add(rid);
+  }
+  return data.map((r) => {
+    const p = pMap.get(r.autor_id as string);
+    const id = r.id as string;
+    return {
+      id,
+      autorId: r.autor_id as string,
+      autorNombre: (p?.full_name as string) || "Creador",
+      autorAvatar: (p?.avatar_url as string) || null,
+      texto: r.texto as string,
+      fecha: r.created_at as string,
+      likes: conteo.get(id) || 0,
+      meGusta: mios.has(id),
+    };
+  });
 }
 
 export async function crearRespuesta(postId: string, texto: string): Promise<{ ok: true } | { error: string }> {
@@ -114,11 +143,54 @@ export async function crearRespuesta(postId: string, texto: string): Promise<{ o
   const admin = createAdminClient();
   const { error } = await admin.from("foros_respuestas").insert({ post_id: postId, autor_id: user.id, texto: t });
   if (error) return { error: "No se pudo responder." };
+
+  const { data: post } = await admin.from("foros_posts").select("autor_id").eq("id", postId).maybeSingle();
+  const dueno = post?.autor_id as string | undefined;
+  if (dueno && dueno !== user.id) {
+    const { data: yo } = await admin.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
+    await notificar(dueno, "comentario",
+      `${(yo?.full_name as string) || "Alguien"} respondió tu publicación`,
+      t.length > 90 ? t.slice(0, 90) + "…" : t, "/app/comunidad");
+  }
   return { ok: true };
 }
 
-export async function getTopColaboradores(): Promise<{ nombre: string; avatar: string | null; xp: number }[]> {
+export async function getTopColaboradores(): Promise<{ id: string; nombre: string; avatar: string | null; xp: number }[]> {
   const admin = createAdminClient();
-  const { data } = await admin.from("profiles").select("full_name, avatar_url, xp").eq("onboarding_completo", true).eq("email_verificado", true).order("xp", { ascending: false }).order("created_at", { ascending: true }).limit(3);
-  return (data || []).map((p) => ({ nombre: (p.full_name as string) || "Creador", avatar: (p.avatar_url as string) || null, xp: (p.xp as number) || 0 }));
+  const { data } = await admin.from("profiles").select("id, full_name, avatar_url, xp").eq("onboarding_completo", true).eq("email_verificado", true).order("xp", { ascending: false }).order("created_at", { ascending: true }).limit(3);
+  return (data || []).map((p) => ({ id: p.id as string, nombre: (p.full_name as string) || "Creador", avatar: (p.avatar_url as string) || null, xp: (p.xp as number) || 0 }));
+}
+
+// Like / quitar like a una respuesta del foro.
+export async function toggleLikeRespuesta(
+  respuestaId: string
+): Promise<{ meGusta: boolean } | { error: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Inicia sesión." };
+  const admin = createAdminClient();
+
+  const { data: ya } = await admin
+    .from("foros_respuesta_likes")
+    .select("user_id")
+    .eq("respuesta_id", respuestaId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (ya) {
+    await admin.from("foros_respuesta_likes").delete()
+      .eq("respuesta_id", respuestaId).eq("user_id", user.id);
+    return { meGusta: false };
+  }
+
+  await admin.from("foros_respuesta_likes").insert({ respuesta_id: respuestaId, user_id: user.id });
+
+  const { data: r } = await admin.from("foros_respuestas").select("autor_id").eq("id", respuestaId).maybeSingle();
+  const autor = r?.autor_id as string | undefined;
+  if (autor && autor !== user.id) {
+    const { data: yo } = await admin.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
+    await notificar(autor, "like",
+      `A ${(yo?.full_name as string) || "alguien"} le gustó tu respuesta`, "", "/app/comunidad");
+  }
+  return { meGusta: true };
 }

@@ -23,8 +23,10 @@ const HABILIDADES = ["💡 Tener ideas", "🎥 Grabar videos", "✂️ Editar vi
 const COMO_CONOCIO = ["TikTok", "Instagram", "YouTube", "Un amigo", "Google", "Otro"];
 const PLATAFORMAS = ["Instagram", "TikTok", "YouTube"];
 const AUDIENCIAS = ["0–500", "500–5K", "5K–50K", "50K+"];
+// Solo define cómo le habla Octi (creadora / creador / neutro). Nada más.
+const GENEROS = ["Femenino", "Masculino", "Prefiero neutro"];
 
-type Clave = "nicho" | "objetivo" | "experiencia" | "tiempo" | "habilidades" | "como_conocio" | "plataforma" | "audiencia" | "datos";
+type Clave = "nicho" | "objetivo" | "experiencia" | "tiempo" | "habilidades" | "como_conocio" | "plataforma" | "audiencia" | "genero" | "datos";
 type Pregunta = { clave: Clave; pregunta: string; opciones: string[] | null; octi: string; multi?: boolean };
 
 const PREGUNTAS: Pregunta[] = [
@@ -36,8 +38,17 @@ const PREGUNTAS: Pregunta[] = [
   { clave: "como_conocio", pregunta: "¿Cómo conociste Melsprout?", opciones: COMO_CONOCIO, octi: "Nos ayuda a mejorar. 🙌" },
   { clave: "plataforma", pregunta: "¿Cuál es tu plataforma?", opciones: PLATAFORMAS, octi: "¿Dónde quieres brillar primero? 📱" },
   { clave: "audiencia", pregunta: "¿Cuántos te siguen hoy?", opciones: AUDIENCIAS, octi: "Todos empezamos en algún punto. 💜" },
+  { clave: "genero", pregunta: "¿Cómo prefieres que te hable?", opciones: GENEROS, octi: "Para no decirte \"bienvenido\" si eres bienvenida. 🐙" },
   { clave: "datos", pregunta: "Solo un par de datos más", opciones: null, octi: "Con esto personalizo tu experiencia. 🐙" },
 ];
+
+// La etiqueta que ve el alumno → el valor que guardamos.
+function generoClave(v: string): "femenino" | "masculino" | "neutro" | undefined {
+  if (v === "Femenino") return "femenino";
+  if (v === "Masculino") return "masculino";
+  if (v === "Prefiero neutro") return "neutro";
+  return undefined;
+}
 
 // Nivel inicial a partir de la experiencia (para el resumen "Tu camino está listo").
 function nivelInicial(exp: string): string {
@@ -55,6 +66,7 @@ export default function OnboardingPage() {
   const [error, setError] = useState("");
   const [xpCount, setXpCount] = useState(0);
 
+  const [genero, setGenero] = useState("");
   const [nicho, setNicho] = useState("");
   const [objetivo, setObjetivo] = useState("");
   const [experiencia, setExperiencia] = useState("");
@@ -68,10 +80,10 @@ export default function OnboardingPage() {
   const [whatsapp, setWhatsapp] = useState("");
   const [waOptin, setWaOptin] = useState(true);
 
-  const valores: Record<string, string> = { nicho, objetivo, experiencia, tiempo, como_conocio: comoConocio, plataforma, audiencia };
+  const valores: Record<string, string> = { nicho, objetivo, experiencia, tiempo, como_conocio: comoConocio, plataforma, audiencia, genero };
   const setters: Record<string, (v: string) => void> = {
     nicho: setNicho, objetivo: setObjetivo, experiencia: setExperiencia, tiempo: setTiempo,
-    como_conocio: setComoConocio, plataforma: setPlataforma, audiencia: setAudiencia,
+    como_conocio: setComoConocio, plataforma: setPlataforma, audiencia: setAudiencia, genero: setGenero,
   };
   const toggleHabilidad = (op: string) =>
     setHabilidades((prev) => (prev.includes(op) ? prev.filter((x) => x !== op) : [...prev, op]));
@@ -90,12 +102,12 @@ export default function OnboardingPage() {
 
   const datosOnboarding = useMemo(
     () => ({
-      pais, fecha_nacimiento: nacimiento || undefined, whatsapp: whatsapp || undefined,
+      pais, genero: generoClave(genero), fecha_nacimiento: nacimiento || undefined, whatsapp: whatsapp || undefined,
       whatsapp_optin: waOptin, nicho, objetivo, plataforma_principal: plataforma, tamano_audiencia: audiencia,
       experiencia: experiencia || undefined, tiempo_semanal: tiempo || undefined,
       habilidades, como_conocio: comoConocio || undefined,
     }),
-    [pais, nacimiento, whatsapp, waOptin, nicho, objetivo, plataforma, audiencia, experiencia, tiempo, habilidades, comoConocio]
+    [pais, genero, nacimiento, whatsapp, waOptin, nicho, objetivo, plataforma, audiencia, experiencia, tiempo, habilidades, comoConocio]
   );
 
   function guardar(conCelebracion: boolean) {

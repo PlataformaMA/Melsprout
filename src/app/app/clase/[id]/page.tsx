@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getPerfil } from "@/lib/perfil-actions";
 import { getCursos, getVideoClaseDB } from "@/lib/cursos-db";
 import { getClasesCompletadas } from "@/lib/progreso-actions";
+import { getRecursos } from "@/lib/recursos-actions";
 import { ReproductorClase } from "@/components/ReproductorClase";
 
 export default async function ClasePage({ params }: { params: Promise<{ id: string }> }) {
@@ -34,6 +35,18 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
   const completadasSet = await getClasesCompletadas();
   const completadasIds = modulo.clases.map((c) => c.id).filter((id) => completadasSet.has(id));
 
+  // Recursos de ESTA clase (la clase ya está desbloqueada si la está viendo).
+  const recursos = (await getRecursos([clase.id])).filter((r) => r.claseId === clase.id);
+
+  // ¿Ya mandó el reto de esta clase? Sin eso no puede avanzar.
+  const { data: sub } = await supabase
+    .from("reto_submissions")
+    .select("estado, revision")
+    .eq("user_id", user.id)
+    .eq("reto_id", clase.id)
+    .maybeSingle();
+  const retoEnviado = !!sub && (sub.estado === "publicado" || sub.revision === "aprobado");
+
   // Siguiente clase GLOBAL (a través de todos los módulos); null si es la última.
   const orden = cursos.flatMap((m) => m.clases.map((c) => c.id));
   const pos = orden.indexOf(clase.id);
@@ -52,6 +65,8 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
       completadasIds={completadasIds}
       videoUrl={videoUrl}
       siguienteHref={siguienteHref}
+      retoEnviado={retoEnviado}
+      recursos={recursos}
     />
   );
 }

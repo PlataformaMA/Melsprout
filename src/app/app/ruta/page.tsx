@@ -4,6 +4,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getPerfil } from "@/lib/perfil-actions";
 import { getClasesCompletadas } from "@/lib/progreso-actions";
 import { getCursos } from "@/lib/cursos-db";
+import { getRecursos } from "@/lib/recursos-actions";
+import { generoDe } from "@/lib/genero";
+import { getNotificaciones } from "@/lib/notificaciones-actions";
 import { getRachaInfo } from "@/lib/racha-actions";
 import { nivelPorXP } from "@/lib/data";
 import { RutaAprendizaje } from "@/components/RutaAprendizaje";
@@ -56,6 +59,7 @@ export default async function RutaPage() {
 
   // Info de racha (para el pop-up "cada nuevo día").
   const rachaInfo = await getRachaInfo();
+  const { sinLeer } = await getNotificaciones();
 
   // Ranking COMPLETO (modal "Ranking de estudiantes"): todos los estudiantes por XP, con su nivel.
   const { data: rankRows } = await admin
@@ -88,8 +92,14 @@ export default async function RutaPage() {
   const cursos = await getCursos();
   const orden = cursos.flatMap((m) => m.clases.map((c) => c.id));
   const completadasSet = await getClasesCompletadas();
-  let completadas = 0;
-  for (const id of orden) { if (completadasSet.has(id)) completadas++; else break; }
+  // La frontera es hasta DONDE llegó, no cuántas seguidas lleva. Si se saltó una
+  // clase, antes el conteo se cortaba ahí y lo dejaba trabado en el módulo 1.
+  let ultima = -1;
+  orden.forEach((id, i) => { if (completadasSet.has(id)) ultima = i; });
+  const completadas = ultima + 1;
+
+  // Recursos: se desbloquean con la clase a la que pertenecen.
+  const recursos = await getRecursos(orden.slice(0, completadas + 1));
 
   // ——— Estado de los retos (de reto_submissions) ———
   const { data: subs } = await supabase
@@ -114,6 +124,10 @@ export default async function RutaPage() {
       perfilPct={perfilPct}
       topCreadores={topCreadores}
       completadas={completadas}
+      completadasIds={[...completadasSet]}
+      recursos={recursos}
+      genero={generoDe(perfil.genero)}
+      notifSinLeer={sinLeer}
       retoEstados={retoEstados}
       cursos={cursos}
       tuRanking={tuRanking}

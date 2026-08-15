@@ -13,6 +13,7 @@ export type RetoRow = {
   emoji: string | null;
   descripcion: string | null;
   intro: string | null;
+  instrucciones: string | null;
   accion: string | null;
   revisa: string | null;
   xp: number;
@@ -54,6 +55,7 @@ export function rowToDef(r: RetoRow): RetoDef {
     emoji: r.emoji || "🎯",
     descripcion: r.descripcion || "",
     intro: r.intro || "",
+    instrucciones: r.instrucciones || "",
     accion: r.accion || "compartirlo",
     revisa: (r.revisa as "sola" | "equipo") || "equipo",
     xp: r.xp ?? 50,
@@ -78,7 +80,7 @@ export async function getRetoDB(id: string): Promise<RetoDef | null> {
 async function getRetoDeClase(id: string): Promise<RetoDef | null> {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
   const admin = createAdminClient();
-  const { data } = await admin.from("cursos_clases").select("titulo, reto_texto").eq("id", id).maybeSingle();
+  const { data } = await admin.from("cursos_clases").select("titulo, reto_texto, reto_instrucciones").eq("id", id).maybeSingle();
   if (!data) return null;
   const reto = (data.reto_texto as string) || `Aplica lo aprendido en «${data.titulo}» y compártelo.`;
   return {
@@ -88,6 +90,7 @@ async function getRetoDeClase(id: string): Promise<RetoDef | null> {
     emoji: "🎯",
     descripcion: "Pon en práctica lo de la clase y compártelo con la comunidad.",
     intro: "Completa este reto para afianzar lo aprendido y ganar XP.",
+    instrucciones: (data.reto_instrucciones as string) || "",
     accion: "compartirlo",
     revisa: "equipo",
     xp: 50,

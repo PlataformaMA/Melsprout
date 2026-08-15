@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { notificar } from "@/lib/notificaciones-actions";
 import { esAdmin, esAdminUsuario } from "@/lib/admin";
 import { getRetoUnificado, type RetoRow, type RetoTipo } from "@/lib/retos-db";
 
@@ -256,6 +257,15 @@ export async function revisarReto(
     .eq("user_id", userId)
     .eq("reto_id", retoId);
   if (error) return { error: "No se pudo actualizar la revisión." };
+
+  // El alumno se entera del veredicto sin tener que ir a buscarlo.
+  if (revision === "aprobado") {
+    await notificar(userId, "reto", "¡Tu reto fue aprobado! 🎉",
+      "Ya puedes seguir con la siguiente clase.", `/app/reto/${retoId}`);
+  } else if (revision === "rechazado") {
+    await notificar(userId, "reto", "Tu reto necesita ajustes",
+      "Entra para ver los comentarios del equipo y vuelve a enviarlo.", `/app/reto/${retoId}`);
+  }
   return { ok: true };
 }
 

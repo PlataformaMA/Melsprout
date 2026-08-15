@@ -10,6 +10,7 @@ const ITEMS: Item[] = [
   { id: "clases", label: "Ruta de aprendizaje", href: "/app/ruta", icon: <MapIcon /> },
   { id: "vivo", label: "Clases en vivo", href: "/app/vivo", icon: <LiveIcon /> },
   { id: "comunidad", label: "Comunidad", href: "/app/comunidad", icon: <PeopleIcon /> },
+  { id: "amigos", label: "Amigos", href: "/app/amigos", icon: <ChatIcon /> },
   { id: "perfil", label: "Mi perfil", href: "/app/perfil", icon: <UserIcon /> },
 ];
 
@@ -69,3 +70,12 @@ function LiveIcon() { return <svg {...ICO}><circle cx="12" cy="12" r="2.3" fill=
 function PeopleIcon() { return <svg {...ICO}><circle cx="9" cy="8.5" r="3" /><path d="M3.5 19.5a5.5 5.5 0 0 1 11 0" /><path d="M15.5 6a3 3 0 0 1 0 5.6M20.5 19.5a5.5 5.5 0 0 0-3.6-5.2" /></svg>; }
 function TrophyIcon() { return <svg {...ICO}><path d="M7 4.5h10v3.5a5 5 0 0 1-10 0z" /><path d="M7 6.5H4.5v.8a3 3 0 0 0 3 3M17 6.5h2.5v.8a3 3 0 0 1-3 3M9.5 19.5h5M12 13v3.5" /></svg>; }
 function UserIcon() { return <svg {...ICO}><circle cx="12" cy="8" r="3.6" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>; }
+
+function ChatIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}

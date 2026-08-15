@@ -8,15 +8,15 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { CATEGORIAS_FORO } from "@/lib/data";
 import {
-  getForoPosts, crearPost, toggleLike, getRespuestas, crearRespuesta,
+  getForoPosts, crearPost, toggleLike, getRespuestas, crearRespuesta, toggleLikeRespuesta,
   type ForoPost, type ForoRespuesta,
 } from "@/lib/foros-actions";
 import { type RetoComunidad } from "@/lib/comunidad-retos-actions";
 
-type Actividad = { id: string; nombre: string; avatar: string | null; texto: string; xp?: number; hace: string };
+type Actividad = { id: string; userId: string; nombre: string; avatar: string | null; texto: string; xp?: number; hace: string };
 type Props = {
   postsIniciales: ForoPost[];
-  topColaboradores: { nombre: string; avatar: string | null; xp: number }[];
+  topColaboradores: { id: string; nombre: string; avatar: string | null; xp: number }[];
   retosComunidad: RetoComunidad[];
   actividad?: Actividad[];
   nombre: string; avatarUrl: string | null; gemas: number; racha: number;
@@ -218,16 +218,16 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
                 <h3 className="font-display font-extrabold text-[15px] mb-3">Top colaboradores 🏆</h3>
                 <div className="space-y-2.5">
                   {topColaboradores.map((c, i) => (
-                    <div key={i} className="flex items-center gap-2.5">
+                    <Link key={i} href={`/app/creador/${c.id}`} className="flex items-center gap-2.5 rounded-lg -mx-1 px-1 py-0.5 hover:bg-bg transition">
                       <span className="text-[13px] font-extrabold w-4">{i + 1}</span>
                       {c.avatar ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={c.avatar} alt={c.nombre} className="w-8 h-8 rounded-full object-cover" />
                       ) : <span className="w-8 h-8 rounded-full bg-accent/15 text-accent grid place-items-center text-[11px] font-bold">{c.nombre.slice(0, 2).toUpperCase()}</span>}
-                      <span className="flex-1 min-w-0 text-[13px] font-semibold truncate">{c.nombre}</span>
+                      <span className="flex-1 min-w-0 text-[13px] font-semibold truncate hover:text-accent transition">{c.nombre}</span>
                       <span className="text-[12px] font-bold text-accent">{c.xp.toLocaleString("es-MX")} XP</span>
                       <span>{i === 0 ? "👑" : ""}</span>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </section>
@@ -239,12 +239,16 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
                   <div className="space-y-3.5">
                     {actividad.map((a) => (
                       <div key={a.id} className="flex items-start gap-2.5">
-                        {a.avatar ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={a.avatar} alt={a.nombre} className="w-8 h-8 rounded-full object-cover shrink-0" />
-                        ) : <span className="w-8 h-8 rounded-full bg-accent/15 text-accent grid place-items-center text-[11px] font-bold shrink-0">{a.nombre.slice(0, 2).toUpperCase()}</span>}
+                        <Link href={`/app/creador/${a.userId}`} className="shrink-0">
+                          {a.avatar ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={a.avatar} alt={a.nombre} className="w-8 h-8 rounded-full object-cover" />
+                          ) : <span className="w-8 h-8 rounded-full bg-accent/15 text-accent grid place-items-center text-[11px] font-bold">{a.nombre.slice(0, 2).toUpperCase()}</span>}
+                        </Link>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[13px] leading-snug"><b>{a.nombre}</b> {a.texto}</p>
+                          <p className="text-[13px] leading-snug">
+                            <Link href={`/app/creador/${a.userId}`} className="font-bold hover:text-accent transition">{a.nombre}</Link> {a.texto}
+                          </p>
                           <p className="text-[12px] text-sub mt-0.5">
                             {a.xp ? <b className="text-accent">+{a.xp} XP</b> : null}{a.xp ? " · " : ""}{a.hace}
                           </p>
@@ -267,6 +271,14 @@ function PostCard({ post }: { post: ForoPost }) {
   const [meGusta, setMeGusta] = useState(post.meGusta);
   const [abierto, setAbierto] = useState(false);
   const [resp, setResp] = useState<ForoRespuesta[] | null>(null);
+
+  // Like a una respuesta: se pinta al instante y luego se confirma en el servidor.
+  async function likeResp(id: string) {
+    setResp((rs) => rs?.map((r) => r.id === id
+      ? { ...r, meGusta: !r.meGusta, likes: r.likes + (r.meGusta ? -1 : 1) }
+      : r) ?? rs);
+    await toggleLikeRespuesta(id);
+  }
   const [texto, setTexto] = useState("");
   const [num, setNum] = useState(post.respuestas);
 
@@ -289,12 +301,17 @@ function PostCard({ post }: { post: ForoPost }) {
   return (
     <article className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
       <div className="flex items-center gap-3 mb-2">
-        {post.autorAvatar ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={post.autorAvatar} alt={post.autorNombre} className="w-10 h-10 rounded-full object-cover" />
-        ) : <span className="w-10 h-10 rounded-full bg-accent/15 text-accent grid place-items-center text-[13px] font-bold">{post.autorNombre.slice(0, 2).toUpperCase()}</span>}
+        <Link href={`/app/creador/${post.autorId}`} className="shrink-0">
+          {post.autorAvatar ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={post.autorAvatar} alt={post.autorNombre} className="w-10 h-10 rounded-full object-cover" />
+          ) : <span className="w-10 h-10 rounded-full bg-accent/15 text-accent grid place-items-center text-[13px] font-bold">{post.autorNombre.slice(0, 2).toUpperCase()}</span>}
+        </Link>
         <div className="min-w-0">
-          <div className="font-bold text-[14px] leading-tight">{post.autorNombre} <span className="text-sub font-normal text-[12px]">· Nivel {post.autorNivel}</span></div>
+          <div className="font-bold text-[14px] leading-tight">
+            <Link href={`/app/creador/${post.autorId}`} className="hover:text-accent transition">{post.autorNombre}</Link>
+            <span className="text-sub font-normal text-[12px]"> · Nivel {post.autorNivel}</span>
+          </div>
           <div className="text-[12px] text-hint">{haceRato(post.fecha)}</div>
         </div>
       </div>
@@ -323,11 +340,26 @@ function PostCard({ post }: { post: ForoPost }) {
         <div className="mt-3 pt-3 border-t border-border space-y-3">
           {resp === null ? <p className="text-[13px] text-hint">Cargando…</p> : resp.length === 0 ? <p className="text-[13px] text-hint">Sé el primero en responder.</p> : resp.map((c) => (
             <div key={c.id} className="flex items-start gap-2.5">
-              {c.autorAvatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={c.autorAvatar} alt={c.autorNombre} className="w-8 h-8 rounded-full object-cover shrink-0" />
-              ) : <span className="w-8 h-8 rounded-full bg-accent/15 text-accent grid place-items-center text-[11px] font-bold shrink-0">{c.autorNombre.slice(0, 2).toUpperCase()}</span>}
-              <div className="bg-bg rounded-2xl px-3 py-2 flex-1 min-w-0"><div className="font-bold text-[12.5px]">{c.autorNombre}</div><p className="text-[13.5px] text-text whitespace-pre-wrap">{c.texto}</p></div>
+              <Link href={`/app/creador/${c.autorId}`} className="shrink-0">
+                {c.autorAvatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={c.autorAvatar} alt={c.autorNombre} className="w-8 h-8 rounded-full object-cover" />
+                ) : <span className="w-8 h-8 rounded-full bg-accent/15 text-accent grid place-items-center text-[11px] font-bold">{c.autorNombre.slice(0, 2).toUpperCase()}</span>}
+              </Link>
+              <div className="flex-1 min-w-0">
+                <div className="bg-bg rounded-2xl px-3 py-2">
+                  <Link href={`/app/creador/${c.autorId}`} className="font-bold text-[12.5px] hover:text-accent transition">{c.autorNombre}</Link>
+                  <p className="text-[13.5px] text-text whitespace-pre-wrap">{c.texto}</p>
+                </div>
+                <div className="flex items-center gap-4 mt-1 ml-1 text-[12px]">
+                  <button onClick={() => likeResp(c.id)}
+                    className={`font-semibold transition ${c.meGusta ? "text-pink" : "text-sub hover:text-pink"}`}>
+                    ♥ {c.likes || ""}
+                  </button>
+                  <button onClick={() => setTexto(`@${c.autorNombre.split(" ")[0]} `)}
+                    className="font-semibold text-sub hover:text-accent transition">Responder</button>
+                </div>
+              </div>
             </div>
           ))}
           <div className="flex items-center gap-2 pt-1">

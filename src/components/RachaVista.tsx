@@ -8,7 +8,7 @@ const DIAS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
 export function RachaVista({ info }: { info: RachaInfo }) {
   const router = useRouter();
-  const { racha, semana } = info;
+  const { racha, semana, congelada } = info;
 
   return (
     <main className="min-h-screen bg-bg">
@@ -34,7 +34,11 @@ export function RachaVista({ info }: { info: RachaInfo }) {
         <div className="text-center mt-2">
           <div className="font-display text-xl font-extrabold">{racha === 1 ? "día" : "días"} de racha 🔥</div>
           <p className="text-[13px] text-sub mt-1">
-            {racha === 0 ? "¡Empieza hoy! Completa una clase o reto." : "¡Sigue así, Octi y tu equipo están orgullosos de ti!"}
+            {congelada
+              ? "Terminaste todo lo disponible. Tu racha queda guardada. 🧊"
+              : racha === 0
+                ? "¡Empieza hoy! Completa una clase o reto."
+                : "¡Sigue así, Octi y tu equipo están orgullosos de ti!"}
           </p>
         </div>
 
@@ -53,12 +57,23 @@ export function RachaVista({ info }: { info: RachaInfo }) {
         </div>
 
         {/* Aviso */}
-        <div className="mt-4 flex items-start gap-3 bg-accent-soft/50 border border-accent/15 rounded-2xl p-3.5">
-          <span className="text-xl shrink-0">⭐</span>
-          <p className="text-[13px] text-sub leading-snug">
-            Tu racha se reiniciará si no completas una actividad <b className="text-accent">mañana</b>. ¡No la pierdas! 💜
-          </p>
-        </div>
+        {congelada ? (
+          <div className="mt-4 flex items-start gap-3 bg-blue/10 border border-blue/25 rounded-2xl p-3.5">
+            <span className="text-xl shrink-0">🧊</span>
+            <p className="text-[13px] text-sub leading-snug">
+              Tu racha está <b className="text-blue">congelada</b> porque ya completaste todo el
+              contenido disponible. No la vas a perder: se reanuda sola cuando publiquemos
+              clases nuevas. 💜
+            </p>
+          </div>
+        ) : (
+          <div className="mt-4 flex items-start gap-3 bg-accent-soft/50 border border-accent/15 rounded-2xl p-3.5">
+            <span className="text-xl shrink-0">⭐</span>
+            <p className="text-[13px] text-sub leading-snug">
+              Tu racha se reiniciará si no completas una actividad <b className="text-accent">mañana</b>. ¡No la pierdas! 💜
+            </p>
+          </div>
+        )}
 
         {/* Beneficios por racha */}
         <div className="mt-6">

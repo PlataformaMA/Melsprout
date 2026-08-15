@@ -2,7 +2,10 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { registrarRacha } from "@/lib/racha-actions";
+import { registrarRacha, congelarRacha } from "@/lib/racha-actions";
+import { getCursos } from "@/lib/cursos-db";
+import { notificar } from "@/lib/notificaciones-actions";
+import { nivelPorXP } from "@/lib/data";
 
 // Devuelve el set de clase_ids completadas por el usuario.
 export async function getClasesCompletadas(): Promise<Set<string>> {
@@ -53,9 +56,32 @@ export async function completarClase(
   if (!yaTeniaXp) {
     const admin = createAdminClient();
     const { data: p } = await admin.from("profiles").select("xp").eq("id", user.id).single();
-    await admin.from("profiles").update({ xp: (p?.xp ?? 0) + 100 }).eq("id", user.id);
+    const antes = p?.xp ?? 0;
+    const despues = antes + 100;
+    await admin.from("profiles").update({ xp: despues }).eq("id", user.id);
+
+    // ¿Cruzó un umbral de nivel con esos 100 XP?
+    const nAntes = nivelPorXP(antes).actual.nivel;
+    const nDespues = nivelPorXP(despues);
+    if (nDespues.actual.nivel > nAntes) {
+      await notificar(user.id, "nivel", `¡Subiste al nivel ${nDespues.actual.nivel}! ⭐`,
+        `Ahora eres ${nDespues.actual.nombre}.`, "/app/perfil");
+    }
   }
   await registrarRacha(); // cuenta actividad de hoy para la racha
+
+  // ¿Con esta clase terminó TODO lo publicado? Entonces congelamos la racha:
+  // sin clases nuevas no puede mantenerla, y romperla sería castigarlo por ir
+  // al corriente. Se descongela sola en cuanto haya contenido y vuelva.
+  const cursos = await getCursos();
+  const todas = cursos.flatMap((m) => m.clases.map((c) => c.id));
+  const { count } = await supabase
+    .from("clase_progreso")
+    .select("clase_id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("completada", true);
+  if (todas.length > 0 && (count ?? 0) >= todas.length) await congelarRacha();
+
   return { ok: true, xpDado: !yaTeniaXp };
 }
 
@@ -72,4 +98,28 @@ export async function guardarPosicion(claseId: string, segundos: number): Promis
     segundos_vistos: Math.round(segundos),
     updated_at: new Date().toISOString(),
   });
+}
+
+// Conteo real de avance para el perfil: clases completadas y retos aprobados.
+export async function getAvance(): Promise<{ clases: number; retos: number }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { clases: 0, retos: 0 };
+
+  const [clases, retos] = await Promise.all([
+    supabase
+      .from("clase_progreso")
+      .select("clase_id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("completada", true),
+    supabase
+      .from("reto_submissions")
+      .select("clase_id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("revision", "aprobado"),
+  ]);
+
+  return { clases: clases.count ?? 0, retos: retos.count ?? 0 };
 }

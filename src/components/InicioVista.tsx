@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
+import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import { UserMenu } from "@/components/UserMenu";
 import { InstagramIcon, TikTokIcon, YouTubeIcon } from "@/components/iconos-redes";
 import { PopupBienvenida } from "@/components/PopupCelebracion";
@@ -52,7 +53,7 @@ export function InicioVista({ perfil, stats, ranking, continuar, retosSugeridos,
           {/* Topbar */}
           <header className="flex items-center justify-end gap-4 mb-6 h-10">
             <span className="flex items-center gap-1.5 text-[14px] font-bold bg-surface border border-border rounded-full px-3 py-1.5">🔥 {perfil.racha} <span className="text-[11px] text-sub font-medium">racha</span></span>
-            <button className="relative w-9 h-9 rounded-full bg-surface border border-border grid place-items-center" aria-label="Notificaciones">🔔<span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-accent" /></button>
+            <CampanaNotificaciones />
             <UserMenu avatarUrl={perfil.avatarUrl} nombre={perfil.nombre} />
           </header>
 

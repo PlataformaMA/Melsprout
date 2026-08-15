@@ -23,6 +23,9 @@ export type RetoDef = {
   emoji: string;
   descripcion: string;
   intro: string;
+  // Contexto y lineamientos: qué se espera, cómo se evalúa. Sin esto las
+  // respuestas salen ambiguas y ni el alumno ni quien revisa tienen referencia.
+  instrucciones?: string;
   accion: string; // "publicarlo" | "compartirlo" | "compartir tu captura"
   revisa?: "sola" | "equipo"; // 'sola' = auto-publica; 'equipo' = revisión 48h
   xp: number;

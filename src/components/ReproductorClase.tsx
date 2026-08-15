@@ -7,6 +7,8 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { PopupClaseCompletada } from "@/components/PopupCelebracion";
 import { completarClase, guardarPosicion } from "@/lib/progreso-actions";
+import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
+import { descargarRecurso, type Recurso } from "@/lib/recursos-actions";
 import { type Clase, type ModuloCurso } from "@/lib/data";
 
 type YtPlayer = { getCurrentTime: () => number; getDuration: () => number; getPlayerState: () => number; seekTo: (s: number, allow: boolean) => void; destroy: () => void };
@@ -35,9 +37,9 @@ function fmtTiempo(seg: number): string {
 }
 
 export function ReproductorClase({
-  clase, modulo, avatarUrl, nombre, gemas, racha, yaCompletada = false, vistoInicial = 0, completadasIds = [], videoUrl = null, siguienteHref = null,
+  clase, modulo, avatarUrl, nombre, gemas, racha, yaCompletada = false, vistoInicial = 0, completadasIds = [], videoUrl = null, siguienteHref = null, retoEnviado = false, recursos = [],
 }: {
-  clase: Clase; modulo: ModuloCurso; avatarUrl: string | null; nombre: string; gemas: number; racha: number; yaCompletada?: boolean; vistoInicial?: number; completadasIds?: string[]; videoUrl?: string | null; siguienteHref?: string | null;
+  clase: Clase; modulo: ModuloCurso; avatarUrl: string | null; nombre: string; gemas: number; racha: number; yaCompletada?: boolean; vistoInicial?: number; completadasIds?: string[]; videoUrl?: string | null; siguienteHref?: string | null; retoEnviado?: boolean; recursos?: Recurso[];
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const vistoRef = useRef(vistoInicial);   // segundos REALMENTE vistos (arranca de lo ya guardado)
@@ -60,7 +62,8 @@ export function ReproductorClase({
   const [velocidad, setVelocidad] = useState(1); // velocidad de reproducción visible
   const [popup, setPopup] = useState(false);
   const [tabRep, setTabRep] = useState<"recursos" | "clases">("clases");
-  const completadoRef = useRef(yaCompletada); // ya alcanzó el 85% (guarda anti-repetición)
+  const completadoRef = useRef(yaCompletada); // ya llegó al 100% (guarda anti-repetición)
+  const xpGanadoRef = useRef(false); // dio XP: el pop-up se muestra al pulsar "siguiente"
 
   const idx = modulo.clases.findIndex((c) => c.id === clase.id);
   const siguiente = idx >= 0 ? modulo.clases[idx + 1] : undefined;
@@ -100,9 +103,9 @@ export function ReproductorClase({
     return () => { clearInterval(t); guardar(); };
   }, [clase.id]);
 
-  // Al llegar al 85% real: clase completada (+100 XP una sola vez) y desbloquea la siguiente.
+  // Al terminar el video (100%): clase completada (+100 XP una sola vez).
   useEffect(() => {
-    if (progreso < 85 || completadoRef.current) return;
+    if (progreso < 100 || completadoRef.current) return;
     completadoRef.current = true;
     (async () => {
       setTerminado(true);
@@ -110,10 +113,13 @@ export function ReproductorClase({
       if (!("error" in r)) {
         // Marca la clase como completada (check) y desbloquea la siguiente en vivo.
         setCompletadas((prev) => new Set(prev).add(clase.id));
-        if (r.xpDado) { setPopup(true); router.refresh(); } // +100 XP solo la primera vez
+        if (r.xpDado) { xpGanadoRef.current = true; router.refresh(); } // +100 XP solo la primera vez
       }
     })();
   }, [progreso, clase.id, router]);
+
+  // Puede avanzar cuando el video llegó al final (o ya estaba completada).
+  const claseLista = progreso >= 100 || completadas.has(clase.id);
 
   function togglePlay() {
     if (terminado) { setTerminado(false); setProgreso(0); setReproduciendo(true); return; }
@@ -143,8 +149,9 @@ export function ReproductorClase({
           <header className="flex items-center justify-end gap-4 mb-4 h-10">
             <Counter icon="🔥" valor={racha} />
             <Counter icon="💎" valor={gemas} />
-            <button className="relative w-9 h-9 grid place-items-center rounded-full hover:bg-surface transition" aria-label="Notificaciones">
-              <BellIcon /><span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-accent" />
+            <CampanaNotificaciones />
+            <button className="hidden" aria-hidden>
+              <BellIcon />
             </button>
             <UserMenu avatarUrl={avatarUrl} nombre={nombre} />
           </header>
@@ -178,13 +185,14 @@ export function ReproductorClase({
                       }}
                       className="w-full rounded-2xl aspect-video bg-black shadow-lg" />
                   )}
-                  {/* Selector de velocidad — DENTRO del reproductor (esquina sup. der.), solo video propio MP4 */}
+                  {/* Selector de velocidad — DEBAJO del video (antes tapaba la esquina
+                      superior derecha de la imagen). Solo para video propio MP4. */}
                   {video.tipo !== "youtube" && video.tipo !== "vimeo" && (
-                    <div className="absolute top-3 right-3 z-10 flex items-center gap-0.5 bg-black/60 backdrop-blur rounded-full px-1 py-1 shadow-lg">
+                    <div className="mt-2 flex items-center justify-end gap-0.5">
                       {[1, 1.25, 1.5, 2].map((v) => (
                         <button key={v} type="button"
                           onClick={() => { setVelocidad(v); if (videoRef.current) videoRef.current.playbackRate = v; }}
-                          className={`text-[11px] sm:text-[12px] font-bold rounded-full px-2 sm:px-2.5 py-0.5 transition ${velocidad === v ? "bg-white text-accent" : "text-white/90 hover:bg-white/25"}`}>
+                          className={`text-[11px] sm:text-[12px] font-bold rounded-full px-2 sm:px-2.5 py-1 transition ${velocidad === v ? "bg-accent text-white" : "text-sub hover:bg-surface border border-border"}`}>
                           {v}x
                         </button>
                       ))}
@@ -195,11 +203,11 @@ export function ReproductorClase({
                   </div>
                   {video.tipo === "vimeo" ? (
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-[12px] text-sub">{progreso >= 85 ? "✅ completada" : "Marca la clase cuando la termines"}</span>
-                      {progreso < 85 && <button onClick={() => setProgreso(100)} className="text-[12px] font-bold text-accent hover:underline">Marcar como vista ✓</button>}
+                      <span className="text-[12px] text-sub">{progreso >= 100 ? "✅ completada" : "Marca la clase cuando la termines"}</span>
+                      {progreso < 100 && <button onClick={() => setProgreso(100)} className="text-[12px] font-bold text-accent hover:underline">Marcar como vista ✓</button>}
                     </div>
                   ) : (
-                    <div className="text-[12px] text-sub mt-1">{Math.round(progreso)}% visto {progreso >= 85 ? "· ✅ completada" : "· la clase se completa al 85%"}</div>
+                    <div className="text-[12px] text-sub mt-1">{Math.round(progreso)}% visto {progreso >= 100 ? "· ✅ completada" : "· termina el video para completarla"}</div>
                   )}
                 </div>
               ) : (
@@ -247,10 +255,20 @@ export function ReproductorClase({
                   <Link href={`/app/reto/${clase.id}`} className="flex items-center gap-2 bg-accent text-white font-bold text-sm rounded-xl px-5 py-2.5 hover:brightness-110 transition shadow-sm shadow-accent/30">
                     <SparkleMini /> Continuar al reto
                   </Link>
-                  {(terminado || completadas.has(clase.id)) && siguienteHref && (
-                    <Link href={siguienteHref} className="flex items-center gap-2 bg-green text-white border border-green rounded-xl px-4 py-2.5 font-bold text-sm hover:brightness-110 transition shadow-sm">
-                      Siguiente clase <NextIcon small />
-                    </Link>
+                  {siguienteHref && (
+                    claseLista && retoEnviado ? (
+                      <button
+                        onClick={() => { if (xpGanadoRef.current) { xpGanadoRef.current = false; setPopup(true); } else router.push(siguienteHref); }}
+                        className="flex items-center gap-2 bg-green text-white border border-green rounded-xl px-4 py-2.5 font-bold text-sm hover:brightness-110 transition shadow-sm">
+                        Siguiente clase <NextIcon small />
+                      </button>
+                    ) : (
+                      // No lo escondemos: el alumno debe SABER qué le falta para avanzar.
+                      <span className="flex items-center gap-2 rounded-xl px-4 py-2.5 font-bold text-sm bg-surface border border-border text-sub cursor-not-allowed"
+                        title={!claseLista ? "Termina el video completo" : "Envía tu reto para avanzar"}>
+                        🔒 {!claseLista ? "Termina el video" : "Envía tu reto"}
+                      </span>
+                    )
                   )}
                 </div>
               </div>
@@ -303,13 +321,7 @@ export function ReproductorClase({
                     })}
                   </div>
                 ) : (
-                  <div>
-                    <div className="flex items-center gap-3 bg-accent-soft/60 rounded-xl px-3.5 py-3">
-                      <span className="text-accent"><DocIcon /></span>
-                      <span className="flex-1 text-sm font-semibold">{titleCase(clase.titulo).split(" ")[0]}.Pdf</span>
-                      <button className="text-accent" aria-label="Descargar"><DownloadIcon /></button>
-                    </div>
-                  </div>
+                  <ListaRecursos recursos={recursos} />
                 )}
               </div>
 
@@ -372,11 +384,7 @@ export function ReproductorClase({
               {/* Recursos */}
               <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
                 <h3 className="font-display font-extrabold mb-4">Recursos</h3>
-                <div className="flex items-center gap-3 bg-accent-soft/60 rounded-xl px-3.5 py-3">
-                  <span className="text-accent"><DocIcon /></span>
-                  <span className="flex-1 text-sm font-semibold">{titleCase(clase.titulo).split(" ")[0]}.Pdf</span>
-                  <button className="text-accent" aria-label="Descargar"><DownloadIcon /></button>
-                </div>
+                <ListaRecursos recursos={recursos} />
               </section>
             </aside>
           </div>
@@ -401,7 +409,7 @@ function YouTubePlayer({ videoId, vistoInicial = 0, onProgress }: { videoId: str
       if (cancelado || !ref.current || !window.YT) return;
       player = new window.YT.Player(ref.current, {
         videoId,
-        playerVars: { rel: 0, modestbranding: 1, playsinline: 1 },
+        playerVars: { rel: 0, modestbranding: 1, playsinline: 1, iv_load_policy: 3, fs: 1 },
         events: {
           onReady: () => {
             // Reanuda donde se quedó.
@@ -443,8 +451,51 @@ function YouTubePlayer({ videoId, vistoInicial = 0, onProgress }: { videoId: str
   }, [videoId, vistoInicial, onProgress]);
 
   return (
-    <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black shadow-lg">
+    <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-black shadow-lg">
       <div ref={ref} className="w-full h-full" />
+      {/* Tapa la franja superior del iframe: ahí YouTube pone el título y el
+          canal, que son enlaces que se llevan al alumno fuera de Melsprout.
+          El resto del reproductor (play, barra, pantalla completa) sigue vivo. */}
+      <div className="absolute inset-x-0 top-0 h-[15%] min-h-[44px] z-10" aria-hidden />
+    </div>
+  );
+}
+
+// Recursos REALES de la clase (antes era un PDF inventado a partir del título).
+function ListaRecursos({ recursos }: { recursos: Recurso[] }) {
+  const [bajados, setBajados] = useState<Set<string>>(
+    () => new Set(recursos.filter((r) => r.descargado).map((r) => r.id))
+  );
+  const [cargando, setCargando] = useState<string | null>(null);
+
+  if (recursos.length === 0) {
+    return <p className="text-[13px] text-hint">Esta clase todavía no tiene material descargable.</p>;
+  }
+
+  async function bajar(r: Recurso) {
+    setCargando(r.id);
+    const res = await descargarRecurso(r.id);
+    setCargando(null);
+    if ("error" in res) { alert(res.error); return; }
+    setBajados((prev) => new Set(prev).add(r.id));
+    window.open(res.url, "_blank", "noopener");
+  }
+
+  return (
+    <div className="space-y-2">
+      {recursos.map((r) => (
+        <button key={r.id} onClick={() => bajar(r)} disabled={cargando === r.id}
+          className="w-full flex items-center gap-3 bg-accent-soft/60 hover:bg-accent-soft rounded-xl px-3.5 py-3 transition disabled:opacity-60 text-left">
+          <span className="text-lg shrink-0">{r.emoji}</span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-sm font-semibold truncate">{r.titulo}</span>
+            {r.peso && <span className="block text-[11px] text-sub">{r.peso}</span>}
+          </span>
+          <span className="text-accent shrink-0">
+            {cargando === r.id ? "…" : bajados.has(r.id) ? <span className="text-green text-sm font-bold">✓</span> : <DownloadIcon />}
+          </span>
+        </button>
+      ))}
     </div>
   );
 }

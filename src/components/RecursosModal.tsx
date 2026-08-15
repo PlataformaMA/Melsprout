@@ -1,27 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { descargarRecurso, type Recurso } from "@/lib/recursos-actions";
 
-type Tipo = "pdf" | "plantillas" | "canva" | "links";
-type Recurso = {
-  titulo: string;
-  tipo: Tipo;
-  etiqueta?: string; // "Nuevo", "Canva", "PDF"…
-  peso?: string;
-  desc: string;
-  descargas: number;
-  url?: string;
-  emoji: string;
-  reclamado?: boolean;
-};
-
-// Material de apoyo. (De momento es una lista base; luego se puede leer de la BD.)
-const RECURSOS: Recurso[] = [
-  { titulo: "Plantilla de Calendario de Contenido", tipo: "plantillas", etiqueta: "Nuevo", peso: "PDF · 2.3 MB", desc: "Organiza un mes completo de publicaciones.", descargas: 1240, emoji: "🗓️" },
-  { titulo: "Guía de Hooks Virales", tipo: "pdf", peso: "PDF", desc: "Aprende las estructuras que generan atención.", descargas: 890, emoji: "📕" },
-  { titulo: "Plantilla Canva para Reels", tipo: "canva", etiqueta: "Canva", desc: "Duplica esta plantilla y personalízala con tu marca.", descargas: 560, emoji: "🎨", url: "https://canva.com" },
-  { titulo: "Checklist antes de publicar", tipo: "pdf", peso: "PDF · 1.1 MB", desc: "Los 15 puntos para revisar antes de subir un video.", descargas: 720, emoji: "✅", reclamado: true },
-];
+type Tipo = Recurso["tipo"];
 
 const FILTROS: { k: "todos" | Tipo; label: string; icono: string }[] = [
   { k: "todos", label: "Todos", icono: "▦" },
@@ -31,12 +13,29 @@ const FILTROS: { k: "todos" | Tipo; label: string; icono: string }[] = [
   { k: "links", label: "Links", icono: "🔗" },
 ];
 
-export function RecursosModal({ onClose }: { onClose: () => void }) {
+export function RecursosModal({ onClose, recursos }: { onClose: () => void; recursos: Recurso[] }) {
   const [filtro, setFiltro] = useState<"todos" | Tipo>("todos");
   const [q, setQ] = useState("");
   const [imgErr, setImgErr] = useState(false);
+  const [bajados, setBajados] = useState<Set<string>>(
+    () => new Set(recursos.filter((r) => r.descargado).map((r) => r.id))
+  );
+  const [pendiente, setPendiente] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
 
-  const lista = RECURSOS.filter((r) => {
+  // Pide el enlace firmado y dispara la descarga en una pestaña nueva.
+  function bajar(r: Recurso) {
+    setPendiente(r.id);
+    startTransition(async () => {
+      const res = await descargarRecurso(r.id);
+      setPendiente(null);
+      if ("error" in res) { alert(res.error); return; }
+      setBajados((prev) => new Set(prev).add(r.id));
+      window.open(res.url, "_blank", "noopener");
+    });
+  }
+
+  const lista = recursos.filter((r) => {
     if (filtro !== "todos" && r.tipo !== filtro) return false;
     if (q && !r.titulo.toLowerCase().includes(q.toLowerCase())) return false;
     return true;
@@ -85,7 +84,7 @@ export function RecursosModal({ onClose }: { onClose: () => void }) {
           <div className="max-h-[52vh] overflow-y-auto -mx-1 px-1 divide-y divide-border">
             {lista.length === 0 && <p className="text-center text-sub text-[13px] py-8">No hay recursos en esta categoría.</p>}
             {lista.map((r) => (
-              <div key={r.titulo} className="flex items-center gap-3 py-3">
+              <div key={r.id} className="flex items-center gap-3 py-3">
                 <div className="w-12 h-12 rounded-xl bg-accent-soft grid place-items-center text-2xl shrink-0">{r.emoji}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -93,20 +92,25 @@ export function RecursosModal({ onClose }: { onClose: () => void }) {
                     {r.etiqueta && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-accent-soft text-accent">{r.etiqueta}</span>}
                   </div>
                   {r.peso && <div className="text-[11px] text-pink font-semibold mt-0.5">{r.peso}</div>}
-                  <p className="text-[12.5px] text-sub leading-tight mt-0.5">{r.desc}</p>
-                  <div className="text-[11px] text-hint mt-1">⬇ Descargado {r.descargas.toLocaleString()} veces</div>
+                  <p className="text-[12.5px] text-sub leading-tight mt-0.5">{r.descripcion}</p>
                 </div>
-                {r.tipo === "canva" ? (
-                  <a href={r.url} target="_blank" rel="noopener noreferrer"
-                    className="shrink-0 rounded-xl border border-accent/40 text-accent font-bold text-[12.5px] px-3.5 py-2 hover:bg-accent-soft transition whitespace-nowrap">
-                    ↗ Abrir en Canva
-                  </a>
-                ) : r.reclamado ? (
-                  <span className="shrink-0 rounded-xl bg-green/10 text-green font-bold text-[12.5px] px-3.5 py-2 whitespace-nowrap">✓ Descargado</span>
+                {r.bloqueado ? (
+                  // Se ve, pero cerrado: el alumno sabe que existe y qué le falta.
+                  <span className="shrink-0 rounded-xl bg-surface border border-border text-sub font-bold text-[12.5px] px-3.5 py-2 whitespace-nowrap"
+                    title="Llega a esa clase para desbloquearlo">🔒 Bloqueado</span>
                 ) : (
-                  <a href={r.url ?? "#"} className="shrink-0 rounded-xl border border-accent/40 text-accent font-bold text-[12.5px] px-3.5 py-2 hover:bg-accent-soft transition whitespace-nowrap">
-                    ⬇ Descargar
-                  </a>
+                  <button onClick={() => bajar(r)} disabled={pendiente === r.id}
+                    className={`shrink-0 rounded-xl font-bold text-[12.5px] px-3.5 py-2 whitespace-nowrap transition disabled:opacity-60 ${
+                      bajados.has(r.id)
+                        ? "bg-green/10 text-green border border-green/30 hover:bg-green/15"
+                        : "border border-accent/40 text-accent hover:bg-accent-soft"
+                    }`}>
+                    {pendiente === r.id
+                      ? "…"
+                      : r.tipo === "canva"
+                        ? "↗ Abrir en Canva"
+                        : bajados.has(r.id) ? "✓ Descargado" : "⬇ Descargar"}
+                  </button>
                 )}
               </div>
             ))}

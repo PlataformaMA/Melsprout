@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { notificar } from "@/lib/notificaciones-actions";
 import { getRetoUnificado } from "@/lib/retos-db";
 
 export type Post = {
@@ -19,10 +20,14 @@ export type Post = {
 
 export type Comentario = {
   id: string;
+  autorId: string;
   autorNombre: string;
   autorAvatar: string | null;
   texto: string;
   fecha: string;
+  likes: number;
+  meGusta: boolean;
+  respondeA: string | null;   // si es respuesta, el id del comentario padre
 };
 
 // Feed público: retos publicados (no rechazados), con autor y # de comentarios.
@@ -75,28 +80,115 @@ export async function getFeed(): Promise<Post[]> {
 }
 
 export async function getComentarios(retoUserId: string, retoId: string): Promise<Comentario[]> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   const admin = createAdminClient();
   const { data } = await admin
     .from("comentarios")
-    .select("id, autor_id, texto, created_at")
+    .select("id, autor_id, texto, created_at, responde_a")
     .eq("reto_user_id", retoUserId)
     .eq("reto_id", retoId)
     .eq("oculto", false)
     .order("created_at", { ascending: true });
   if (!data || data.length === 0) return [];
   const autorIds = [...new Set(data.map((c) => c.autor_id as string))];
-  const { data: perfiles } = await admin.from("profiles").select("id, full_name, avatar_url").in("id", autorIds);
+  const ids = data.map((c) => c.id as string);
+  const [{ data: perfiles }, { data: likes }] = await Promise.all([
+    admin.from("profiles").select("id, full_name, avatar_url").in("id", autorIds),
+    admin.from("comentario_likes").select("comentario_id, user_id").in("comentario_id", ids),
+  ]);
   const pMap = new Map((perfiles || []).map((p) => [p.id as string, p]));
+
+  const conteo = new Map<string, number>();
+  const mios = new Set<string>();
+  for (const l of likes || []) {
+    const cid = l.comentario_id as string;
+    conteo.set(cid, (conteo.get(cid) || 0) + 1);
+    if (user && l.user_id === user.id) mios.add(cid);
+  }
+
   return data.map((c) => {
     const p = pMap.get(c.autor_id as string);
+    const id = c.id as string;
     return {
-      id: c.id as string,
+      id,
+      autorId: c.autor_id as string,
       autorNombre: (p?.full_name as string) || "Creador",
       autorAvatar: (p?.avatar_url as string) || null,
       texto: c.texto as string,
       fecha: c.created_at as string,
+      likes: conteo.get(id) || 0,
+      meGusta: mios.has(id),
+      respondeA: (c.responde_a as string) ?? null,
     };
   });
+}
+
+// Like / quitar like a un comentario. Devuelve el estado nuevo.
+export async function toggleLikeComentario(
+  comentarioId: string
+): Promise<{ meGusta: boolean } | { error: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Inicia sesión." };
+  const admin = createAdminClient();
+
+  const { data: ya } = await admin
+    .from("comentario_likes")
+    .select("user_id")
+    .eq("comentario_id", comentarioId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (ya) {
+    await admin.from("comentario_likes").delete()
+      .eq("comentario_id", comentarioId).eq("user_id", user.id);
+    return { meGusta: false };
+  }
+
+  await admin.from("comentario_likes").insert({ comentario_id: comentarioId, user_id: user.id });
+
+  // Avisamos al autor del comentario, salvo que se dé like a sí mismo.
+  const { data: c } = await admin.from("comentarios")
+    .select("autor_id, reto_id").eq("id", comentarioId).maybeSingle();
+  const autor = c?.autor_id as string | undefined;
+  if (autor && autor !== user.id) {
+    const { data: yo } = await admin.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
+    await notificar(autor, "like", `A ${(yo?.full_name as string) || "alguien"} le gustó tu comentario`,
+      "", `/app/reto/${c?.reto_id as string}`);
+  }
+  return { meGusta: true };
+}
+
+// Responder a un comentario: se guarda como otro comentario que apunta al padre.
+export async function responderComentario(
+  retoUserId: string,
+  retoId: string,
+  padreId: string,
+  texto: string
+): Promise<{ ok: true } | { error: string }> {
+  const t = texto.trim();
+  if (!t) return { error: "Escribe una respuesta." };
+  if (t.length > 500) return { error: "Máximo 500 caracteres." };
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Inicia sesión." };
+  const admin = createAdminClient();
+
+  const { error } = await admin.from("comentarios").insert({
+    reto_user_id: retoUserId, reto_id: retoId, autor_id: user.id, texto: t, responde_a: padreId,
+  });
+  if (error) return { error: "No se pudo publicar la respuesta." };
+
+  const { data: padre } = await admin.from("comentarios").select("autor_id").eq("id", padreId).maybeSingle();
+  const autor = padre?.autor_id as string | undefined;
+  if (autor && autor !== user.id) {
+    const { data: yo } = await admin.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
+    await notificar(autor, "comentario",
+      `${(yo?.full_name as string) || "Alguien"} respondió tu comentario`,
+      t.length > 90 ? t.slice(0, 90) + "…" : t, `/app/reto/${retoId}`);
+  }
+  return { ok: true };
 }
 
 export async function crearComentario(
@@ -120,12 +212,22 @@ export async function crearComentario(
     texto: t,
   });
   if (error) return { error: "No se pudo publicar el comentario." };
+
+  // Avisamos al dueño del post, salvo que se esté comentando a sí mismo.
+  if (retoUserId !== user.id) {
+    const { data: yo } = await admin.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
+    await notificar(retoUserId, "comentario",
+      `${(yo?.full_name as string) || "Alguien"} comentó tu reto`,
+      t.length > 90 ? t.slice(0, 90) + "…" : t,
+      `/app/reto/${retoId}`);
+  }
   return { ok: true };
 }
 
 // ————— Actividad reciente (datos REALES: retos completados + nuevos miembros) —————
 export type Actividad = {
   id: string;
+  userId: string;
   nombre: string;
   avatar: string | null;
   texto: string;   // "completó el reto «X»" | "se unió a Melsprout"
@@ -180,13 +282,13 @@ export async function getActividadReciente(): Promise<Actividad[]> {
     const info = retoCache.get(rid)!;
     const p = pMap.get(s.user_id as string);
     const ts = new Date(s.updated_at as string).getTime();
-    items.push({ id: `r-${s.user_id}-${rid}`, nombre: (p?.full_name as string) || "Creador", avatar: (p?.avatar_url as string) || null, texto: `completó el reto «${info.titulo}»`, xp: info.xp, hace: haceCorto(s.updated_at as string), ts });
+    items.push({ id: `r-${s.user_id}-${rid}`, userId: s.user_id as string, nombre: (p?.full_name as string) || "Creador", avatar: (p?.avatar_url as string) || null, texto: `completó el reto «${info.titulo}»`, xp: info.xp, hace: haceCorto(s.updated_at as string), ts });
   }
   for (const n of nuevos || []) {
     const ts = new Date(n.created_at as string).getTime();
-    items.push({ id: `n-${n.id}`, nombre: (n.full_name as string) || "Creador", avatar: (n.avatar_url as string) || null, texto: "se unió a Melsprout", hace: haceCorto(n.created_at as string), ts });
+    items.push({ id: `n-${n.id}`, userId: n.id as string, nombre: (n.full_name as string) || "Creador", avatar: (n.avatar_url as string) || null, texto: "se unió a Melsprout", hace: haceCorto(n.created_at as string), ts });
   }
 
   items.sort((a, b) => b.ts - a.ts);
-  return items.slice(0, 6).map((a) => ({ id: a.id, nombre: a.nombre, avatar: a.avatar, texto: a.texto, xp: a.xp, hace: a.hace }));
+  return items.slice(0, 6).map((a) => ({ id: a.id, userId: a.userId, nombre: a.nombre, avatar: a.avatar, texto: a.texto, xp: a.xp, hace: a.hace }));
 }

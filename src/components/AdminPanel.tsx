@@ -538,7 +538,7 @@ function ModuloBloque({ modulo, clases, onCambio }: { modulo: ModuloRow; clases:
 
 function ClaseCursoFila({ clase, onCambio }: { clase: ClaseRow; onCambio: () => void }) {
   const [abierto, setAbierto] = useState(false);
-  const [f, setF] = useState({ titulo: clase.titulo, instructor: clase.instructor || "", duracion_min: clase.duracion_min, nivel: clase.nivel || "basico", reto_texto: clase.reto_texto || "", video: clase.video_url || "" });
+  const [f, setF] = useState({ titulo: clase.titulo, instructor: clase.instructor || "", duracion_min: clase.duracion_min, nivel: clase.nivel || "basico", reto_texto: clase.reto_texto || "", reto_instrucciones: clase.reto_instrucciones || "", portada: clase.portada || "", video: clase.video_url || "" });
   const [subiendo, setSubiendo] = useState(false);
   const [msg, setMsg] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -559,7 +559,7 @@ function ClaseCursoFila({ clase, onCambio }: { clase: ClaseRow; onCambio: () => 
     setSubiendo(false);
   }
   async function guardar() {
-    const input: ClaseInput = { titulo: f.titulo, instructor: f.instructor, duracion_min: Number(f.duracion_min) || 12, nivel: f.nivel, reto_texto: f.reto_texto, video_url: f.video };
+    const input: ClaseInput = { titulo: f.titulo, instructor: f.instructor, duracion_min: Number(f.duracion_min) || 12, nivel: f.nivel, reto_texto: f.reto_texto, reto_instrucciones: f.reto_instrucciones, portada: f.portada, video_url: f.video };
     const r = await actualizarClase(clase.id, input);
     if ("error" in r) { setMsg(r.error); return; }
     setMsg("✅ Guardado"); onCambio();
@@ -583,6 +583,8 @@ function ClaseCursoFila({ clase, onCambio }: { clase: ClaseRow; onCambio: () => 
             <select value={f.nivel} onChange={(e) => setF({ ...f, nivel: e.target.value })} className={inputC}><option value="basico">Básico</option><option value="intermedio">Intermedio</option><option value="avanzado">Avanzado</option></select>
           </div>
           <input value={f.reto_texto} onChange={(e) => setF({ ...f, reto_texto: e.target.value })} className={inputC} placeholder="Texto del reto de esta clase" />
+          <input value={f.portada} onChange={(e) => setF({ ...f, portada: e.target.value })} className={inputC} placeholder="URL de la portada (si se deja vacía se usa la miniatura de YouTube)" />
+          <textarea value={f.reto_instrucciones} onChange={(e) => setF({ ...f, reto_instrucciones: e.target.value })} rows={5} className={inputC} placeholder="Instrucciones: qué se espera, qué debe incluir la respuesta y cómo se evalúa" />
           <div className="flex flex-col sm:flex-row gap-2">
             <input value={f.video} onChange={(e) => setF({ ...f, video: e.target.value })} className={`${inputC} flex-1`} placeholder="Enlace del video (.mp4) o sube →" />
             <input ref={fileRef} type="file" accept="video/mp4,video/quicktime" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) subir(file); }} />
