@@ -989,7 +989,7 @@ function BloquesVista({
                         </span>
                       )}
                     </div>
-                    <p className={`font-bold text-[13.5px] leading-tight mt-2.5 line-clamp-2 ${abierta ? "" : "text-hint"}`}>
+                    <p className={`font-bold text-[13.5px] leading-tight mt-2.5 line-clamp-2 min-h-[2.2rem] ${abierta ? "" : "text-hint"}`}>
                       {c.titulo}
                     </p>
                     <span className={`inline-block mt-1.5 rounded-full px-2.5 py-0.5 text-[11.5px] font-bold ${
@@ -1011,7 +1011,7 @@ function BloquesVista({
                         <span className="text-[12.5px] font-bold text-hint">Bloqueado</span>
                       ) : (
                         <>
-                          <p className="text-[12.5px] font-bold leading-tight line-clamp-2">{c.reto || "Reto de la clase"}</p>
+                          <p className="text-[12.5px] font-bold leading-tight line-clamp-2 min-h-[2rem]">{c.reto || "Reto de la clase"}</p>
                           <span className={`inline-block mt-1 text-[10.5px] font-bold rounded-full px-2 py-0.5 ${RETO_PILL[er]}`}>
                             {RETO_LABEL[er]}
                           </span>
@@ -1025,11 +1025,11 @@ function BloquesVista({
                   <div key={c.id} className="flex flex-col">
                     {abierta ? (
                       <Link href={`/app/clase/${c.id}`}
-                        className="bg-surface border border-border rounded-2xl p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
+                        className="flex flex-col bg-surface border border-border rounded-2xl p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
                         {tarjeta}
                       </Link>
                     ) : (
-                      <div className="bg-surface border border-border rounded-2xl p-3 shadow-sm opacity-70 cursor-not-allowed">
+                      <div className="flex flex-col bg-surface border border-border rounded-2xl p-3 shadow-sm opacity-70 cursor-not-allowed">
                         {tarjeta}
                       </div>
                     )}
