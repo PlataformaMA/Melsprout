@@ -15,10 +15,24 @@ export const NICHOS: {
   color: ColorNicho;
 }[] = [
   { id: "Moda", emoji: "👗", desc: "Estilo, outfits, tendencias", color: "pink" },
-  { id: "Salud", emoji: "🥗", desc: "Bienestar, fitness, nutrición", color: "green" },
   { id: "Belleza", emoji: "💄", desc: "Maquillaje, skincare, cuidado", color: "accent" },
-  { id: "Tech", emoji: "💻", desc: "Tecnología, apps, gadgets", color: "blue" },
-  { id: "Lifestyle", emoji: "✨", desc: "Vida diaria, viajes, rutinas", color: "amber" },
+  { id: "Salud y Bienestar", emoji: "🥗", desc: "Nutrición, hábitos, bienestar", color: "green" },
+  { id: "Fitness y Deporte", emoji: "🏋️", desc: "Ejercicio, deportes, rutinas", color: "amber" },
+  { id: "Lifestyle", emoji: "✨", desc: "Vida diaria, rutinas, hogar", color: "amber" },
+  { id: "Gastronomía", emoji: "🍳", desc: "Cocina, recetas, comida", color: "pink" },
+  { id: "Viajes", emoji: "✈️", desc: "Destinos, tips, aventuras", color: "blue" },
+  { id: "Tecnología", emoji: "💻", desc: "Apps, gadgets, IA", color: "blue" },
+  { id: "Gaming", emoji: "🎮", desc: "Videojuegos, streaming", color: "accent" },
+  { id: "Negocios y Emprendimiento", emoji: "💼", desc: "Emprender, ventas, marca", color: "accent" },
+  { id: "Marketing", emoji: "📈", desc: "Redes, contenido, growth", color: "accent" },
+  { id: "Finanzas", emoji: "💰", desc: "Dinero, ahorro, inversión", color: "green" },
+  { id: "Educación", emoji: "📚", desc: "Enseñar, cursos, tutoriales", color: "blue" },
+  { id: "Desarrollo Personal", emoji: "🌱", desc: "Hábitos, mindset, motivación", color: "green" },
+  { id: "Arte y Diseño", emoji: "🎨", desc: "Ilustración, diseño, creatividad", color: "pink" },
+  { id: "Música", emoji: "🎵", desc: "Música, covers, producción", color: "accent" },
+  { id: "Entretenimiento", emoji: "🎬", desc: "Humor, cine, cultura pop", color: "amber" },
+  { id: "Familia y Maternidad", emoji: "👶", desc: "Crianza, familia, hogar", color: "pink" },
+  { id: "Otro", emoji: "➕", desc: "Cuéntanos tu nicho", color: "accent" },
 ];
 
 export const OBJETIVOS = [

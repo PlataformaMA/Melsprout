@@ -4,18 +4,16 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Octi } from "@/components/Octi";
 import { AvatarUploader } from "@/components/AvatarUploader";
-import { CoverUploader } from "@/components/CoverUploader";
 import { guardarCampos, type Perfil } from "@/lib/perfil-actions";
 import { PAISES, banderaUrl } from "@/lib/catalogos";
 import { estadosDe } from "@/lib/estados";
 import { IconoRed, REDES_ESTILO } from "@/components/iconos-redes";
 
-const STEPS = ["foto", "portada", "usuario", "edad", "headline", "bio", "ubicacion", "redes", "conectar"] as const;
+const STEPS = ["foto", "usuario", "edad", "headline", "bio", "ubicacion", "redes", "conectar"] as const;
 type Step = (typeof STEPS)[number];
 
 const MENSAJES: Record<Step, string> = {
   foto: "¡Ponle cara a tu perfil! 📸 Una buena foto genera confianza.",
-  portada: "Una portada le da personalidad a tu media kit. 🎨",
   usuario: "Elige tu nombre de usuario. Así te verán en Melsprout. ✨",
   edad: "¿Cuándo naciste? Nos ayuda a personalizar tu experiencia. 🎂",
   headline: "Tu headline dice quién eres en una frase. ✍️",
@@ -134,15 +132,6 @@ export function CompletarPerfil({
               </Bloque>
             )}
 
-            {step === "portada" && (
-              <Bloque titulo="Agrega una portada">
-                <div className="rounded-2xl overflow-hidden border border-border">
-                  <CoverUploader coverUrl={perfil.cover_url} />
-                </div>
-                <p className="text-center text-[12px] text-hint mt-2">Toca el botón Portada para subir tu banner.</p>
-              </Bloque>
-            )}
-
             {step === "usuario" && (
               <Bloque titulo="Elige tu nombre de usuario">
                 <div className="flex items-center gap-1 rounded-xl border-2 border-border bg-white px-3.5 focus-within:border-accent transition">
@@ -230,18 +219,18 @@ export function CompletarPerfil({
 
             {step === "redes" && (
               <Bloque titulo="Tus redes sociales">
+                <p className="text-center text-[12px] text-hint mb-3">Pega el <b className="text-accent">link</b> de tu perfil en cada red.</p>
                 <div className="space-y-2.5">
                   {[
-                    { key: "instagram", ph: "usuario_ig", v: insta, set: setInsta },
-                    { key: "tiktok", ph: "usuario_tiktok", v: tiktok, set: setTiktok },
-                    { key: "youtube", ph: "canal_youtube", v: youtube, set: setYoutube },
+                    { key: "instagram", ph: "https://instagram.com/tu_usuario", v: insta, set: setInsta },
+                    { key: "tiktok", ph: "https://tiktok.com/@tu_usuario", v: tiktok, set: setTiktok },
+                    { key: "youtube", ph: "https://youtube.com/@tu_canal", v: youtube, set: setYoutube },
                   ].map((r) => (
                     <div key={r.key} className="flex items-center gap-2.5 rounded-xl border-2 border-border bg-white px-3 focus-within:border-accent transition">
                       <span className="w-8 h-8 rounded-lg grid place-items-center text-white shrink-0" style={{ background: REDES_ESTILO[r.key].bg }}>
                         <IconoRed red={r.key} />
                       </span>
-                      <span className="text-sub text-sm">@</span>
-                      <input value={r.v} onChange={(e) => r.set(e.target.value)} placeholder={r.ph}
+                      <input value={r.v} onChange={(e) => r.set(e.target.value)} placeholder={r.ph} type="url" inputMode="url"
                         className="flex-1 bg-transparent py-3 text-sm outline-none" />
                     </div>
                   ))}
@@ -296,7 +285,7 @@ export function CompletarPerfil({
         <div className="mt-6 flex items-center gap-3">
           <button onClick={avanzar} disabled={pendiente} className="text-sm font-semibold text-sub hover:text-text px-5 py-3.5">Saltar</button>
           <button
-            onClick={step === "foto" || step === "portada" || step === "conectar" ? avanzar : continuar}
+            onClick={step === "foto" || step === "conectar" ? avanzar : continuar}
             disabled={pendiente}
             className="flex-1 bg-accent text-white font-bold text-sm rounded-2xl py-3.5 shadow-lg shadow-accent/25 hover:brightness-110 active:scale-95 disabled:opacity-60 transition">
             {pendiente ? "Guardando…" : idx === STEPS.length - 1 ? "Terminar 🎉" : "Continuar"}

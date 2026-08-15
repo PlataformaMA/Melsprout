@@ -1,17 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { iniciarSesion, type EstadoAuth } from "@/lib/auth-actions";
 import { AuthShell } from "@/components/AuthShell";
 import { OAuthButtons, Separador } from "@/components/OAuthButtons";
 import { TextField, PasswordField, SubmitButton, Aviso } from "@/components/fields";
+import { Turnstile } from "@/components/Turnstile";
 
 export default function LoginPage() {
   const [estado, formAction, pendiente] = useActionState<EstadoAuth, FormData>(
     iniciarSesion,
     {}
   );
+  const [captchaToken, setCaptchaToken] = useState("");
 
   return (
     <AuthShell
@@ -44,6 +46,10 @@ export default function LoginPage() {
             ¿Olvidaste tu contraseña?
           </Link>
         </div>
+
+        {/* Filtro invisible anti-robots (solo aparece si está configurado) */}
+        <Turnstile onToken={setCaptchaToken} />
+        <input type="hidden" name="captchaToken" value={captchaToken} />
 
         <Aviso error={estado.error} />
         <SubmitButton pendiente={pendiente}>Entrar</SubmitButton>

@@ -9,7 +9,7 @@ const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 declare global {
   interface Window {
     turnstile?: {
-      render: (el: HTMLElement, opts: { sitekey: string; callback: (token: string) => void; "expired-callback"?: () => void }) => string;
+      render: (el: HTMLElement, opts: { sitekey: string; language?: string; callback: (token: string) => void; "expired-callback"?: () => void }) => string;
     };
   }
 }
@@ -27,6 +27,7 @@ export function Turnstile({ onToken }: { onToken: (t: string) => void }) {
       if (window.turnstile && cont && !cont.hasChildNodes()) {
         window.turnstile.render(cont, {
           sitekey: SITE_KEY,
+          language: "es", // muestra el widget en español
           callback: (token) => onToken(token),
           "expired-callback": () => onToken(""),
         });

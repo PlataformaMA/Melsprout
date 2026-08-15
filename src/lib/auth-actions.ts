@@ -36,12 +36,18 @@ export async function iniciarSesion(
 ): Promise<EstadoAuth> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const captchaToken = String(formData.get("captchaToken") ?? "");
 
   if (!emailValido(email)) return { error: "Escribe un correo válido." };
   if (!password) return { error: "Escribe tu contraseña." };
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+    // Filtro anti-robots (solo se valida si el captcha está activo en Supabase).
+    ...(captchaToken ? { options: { captchaToken } } : {}),
+  });
   if (error) {
     // Caso borde: la cuenta existe pero se creó con Google/Facebook (sin
     // contraseña). Le decimos con qué método debe entrar.
@@ -115,23 +121,17 @@ export async function crearCuenta(
     return { error: traducirError(error.message) };
   }
 
-  // Enviamos NUESTRO correo de verificación (marca propia, vía Resend).
-  if (data.user) {
-    const { enviarVerificacionAUsuario } = await import("@/lib/verificacion-actions");
-    await enviarVerificacionAUsuario(data.user.id, email, nombre);
-  }
-
-  // Si "Confirm email" está apagado en Supabase, ya hay sesión → entra directo
-  // (puede usar la plataforma sin verificar; el ranking/diploma se gatean aparte).
+  // Verificación OBLIGATORIA: Supabase envía su propio correo de confirmación
+  // (plantilla de marca). No mandamos otro para no duplicar.
+  // Si por config ya hubiera sesión (Confirm email apagado), entra directo.
   if (data.session) {
     revalidatePath("/", "layout");
     redirect("/onboarding");
   }
 
-  // Si Supabase aún exige confirmar (Confirm email ON): mostramos el aviso.
   return {
     mensaje:
-      "¡Cuenta creada! Te enviamos un correo de verificación. Revisa tu bandeja (y el spam).",
+      "¡Cuenta creada! Te enviamos un correo para verificar tu cuenta. Revisa tu bandeja (y el spam) para poder entrar.",
   };
 }
 
