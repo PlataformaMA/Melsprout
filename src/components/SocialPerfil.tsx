@@ -16,11 +16,18 @@ export function SocialPerfil({ userId, inicial }: { userId: string; inicial: Soc
   function alternar() {
     const previo = s;
     setError("");
-    setS({ ...s, loSigo: !previo.loSigo, seguidores: previo.seguidores + (previo.loSigo ? -1 : 1) });
+    // Optimista: seguir manda SOLICITUD (no suma seguidor hasta que la acepten);
+    // si ya la seguía, deshacer sí resta en el momento.
+    setS({
+      ...s,
+      loSigo: false,
+      solicitada: !previo.loSigo && !previo.solicitada,
+      seguidores: previo.seguidores - (previo.loSigo ? 1 : 0),
+    });
     startTransition(async () => {
       const r = await toggleSeguir(userId);
       if ("error" in r) { setS(previo); setError(r.error); return; }
-      setS((v) => ({ ...v, loSigo: r.loSigo, seguidores: r.seguidores }));
+      setS((v) => ({ ...v, loSigo: r.loSigo, solicitada: r.solicitada, seguidores: r.seguidores }));
       // Refresca el resto de la página (ranking, amigos, conteos) para que todo
       // quede consistente sin recargar a mano.
       router.refresh();
@@ -33,12 +40,13 @@ export function SocialPerfil({ userId, inicial }: { userId: string; inicial: Soc
         <span className="text-[14px]">👤 <b>Seguidores</b> <span className="text-sub">{s.seguidores}</span></span>
         <span className="text-[14px]">👤 <b>Siguiendo</b> <span className="text-sub">{s.siguiendo}</span></span>
         <button onClick={alternar} disabled={pendiente}
+          title={s.solicitada ? "Toca para cancelar la solicitud" : undefined}
           className={`ml-auto rounded-full px-5 py-2 text-[13px] font-bold transition disabled:opacity-60 ${
-            s.loSigo
+            s.loSigo || s.solicitada
               ? "bg-surface border border-border text-sub hover:border-accent/40"
               : "bg-accent text-white hover:brightness-110 shadow-sm shadow-accent/30"
           }`}>
-          {s.loSigo ? "Siguiendo" : "+ Seguir"}
+          {s.loSigo ? "Siguiendo" : s.solicitada ? "Solicitud enviada" : "+ Seguir"}
         </button>
       </div>
       {error && <p className="text-[12px] text-pink mt-2">{error}</p>}

@@ -678,7 +678,15 @@ function NodoRetoMini({ estado }: { estado: EReto }) {
   if (estado === "completada")
     return <div className={base} style={{ boxShadow: sombraOk }}><SparkleIcon color="#F5B301" /></div>;
   if (estado === "bloqueada")
-    return <div className={base} style={{ boxShadow: sombraGris }}><SparkleIcon color="#C6CAD3" /></div>;
+    // Candado gris (no estrella): es el mismo nodo bloqueado del mapa.
+    return (
+      <div className="grid place-items-center rounded-full w-11 h-11 bg-[#E9EBEF] border-[4px] border-white shrink-0"
+        style={{ boxShadow: sombraGris }}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#AEB4BF" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" />
+        </svg>
+      </div>
+    );
   return <div className={base} style={{ boxShadow: sombraGris }}><SparkleIcon color="#9AA0AD" /></div>;
 }
 

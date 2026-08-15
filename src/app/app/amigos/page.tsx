@@ -5,6 +5,8 @@ import { getPerfil } from "@/lib/perfil-actions";
 import { getAmigos } from "@/lib/chat-actions";
 import { AppSidebar } from "@/components/AppSidebar";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
+import { SolicitudesLista } from "@/components/SolicitudesLista";
+import { getSolicitudes } from "@/lib/seguidores-actions";
 
 export default async function AmigosPage() {
   const supabase = await createClient();
@@ -14,7 +16,7 @@ export default async function AmigosPage() {
   const perfil = await getPerfil();
   if (!perfil?.onboarding_completo) redirect("/onboarding");
 
-  const amigos = await getAmigos();
+  const [amigos, solicitudes] = await Promise.all([getAmigos(), getSolicitudes()]);
 
   return (
     <div className="min-h-screen bg-bg flex">
@@ -25,11 +27,13 @@ export default async function AmigosPage() {
             <div>
               <h1 className="font-display text-2xl font-extrabold">Amigos</h1>
               <p className="text-sub text-[14px] mt-0.5">
-                Puedes felicitar a quienes se siguen contigo de vuelta. 💜
+                Aquí aceptas solicitudes y felicitas a tus amigos. 💜
               </p>
             </div>
             <CampanaNotificaciones />
           </div>
+
+          <SolicitudesLista inicial={solicitudes} />
 
           {amigos.length === 0 ? (
             <div className="bg-surface border border-border rounded-3xl p-10 text-center shadow-sm">
@@ -37,7 +41,7 @@ export default async function AmigosPage() {
               <img src="/octi.png" alt="" className="w-24 mx-auto" />
               <h2 className="font-display font-extrabold text-lg mt-3">Todavía no tienes amigos aquí</h2>
               <p className="text-sub text-[13.5px] mt-1.5 max-w-sm mx-auto leading-snug">
-                El chat se abre cuando tú y otra creadora se siguen mutuamente.
+                El chat se abre cuando alguien acepta tu solicitud (o tú la suya).
                 Encuéntralas en la comunidad y dale a seguir.
               </p>
               <Link href="/app/comunidad"

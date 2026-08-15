@@ -25,17 +25,18 @@ export type Mensaje = {
   fecha: string;
 };
 
-// Quiénes se siguen MUTUAMENTE conmigo. Solo con ellos hay chat.
+// Amigos = solicitudes de seguimiento ACEPTADAS, en cualquier dirección
+// (yo la sigo y me aceptó, o ella me sigue y yo la acepté). Solo con ellos hay chat.
 async function idsMutuos(userId: string): Promise<string[]> {
   const admin = createAdminClient();
   const [{ data: sigo }, { data: meSiguen }] = await Promise.all([
-    admin.from("seguidores").select("seguido_id").eq("seguidor_id", userId),
-    admin.from("seguidores").select("seguidor_id").eq("seguido_id", userId),
+    admin.from("seguidores").select("seguido_id").eq("seguidor_id", userId).eq("estado", "aceptado"),
+    admin.from("seguidores").select("seguidor_id").eq("seguido_id", userId).eq("estado", "aceptado"),
   ]);
-  const A = new Set((sigo || []).map((r) => r.seguido_id as string));
-  return (meSiguen || [])
-    .map((r) => r.seguidor_id as string)
-    .filter((id) => A.has(id));
+  const ids = new Set<string>();
+  for (const r of sigo || []) ids.add(r.seguido_id as string);
+  for (const r of meSiguen || []) ids.add(r.seguidor_id as string);
+  return [...ids];
 }
 
 export async function getAmigos(): Promise<Amigo[]> {
