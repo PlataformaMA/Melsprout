@@ -327,7 +327,11 @@ export function RutaAprendizaje({
                 <DecorMar pts={pts} />
 
                 {elementos.map((el, i) => (
-                  <div key={i} className="absolute z-[5]" style={{ left: pctX(pts[i].x), top: pts[i].y, transform: "translate(-50%,-50%)" }}>
+                  // La isla de mundo y el trofeo son anchos: si van en el carril
+                  // de la izquierda se cortan contra el borde en móvil, así que
+                  // esos dos siempre van al centro.
+                  <div key={i} className="absolute z-[5]"
+                    style={{ left: pctX(el.tipo === "gate" || el.tipo === "hito" ? CX : pts[i].x), top: pts[i].y, transform: "translate(-50%,-50%)" }}>
                     <NodoElemento el={el} />
                   </div>
                 ))}

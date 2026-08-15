@@ -101,25 +101,44 @@ export async function guardarPosicion(claseId: string, segundos: number): Promis
 }
 
 // Conteo real de avance para el perfil: clases completadas y retos aprobados.
-export async function getAvance(): Promise<{ clases: number; retos: number }> {
+// Avance de CUALQUIER usuario. Los totales salen del curso REAL (la base), no
+// de la lista estática: por eso antes decía "55 / 10". Y solo cuentan las clases
+// y retos que siguen existiendo en el curso (había filas de clases ya borradas).
+export async function getAvanceDe(userId: string): Promise<{
+  clases: number; retos: number; totalClases: number; totalRetos: number;
+}> {
+  const admin = createAdminClient();
+  const cursos = await getCursos();
+
+  const idsClases = new Set<string>();
+  let totalRetos = 0;
+  for (const m of cursos) {
+    for (const c of m.clases) {
+      idsClases.add(c.id);
+      if ((c.reto || "").trim()) totalRetos++;
+    }
+  }
+
+  const [{ data: prog }, { data: subs }] = await Promise.all([
+    admin.from("clase_progreso").select("clase_id").eq("user_id", userId).eq("completada", true),
+    // OJO: la columna es reto_id, no clase_id. Con el nombre malo la consulta
+    // fallaba y los retos completados salían SIEMPRE en 0.
+    admin.from("reto_submissions").select("reto_id").eq("user_id", userId).eq("revision", "aprobado"),
+  ]);
+
+  const clases = (prog || []).filter((r) => idsClases.has(r.clase_id as string)).length;
+  const retos = (subs || []).filter((r) => idsClases.has(r.reto_id as string)).length;
+
+  return { clases, retos, totalClases: idsClases.size, totalRetos };
+}
+
+export async function getAvance(): Promise<{
+  clases: number; retos: number; totalClases: number; totalRetos: number;
+}> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { clases: 0, retos: 0 };
-
-  const [clases, retos] = await Promise.all([
-    supabase
-      .from("clase_progreso")
-      .select("clase_id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .eq("completada", true),
-    supabase
-      .from("reto_submissions")
-      .select("clase_id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .eq("revision", "aprobado"),
-  ]);
-
-  return { clases: clases.count ?? 0, retos: retos.count ?? 0 };
+  if (!user) return { clases: 0, retos: 0, totalClases: 0, totalRetos: 0 };
+  return getAvanceDe(user.id);
 }

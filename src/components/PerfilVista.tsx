@@ -5,13 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type Perfil, guardarNicho, guardarCampos, guardarEspecialidades } from "@/lib/perfil-actions";
 import { NICHOS, banderaUrl } from "@/lib/catalogos";
-import { nivelPorXP, TOTAL_CLASES } from "@/lib/data";
-import { listaRetos } from "@/lib/retos";
+import { nivelPorXP } from "@/lib/data";
 import type { Social } from "@/lib/seguidores-actions";
 import type { Amigo } from "@/lib/chat-actions";
 
-export type Avance = { clases: number; retos: number };
-const TOTAL_RETOS = listaRetos().length;
+export type Avance = { clases: number; retos: number; totalClases: number; totalRetos: number };
 import { AvatarUploader } from "@/components/AvatarUploader";
 import { AppSidebar } from "@/components/AppSidebar";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
@@ -605,8 +603,8 @@ function TabResumen({ perfil, nivel, avance }: { perfil: Perfil; nivel: ReturnTy
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <MiniStat top={<StatBars />} valor={`Nivel ${nivel.actual.nivel}`} label="Nivel actual" />
         <MiniStat top={<span className="text-amber text-lg">⭐</span>} valor={perfil.xp.toLocaleString()} label="Puntos" />
-        <MiniStat top={<span className="text-pink text-lg">📖</span>} valor={`${avance.clases} / ${TOTAL_CLASES}`} label="Clases completadas" />
-        <MiniStat top={<span className="text-accent text-lg">💥</span>} valor={`${avance.retos} / ${TOTAL_RETOS}`} label="Retos completados" />
+        <MiniStat top={<span className="text-pink text-lg">📖</span>} valor={`${avance.clases} / ${avance.totalClases}`} label="Clases completadas" />
+        <MiniStat top={<span className="text-accent text-lg">💥</span>} valor={`${avance.retos} / ${avance.totalRetos}`} label="Retos completados" />
         <MiniStat top={<span className="text-lg">🔥</span>} valor={`${perfil.racha}`} label="Días de racha" />
       </div>
 

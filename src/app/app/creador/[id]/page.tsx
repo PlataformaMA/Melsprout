@@ -2,14 +2,12 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { nivelPorXP, TOTAL_CLASES } from "@/lib/data";
-import { listaRetos } from "@/lib/retos";
+import { nivelPorXP } from "@/lib/data";
+import { getAvanceDe } from "@/lib/progreso-actions";
 import { banderaUrl } from "@/lib/catalogos";
 import { getSocial } from "@/lib/seguidores-actions";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SocialPerfil } from "@/components/SocialPerfil";
-
-const TOTAL_RETOS = listaRetos().length;
 
 // Decorativos por ahora: nadie los gana todavía y son iguales para todos.
 const BADGES = [
@@ -60,13 +58,9 @@ export default async function CreadorPage({ params }: { params: Promise<{ id: st
     .maybeSingle();
   if (!p || !p.onboarding_completo) notFound();
 
-  const [{ count: clases }, { count: retos }, social] = await Promise.all([
-    admin.from("clase_progreso").select("clase_id", { count: "exact", head: true })
-      .eq("user_id", id).eq("completada", true),
-    admin.from("reto_submissions").select("clase_id", { count: "exact", head: true })
-      .eq("user_id", id).eq("revision", "aprobado"),
-    getSocial(id),
-  ]);
+  const [avance, social] = await Promise.all([getAvanceDe(id), getSocial(id)]);
+  const clases = avance.clases;
+  const retos = avance.retos;
 
   const nivel = nivelPorXP((p.xp as number) || 0);
   const pct = nivel.siguiente
@@ -77,7 +71,7 @@ export default async function CreadorPage({ params }: { params: Promise<{ id: st
   const nichos = [p.nicho, ...(((p.especialidades as string[]) || []))].filter(Boolean) as string[];
   const edad = edadDe(p.fecha_nacimiento as string | null);
   const bandera = banderaUrl(p.pais as string | null);
-  const certificado = (clases ?? 0) >= CLASES_MODULO_1;
+  const certificado = clases >= CLASES_MODULO_1;
 
   return (
     <div className="min-h-screen bg-bg flex">
@@ -129,7 +123,8 @@ export default async function CreadorPage({ params }: { params: Promise<{ id: st
                 <div className="relative mt-4 h-2.5 rounded-full bg-[#EEEBF6]">
                   <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} />
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/octi.png" alt="" className="absolute -top-3.5 w-8 -translate-x-1/2" style={{ left: `${pct}%` }} />
+                  <img src="/octi.png" alt="" className="absolute -top-3.5 w-8 -translate-x-1/2"
+                    style={{ left: `clamp(16px, ${pct}%, calc(100% - 16px))` }} />
                 </div>
 
                 <SocialPerfil userId={id} inicial={social} />
@@ -166,8 +161,8 @@ export default async function CreadorPage({ params }: { params: Promise<{ id: st
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-4">
                 <Stat icon="📊" valor={`Nivel ${nivel.actual.nivel}`} label="Nivel actual" />
                 <Stat icon="⭐" valor={((p.xp as number) || 0).toLocaleString("es-MX")} label="Puntos" />
-                <Stat icon="📖" valor={`${clases ?? 0} / ${TOTAL_CLASES}`} label="Clases completadas" />
-                <Stat icon="💥" valor={`${retos ?? 0} / ${TOTAL_RETOS}`} label="Retos completados" />
+                <Stat icon="📖" valor={`${clases} / ${avance.totalClases}`} label="Clases completadas" />
+                <Stat icon="💥" valor={`${retos} / ${avance.totalRetos}`} label="Retos completados" />
                 <Stat icon="🔥" valor={`${(p.racha as number) || 0}`} label="Días de racha" />
               </div>
 
