@@ -184,7 +184,14 @@ export function ReproductorClase({
                           setProgreso(Math.min(100, (vistoInicial / v.duration) * 100)); // % con duración REAL
                         }
                       }}
-                      className="w-full rounded-2xl aspect-video bg-black shadow-lg" />
+                      // crossOrigin: el .vtt vive en Storage (otro dominio) y sin esto
+                      // el navegador no carga la pista de subtítulos.
+                      crossOrigin={clase.subtitulos ? "anonymous" : undefined}
+                      className="w-full rounded-2xl aspect-video bg-black shadow-lg">
+                      {clase.subtitulos && (
+                        <track kind="captions" src={clase.subtitulos} srcLang="es" label="Español" default />
+                      )}
+                    </video>
                   )}
                   {/* Selector de velocidad — colapsable (chico por defecto, se expande al tocar) */}
                   {video.tipo !== "youtube" && video.tipo !== "vimeo" && (

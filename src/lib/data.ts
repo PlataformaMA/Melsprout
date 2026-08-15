@@ -12,6 +12,7 @@ export type Clase = {
   revision: "auto" | "equipo";
   grabada: boolean;
   portada?: string | null;
+  subtitulos?: string | null;   // .vtt generado automáticamente
 };
 
 export type ModuloCurso = {

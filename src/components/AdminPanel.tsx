@@ -22,6 +22,7 @@ import {
 } from "@/lib/admin-actions";
 import { crearClaseVivo, actualizarClaseVivo, borrarClaseVivo, type ClaseVivo, type ClaseVivoInput } from "@/lib/vivo-actions";
 import { crearModulo, actualizarModulo, borrarModulo, crearClase, actualizarClase, borrarClase, setVideoClaseDB, type ClaseInput } from "@/lib/cursos-actions";
+import { generarSubtitulos, revisarSubtitulos, borrarSubtitulos } from "@/lib/subtitulos-actions";
 import type { ModuloRow, ClaseRow } from "@/lib/cursos-db";
 import { createClient } from "@/lib/supabase/client";
 
@@ -541,6 +542,9 @@ function ClaseCursoFila({ clase, onCambio }: { clase: ClaseRow; onCambio: () => 
   const [f, setF] = useState({ titulo: clase.titulo, instructor: clase.instructor || "", duracion_min: clase.duracion_min, nivel: clase.nivel || "basico", reto_texto: clase.reto_texto || "", reto_instrucciones: clase.reto_instrucciones || "", portada: clase.portada || "", video: clase.video_url || "" });
   const [subiendo, setSubiendo] = useState(false);
   const [msg, setMsg] = useState("");
+  const [subs, setSubs] = useState<string | null>(clase.subtitulos_url);
+  const [subsMsg, setSubsMsg] = useState("");
+  const [subsOcupado, setSubsOcupado] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const inputC = "w-full bg-bg border border-border rounded-lg px-3 py-2 text-[13px] outline-none focus:border-accent";
 
@@ -565,6 +569,32 @@ function ClaseCursoFila({ clase, onCambio }: { clase: ClaseRow; onCambio: () => 
     setMsg("✅ Guardado"); onCambio();
   }
   async function borrar() { if (!confirm("¿Borrar esta clase?")) return; const r = await borrarClase(clase.id); if ("error" in r) { alert(r.error); return; } onCambio(); }
+
+  function leerEstado(r: Awaited<ReturnType<typeof generarSubtitulos>>) {
+    if ("error" in r) { setSubsMsg(r.error); return; }
+    if (r.estado === "listo") { setSubs(r.url); setSubsMsg("✅ Subtítulos listos"); onCambio(); return; }
+    if (r.estado === "procesando") { setSubsMsg("⏳ Transcribiendo… dale a «Actualizar» en un minuto."); return; }
+    if (r.estado === "sin-video") { setSubsMsg("Esta clase no tiene video."); return; }
+    setSubsMsg("Falta configurar ASSEMBLYAI_API_KEY en Vercel.");
+  }
+  async function generarSubs() {
+    setSubsOcupado(true); setSubsMsg("Mandando el video a transcribir…");
+    leerEstado(await generarSubtitulos(clase.id));
+    setSubsOcupado(false);
+  }
+  async function revisarSubs() {
+    setSubsOcupado(true); setSubsMsg("Revisando…");
+    leerEstado(await revisarSubtitulos(clase.id));
+    setSubsOcupado(false);
+  }
+  async function quitarSubs() {
+    if (!confirm("¿Quitar los subtítulos de esta clase?")) return;
+    setSubsOcupado(true);
+    const r = await borrarSubtitulos(clase.id);
+    setSubs("error" in r ? subs : null);
+    setSubsMsg("error" in r ? r.error : "Subtítulos quitados");
+    setSubsOcupado(false); onCambio();
+  }
 
   return (
     <div className="border border-border rounded-xl bg-bg/40">
@@ -591,6 +621,32 @@ function ClaseCursoFila({ clase, onCambio }: { clase: ClaseRow; onCambio: () => 
             <button onClick={() => fileRef.current?.click()} disabled={subiendo} className="bg-surface border border-border rounded-lg px-3 py-2 text-[13px] font-semibold hover:bg-bg disabled:opacity-60 shrink-0">{subiendo ? "Subiendo…" : "Subir video"}</button>
           </div>
           {msg && <p className="text-[12px] text-sub">{msg}</p>}
+
+          {/* Subtítulos automáticos (AssemblyAI). Solo para videos propios .mp4 */}
+          <div className="border border-border rounded-lg p-2.5 bg-surface/60">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[12.5px] font-semibold">Subtítulos</span>
+              {subs
+                ? <a href={subs} target="_blank" rel="noreferrer" className="text-[11.5px] font-bold text-green">✅ listos (ver .vtt)</a>
+                : <span className="text-[11.5px] text-hint">sin generar</span>}
+              <div className="flex gap-2 ml-auto">
+                <button onClick={generarSubs} disabled={subsOcupado || !f.video}
+                  className="bg-surface border border-border rounded-lg px-3 py-1.5 text-[12.5px] font-semibold hover:bg-bg disabled:opacity-50">
+                  {subs ? "Regenerar" : "Generar"}
+                </button>
+                <button onClick={revisarSubs} disabled={subsOcupado}
+                  className="bg-surface border border-border rounded-lg px-3 py-1.5 text-[12.5px] font-semibold hover:bg-bg disabled:opacity-50">
+                  Actualizar
+                </button>
+                {subs && (
+                  <button onClick={quitarSubs} disabled={subsOcupado}
+                    className="text-[12.5px] font-semibold text-red-500 px-2 disabled:opacity-50">Quitar</button>
+                )}
+              </div>
+            </div>
+            {subsMsg && <p className="text-[12px] text-sub mt-1.5">{subsMsg}</p>}
+          </div>
+
           <div className="flex gap-2">
             <button onClick={guardar} className="bg-accent text-white rounded-lg px-4 py-2 text-[13px] font-bold hover:brightness-110">Guardar clase</button>
             <button onClick={borrar} className="text-[13px] font-semibold text-red-500 px-2">Borrar</button>

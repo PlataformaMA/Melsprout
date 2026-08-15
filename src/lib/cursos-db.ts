@@ -48,6 +48,7 @@ export async function getCursos(incluirEspeciales = false): Promise<ModuloCurso[
           revision: ((c.revision as string) || "auto") as Clase["revision"],
           grabada: !!c.video_url,
           portada: portadaDe(c.portada, c.video_url),
+          subtitulos: (c.subtitulos_url as string) || null,
         })),
     }));
   } catch {
@@ -68,7 +69,7 @@ export async function getVideoClaseDB(claseId: string): Promise<string | null> {
 
 // Datos crudos para el panel admin (con ids reales para editar).
 export type ModuloRow = { id: string; nombre: string; descripcion: string; color: string; orden: number; activo: boolean };
-export type ClaseRow = { id: string; modulo_id: string; titulo: string; instructor: string; duracion_min: number; nivel: string; video_url: string | null; reto_texto: string; reto_instrucciones: string; portada: string | null; revision: string; orden: number; activo: boolean };
+export type ClaseRow = { id: string; modulo_id: string; titulo: string; instructor: string; duracion_min: number; nivel: string; video_url: string | null; reto_texto: string; reto_instrucciones: string; portada: string | null; revision: string; orden: number; activo: boolean; subtitulos_url: string | null; subtitulos_job: string | null };
 
 export async function getCursosAdmin(): Promise<{ modulos: ModuloRow[]; clases: ClaseRow[] }> {
   const admin = createAdminClient();
@@ -136,6 +137,7 @@ async function armarEspeciales(filtroId?: string): Promise<CursoEspecial[]> {
         revision: ((c.revision as string) || "auto") as Clase["revision"],
         grabada: !!c.video_url,
         portada: portadaDe(c.portada, c.video_url),
+        subtitulos: (c.subtitulos_url as string) || null,
       })),
     };
   });
