@@ -14,6 +14,7 @@ export type Avance = { clases: number; retos: number };
 const TOTAL_RETOS = listaRetos().length;
 import { AvatarUploader } from "@/components/AvatarUploader";
 import { AppSidebar } from "@/components/AppSidebar";
+import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import { UserMenu } from "@/components/UserMenu";
 import { useConectarInsightIQ, type InsightIQConfig } from "@/components/ConectarInsightIQ";
 
@@ -100,10 +101,7 @@ export function PerfilVista({ perfil, creadoEn, insightiq, avance, social, amigo
           <header className="flex items-center justify-end gap-4 mb-5 h-10">
             <Counter icon="🔥" valor={perfil.racha} />
             <Counter icon="💎" valor={perfil.gemas} />
-            <button className="relative w-9 h-9 grid place-items-center rounded-full hover:bg-surface transition" aria-label="Notificaciones">
-              <BellIcon />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-accent" />
-            </button>
+            <CampanaNotificaciones />
             <UserMenu avatarUrl={perfil.avatar_url} nombre={perfil.full_name ?? "Creador"} />
           </header>
 
@@ -638,18 +636,24 @@ function TabResumen({ perfil, nivel, avance }: { perfil: Perfil; nivel: ReturnTy
       <div>
         <h3 className="font-display text-lg font-extrabold mb-3">Certificaciones</h3>
         {avance.clases >= 8 ? (
-          <div className="w-[300px] max-w-full rounded-2xl p-5 text-white shadow-md relative overflow-hidden"
+          <div className="w-[320px] max-w-full rounded-2xl p-5 pb-4 text-white shadow-md relative overflow-hidden"
             style={{ background: "linear-gradient(135deg,#7C3AED 0%,#9F67FF 55%,#C4A5FF 100%)" }}>
-            <div className="text-[11px] font-bold opacity-90">✦ Melsprout</div>
-            <div className="font-display text-xl font-extrabold leading-tight mt-2">Certificado<br />Starter</div>
-            <p className="text-[11px] opacity-90 mt-2 leading-snug">
-              Otorgado a<br /><b>{perfil.full_name || "Creador"}</b>
-            </p>
-            <p className="text-[10px] opacity-75 mt-3 leading-snug">
-              Por completar el módulo Básicos del Marketing Digital.
-            </p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/octi.png" alt="" className="absolute -right-4 -bottom-3 w-24 opacity-90" />
+            {/* Octi vive en su propia columna: así el texto nunca se le encima
+                y el pulpo se ve completo (antes se salía de la tarjeta). */}
+            <div className="flex items-end gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="text-[11px] font-bold opacity-90">✦ Melsprout</div>
+                <div className="font-display text-xl font-extrabold leading-tight mt-2">Certificado<br />Starter</div>
+                <p className="text-[11px] opacity-90 mt-2 leading-snug">
+                  Otorgado a<br /><b>{perfil.full_name || "Creador"}</b>
+                </p>
+                <p className="text-[10px] opacity-75 mt-3 leading-snug">
+                  Por completar el módulo Básicos del Marketing Digital.
+                </p>
+              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/octi.png" alt="" className="w-20 shrink-0 self-end -mb-1 opacity-95" />
+            </div>
           </div>
         ) : (
           <p className="text-[13px] text-hint">
@@ -718,7 +722,6 @@ function Anillo({ pct }: { pct: number }) {
 }
 
 // ————————————— Iconos —————————————
-function BellIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#71717a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" /></svg>; }
 function UsersIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="8" r="3.2" /><path d="M3 20a6 6 0 0 1 12 0" /><path d="M16 5.5a3 3 0 0 1 0 5.8M21 20a6 6 0 0 0-4-5.6" /></svg>; }
 function HeartIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z" /></svg>; }
 function ChatIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 10h8M8 14h5" /><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z" /></svg>; }

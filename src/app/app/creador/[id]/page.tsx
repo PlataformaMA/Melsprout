@@ -202,20 +202,24 @@ export default async function CreadorPage({ params }: { params: Promise<{ id: st
               <section className="mt-7">
                 <h2 className="font-display text-lg font-extrabold mb-3">Certificaciones</h2>
                 {certificado ? (
-                  <div className="w-[300px] max-w-full rounded-2xl p-5 text-white shadow-md relative overflow-hidden"
+                  <div className="w-[320px] max-w-full rounded-2xl p-5 pb-4 text-white shadow-md relative overflow-hidden"
                     style={{ background: "linear-gradient(135deg,#7C3AED 0%,#9F67FF 55%,#C4A5FF 100%)" }}>
-                    <div className="text-[11px] font-bold opacity-90">✦ Melsprout</div>
-                    <div className="font-display text-xl font-extrabold leading-tight mt-2">
-                      Certificado<br />Starter
+                    <div className="flex items-end gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[11px] font-bold opacity-90">✦ Melsprout</div>
+                        <div className="font-display text-xl font-extrabold leading-tight mt-2">
+                          Certificado<br />Starter
+                        </div>
+                        <p className="text-[11px] opacity-90 mt-2 leading-snug">
+                          Otorgado a<br /><b>{nombre}</b>
+                        </p>
+                        <p className="text-[10px] opacity-75 mt-3 leading-snug">
+                          Por completar el módulo Básicos del Marketing Digital.
+                        </p>
+                      </div>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src="/octi.png" alt="" className="w-20 shrink-0 self-end -mb-1 opacity-95" />
                     </div>
-                    <p className="text-[11px] opacity-90 mt-2 leading-snug">
-                      Otorgado a<br /><b>{nombre}</b>
-                    </p>
-                    <p className="text-[10px] opacity-75 mt-3 leading-snug">
-                      Por completar el módulo Básicos del Marketing Digital.
-                    </p>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/octi.png" alt="" className="absolute -right-4 -bottom-3 w-24 opacity-90" />
                   </div>
                 ) : (
                   <p className="text-[13px] text-hint">Todavía no tiene certificaciones.</p>

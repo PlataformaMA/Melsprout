@@ -4,13 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogoMarca } from "@/components/LogoMarca";
-
-const ITEMS = [
-  { href: "/app/ruta", label: "Ruta de aprendizaje", icon: "🗺️" },
-  { href: "/app/vivo", label: "Clases en vivo", icon: "📡" },
-  { href: "/app/comunidad", label: "Comunidad", icon: "👥" },
-  { href: "/app/perfil", label: "Mi perfil", icon: "🙂" },
-];
+import { NAV_ITEMS as ITEMS } from "@/components/nav-items";
 
 // Menú ☰ lateral (drawer) — solo móvil. Se oculta en el panel admin.
 export function MobileNav() {
@@ -42,9 +36,9 @@ export function MobileNav() {
               {ITEMS.map((it) => {
                 const activo = path === it.href || (it.href !== "/app/inicio" && path.startsWith(it.href));
                 return (
-                  <Link key={it.href} href={it.href} onClick={() => setOpen(false)}
+                  <Link key={it.id} href={it.href} onClick={() => setOpen(false)}
                     className={`flex items-center gap-3 rounded-xl px-3 py-3 text-[14px] font-semibold transition ${activo ? "bg-accent-soft text-accent" : "text-text hover:bg-bg"}`}>
-                    <span className="text-[18px]">{it.icon}</span>{it.label}
+                    <span className="shrink-0">{it.icon}</span>{it.label}
                   </Link>
                 );
               })}

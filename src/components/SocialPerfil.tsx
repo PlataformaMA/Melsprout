@@ -36,12 +36,12 @@ export function SocialPerfil({ userId, inicial }: { userId: string; inicial: Soc
 
   return (
     <div className="mt-5 pt-4 border-t border-border">
-      <div className="flex items-center gap-6">
-        <span className="text-[14px]">👤 <b>Seguidores</b> <span className="text-sub">{s.seguidores}</span></span>
-        <span className="text-[14px]">👤 <b>Siguiendo</b> <span className="text-sub">{s.siguiendo}</span></span>
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+        <span className="text-[14px] whitespace-nowrap">👤 <b>Seguidores</b> <span className="text-sub">{s.seguidores}</span></span>
+        <span className="text-[14px] whitespace-nowrap">👤 <b>Siguiendo</b> <span className="text-sub">{s.siguiendo}</span></span>
         <button onClick={alternar} disabled={pendiente}
           title={s.solicitada ? "Toca para cancelar la solicitud" : undefined}
-          className={`ml-auto rounded-full px-5 py-2 text-[13px] font-bold transition disabled:opacity-60 ${
+          className={`w-full sm:w-auto sm:ml-auto rounded-full px-5 py-2.5 sm:py-2 text-[13.5px] sm:text-[13px] font-bold transition disabled:opacity-60 ${
             s.loSigo || s.solicitada
               ? "bg-surface border border-border text-sub hover:border-accent/40"
               : "bg-accent text-white hover:brightness-110 shadow-sm shadow-accent/30"
