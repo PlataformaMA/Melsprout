@@ -3,9 +3,15 @@
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type Perfil, guardarNicho, guardarCampos } from "@/lib/perfil-actions";
+import { type Perfil, guardarNicho, guardarCampos, guardarEspecialidades } from "@/lib/perfil-actions";
 import { NICHOS, banderaUrl } from "@/lib/catalogos";
 import { nivelPorXP, TOTAL_CLASES } from "@/lib/data";
+import { listaRetos } from "@/lib/retos";
+import type { Social } from "@/lib/seguidores-actions";
+import type { Amigo } from "@/lib/chat-actions";
+
+export type Avance = { clases: number; retos: number };
+const TOTAL_RETOS = listaRetos().length;
 import { AvatarUploader } from "@/components/AvatarUploader";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
@@ -48,8 +54,8 @@ const REDES = [
 ] as const;
 
 // ————————————— Componente principal —————————————
-export function PerfilVista({ perfil, creadoEn, insightiq }: { perfil: Perfil; creadoEn: string | null; insightiq?: InsightIQProps | null }) {
-  const [tab, setTab] = useState<"Resumen" | "Métricas">("Resumen");
+export function PerfilVista({ perfil, creadoEn, insightiq, avance, social, amigos = [] }: { perfil: Perfil; creadoEn: string | null; insightiq?: InsightIQProps | null; avance: Avance; social?: Social; amigos?: Amigo[] }) {
+  const [tab, setTab] = useState<"Resumen" | "Métricas" | "Amigos">("Resumen");
   // Conexión de redes: "Próximamente" (aún no habilitada). Mantenemos el hook activo.
   useConectarInsightIQ(insightiq ?? null);
 
@@ -131,7 +137,13 @@ export function PerfilVista({ perfil, creadoEn, insightiq }: { perfil: Perfil; c
                       </div>
                     </div>
 
-                    <NichoChip nicho={perfil.nicho} />
+                    {perfil.headline ? (
+                      <span className="inline-block mt-2.5 text-[13px] font-semibold text-accent bg-accent-soft rounded-full px-4 py-1.5">
+                        {perfil.headline}
+                      </span>
+                    ) : (
+                      <NichoChip nicho={perfil.nicho} />
+                    )}
                   </div>
                 </div>
 
@@ -148,6 +160,17 @@ export function PerfilVista({ perfil, creadoEn, insightiq }: { perfil: Perfil; c
                     {nivel.siguiente ? `Te faltan ${nivel.faltan}XP para ${nivel.siguiente.nombre.toLowerCase()}` : `¡Nivel máximo!`}
                   </span>
                 </div>
+
+                {social && (
+                  <div className="flex items-center gap-6 mt-4 pt-3.5 border-t border-border">
+                    <span className="flex items-center gap-2 text-[14px] text-accent">
+                      <PersonaIcon /><b>Seguidores</b> <span>{social.seguidores}</span>
+                    </span>
+                    <span className="flex items-center gap-2 text-[14px] text-accent">
+                      <PersonaIcon /><b>Siguiendo</b> <span>{social.siguiendo}</span>
+                    </span>
+                  </div>
+                )}
               </section>
 
               {/* Sobre mí */}
@@ -187,17 +210,29 @@ export function PerfilVista({ perfil, creadoEn, insightiq }: { perfil: Perfil; c
                 <RedesCard perfil={perfil} REDES={REDES} />
               </div>
 
+              {/* Nichos */}
+              <Nichos nicho={perfil.nicho} especialidades={perfil.especialidades ?? []} />
+
               {/* Tabs */}
               <div className="mt-5 border-b border-border flex gap-8">
-                {(["Resumen", "Métricas"] as const).map((t) => (
+                {(["Resumen", "Métricas", "Amigos"] as const).map((t) => (
                   <button key={t} onClick={() => setTab(t)}
-                    className={`pb-3 text-[15px] font-bold -mb-px border-b-2 transition ${
+                    className={`flex items-center gap-2 pb-3 text-[15px] font-bold -mb-px border-b-2 transition ${
                       tab === t ? "border-accent text-accent" : "border-transparent text-sub hover:text-text"
-                    }`}>{t}</button>
+                    }`}>
+                    {t}
+                    {t === "Amigos" && amigos.length > 0 && (
+                      <span className="w-5 h-5 rounded-full bg-accent text-white text-[11px] font-extrabold grid place-items-center">
+                        {amigos.length}
+                      </span>
+                    )}
+                  </button>
                 ))}
               </div>
 
-              {tab === "Métricas" ? <TabMetricas metricas={perfil.metricas} /> : <TabResumen perfil={perfil} nivel={nivel} />}
+              {tab === "Métricas" ? <TabMetricas metricas={perfil.metricas} />
+                : tab === "Amigos" ? <TabAmigos amigos={amigos} />
+                : <TabResumen perfil={perfil} nivel={nivel} avance={avance} />}
             </div>
 
             {/* ═══════ Columna derecha ═══════ */}
@@ -219,6 +254,9 @@ export function PerfilVista({ perfil, creadoEn, insightiq }: { perfil: Perfil; c
                   <span className="text-[13px] font-bold text-accent leading-tight">Premio: +15<br />gemas</span>
                 </Link>
               </section>
+
+              {/* Invita a un amigo */}
+              <InvitarCard userId={perfil.id} />
             </aside>
           </div>
         </div>
@@ -277,6 +315,71 @@ function NichoChip({ nicho }: { nicho: string | null }) {
   );
 }
 
+// ————————————— Nichos (chips editables con "+") —————————————
+// El primero es el nicho principal (`nicho`); los demás viven en `especialidades`.
+function Nichos({ nicho, especialidades }: { nicho: string | null; especialidades: string[] }) {
+  const router = useRouter();
+  const [abierto, setAbierto] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+
+  const extras = (especialidades || []).filter((e) => e && e !== nicho);
+  const elegidos = [nicho, ...extras].filter(Boolean) as string[];
+
+  async function alternar(id: string) {
+    setGuardando(true);
+    if (!nicho) {
+      await guardarNicho(id);
+    } else if (id === nicho) {
+      // Quitar el principal: el primer extra ocupa su lugar.
+      await guardarNicho(extras[0] ?? null);
+      await guardarEspecialidades(extras.slice(1));
+    } else if (extras.includes(id)) {
+      await guardarEspecialidades(extras.filter((x) => x !== id));
+    } else {
+      await guardarEspecialidades([...extras, id]);
+    }
+    setGuardando(false);
+    setAbierto(false);
+    router.refresh();
+  }
+
+  return (
+    <div className="mt-6">
+      <h2 className="font-display text-lg font-extrabold mb-3">Nichos</h2>
+      <div className="flex flex-wrap items-center gap-2.5">
+        {elegidos.map((n, i) => (
+          <span key={n}
+            className={`rounded-full px-4 py-1.5 text-[13px] font-semibold ${
+              i === 0 ? "bg-accent-soft text-accent" : "bg-accent-soft/50 text-accent/80"
+            }`}>{n}</span>
+        ))}
+        <div className="relative">
+          <button onClick={() => setAbierto((v) => !v)} disabled={guardando}
+            aria-label="Agregar nicho"
+            className="w-9 h-9 rounded-full bg-accent text-white grid place-items-center text-lg font-bold hover:brightness-110 disabled:opacity-60 transition">+</button>
+          {abierto && (
+            <>
+              <div className="fixed inset-0 z-20" onClick={() => setAbierto(false)} />
+              <div className="absolute left-0 top-full mt-2 z-30 w-52 bg-surface border border-border rounded-2xl shadow-lg p-1.5">
+                {NICHOS.map((n) => {
+                  const puesto = elegidos.includes(n.id);
+                  return (
+                    <button key={n.id} onClick={() => alternar(n.id)} disabled={guardando}
+                      className={`w-full flex items-center gap-2 text-left text-sm rounded-xl px-3 py-2 hover:bg-bg transition ${puesto ? "text-accent font-semibold" : "text-text"}`}>
+                      <span>{n.emoji}</span>{n.id}
+                      {puesto && <span className="ml-auto text-[12px]">✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ————————————— Bandera circular (imagen real con escudo) —————————————
 function BanderaCirculo({ pais }: { pais: string | null }) {
   const url = banderaUrl(pais);
@@ -312,10 +415,8 @@ function TabMetricas({ metricas }: { metricas: Perfil["metricas"] }) {
     return m && (m.followers != null || m.username);
   });
 
-  const opciones = conectadas.length > 1 ? ["General", ...conectadas] : conectadas;
-  const [red, setRed] = useState<string>(opciones[0] || "General");
-  const [abierto, setAbierto] = useState(false);
-  const activa = opciones.includes(red) ? red : opciones[0];
+  const [red, setRed] = useState<string>(conectadas[0] || "");
+  const activa = conectadas.includes(red) ? red : conectadas[0];
 
   if (conectadas.length === 0) {
     return (
@@ -329,67 +430,51 @@ function TabMetricas({ metricas }: { metricas: Perfil["metricas"] }) {
     );
   }
 
-  const campo = (c: "followers" | "following" | "posts" | "likes"): number | null => {
-    if (activa === "General") {
-      const vals = conectadas.map((k) => metricas[k]?.[c]).filter((v): v is number => typeof v === "number");
-      return vals.length ? vals.reduce((s, v) => s + v, 0) : null;
-    }
-    const v = metricas[activa]?.[c];
-    return typeof v === "number" ? v : null;
-  };
-
-  const muestra = (n: number | null) => (n == null ? "—" : formatN(n));
+  const m = metricas[activa] ?? {};
+  const muestra = (n: number | null | undefined) => (n == null ? "—" : formatN(n));
+  const seguidores = m.followers ?? null;
+  const interacciones = m.interacciones ?? m.likes ?? null;
+  // Engagement: el que da la API/InsightIQ; si no, interacciones por publicación / seguidores.
+  const engagement =
+    m.engagement != null
+      ? m.engagement
+      : interacciones != null && m.posts && seguidores
+      ? Math.round((interacciones / m.posts / seguidores) * 1000) / 10
+      : null;
 
   const cards = [
-    { label: "Seguidores", valor: muestra(campo("followers")), icon: <UsersIcon />, tono: "text-accent" },
-    { label: "Me gusta", valor: muestra(campo("likes")), icon: <HeartIcon />, tono: "text-pink" },
-    { label: "Publicaciones", valor: muestra(campo("posts")), icon: <ChatIcon />, tono: "text-blue" },
-    { label: "Siguiendo", valor: muestra(campo("following")), icon: <UsersIcon />, tono: "text-accent" },
+    { label: "Seguidores totales", valor: muestra(seguidores), icon: <UsersIcon />, tono: "text-accent" },
+    { label: "Vistas", valor: muestra(m.vistas), icon: <EyeIcon />, tono: "text-blue" },
+    { label: "Engagement", valor: engagement == null ? "—" : `${engagement}%`, icon: <HeartIcon />, tono: "text-pink" },
+    { label: "Interacciones", valor: muestra(interacciones), icon: <ChatIcon />, tono: "text-accent" },
   ];
 
-  const actualizado = activa !== "General" ? fechaCorta(metricas[activa]?.updated_at) : null;
-  // Audiencia: de la red activa, o de la primera conectada que tenga datos (en General).
-  const aud =
-    activa === "General"
-      ? conectadas.map((k) => metricas[k]?.audiencia).find((a) => a) ?? null
-      : metricas[activa]?.audiencia ?? null;
+  const actualizado = fechaCorta(m.updated_at);
+  const aud = m.audiencia ?? null;
 
   return (
     <div className="mt-6">
       <h3 className="font-display text-lg font-extrabold mb-4">Métricas principales</h3>
 
-      <div className="flex items-center gap-4 mb-6 flex-wrap">
-        {opciones.length > 1 && (
-          <div className="relative">
-            <button onClick={() => setAbierto((v) => !v)}
-              className="flex items-center justify-between gap-6 bg-surface border border-border rounded-2xl px-5 py-3.5 shadow-sm min-w-[240px]">
-              <span className="font-display font-extrabold">{activa === "General" ? "General" : RED_INFO[activa]?.label}</span>
-              <ChevronDown />
-            </button>
-            {abierto && (
-              <>
-                <div className="fixed inset-0 z-20" onClick={() => setAbierto(false)} />
-                <div className="absolute left-0 top-full mt-2 z-30 w-[240px] bg-surface border border-border rounded-2xl shadow-lg p-1.5">
-                  {opciones.map((k) => (
-                    <button key={k} onClick={() => { setRed(k); setAbierto(false); }}
-                      className={`w-full text-left text-sm rounded-xl px-3 py-2.5 hover:bg-bg transition ${activa === k ? "text-accent font-bold bg-accent-soft" : "text-text"}`}>
-                      {k === "General" ? "General" : RED_INFO[k]?.label}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-        <div className="flex items-center gap-2.5">
-          {conectadas.map((k) => (
-            <button key={k} onClick={() => setRed(k)}
-              className={`w-9 h-9 rounded-xl grid place-items-center text-white transition ${activa === k ? "ring-2 ring-accent ring-offset-2" : "opacity-90 hover:opacity-100"}`}
-              style={{ background: RED_INFO[k]?.bg }} title={RED_INFO[k]?.label}>
-              {RED_INFO[k]?.icon}
-            </button>
-          ))}
-        </div>
+      {/* Selector de red */}
+      <div className="flex items-center gap-2.5 mb-5">
+        {conectadas.map((k) => (
+          <button key={k} onClick={() => setRed(k)}
+            className={`w-9 h-9 rounded-xl grid place-items-center text-white transition ${activa === k ? "ring-2 ring-accent ring-offset-2" : "opacity-70 hover:opacity-100"}`}
+            style={{ background: RED_INFO[k]?.bg }} title={RED_INFO[k]?.label}>
+            {RED_INFO[k]?.icon}
+          </button>
+        ))}
+      </div>
+
+      {/* Cuenta activa */}
+      <div className="flex items-center gap-3 mb-5">
+        <span className="w-9 h-9 rounded-xl grid place-items-center text-white shrink-0" style={{ background: RED_INFO[activa]?.bg }}>
+          {RED_INFO[activa]?.icon}
+        </span>
+        <span className="font-display text-xl font-extrabold truncate">
+          {m.username || RED_INFO[activa]?.label}
+        </span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -413,10 +498,10 @@ function TabMetricas({ metricas }: { metricas: Perfil["metricas"] }) {
         <>
           <h3 className="font-display text-lg font-extrabold mt-8 mb-4">Público</h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {aud.paises.length > 0 && <Breakdown titulo="Países" icon={<PinIcon />} filas={aud.paises} />}
-            {aud.ciudades.length > 0 && <Breakdown titulo="Ciudades" icon={<BuildingIcon />} filas={aud.ciudades} />}
-            {aud.genero.length > 0 && <Breakdown titulo="Género" icon={<UsersIcon />} filas={aud.genero} />}
-            {aud.edad.length > 0 && <Breakdown titulo="Edad" icon={<BarsIcon />} filas={aud.edad} />}
+            {aud.paises.length > 0 && <Breakdown titulo="Países" icon={<PinIcon />} filas={aud.paises} base={seguidores} />}
+            {aud.ciudades.length > 0 && <Breakdown titulo="Ciudades" icon={<BuildingIcon />} filas={aud.ciudades} base={seguidores} />}
+            {aud.genero.length > 0 && <Breakdown titulo="Género" icon={<UsersIcon />} filas={aud.genero} base={seguidores} />}
+            {aud.edad.length > 0 && <Breakdown titulo="Edad" icon={<BarsIcon />} filas={aud.edad} base={seguidores} />}
           </div>
         </>
       )}
@@ -425,8 +510,10 @@ function TabMetricas({ metricas }: { metricas: Perfil["metricas"] }) {
 }
 
 // Reparto de audiencia (valores en %) con barras.
-function Breakdown({ titulo, icon, filas }: { titulo: string; icon: React.ReactNode; filas: { k: string; pct: number }[] }) {
+function Breakdown({ titulo, icon, filas, base }: { titulo: string; icon: React.ReactNode; filas: { k: string; pct: number }[]; base?: number | null }) {
   const max = Math.max(...filas.map((f) => f.pct), 1);
+  // Con seguidores conocidos mostramos personas (7.4K); si no, el porcentaje.
+  const valor = (pct: number) => (base ? formatN((pct / 100) * base) : `${pct}%`);
   return (
     <div className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
       <div className="flex items-center gap-2 mb-4">
@@ -440,7 +527,7 @@ function Breakdown({ titulo, icon, filas }: { titulo: string; icon: React.ReactN
             <div className="flex-1 h-2.5 rounded-full bg-[#EEEBF6] overflow-hidden">
               <div className="h-full rounded-full bg-gradient-to-r from-[#A78BFA] to-accent" style={{ width: `${Math.max(6, Math.round((f.pct / max) * 92))}%` }} />
             </div>
-            <span className="text-[12px] text-sub w-11 text-right shrink-0">{f.pct}%</span>
+            <span className="text-[12px] text-sub w-11 text-right shrink-0" title={`${f.pct}%`}>{valor(f.pct)}</span>
           </div>
         ))}
       </div>
@@ -448,8 +535,57 @@ function Breakdown({ titulo, icon, filas }: { titulo: string; icon: React.ReactN
   );
 }
 
+// ————————————— Tab Amigos —————————————
+// Amigos = seguimiento mutuo (lo mismo que habilita el chat).
+function TabAmigos({ amigos }: { amigos: Amigo[] }) {
+  if (amigos.length === 0) {
+    return (
+      <div className="mt-6 bg-surface border border-border rounded-3xl p-8 text-center">
+        <div className="text-4xl mb-3">🤝</div>
+        <h3 className="font-display text-lg font-extrabold">Todavía no tienes amigos</h3>
+        <p className="text-sub text-[14px] mt-1.5">
+          Cuando tú y otra persona se sigan mutuamente aparecerá aquí y podrán chatear.
+        </p>
+        <Link href="/app/comunidad"
+          className="inline-block mt-4 bg-accent text-white rounded-xl px-4 py-2.5 text-[13px] font-bold hover:brightness-110 transition">
+          Ir a la comunidad
+        </Link>
+      </div>
+    );
+  }
+  return (
+    <div className="mt-3 divide-y divide-border">
+      {amigos.map((a) => (
+        <Link key={a.id} href={`/app/amigos/${a.id}`} className="flex items-center gap-4 py-4 group">
+          <span className="relative shrink-0">
+            {a.avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={a.avatar} alt={a.nombre} className="w-12 h-12 rounded-full object-cover" />
+            ) : (
+              <span className="w-12 h-12 rounded-full bg-accent-soft text-accent grid place-items-center font-display font-extrabold">
+                {a.nombre.slice(0, 2).toUpperCase()}
+              </span>
+            )}
+            {a.enLinea && <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green ring-2 ring-white" />}
+          </span>
+          <span className="flex-1 min-w-0 font-display text-[17px] font-extrabold truncate group-hover:text-accent transition">
+            {a.nombre}
+          </span>
+          {a.sinLeer > 0 && (
+            <span className="shrink-0 min-w-5 h-5 px-1.5 rounded-full bg-pink text-white text-[11px] font-extrabold grid place-items-center">
+              {a.sinLeer}
+            </span>
+          )}
+          <span className="flex items-center gap-1.5 shrink-0 w-16"><span className="text-lg">🔥</span><b className="font-display text-[15px]">{a.racha}</b></span>
+          <span className="flex items-center gap-1.5 shrink-0 w-20"><span className="text-lg">💎</span><b className="font-display text-[15px]">{a.gemas}</b></span>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 // ————————————— Tab Resumen —————————————
-function TabResumen({ perfil, nivel }: { perfil: Perfil; nivel: ReturnType<typeof nivelPorXP> }) {
+function TabResumen({ perfil, nivel, avance }: { perfil: Perfil; nivel: ReturnType<typeof nivelPorXP>; avance: Avance }) {
   const badges = [
     { img: "/badges/fuego.png", nombre: "Racha encendida" },
     { img: "/badges/video.png", nombre: "Creador de video" },
@@ -466,9 +602,9 @@ function TabResumen({ perfil, nivel }: { perfil: Perfil; nivel: ReturnType<typeo
       {/* Estadísticas */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <MiniStat top={<StatBars />} valor={`Nivel ${nivel.actual.nivel}`} label="Nivel actual" />
-        <MiniStat top={<span className="text-amber text-lg">⭐</span>} valor={perfil.xp.toLocaleString()} label="Puntos" sub="+120 esta semana" />
-        <MiniStat top={<span className="text-pink text-lg">📖</span>} valor={`0 / ${TOTAL_CLASES}`} label="Clases completadas" />
-        <MiniStat top={<span className="text-accent text-lg">💥</span>} valor={`0 / ${TOTAL_CLASES}`} label="Retos Completados" />
+        <MiniStat top={<span className="text-amber text-lg">⭐</span>} valor={perfil.xp.toLocaleString()} label="Puntos" />
+        <MiniStat top={<span className="text-pink text-lg">📖</span>} valor={`${avance.clases} / ${TOTAL_CLASES}`} label="Clases completadas" />
+        <MiniStat top={<span className="text-accent text-lg">💥</span>} valor={`${avance.retos} / ${TOTAL_RETOS}`} label="Retos completados" />
         <MiniStat top={<span className="text-lg">🔥</span>} valor={`${perfil.racha}`} label="Días de racha" />
       </div>
 
@@ -497,6 +633,30 @@ function TabResumen({ perfil, nivel }: { perfil: Perfil; nivel: ReturnType<typeo
           ))}
         </section>
       </div>
+
+      {/* Certificaciones — el Starter se otorga al terminar el primer módulo. */}
+      <div>
+        <h3 className="font-display text-lg font-extrabold mb-3">Certificaciones</h3>
+        {avance.clases >= 8 ? (
+          <div className="w-[300px] max-w-full rounded-2xl p-5 text-white shadow-md relative overflow-hidden"
+            style={{ background: "linear-gradient(135deg,#7C3AED 0%,#9F67FF 55%,#C4A5FF 100%)" }}>
+            <div className="text-[11px] font-bold opacity-90">✦ Melsprout</div>
+            <div className="font-display text-xl font-extrabold leading-tight mt-2">Certificado<br />Starter</div>
+            <p className="text-[11px] opacity-90 mt-2 leading-snug">
+              Otorgado a<br /><b>{perfil.full_name || "Creador"}</b>
+            </p>
+            <p className="text-[10px] opacity-75 mt-3 leading-snug">
+              Por completar el módulo Básicos del Marketing Digital.
+            </p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/octi.png" alt="" className="absolute -right-4 -bottom-3 w-24 opacity-90" />
+          </div>
+        ) : (
+          <p className="text-[13px] text-hint">
+            Completa el primer módulo para ganar tu Certificado Starter.
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -520,6 +680,30 @@ function MiniStat({ top, valor, label, sub }: { top: React.ReactNode; valor: str
     </div>
   );
 }
+function InvitarCard({ userId }: { userId: string }) {
+  const [copiado, setCopiado] = useState(false);
+  function invitar() {
+    const link = `${window.location.origin}/registro?ref=${userId}`;
+    navigator.clipboard?.writeText(link).then(() => {
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2500);
+    });
+  }
+  return (
+    <section className="rounded-3xl p-5 shadow-sm border border-accent/10" style={{ background: "linear-gradient(160deg,#F3F0FF,#FBFAFF)" }}>
+      <h3 className="font-display font-extrabold mb-1">Invita a un amigo</h3>
+      <p className="text-[13px] text-sub leading-relaxed">
+        Comparte Melsprout y gana <b className="text-accent">+100 XP</b> por cada amigo que se registre 💜
+      </p>
+      <div className="text-4xl text-center my-3">🎓</div>
+      <button onClick={invitar}
+        className="w-full bg-accent text-white rounded-xl py-2.5 text-[13px] font-bold hover:brightness-110 transition">
+        {copiado ? "¡Link copiado! ✓" : "Invitar ahora"}
+      </button>
+      {copiado && <p className="text-[11px] text-sub text-center mt-2">Compártelo. Ganas +100 XP cuando se registren.</p>}
+    </section>
+  );
+}
 function Anillo({ pct }: { pct: number }) {
   const r = 46, c = 2 * Math.PI * r, off = c - (pct / 100) * c;
   return (
@@ -535,10 +719,11 @@ function Anillo({ pct }: { pct: number }) {
 
 // ————————————— Iconos —————————————
 function BellIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#71717a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" /></svg>; }
-function ChevronDown() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>; }
 function UsersIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="8" r="3.2" /><path d="M3 20a6 6 0 0 1 12 0" /><path d="M16 5.5a3 3 0 0 1 0 5.8M21 20a6 6 0 0 0-4-5.6" /></svg>; }
 function HeartIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z" /></svg>; }
 function ChatIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 10h8M8 14h5" /><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z" /></svg>; }
+function PersonaIcon() { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="3.5" /><path d="M5 20a7 7 0 0 1 14 0" /></svg>; }
+function EyeIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z" /><circle cx="12" cy="12" r="2.8" /></svg>; }
 function StatBars() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.2" strokeLinecap="round"><path d="M6 20v-6M12 20V8M18 20v-9" /></svg>; }
 function PinIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z" /><circle cx="12" cy="10" r="2.5" /></svg>; }
 function BuildingIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="3" width="12" height="18" rx="1.5" /><path d="M16 8h4v13M8 7h1M12 7h1M8 11h1M12 11h1M8 15h1M12 15h1" /></svg>; }

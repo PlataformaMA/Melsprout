@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getPerfil } from "@/lib/perfil-actions";
+import { getAvance } from "@/lib/progreso-actions";
+import { getSocial } from "@/lib/seguidores-actions";
+import { getAmigos } from "@/lib/chat-actions";
 import { guardarMetricasInsightIQ, cuentaDeOtroUsuario } from "@/lib/social-store";
 import {
   INSIGHTIQ_CONFIGURADO,
@@ -21,6 +24,9 @@ export default async function PerfilPage() {
   if (!user) redirect("/login");
 
   const perfil = await getPerfil();
+  const avance = await getAvance();
+  const social = await getSocial(user.id);
+  const amigos = await getAmigos();
   if (!perfil) redirect("/onboarding");
   if (!perfil.onboarding_completo) redirect("/onboarding");
 
@@ -58,6 +64,9 @@ export default async function PerfilPage() {
               following: m.following ?? undefined,
               posts: m.posts ?? undefined,
               likes: m.likes ?? undefined,
+              vistas: m.vistas ?? undefined,
+              interacciones: m.interacciones ?? undefined,
+              engagement: m.engagement ?? undefined,
               username: m.username ?? undefined,
               url: m.url ?? undefined,
               image: m.image ?? undefined,
@@ -82,6 +91,9 @@ export default async function PerfilPage() {
     <PerfilVista
       perfil={perfil}
       creadoEn={user.created_at ?? null}
+      avance={avance}
+      social={social}
+      amigos={amigos}
       insightiq={insightiq}
     />
   );

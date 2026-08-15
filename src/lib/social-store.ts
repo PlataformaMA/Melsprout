@@ -1,6 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { MetricaRed } from "@/lib/insightiq";
+import type { Audiencia, MetricaRed } from "@/lib/insightiq";
 
 // Guarda las métricas de las redes conectadas vía InsightIQ en el perfil.
 // No maneja tokens (InsightIQ los guarda por su lado); solo métricas públicas + @.
@@ -25,6 +25,9 @@ export async function guardarMetricasInsightIQ(
       following: r.following ?? undefined,
       posts: r.posts ?? undefined,
       likes: r.likes ?? undefined,
+      vistas: r.vistas ?? undefined,
+      interacciones: r.interacciones ?? undefined,
+      engagement: r.engagement ?? undefined,
       username: r.username ?? undefined,
       url: r.url ?? undefined,
       image: r.image ?? undefined,
@@ -61,7 +64,7 @@ export async function cuentaDeOtroUsuario(
 }
 
 // Quita una red del perfil (al desconectar la cuenta).
-export async function eliminarRedInsightIQ(userId: string, provider: string) {
+export async function eliminarRedDelPerfil(userId: string, provider: string) {
   const admin = createAdminClient();
   const { data: p } = await admin
     .from("profiles")
@@ -79,6 +82,32 @@ export async function eliminarRedInsightIQ(userId: string, provider: string) {
     .eq("id", userId);
 }
 
+// Borra el token y las métricas de una cuenta a partir de su id EN la red social
+// (no el nuestro). Lo usan los avisos de Meta, que solo nos mandan ese id.
+export async function eliminarConexionPorExternalId(
+  provider: string,
+  externalId: string
+): Promise<boolean> {
+  if (!externalId) return false;
+  const admin = createAdminClient();
+
+  const { data } = await admin
+    .from("social_connections")
+    .select("user_id")
+    .eq("provider", provider)
+    .eq("external_id", externalId)
+    .maybeSingle();
+  if (!data?.user_id) return false;
+
+  await admin
+    .from("social_connections")
+    .delete()
+    .eq("user_id", data.user_id)
+    .eq("provider", provider);
+  await eliminarRedDelPerfil(data.user_id as string, provider);
+  return true;
+}
+
 // Guarda (de forma segura) el token y las métricas de una red conectada.
 export async function guardarConexion(
   userId: string,
@@ -87,6 +116,9 @@ export async function guardarConexion(
     externalId?: string;
     username?: string;
     followers?: number | null;
+    posts?: number | null;
+    alcance?: number | null;
+    audiencia?: Audiencia | null;
     accessToken?: string;
     expiresAt?: string | null;
   }
@@ -115,6 +147,9 @@ export async function guardarConexion(
     ...(p?.metricas || {}),
     [provider]: {
       followers: datos.followers ?? null,
+      posts: datos.posts ?? null,
+      alcance: datos.alcance ?? null,
+      audiencia: datos.audiencia ?? null,
       username: datos.username ?? null,
       updated_at: new Date().toISOString(),
     },

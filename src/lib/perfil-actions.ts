@@ -32,6 +32,9 @@ export type Perfil = {
       following?: number;
       posts?: number;
       likes?: number;
+      vistas?: number;
+      interacciones?: number;
+      engagement?: number;
       username?: string;
       url?: string;
       image?: string;
@@ -46,6 +49,7 @@ export type Perfil = {
   >;
   onboarding_completo: boolean;
   etapa: string;
+  genero: string | null;
   xp: number;
   gemas: number;
   racha: number;
@@ -54,6 +58,7 @@ export type Perfil = {
 // Datos que llegan del onboarding.
 export type DatosOnboarding = {
   pais?: string;
+  genero?: "femenino" | "masculino" | "neutro";
   fecha_nacimiento?: string;
   whatsapp?: string;
   whatsapp_optin?: boolean;
@@ -119,6 +124,7 @@ export async function guardarOnboarding(
     plataforma_principal: datos.plataforma_principal,
     tamano_audiencia: datos.tamano_audiencia,
     experiencia: datos.experiencia ?? null,
+    genero: datos.genero ?? null,
     tiempo_semanal: datos.tiempo_semanal ?? null,
     habilidades: datos.habilidades ?? [],
     como_conocio: datos.como_conocio ?? null,
@@ -226,6 +232,27 @@ export async function guardarNicho(
   const { error } = await supabase
     .from("profiles")
     .update({ nicho: nicho ? nicho.trim().slice(0, 40) : null })
+    .eq("id", user.id);
+  if (error) return { error: "No se pudo guardar." };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+// Nichos secundarios (los chips extra de la sección "Nichos" del perfil).
+// El nicho principal vive en `nicho`; aquí solo van los demás.
+export async function guardarEspecialidades(
+  lista: string[]
+): Promise<{ ok: true } | { error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Inicia sesión de nuevo." };
+
+  const limpias = [...new Set(lista.map((x) => x.trim().slice(0, 40)).filter(Boolean))].slice(0, 6);
+  const { error } = await supabase
+    .from("profiles")
+    .update({ especialidades: limpias })
     .eq("id", user.id);
   if (error) return { error: "No se pudo guardar." };
   revalidatePath("/", "layout");

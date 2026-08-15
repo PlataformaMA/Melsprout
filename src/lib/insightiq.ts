@@ -159,6 +159,9 @@ export type MetricaRed = {
   following: number | null;
   posts: number | null;
   likes: number | null;
+  vistas: number | null;          // reproducciones totales (si la red las da)
+  interacciones: number | null;   // me gusta + comentarios
+  engagement: number | null;      // % (el de la API o estimado)
   audiencia: Audiencia | null;
 };
 
@@ -168,6 +171,8 @@ type IqReputation = {
   subscriber_count?: number | null;
   content_count?: number | null;
   like_count?: number | null;
+  comment_count?: number | null;
+  view_count?: number | null;
 };
 type IqProfile = {
   work_platform?: { id?: string };
@@ -177,10 +182,18 @@ type IqProfile = {
   url?: string | null;
   image_url?: string | null;
   reputation?: IqReputation | null;
+  engagement_rate?: number | null;
+  average_views?: number | null;
+  average_likes?: number | null;
+  average_comments?: number | null;
 };
 
 function num(v: number | null | undefined): number | null {
   return typeof v === "number" ? v : null;
+}
+// Promedio por publicación -> total (solo si sabemos cuántas publicaciones hay).
+function escala(promedio: number | null, posts: number | null): number | null {
+  return promedio != null && posts ? Math.round(promedio * posts) : null;
 }
 
 // Demografía de audiencia de una cuenta (países, ciudades, género, edad).
@@ -251,6 +264,22 @@ export async function obtenerMetricas(userId: string): Promise<MetricaRed[]> {
     const followers = num(rep.follower_count) ?? num(rep.subscriber_count);
     const accountId = p.account?.id || "";
     const audiencia = accountId ? await obtenerAudiencia(accountId) : null;
+
+    const posts = num(rep.content_count);
+    const likes = num(rep.like_count);
+    const comentarios = num(rep.comment_count) ?? escala(num(p.average_comments), posts);
+    const vistas = num(rep.view_count) ?? escala(num(p.average_views), posts);
+    const interacciones =
+      likes == null && comentarios == null ? null : (likes ?? 0) + (comentarios ?? 0);
+
+    // Engagement: el que manda la API; si no, interacciones por publicación / seguidores.
+    let engagement = num(p.engagement_rate);
+    if (engagement != null && engagement <= 1) engagement = engagement * 100;
+    if (engagement == null && interacciones != null && posts && followers) {
+      engagement = (interacciones / posts / followers) * 100;
+    }
+    if (engagement != null) engagement = Math.round(engagement * 10) / 10;
+
     out.push({
       provider,
       username: p.platform_username || p.username || null,
@@ -258,8 +287,11 @@ export async function obtenerMetricas(userId: string): Promise<MetricaRed[]> {
       image: p.image_url || null,
       followers,
       following: num(rep.following_count),
-      posts: num(rep.content_count),
-      likes: num(rep.like_count),
+      posts,
+      likes,
+      vistas,
+      interacciones,
+      engagement,
       audiencia,
     });
   }
