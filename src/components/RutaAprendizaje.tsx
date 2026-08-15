@@ -341,7 +341,7 @@ export function RutaAprendizaje({
                     su caja es grande (incluye el globo) y si no, se come los
                     toques de los nodos que tiene debajo. */}
                 <div className="absolute z-10 -translate-x-1/2 -translate-y-1/2 transition-all duration-700 ease-out pointer-events-none"
-                     style={{ top: octiY, left: pctX(octiX) }}>
+                     style={{ top: octiY, left: `clamp(88px, ${pctX(octiX)}, calc(100% - 88px))` }}>
                   <div className="pointer-events-auto">
                     <OctiRuta nombre={nombre} genero={genero} />
                   </div>
@@ -797,7 +797,7 @@ function DecorMar({ pts }: { pts: { x: number; y: number }[] }) {
     const tipo = d % 3; // 0 alga · 1 coral · 2 burbujas
     decos.push(
       <div key={i} className="absolute"
-        style={{ [izq ? "left" : "right"]: -6, top: pts[i].y, transform: "translateY(-50%)" }}>
+        style={{ [izq ? "left" : "right"]: 2, top: pts[i].y, transform: "translateY(-50%)" }}>
         <div className="mar-vaiven" style={{ animationDelay: `${(d % 4) * 0.4}s` }}>
           {tipo === 0 ? <AlgaRoja /> : tipo === 1 ? <CoralTurquesa /> : <Burbujas />}
         </div>
