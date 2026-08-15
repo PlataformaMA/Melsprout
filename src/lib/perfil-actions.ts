@@ -90,6 +90,17 @@ export async function getPerfil(): Promise<Perfil | null> {
     .single();
 
   if (error) return null;
+
+  // Auto-cura: si Supabase ya tiene el correo confirmado pero el perfil sigue
+  // marcado como no verificado (pasa con los usuarios migrados y con quien
+  // confirma fuera de la app), lo sincronizamos. Sin esto quedaban fuera del
+  // ranking y de la insignia para siempre.
+  if (user.email_confirmed_at && (data as { email_verificado?: boolean }).email_verificado !== true) {
+    const { createAdminClient } = await import("@/lib/supabase/admin");
+    await createAdminClient().from("profiles").update({ email_verificado: true }).eq("id", user.id);
+    (data as { email_verificado?: boolean }).email_verificado = true;
+  }
+
   return data as Perfil;
 }
 
