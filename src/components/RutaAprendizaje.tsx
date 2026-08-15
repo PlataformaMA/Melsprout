@@ -666,6 +666,22 @@ function NodoElemento({ el }: { el: Elemento }) {
   return <HieloNivel bloqueado={el.estado === "bloqueada"} />;
 }
 
+// Nodo de reto en chico para la vista Bloques — mismos colores y sombra 3D que el mapa.
+function NodoRetoMini({ estado }: { estado: EReto }) {
+  const base = "grid place-items-center rounded-full w-11 h-11 bg-white border-[4px] border-white shrink-0";
+  const sombraOk = "0 4px 0 #EADFbf, 0 6px 10px rgba(0,0,0,.08)";
+  const sombraGris = "0 4px 0 #E7E4EC, 0 6px 10px rgba(0,0,0,.08)";
+
+  if (estado === "rechazada")
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src="/nodo-rechazado.png" alt="" className="w-12 h-12 shrink-0 select-none" draggable={false} />;
+  if (estado === "completada")
+    return <div className={base} style={{ boxShadow: sombraOk }}><SparkleIcon color="#F5B301" /></div>;
+  if (estado === "bloqueada")
+    return <div className={base} style={{ boxShadow: sombraGris }}><SparkleIcon color="#C6CAD3" /></div>;
+  return <div className={base} style={{ boxShadow: sombraGris }}><SparkleIcon color="#9AA0AD" /></div>;
+}
+
 function EtiquetaReto({ texto, clase }: { texto: string; clase: string }) {
   return (
     <span className={`absolute left-1/2 -translate-x-1/2 top-[62px] whitespace-nowrap text-[11px] font-bold rounded-full px-3 py-1 shadow-sm ${clase}`}>{texto}</span>
@@ -910,11 +926,18 @@ function BloquesVista({
   filtro: number | null;   // null = todos los mundos
 }) {
   const RETO_LABEL: Record<EReto, string> = {
-    completada: "Completado",
+    completada: "¡Reto completado!",
     "en-revision": "En revisión",
-    rechazada: "Corrige y reenvía",
-    pendiente: "Pendiente",
+    rechazada: "Reto rechazado",
+    pendiente: "¡Completa este reto!",
     bloqueada: "Bloqueado",
+  };
+  const RETO_PILL: Record<EReto, string> = {
+    completada: "bg-amber text-white",
+    "en-revision": "bg-accent-soft text-accent",
+    rechazada: "bg-pink text-white",
+    pendiente: "bg-surface text-accent border border-border",
+    bloqueada: "bg-bg text-hint border border-border",
   };
 
   return (
@@ -943,21 +966,19 @@ function BloquesVista({
                   <>
                     <div className="relative aspect-square rounded-xl overflow-hidden"
                       style={{ background: "linear-gradient(150deg,#7C3AED,#4F46E5 60%,#2563EB)" }}>
-                      {c.portada && (
+                      {c.portada ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={c.portada} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                      )}
-                      {!c.portada && (
-                        <div className="absolute inset-0 p-3 flex items-end">
-                          <span className="font-display font-extrabold text-white text-[13px] leading-tight drop-shadow line-clamp-3">
-                            {c.titulo}
-                          </span>
-                        </div>
+                        <img src={c.portada} alt="" className={`absolute inset-0 w-full h-full object-cover ${abierta ? "" : "grayscale opacity-55"}`} />
+                      ) : (
+                        // Sin portada: solo el degradado con el número de clase (el título va debajo).
+                        <span className={`absolute inset-0 grid place-items-center font-display text-4xl font-extrabold ${abierta ? "text-white/35" : "text-white/20"}`}>
+                          {gi + 1}
+                        </span>
                       )}
                       {!abierta && (
-                        <div className="absolute inset-0 bg-black/45 grid place-items-center backdrop-blur-[1px]">
-                          <span className="text-3xl">🔒</span>
-                        </div>
+                        <span className="absolute inset-0 grid place-items-center">
+                          <span className="w-12 h-12 rounded-2xl bg-white/95 grid place-items-center shadow-md"><LockIcon /></span>
+                        </span>
                       )}
                     </div>
                     <p className={`font-bold text-[13.5px] leading-tight mt-2.5 line-clamp-2 ${abierta ? "" : "text-hint"}`}>
@@ -970,32 +991,43 @@ function BloquesVista({
                     }`}>
                       {hecha ? "Completado" : abierta ? "Pendiente" : "Bloqueado"}
                     </span>
-
-                    {/* El reto de esta clase: su nombre y en qué va */}
-                    <div className="flex items-start gap-2 mt-3 pt-2.5 border-t border-border">
-                      <span className="text-[15px] shrink-0 leading-none mt-0.5">
-                        {er === "completada" ? "✅" : er === "en-revision" ? "⏳" : er === "rechazada" ? "🔁" : er === "bloqueada" ? "🔒" : "✨"}
-                      </span>
-                      <span className="min-w-0">
-                        <span className={`block text-[12px] font-bold leading-tight line-clamp-2 ${er === "bloqueada" ? "text-hint" : ""}`}>
-                          {er === "bloqueada" ? "Bloqueado" : (c.reto || "Reto de la clase")}
-                        </span>
-                        {er !== "bloqueada" && (
-                          <span className="block text-[11px] text-sub mt-0.5">{RETO_LABEL[er]}</span>
-                        )}
-                      </span>
-                    </div>
                   </>
                 );
 
-                return abierta ? (
-                  <Link key={c.id} href={`/app/clase/${c.id}`}
-                    className="bg-surface border border-border rounded-2xl p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
-                    {tarjeta}
-                  </Link>
-                ) : (
-                  <div key={c.id} className="bg-surface border border-border rounded-2xl p-3 shadow-sm opacity-70 cursor-not-allowed">
-                    {tarjeta}
+                // El reto va DEBAJO de la tarjeta, con el mismo nodo del mapa Camino.
+                const filaReto = (
+                  <div className="flex items-center gap-2.5 mt-3 px-1">
+                    <NodoRetoMini estado={er} />
+                    <div className="min-w-0 flex-1">
+                      {er === "bloqueada" ? (
+                        <span className="text-[12.5px] font-bold text-hint">Bloqueado</span>
+                      ) : (
+                        <>
+                          <p className="text-[12.5px] font-bold leading-tight line-clamp-2">{c.reto || "Reto de la clase"}</p>
+                          <span className={`inline-block mt-1 text-[10.5px] font-bold rounded-full px-2 py-0.5 ${RETO_PILL[er]}`}>
+                            {RETO_LABEL[er]}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+
+                return (
+                  <div key={c.id} className="flex flex-col">
+                    {abierta ? (
+                      <Link href={`/app/clase/${c.id}`}
+                        className="bg-surface border border-border rounded-2xl p-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
+                        {tarjeta}
+                      </Link>
+                    ) : (
+                      <div className="bg-surface border border-border rounded-2xl p-3 shadow-sm opacity-70 cursor-not-allowed">
+                        {tarjeta}
+                      </div>
+                    )}
+                    {er === "bloqueada" ? filaReto : (
+                      <Link href={`/app/reto/${c.id}`} className="group">{filaReto}</Link>
+                    )}
                   </div>
                 );
               })}
