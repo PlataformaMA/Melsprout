@@ -263,7 +263,7 @@ export function RutaAprendizaje({
                   <div className="relative flex-1 h-3 rounded-full bg-white/70 border border-accent/10">
                     <div className="absolute inset-y-0 left-0 rounded-full bg-accent transition-all duration-700" style={{ width: `${pctMod}%` }} />
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/octi.png" alt="" className="absolute -top-4 w-8 -translate-x-1/2 transition-all duration-700 drop-shadow" style={{ left: `${pctMod}%` }} draggable={false} />
+                    <img src="/octi.png" alt="" className="absolute -top-4 w-8 -translate-x-1/2 transition-all duration-700 drop-shadow" style={{ left: `clamp(16px, ${pctMod}%, calc(100% - 16px))` }} draggable={false} />
                   </div>
                   <div className="shrink-0 flex items-center gap-1.5">
                     <span className="hidden sm:inline text-[11px] font-bold text-accent">Mundo {modIdx + 1}</span>

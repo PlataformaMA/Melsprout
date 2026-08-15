@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import { STICKERS, stickerDe } from "@/lib/stickers";
+import { InvitarCard } from "@/components/InvitarCard";
 import { enviarSticker, getConversacion, marcarActividad, type Amigo, type Mensaje } from "@/lib/chat-actions";
 
 function hora(iso: string) {
@@ -17,11 +18,12 @@ function dia(iso: string) {
 }
 
 export function ChatVista({
-  amigo, mensajesIniciales, amigos, yoAvatar,
+  amigo, mensajesIniciales, amigos, yoAvatar, yoId,
 }: {
   amigo: Amigo;
   mensajesIniciales: Mensaje[];
   amigos: Amigo[];
+  yoId: string;
   yoAvatar: string | null;
 }) {
   const [msgs, setMsgs] = useState<Mensaje[]>(mensajesIniciales);
@@ -148,7 +150,7 @@ export function ChatVista({
             {/* Más amigos */}
             <aside className="space-y-4">
               <section className="bg-surface border border-border rounded-2xl p-4 shadow-sm">
-                <h3 className="font-display font-extrabold text-[15px] mb-3">Más amigos</h3>
+                <h3 className="font-display font-extrabold text-[15px] mb-3">Otros chats</h3>
                 <div className="space-y-1">
                   {amigos.filter((a) => a.id !== amigo.id).map((a) => (
                     <Link key={a.id} href={`/app/amigos/${a.id}`}
@@ -165,9 +167,11 @@ export function ChatVista({
                       {a.enLinea && <span className="ml-auto w-2 h-2 rounded-full bg-green shrink-0" />}
                     </Link>
                   ))}
-                  {amigos.length <= 1 && <p className="text-[13px] text-hint px-2">Aún no tienes más amigos aquí.</p>}
+                  {amigos.length <= 1 && <p className="text-[13px] text-hint px-2">Aún no tienes más chats aquí.</p>}
                 </div>
               </section>
+
+              <InvitarCard userId={yoId} />
             </aside>
           </div>
         </div>

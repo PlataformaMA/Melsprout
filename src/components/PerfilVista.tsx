@@ -15,6 +15,7 @@ const TOTAL_RETOS = listaRetos().length;
 import { AvatarUploader } from "@/components/AvatarUploader";
 import { AppSidebar } from "@/components/AppSidebar";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
+import { InvitarCard } from "@/components/InvitarCard";
 import { UserMenu } from "@/components/UserMenu";
 import { useConectarInsightIQ, type InsightIQConfig } from "@/components/ConectarInsightIQ";
 
@@ -146,15 +147,18 @@ export function PerfilVista({ perfil, creadoEn, insightiq, avance, social, amigo
                 </div>
 
                 {/* Barra de XP con Octi montado encima */}
-                <div className="relative mt-5 flex items-center gap-4">
+                <div className="relative mt-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                   <div className="relative flex-1 h-3 rounded-full bg-[#E7E3F3]">
-                    <div className="absolute inset-y-0 left-0 rounded-full bg-accent" style={{ width: `${xpPct}%` }} />
-                    <div className="absolute z-10" style={{ left: `calc(${xpPct}% - 25px)`, top: "50%", transform: "translateY(-50%)" }}>
+                    <div className="absolute inset-y-0 left-0 rounded-full bg-accent transition-all duration-700" style={{ width: `${xpPct}%` }} />
+                    {/* clamp: Octi avanza con el XP pero nunca se sale de la barra
+                        (en móvil se salía del borde e invadía la tarjeta). */}
+                    <div className="absolute z-10 transition-all duration-700"
+                      style={{ left: `clamp(0px, calc(${xpPct}% - 25px), calc(100% - 50px))`, top: "50%", transform: "translateY(-50%)" }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src="/octi.png" alt="Octi" width={50} className="select-none drop-shadow-[0_3px_4px_rgba(124,58,237,0.25)]" draggable={false} />
                     </div>
                   </div>
-                  <span className="text-[13px] text-sub shrink-0">
+                  <span className="text-[13px] text-sub shrink-0 sm:text-right">
                     {nivel.siguiente ? `Te faltan ${nivel.faltan}XP para ${nivel.siguiente.nombre.toLowerCase()}` : `¡Nivel máximo!`}
                   </span>
                 </div>
@@ -682,30 +686,6 @@ function MiniStat({ top, valor, label, sub }: { top: React.ReactNode; valor: str
       <div className="text-[11px] text-sub mt-0.5">{label}</div>
       {sub && <div className="text-[10px] text-green font-semibold mt-0.5">{sub}</div>}
     </div>
-  );
-}
-function InvitarCard({ userId }: { userId: string }) {
-  const [copiado, setCopiado] = useState(false);
-  function invitar() {
-    const link = `${window.location.origin}/registro?ref=${userId}`;
-    navigator.clipboard?.writeText(link).then(() => {
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 2500);
-    });
-  }
-  return (
-    <section className="rounded-3xl p-5 shadow-sm border border-accent/10" style={{ background: "linear-gradient(160deg,#F3F0FF,#FBFAFF)" }}>
-      <h3 className="font-display font-extrabold mb-1">Invita a un amigo</h3>
-      <p className="text-[13px] text-sub leading-relaxed">
-        Comparte Melsprout y gana <b className="text-accent">+100 XP</b> por cada amigo que se registre 💜
-      </p>
-      <div className="text-4xl text-center my-3">🎓</div>
-      <button onClick={invitar}
-        className="w-full bg-accent text-white rounded-xl py-2.5 text-[13px] font-bold hover:brightness-110 transition">
-        {copiado ? "¡Link copiado! ✓" : "Invitar ahora"}
-      </button>
-      {copiado && <p className="text-[11px] text-sub text-center mt-2">Compártelo. Ganas +100 XP cuando se registren.</p>}
-    </section>
   );
 }
 function Anillo({ pct }: { pct: number }) {

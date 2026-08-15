@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { cerrarSesion } from "@/lib/auth-actions";
+import { NAV_ITEMS } from "@/components/nav-items";
 
 export function UserMenu({ avatarUrl, nombre, esAdmin = false }: { avatarUrl: string | null; nombre: string; esAdmin?: boolean }) {
   const [abierto, setAbierto] = useState(false);
@@ -27,9 +28,9 @@ export function UserMenu({ avatarUrl, nombre, esAdmin = false }: { avatarUrl: st
             {/* Secciones (solo móvil — en escritorio están en el menú lateral) */}
             <div className="lg:hidden">
               <div className="text-[11px] text-hint font-semibold px-3 pt-1 pb-0.5 uppercase">Secciones</div>
-              <Item href="/app/ruta" icon={<span>🗺️</span>}>Ruta de aprendizaje</Item>
-              <Item href="/app/vivo" icon={<span>📡</span>}>Clases en vivo</Item>
-              <Item href="/app/comunidad" icon={<span>👥</span>}>Comunidad</Item>
+              {NAV_ITEMS.filter((n) => n.id !== "perfil").map((n) => (
+                <Item key={n.id} href={n.href} icon={n.icon}>{n.label}</Item>
+              ))}
               <div className="h-px bg-border my-1" />
             </div>
             <Item href="/app/perfil" icon={<UserIcon />}>Mi perfil</Item>

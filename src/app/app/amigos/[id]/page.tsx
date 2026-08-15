@@ -22,6 +22,6 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
   if (!amigo) redirect("/app/amigos");
 
   return (
-    <ChatVista amigo={amigo} mensajesIniciales={mensajes} amigos={amigos} yoAvatar={perfil.avatar_url} />
+    <ChatVista amigo={amigo} mensajesIniciales={mensajes} amigos={amigos} yoAvatar={perfil.avatar_url} yoId={perfil.id} />
   );
 }
