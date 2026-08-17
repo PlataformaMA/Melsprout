@@ -31,7 +31,7 @@ export function RecursosModal({ onClose, recursos }: { onClose: () => void; recu
       setPendiente(null);
       if ("error" in res) { alert(res.error); return; }
       setBajados((prev) => new Set(prev).add(r.id));
-      window.open(res.url, "_blank", "noopener");
+      dispararDescarga(res.url);
     });
   }
 
@@ -109,7 +109,7 @@ export function RecursosModal({ onClose, recursos }: { onClose: () => void; recu
                       ? "…"
                       : r.tipo === "canva"
                         ? "↗ Abrir en Canva"
-                        : bajados.has(r.id) ? "✓ Descargado" : "⬇ Descargar"}
+                        : bajados.has(r.id) ? "⬇ Descargar otra vez" : "⬇ Descargar"}
                   </button>
                 )}
               </div>
@@ -119,4 +119,18 @@ export function RecursosModal({ onClose, recursos }: { onClose: () => void; recu
       </div>
     </div>
   );
+}
+
+// Dispara la descarga sin abrir pestaña: window.open() después de un `await`
+// lo bloquea el navegador (queda fuera del gesto del usuario) y por eso a
+// veces "no pasaba nada" al descargar. La URL firmada ya viene con
+// Content-Disposition: attachment, así que el archivo baja sin salir de la app.
+function dispararDescarga(url: string) {
+  const a = document.createElement("a");
+  a.href = url;
+  a.rel = "noopener";
+  a.download = "";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }
