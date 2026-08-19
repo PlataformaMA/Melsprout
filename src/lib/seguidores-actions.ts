@@ -74,9 +74,22 @@ export async function toggleSeguir(
       .insert({ seguidor_id: user.id, seguido_id: seguidoId, estado: "pendiente" });
     if (error) return { error: "No se pudo enviar la solicitud. Inténtalo de nuevo." };
     const { data: yo } = await admin.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
-    await notificar(seguidoId, "general",
-      `${(yo?.full_name as string) || "Alguien"} quiere seguirte`,
-      "Acepta la solicitud para que sean amigos y puedan chatear.", "/app/amigos");
+    // Sin duplicados: si ya le mandamos una solicitud sin leer, no llenamos su
+    // campana con la misma cada vez que se sigue y se deja de seguir.
+    const { data: previa } = await admin
+      .from("notificaciones")
+      .select("id")
+      .eq("user_id", seguidoId)
+      .eq("tipo", "solicitud")
+      .eq("leida", false)
+      .like("href", `%de=${user.id}%`)
+      .maybeSingle();
+    if (!previa) {
+      await notificar(seguidoId, "solicitud",
+        `${(yo?.full_name as string) || "Alguien"} quiere seguirte`,
+        "Acéptala para que sean amigos y puedan chatear.",
+        `/app/amigos?de=${user.id}#solicitudes`);
+    }
   }
 
   const { count } = await admin
@@ -133,6 +146,8 @@ export async function responderSolicitud(
   if (!aceptar) {
     const { error } = await admin.from("seguidores").delete()
       .eq("seguidor_id", seguidorId).eq("seguido_id", user.id).eq("estado", "pendiente");
+    await admin.from("notificaciones").update({ leida: true })
+      .eq("user_id", user.id).eq("tipo", "solicitud").like("href", `%de=${seguidorId}%`);
     return error ? { error: "No se pudo rechazar." } : { ok: true };
   }
 
@@ -140,6 +155,10 @@ export async function responderSolicitud(
     .update({ estado: "aceptado" })
     .eq("seguidor_id", seguidorId).eq("seguido_id", user.id).eq("estado", "pendiente");
   if (error) return { error: "No se pudo aceptar." };
+
+  // Ya respondida: que no siga apareciendo pendiente en la campana.
+  await admin.from("notificaciones").update({ leida: true })
+    .eq("user_id", user.id).eq("tipo", "solicitud").like("href", `%de=${seguidorId}%`);
 
   const { data: yo } = await admin.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
   await notificar(seguidorId, "general",

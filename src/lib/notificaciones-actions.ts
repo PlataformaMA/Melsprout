@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export type TipoNotif = "general" | "reto" | "comentario" | "like" | "racha" | "nivel" | "clase";
+export type TipoNotif = "general" | "reto" | "comentario" | "like" | "racha" | "nivel" | "clase" | "solicitud";
 
 export type Notificacion = {
   id: string;
@@ -17,7 +17,7 @@ export type Notificacion = {
 
 const EMOJI: Record<TipoNotif, string> = {
   general: "🔔", reto: "🎯", comentario: "💬", like: "❤️",
-  racha: "🔥", nivel: "⭐", clase: "📖",
+  racha: "🔥", nivel: "⭐", clase: "📖", solicitud: "🤝",
 };
 
 export async function emojiDe(t: TipoNotif): Promise<string> {

@@ -3,11 +3,20 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { getNotificaciones, marcarLeidas, type Notificacion } from "@/lib/notificaciones-actions";
+import { responderSolicitud } from "@/lib/seguidores-actions";
+import { useRouter } from "next/navigation";
 
 const EMOJI: Record<string, string> = {
   general: "🔔", reto: "🎯", comentario: "💬", like: "❤️",
-  racha: "🔥", nivel: "⭐", clase: "📖",
+  racha: "🔥", nivel: "⭐", clase: "📖", solicitud: "🤝",
 };
+
+// Las solicitudes de seguimiento guardan quién la mandó en el destino
+// (…?de=<id>) para poder aceptarlas sin salir de la campana.
+function quienPide(href: string | null): string | null {
+  const m = (href || "").match(/[?&]de=([0-9a-f-]{36})/i);
+  return m ? m[1] : null;
+}
 
 // La campana del encabezado. Antes era un botón decorativo sin onClick.
 export function CampanaNotificaciones({ sinLeerInicial = 0 }: { sinLeerInicial?: number }) {
@@ -15,6 +24,9 @@ export function CampanaNotificaciones({ sinLeerInicial = 0 }: { sinLeerInicial?:
   const [lista, setLista] = useState<Notificacion[]>([]);
   const [sinLeer, setSinLeer] = useState(sinLeerInicial);
   const [cargando, setCargando] = useState(false);
+  const [respondiendo, setRespondiendo] = useState<string | null>(null);
+  const [resueltas, setResueltas] = useState<Record<string, string>>({});
+  const router = useRouter();
   const [, startTransition] = useTransition();
   const caja = useRef<HTMLDivElement>(null);
 
@@ -42,6 +54,17 @@ export function CampanaNotificaciones({ sinLeerInicial = 0 }: { sinLeerInicial?:
         await marcarLeidas();
         setSinLeer(0);
       }
+    });
+  }
+
+  // Aceptar / rechazar sin salir de la campana.
+  function responder(notifId: string, deId: string, aceptar: boolean) {
+    setRespondiendo(notifId);
+    startTransition(async () => {
+      const r = await responderSolicitud(deId, aceptar);
+      setRespondiendo(null);
+      setResueltas((v) => ({ ...v, [notifId]: "error" in r ? r.error : aceptar ? "✅ Ahora son amigos" : "Solicitud rechazada" }));
+      router.refresh();
     });
   }
 
@@ -87,6 +110,35 @@ export function CampanaNotificaciones({ sinLeerInicial = 0 }: { sinLeerInicial?:
                   </div>
                 </div>
               );
+
+              // Solicitud de seguimiento: se responde aquí mismo.
+              const de = n.tipo === "solicitud" ? quienPide(n.href) : null;
+              if (de) {
+                return (
+                  <div key={n.id} className={n.leida ? "" : "bg-accent-soft/40"}>
+                    {fila}
+                    <div className="px-4 pb-3 -mt-1">
+                      {resueltas[n.id] ? (
+                        <p className="text-[12px] text-sub">{resueltas[n.id]}</p>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => responder(n.id, de, true)} disabled={respondiendo === n.id}
+                            className="bg-accent text-white rounded-full px-3.5 py-1.5 text-[12.5px] font-bold hover:brightness-110 disabled:opacity-60 transition">
+                            Aceptar
+                          </button>
+                          <button onClick={() => responder(n.id, de, false)} disabled={respondiendo === n.id}
+                            className="rounded-full px-3 py-1.5 text-[12.5px] font-semibold text-sub hover:bg-bg disabled:opacity-60 transition">
+                            Rechazar
+                          </button>
+                          <Link href="/app/amigos#solicitudes" onClick={() => setAbierto(false)}
+                            className="ml-auto text-[12px] font-semibold text-accent">Ver todas</Link>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              }
+
               return n.href
                 ? <Link key={n.id} href={n.href} onClick={() => setAbierto(false)} className="block hover:bg-bg transition">{fila}</Link>
                 : <div key={n.id}>{fila}</div>;

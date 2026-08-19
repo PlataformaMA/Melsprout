@@ -29,7 +29,8 @@ export function SolicitudesLista({ inicial }: { inicial: Solicitud[] }) {
   }
 
   return (
-    <section className="mb-5">
+    // id: las notificaciones enlazan a /app/amigos#solicitudes y caen justo aquí.
+    <section id="solicitudes" className="mb-5 scroll-mt-6">
       <div className="flex items-center gap-2 mb-3">
         <h2 className="font-display font-extrabold text-lg">Solicitudes</h2>
         <span className="w-5 h-5 rounded-full bg-accent text-white text-[11px] font-extrabold grid place-items-center">
