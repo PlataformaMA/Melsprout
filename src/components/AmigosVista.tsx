@@ -91,7 +91,7 @@ export function AmigosVista({
                   </p>
                   <Link href="/app/comunidad"
                     className="inline-block mt-4 bg-accent text-white rounded-full px-5 py-2.5 text-[13.5px] font-bold hover:brightness-110 transition">
-                    Buscar creadoras
+                    Explorar la comunidad
                   </Link>
                 </div>
               ) : (

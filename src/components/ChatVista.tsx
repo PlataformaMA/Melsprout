@@ -81,7 +81,7 @@ export function ChatVista({
                   <h1 className="font-display text-lg font-extrabold leading-tight">Chat con {amigo.nombre.split(" ")[0]}</h1>
                   <p className="text-[12.5px] flex items-center gap-1.5">
                     <span className={`w-2 h-2 rounded-full ${enLinea ? "bg-green" : "bg-hint"}`} />
-                    <span className={enLinea ? "text-green" : "text-hint"}>{enLinea ? "En línea" : "Desconectada"}</span>
+                    <span className={enLinea ? "text-green" : "text-hint"}>{enLinea ? "En línea" : "Sin conexión"}</span>
                   </p>
                 </div>
               </div>

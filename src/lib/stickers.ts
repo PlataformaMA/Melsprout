@@ -16,7 +16,7 @@ export const STICKERS: Sticker[] = [
   { clave: "gracias", titulo: "¡Gracias!", cuerpo: "Me animaste", emoji: "🙌" },
   { clave: "a-darle", titulo: "¡A darle!", cuerpo: "Sin freno", emoji: "🚀" },
   { clave: "que-racha", titulo: "¡Qué racha!", cuerpo: "No la sueltes", emoji: "🔥" },
-  { clave: "bienvenida", titulo: "¡Bienvenida!", cuerpo: "Qué gusto verte por aquí", emoji: "👋" },
+  { clave: "bienvenida", titulo: "¡Qué gusto verte!", cuerpo: "Bienvenida o bienvenido por aquí", emoji: "👋" },
   { clave: "no-te-detengas", titulo: "¡No te detengas!", cuerpo: "Tú puedes lograr cualquier cosa", emoji: "⭐" },
 ];
 

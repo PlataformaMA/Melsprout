@@ -156,7 +156,7 @@ export function CompletarPerfil({
             {step === "headline" && (
               <Bloque titulo="¿Cuál es tu título?">
                 <input value={headline} onChange={(e) => setHeadline(e.target.value)} maxLength={80}
-                  placeholder="Ej. Creadora de contenido de Moda 👗"
+                  placeholder="Ej. Creo contenido de moda 👗"
                   className="w-full rounded-xl border-2 border-border bg-white px-3.5 py-3 text-sm outline-none focus:border-accent transition" />
               </Bloque>
             )}

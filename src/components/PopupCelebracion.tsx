@@ -75,7 +75,7 @@ export function PopupBienvenida() {
   const cerrar = () => { localStorage.setItem("melsprout_bienvenida", "1"); setVisible(false); };
   return (
     <PopupCelebracion
-      titulo="🎉 ¡Bienvenido a Melsprout!"
+      titulo="🎉 ¡Te damos la bienvenida a Melsprout!"
       lineas={["+50 XP", "Tu aventura comienza hoy", "Nivel 1 desbloqueado"]}
       primaryLabel="Empezar recorrido"
       primaryHref="/app/ruta"
