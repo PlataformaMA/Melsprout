@@ -112,7 +112,7 @@ export function CampanaNotificaciones({ sinLeerInicial = 0 }: { sinLeerInicial?:
               );
 
               // Solicitud de seguimiento: se responde aquí mismo.
-              const de = n.tipo === "solicitud" ? quienPide(n.href) : null;
+              const de = quienPide(n.href);
               if (de) {
                 return (
                   <div key={n.id} className={n.leida ? "" : "bg-accent-soft/40"}>

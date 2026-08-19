@@ -87,10 +87,13 @@ export async function notificar(
   titulo: string,
   cuerpo = "",
   href?: string
-): Promise<void> {
-  if (!userId) return;
+): Promise<boolean> {
+  if (!userId) return false;
   const admin = createAdminClient();
-  await admin.from("notificaciones").insert({
+  const { error } = await admin.from("notificaciones").insert({
     user_id: userId, tipo, titulo, cuerpo, href: href ?? null,
   });
+  // Devuelve si se pudo: la tabla tiene una lista cerrada de tipos y si la
+  // migración del tipo nuevo aún no corrió, quien llama puede reintentar.
+  return !error;
 }

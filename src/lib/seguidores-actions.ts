@@ -80,15 +80,17 @@ export async function toggleSeguir(
       .from("notificaciones")
       .select("id")
       .eq("user_id", seguidoId)
-      .eq("tipo", "solicitud")
       .eq("leida", false)
       .like("href", `%de=${user.id}%`)
       .maybeSingle();
     if (!previa) {
-      await notificar(seguidoId, "solicitud",
-        `${(yo?.full_name as string) || "Alguien"} quiere seguirte`,
-        "Acéptala para que sean amigos y puedan chatear.",
-        `/app/amigos?de=${user.id}#solicitudes`);
+      const titulo = `${(yo?.full_name as string) || "Alguien"} quiere seguirte`;
+      const cuerpo = "Acéptala para que sean amigos y puedan chatear.";
+      const destino = `/app/amigos?de=${user.id}#solicitudes`;
+      const ok = await notificar(seguidoId, "solicitud", titulo, cuerpo, destino);
+      // Si la migración del tipo "solicitud" todavía no corrió, la mandamos como
+      // general: el aviso llega igual y los botones siguen funcionando.
+      if (!ok) await notificar(seguidoId, "general", titulo, cuerpo, destino);
     }
   }
 
@@ -147,7 +149,7 @@ export async function responderSolicitud(
     const { error } = await admin.from("seguidores").delete()
       .eq("seguidor_id", seguidorId).eq("seguido_id", user.id).eq("estado", "pendiente");
     await admin.from("notificaciones").update({ leida: true })
-      .eq("user_id", user.id).eq("tipo", "solicitud").like("href", `%de=${seguidorId}%`);
+      .eq("user_id", user.id).like("href", `%de=${seguidorId}%`);
     return error ? { error: "No se pudo rechazar." } : { ok: true };
   }
 
@@ -158,7 +160,7 @@ export async function responderSolicitud(
 
   // Ya respondida: que no siga apareciendo pendiente en la campana.
   await admin.from("notificaciones").update({ leida: true })
-    .eq("user_id", user.id).eq("tipo", "solicitud").like("href", `%de=${seguidorId}%`);
+    .eq("user_id", user.id).like("href", `%de=${seguidorId}%`);
 
   const { data: yo } = await admin.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
   await notificar(seguidorId, "general",
