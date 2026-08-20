@@ -18,9 +18,9 @@ const BADGES = [
   { img: "/badges/corona.png", nombre: "Top creador" },
 ];
 const HABILIDADES = [
-  { nombre: "Creación De Contenido", nivel: 42 },
-  { nombre: "Grabación Y Edición", nivel: 30 },
-  { nombre: "Estrategia De Redes", nivel: 26 },
+  { nombre: "Creación de contenido", nivel: 42 },
+  { nombre: "Grabación y edición", nivel: 30 },
+  { nombre: "Estrategia de redes", nivel: 26 },
   { nombre: "Copywriting", nivel: 22 },
 ];
 

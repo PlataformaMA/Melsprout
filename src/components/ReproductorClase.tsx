@@ -28,8 +28,14 @@ function parseVideo(url: string): { tipo: "youtube" | "vimeo" | "file"; id?: str
   return { tipo: "file" };
 }
 
+// Los títulos se muestran tal como se escribieron: solo se asegura la mayúscula
+// inicial. Antes se capitalizaba cada palabra y salía "Cómo Crear Tu Marca".
 function titleCase(s: string): string {
-  return s.split(" ").map((w) => (w.length > 2 ? w[0].toUpperCase() + w.slice(1) : w)).join(" ");
+  const t = s.trim();
+  if (!t) return t;
+  const i = t.search(/\p{L}/u);            // salta signos como ¿ o «
+  if (i < 0) return t;
+  return t.slice(0, i) + t[i].toUpperCase() + t.slice(i + 1);
 }
 function fmtTiempo(seg: number): string {
   const m = Math.floor(seg / 60), s = Math.round(seg % 60);
