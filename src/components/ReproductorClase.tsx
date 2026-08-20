@@ -227,31 +227,22 @@ export function ReproductorClase({
                   )}
                 </div>
               ) : (
-                <div className="relative rounded-2xl overflow-hidden shadow-lg aspect-video"
-                  style={{ background: "linear-gradient(120deg,#7C3AED 0%,#4F46E5 45%,#2563EB 100%)" }}>
-                  <div className="absolute inset-0 grid place-items-center text-center px-8">
-                    <div>
-                      <span className="inline-block bg-white/20 text-white text-[12px] font-bold rounded-full px-3 py-1 mb-3 backdrop-blur">DEMO</span>
-                      <h2 className="font-display text-white text-3xl sm:text-4xl font-extrabold leading-tight drop-shadow">{titleCase(clase.titulo)}</h2>
-                      <p className="text-white/80 text-sm mt-2">con {clase.instructor} · {clase.duracionMin} min</p>
-                      <p className="text-white/70 text-[12px] mt-3">Sin video aún — el admin puede subirlo. Simula el avance con play.</p>
-                    </div>
-                  </div>
-                  <button onClick={togglePlay} className="absolute inset-0 grid place-items-center group" aria-label={reproduciendo ? "Pausar" : "Reproducir"}>
-                    <span className="w-16 h-16 rounded-full bg-black/35 group-hover:bg-black/50 backdrop-blur grid place-items-center text-white transition">
-                      {reproduciendo ? <PauseIcon big /> : <PlayIcon big />}
+                // Sin video cargado: se dice claro, sin reproductor falso.
+                // (Antes había un panel "DEMO" que dejaba simular el avance.)
+                <div className="rounded-2xl overflow-hidden shadow-lg aspect-video grid place-items-center text-center px-8"
+                  style={{ background: "linear-gradient(120deg,#F3F0FF 0%,#EDE9FE 55%,#E7E3F3 100%)" }}>
+                  <div>
+                    <div className="text-4xl mb-3">⏳</div>
+                    <span className="inline-block bg-white text-sub text-[12px] font-bold rounded-full px-3 py-1 mb-3 border border-border">
+                      Pendiente
                     </span>
-                  </button>
-                  <div className="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/55 to-transparent">
-                    <div className="h-1.5 rounded-full bg-white/30 mb-3 cursor-pointer" onClick={seek}>
-                      <div className="h-full rounded-full bg-white relative" style={{ width: `${progreso}%` }}>
-                        <span className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white" />
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4 text-white">
-                      <button onClick={togglePlay}>{reproduciendo ? <PauseIcon /> : <PlayIcon />}</button>
-                      <span className="text-[12px] ml-1">{fmtTiempo(curSeg)} / {fmtTiempo(totalSeg)}</span>
-                    </div>
+                    <h2 className="font-display text-2xl sm:text-3xl font-extrabold leading-tight">{titleCase(clase.titulo)}</h2>
+                    <p className="text-sub text-[14px] mt-2 max-w-md mx-auto leading-snug">
+                      Esta clase todavía no tiene su video. En cuanto se publique la vas a ver aquí.
+                    </p>
+                    <Link href="/app/ruta" className="inline-block mt-4 bg-accent text-white rounded-xl px-4 py-2.5 text-[13.5px] font-bold hover:brightness-110 transition">
+                      Volver a la ruta
+                    </Link>
                   </div>
                 </div>
               )}

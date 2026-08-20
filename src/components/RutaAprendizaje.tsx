@@ -552,18 +552,20 @@ function MundosModal({ mundos, onClose }: { mundos: { nombre: string; estado: Mu
 
 // Tarjeta que aparece al pasar el mouse por una clase. `group-hover` la muestra
 // sin JS y `pointer-events-none` evita que tape el clic del nodo.
-function TipClase({ titulo, accion, href, bloqueada }: {
-  titulo: string; accion?: string; href?: string; bloqueada?: boolean;
+function TipClase({ titulo, accion, href, bloqueada, pendiente }: {
+  titulo: string; accion?: string; href?: string; bloqueada?: boolean; pendiente?: boolean;
 }) {
   return (
     <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[86px] z-30
                     opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0
                     transition duration-150 w-[186px]">
       <div className="bg-surface rounded-2xl shadow-xl border border-border px-4 py-3 text-center">
-        <p className={`font-display font-extrabold text-[13.5px] leading-tight ${bloqueada ? "text-hint" : "text-accent"}`}>
+        <p className={`font-display font-extrabold text-[13.5px] leading-tight ${bloqueada || pendiente ? "text-hint" : "text-accent"}`}>
           {titulo}
         </p>
-        {bloqueada ? (
+        {pendiente ? (
+          <p className="text-[11.5px] text-hint mt-1.5">⏳ Pendiente · aún sin grabación</p>
+        ) : bloqueada ? (
           <p className="text-[11.5px] text-hint mt-1.5">🔒 Termina la clase anterior</p>
         ) : accion && href ? (
           <span className="mt-2.5 flex items-center justify-center gap-2 bg-accent text-white rounded-xl py-2 text-[13px] font-bold">
@@ -589,6 +591,18 @@ function TipReto({ texto, clase }: { texto: string; clase: string }) {
 
 function NodoElemento({ el }: { el: Elemento }) {
   if (el.tipo === "clase") {
+    // Sin video cargado no hay nada que ver: se marca Pendiente y no abre.
+    if (!el.clase.grabada && el.estado !== "completada") {
+      return (
+        <div className="group relative">
+          <div className="grid place-items-center rounded-full w-[80px] h-[80px] bg-[#E9EBEF] text-[#AEB4BF] border-[5px] border-white"
+            style={{ boxShadow: "0 7px 0 #D8DCE3, 0 12px 14px rgba(0,0,0,.08)" }}>
+            <PlayIcon />
+          </div>
+          <TipClase titulo={el.clase.titulo} pendiente />
+        </div>
+      );
+    }
     if (el.estado === "completada")
       return (
         <Link href={`/app/clase/${el.clase.id}`} className="group relative block hover:scale-105 transition-transform">
@@ -985,7 +999,7 @@ function BloquesVista({
                 // Solo las grabadas avanzan el contador de la secuencia.
                 const gi = base + (c.proximamente ? -1 : seq++);
                 const hecha = hechas.has(c.id);
-                const abierta = !c.proximamente && (hecha || gi <= completadas || TODO_DESBLOQUEADO);
+                const abierta = !c.proximamente && c.grabada && (hecha || gi <= completadas || TODO_DESBLOQUEADO);
                 const er: EReto = retoEstados[c.id] ?? (abierta ? "pendiente" : "bloqueada");
 
                 const tarjeta = (
@@ -1004,7 +1018,7 @@ function BloquesVista({
                       {!abierta && (
                         <span className="absolute inset-0 grid place-items-center">
                           <span className="w-12 h-12 rounded-2xl bg-white/95 grid place-items-center shadow-md text-xl">
-                            {c.proximamente ? "⏳" : <LockIcon />}
+                            {c.proximamente || !c.grabada ? "⏳" : <LockIcon />}
                           </span>
                         </span>
                       )}
@@ -1015,10 +1029,14 @@ function BloquesVista({
                     <span className={`inline-block mt-1.5 rounded-full px-2.5 py-0.5 text-[11.5px] font-bold ${
                       c.proximamente ? "bg-amber/15 text-amber"
                         : hecha ? "bg-green/15 text-green"
+                        : !c.grabada ? "bg-bg text-hint border border-border"
                         : abierta ? "bg-accent-soft text-accent"
                         : "bg-bg text-hint border border-border"
                     }`}>
-                      {c.proximamente ? "Próximamente" : hecha ? "Completado" : abierta ? "Pendiente" : "Bloqueado"}
+                      {c.proximamente ? "Próximamente"
+                        : hecha ? "Completado"
+                        : !c.grabada ? "Pendiente"
+                        : abierta ? "Disponible" : "Bloqueado"}
                     </span>
                   </>
                 );
