@@ -11,6 +11,7 @@ import { RecursosModal } from "@/components/RecursosModal";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import type { Recurso } from "@/lib/recursos-actions";
 import { octiFrases, type Genero } from "@/lib/genero";
+import { TODO_DESBLOQUEADO } from "@/lib/flags";
 import { VerificarBanner } from "@/components/VerificarBanner";
 import { type Clase, type ModuloCurso } from "@/lib/data";
 import { type RachaInfo } from "@/lib/racha-actions";
@@ -58,19 +59,20 @@ function construirElementos(cursos: ModuloCurso[], completadas: number, retoEsta
     modulo.clases.forEach((clase) => {
       const ec: EClase = hechas.has(clase.id)
         ? "completada"
-        : gi <= completadas
+        : gi <= completadas || TODO_DESBLOQUEADO
           ? "actual"
           : "bloqueada";
       // El reto se puede intentar si su clase ya está disponible (actual o completada).
-      const disponible = gi <= completadas;
+      const disponible = gi <= completadas || TODO_DESBLOQUEADO;
       const er: EReto = retoEstados[clase.id] ?? (disponible ? "pendiente" : "bloqueada");
       els.push({ tipo: "clase", clase, estado: ec });
       els.push({ tipo: "reto", clase, estado: er });
       gi++;
     });
     const moduloDone = inicioModulo + modulo.clases.length <= completadas;
+    const moduloAbierto = moduloDone || TODO_DESBLOQUEADO;
     els.push({ tipo: "hito", modulo, estado: moduloDone ? "completada" : "bloqueada" });
-    els.push({ tipo: "gate", modulo, estado: moduloDone ? "desbloqueada" : "bloqueada" });
+    els.push({ tipo: "gate", modulo, estado: moduloAbierto ? "desbloqueada" : "bloqueada" });
   });
   return els;
 }
@@ -302,7 +304,7 @@ export function RutaAprendizaje({
                         🌍 Todos los mundos
                       </button>
                       {cursos.map((m, i) => {
-                        const abierto = (inicioDeModulo[i] ?? 0) <= completadas;
+                        const abierto = (inicioDeModulo[i] ?? 0) <= completadas || TODO_DESBLOQUEADO;
                         return (
                           <button key={m.nombre} onClick={() => irAModulo(i)}
                             className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-left transition ${
@@ -963,7 +965,7 @@ function BloquesVista({
       {cursos.map((m, mi) => {
         if (filtro !== null && filtro !== mi) return null;
         const base = inicios[mi] ?? 0;
-        const moduloAbierto = base <= completadas;
+        const moduloAbierto = base <= completadas || TODO_DESBLOQUEADO;
         return (
           <section key={m.nombre}>
             <div className="flex items-center gap-2 mb-3">
@@ -983,7 +985,7 @@ function BloquesVista({
                 // Solo las grabadas avanzan el contador de la secuencia.
                 const gi = base + (c.proximamente ? -1 : seq++);
                 const hecha = hechas.has(c.id);
-                const abierta = !c.proximamente && (hecha || gi <= completadas);
+                const abierta = !c.proximamente && (hecha || gi <= completadas || TODO_DESBLOQUEADO);
                 const er: EReto = retoEstados[c.id] ?? (abierta ? "pendiente" : "bloqueada");
 
                 const tarjeta = (

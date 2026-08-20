@@ -43,3 +43,7 @@ yarn-error.log*
 next-env.d.ts
 .migracion.env
 respaldo-curriculum.json
+.ghl.env
+.hotmart.env
+Inventario-Melsprout-84-clases.pdf
+.assemblyai.env
