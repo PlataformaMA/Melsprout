@@ -85,7 +85,13 @@ export function RutaAprendizaje({
   ranking?: RankItem[]; emailVerificado?: boolean; xp?: number; rachaInfo?: RachaInfo;
 }) {
   const hechas = new Set(completadasIds);
-  const elementos = construirElementos(cursos, completadas, retoEstados, hechas);
+  // Las clases "Próximamente" se ven, pero NO entran en la secuencia: si entraran,
+  // todos se frenarían al llegar a una clase que todavía no está grabada.
+  const cursosSeq = useMemo(
+    () => cursos.map((m) => ({ ...m, clases: m.clases.filter((c) => !c.proximamente) })),
+    [cursos]
+  );
+  const elementos = construirElementos(cursosSeq, completadas, retoEstados, hechas);
   // TODOS los nodos siguen la misma onda senoidal → serpentina continua y suave (sin codos).
   const pts = elementos.map((_, i) => ({
     x: serpX(i),
@@ -173,9 +179,9 @@ export function RutaAprendizaje({
   const inicioDeModulo = useMemo(() => {
     const out: number[] = [];
     let g = 0;
-    for (const m of cursos) { out.push(g); g += m.clases.length; }
+    for (const m of cursosSeq) { out.push(g); g += m.clases.length; }
     return out;
-  }, [cursos]);
+  }, [cursosSeq]);
 
   function irAModulo(i: number) {
     setMenuMundo(false);
@@ -965,13 +971,19 @@ function BloquesVista({
               <h3 className={`font-display font-extrabold ${moduloAbierto ? "" : "text-hint"}`}>
                 Módulo {mi + 1}: {m.nombre}
               </h3>
+              {m.nivel && (
+                <span className="text-[11px] font-bold text-accent bg-accent-soft rounded-full px-2.5 py-0.5">
+                  {m.nivel.replace(/^Nivel \d+:\s*/, "")}
+                </span>
+              )}
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {m.clases.map((c, ci) => {
-                const gi = base + ci;
+              {(() => { let seq = 0; return m.clases.map((c) => {
+                // Solo las grabadas avanzan el contador de la secuencia.
+                const gi = base + (c.proximamente ? -1 : seq++);
                 const hecha = hechas.has(c.id);
-                const abierta = hecha || gi <= completadas;
+                const abierta = !c.proximamente && (hecha || gi <= completadas);
                 const er: EReto = retoEstados[c.id] ?? (abierta ? "pendiente" : "bloqueada");
 
                 const tarjeta = (
@@ -989,7 +1001,9 @@ function BloquesVista({
                       )}
                       {!abierta && (
                         <span className="absolute inset-0 grid place-items-center">
-                          <span className="w-12 h-12 rounded-2xl bg-white/95 grid place-items-center shadow-md"><LockIcon /></span>
+                          <span className="w-12 h-12 rounded-2xl bg-white/95 grid place-items-center shadow-md text-xl">
+                            {c.proximamente ? "⏳" : <LockIcon />}
+                          </span>
                         </span>
                       )}
                     </div>
@@ -997,11 +1011,12 @@ function BloquesVista({
                       {c.titulo}
                     </p>
                     <span className={`inline-block mt-1.5 rounded-full px-2.5 py-0.5 text-[11.5px] font-bold ${
-                      hecha ? "bg-green/15 text-green"
+                      c.proximamente ? "bg-amber/15 text-amber"
+                        : hecha ? "bg-green/15 text-green"
                         : abierta ? "bg-accent-soft text-accent"
                         : "bg-bg text-hint border border-border"
                     }`}>
-                      {hecha ? "Completado" : abierta ? "Pendiente" : "Bloqueado"}
+                      {c.proximamente ? "Próximamente" : hecha ? "Completado" : abierta ? "Pendiente" : "Bloqueado"}
                     </span>
                   </>
                 );
@@ -1037,12 +1052,12 @@ function BloquesVista({
                         {tarjeta}
                       </div>
                     )}
-                    {er === "bloqueada" ? filaReto : (
+                    {c.proximamente ? null : er === "bloqueada" ? filaReto : (
                       <Link href={`/app/reto/${c.id}`} className="group">{filaReto}</Link>
                     )}
                   </div>
                 );
-              })}
+              }); })()}
             </div>
           </section>
         );

@@ -35,6 +35,7 @@ export async function getCursos(incluirEspeciales = false): Promise<ModuloCurso[
     return mods.map((m, i) => ({
       id: i + 1,
       nombre: m.nombre as string,
+      nivel: (m.nivel as string) || null,
       descripcion: (m.descripcion as string) || "",
       color: ((m.color as string) || "accent") as ModuloCurso["color"],
       clases: (clases || [])
@@ -49,6 +50,7 @@ export async function getCursos(incluirEspeciales = false): Promise<ModuloCurso[
           grabada: !!c.video_url,
           portada: portadaDe(c.portada, c.video_url),
           subtitulos: (c.subtitulos_url as string) || null,
+          proximamente: !!c.proximamente,
         })),
     }));
   } catch {

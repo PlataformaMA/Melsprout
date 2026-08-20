@@ -114,6 +114,8 @@ export async function getAvanceDe(userId: string): Promise<{
   let totalRetos = 0;
   for (const m of cursos) {
     for (const c of m.clases) {
+      // Las que aún no están grabadas no se pueden completar: no cuentan.
+      if (c.proximamente) continue;
       idsClases.add(c.id);
       if ((c.reto || "").trim()) totalRetos++;
     }

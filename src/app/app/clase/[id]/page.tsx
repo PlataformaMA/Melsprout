@@ -22,6 +22,8 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
   const cursos = await getCursos(true);
   const modulo = cursos.find((m) => m.clases.some((c) => c.id === id)) ?? cursos[0];
   const clase = modulo.clases.find((c) => c.id === id) ?? modulo.clases[0];
+  // Una clase "Próximamente" todavía no existe para el alumno: no se abre.
+  if (clase?.proximamente) redirect("/app/ruta");
 
   // Progreso guardado (para restaurar la barra y no arrancar en 0).
   const { data: prog } = await supabase

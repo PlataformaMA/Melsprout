@@ -13,9 +13,11 @@ export type Clase = {
   grabada: boolean;
   portada?: string | null;
   subtitulos?: string | null;   // .vtt generado automáticamente
+  proximamente?: boolean;       // se ve, pero aún no está grabada
 };
 
 export type ModuloCurso = {
+  nivel?: string | null;        // "Nivel 1: Starter" | …
   id: number;
   nombre: string;
   descripcion: string;
