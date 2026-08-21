@@ -333,7 +333,7 @@ function PostCard({ post }: { post: ForoPost }) {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[12px] text-hint">{haceRato(post.fecha)}</span>
-            {Date.now() - new Date(post.fecha).getTime() < 864e5 && (
+            {post.esNuevo && (
               <span className="text-[10.5px] font-bold text-accent bg-accent-soft rounded-full px-2 py-0.5">Nuevo</span>
             )}
           </div>

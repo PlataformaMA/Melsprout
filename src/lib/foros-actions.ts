@@ -20,6 +20,7 @@ export type ForoPost = {
   meGusta: boolean;
   respuestas: number;
   fecha: string;
+  esNuevo: boolean;     // publicado en las últimas 24 h
 };
 
 export type ForoRespuesta = { id: string; autorId: string; autorNombre: string; autorAvatar: string | null; texto: string; fecha: string; likes: number; meGusta: boolean };
@@ -67,6 +68,7 @@ export async function getForoPosts(categoria: string): Promise<ForoPost[]> {
       meGusta: misLikes.has(p.id as string),
       respuestas: respCount.get(p.id as string) || 0,
       fecha: p.created_at as string,
+      esNuevo: Date.now() - new Date(p.created_at as string).getTime() < 864e5,
     };
   });
 }
