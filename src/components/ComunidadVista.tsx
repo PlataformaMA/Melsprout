@@ -31,7 +31,7 @@ function haceRato(iso: string): string {
 
 export function ComunidadVista({ postsIniciales, topColaboradores, retosComunidad, actividad = [], nombre, avatarUrl, gemas, racha }: Props) {
   const router = useRouter();
-  const [tab, setTab] = useState<"foros" | "retos">("foros");
+  const [tab, setTab] = useState<"foros" | "grupos" | "retos">("foros");
   const [cat, setCat] = useState("General");
   const [posts, setPosts] = useState<ForoPost[]>(postsIniciales);
   const [cargando, setCargando] = useState(false);
@@ -40,7 +40,8 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
   const [mostrarVideo, setMostrarVideo] = useState(false);
   const [imagenUrl, setImagenUrl] = useState("");
   const [subiendoImg, setSubiendoImg] = useState(false);
-  const [avisoEncuesta, setAvisoEncuesta] = useState(false);
+  const [enlaceUrl, setEnlaceUrl] = useState("");
+  const [mostrarEnlace, setMostrarEnlace] = useState(false);
   const [publicando, setPublicando] = useState(false);
   const imgRef = useRef<HTMLInputElement>(null);
 
@@ -61,12 +62,17 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
     setCargando(false);
   }
   async function publicar() {
-    if (!texto.trim() && !imagenUrl && !videoUrl.trim()) return;
+    if (!texto.trim() && !imagenUrl && !videoUrl.trim() && !enlaceUrl.trim()) return;
     setPublicando(true);
-    const r = await crearPost(cat, texto || "", { imagenUrl: imagenUrl || undefined, videoUrl: videoUrl.trim() || undefined });
+    const r = await crearPost(cat, texto || "", {
+      imagenUrl: imagenUrl || undefined,
+      videoUrl: videoUrl.trim() || undefined,
+      enlaceUrl: enlaceUrl.trim() || undefined,
+    });
     setPublicando(false);
     if ("error" in r) { alert(r.error); return; }
-    setTexto(""); setVideoUrl(""); setImagenUrl(""); setMostrarVideo(false); setAvisoEncuesta(false);
+    setTexto(""); setVideoUrl(""); setImagenUrl(""); setEnlaceUrl("");
+    setMostrarVideo(false); setMostrarEnlace(false);
     setPosts(await getForoPosts(cat));
     router.refresh(); // XP +10
   }
@@ -108,11 +114,11 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
               </div>
 
               {/* Tabs */}
-              <div className="flex gap-6 border-b border-border mb-5">
-                {(["foros", "retos"] as const).map((t) => (
+              <div className="flex gap-5 sm:gap-6 border-b border-border mb-5 overflow-x-auto">
+                {(["foros", "grupos", "retos"] as const).map((t) => (
                   <button key={t} onClick={() => setTab(t)}
-                    className={`pb-2.5 text-[14px] font-bold transition -mb-px border-b-2 ${tab === t ? "text-accent border-accent" : "text-sub border-transparent hover:text-text"}`}>
-                    {t === "foros" ? "Grupos" : "Retos en comunidad"}
+                    className={`pb-2.5 text-[13.5px] sm:text-[14px] font-bold transition -mb-px border-b-2 whitespace-nowrap ${tab === t ? "text-accent border-accent" : "text-sub border-transparent hover:text-text"}`}>
+                    {t === "foros" ? "Foro" : t === "grupos" ? "Grupos" : "Retos en comunidad"}
                   </button>
                 ))}
               </div>
@@ -120,10 +126,10 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
               {tab === "foros" ? (
                 <>
                   {/* Categorías */}
-                  <div className="flex flex-wrap gap-2 mb-4">
+                  <div className="flex gap-2 mb-4 overflow-x-auto pb-1 -mx-1 px-1 sm:flex-wrap sm:overflow-visible">
                     {CATEGORIAS_FORO.map((c) => (
                       <button key={c} onClick={() => cambiarCat(c)}
-                        className={`text-[12.5px] font-semibold rounded-full px-3 py-1.5 transition ${cat === c ? "bg-accent text-white" : "bg-surface border border-border text-sub hover:bg-bg"}`}>
+                        className={`shrink-0 text-[12.5px] font-semibold rounded-full px-3.5 py-1.5 transition ${cat === c ? "bg-accent text-white" : "bg-surface border border-border text-sub hover:bg-bg"}`}>
                         {c}
                       </button>
                     ))}
@@ -144,13 +150,16 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
                         <button onClick={() => setImagenUrl("")} className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-black/60 text-white text-xs">✕</button>
                       </div>
                     )}
-                    {avisoEncuesta && <p className="text-[12px] text-sub mt-2">📊 Las encuestas llegan muy pronto ✨</p>}
+                    {mostrarEnlace && (
+                      <input value={enlaceUrl} onChange={(e) => setEnlaceUrl(e.target.value)} placeholder="Pega un enlace…"
+                        className="w-full mt-2 bg-bg border border-border rounded-xl px-4 py-2.5 text-[13px] outline-none focus:border-accent" />
+                    )}
                     <input ref={imgRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) subirImagen(f); }} />
                     <div className="flex items-center gap-3 sm:gap-4 mt-3 flex-wrap">
                       <button onClick={() => imgRef.current?.click()} disabled={subiendoImg} className="text-[13px] font-semibold text-sub hover:text-accent transition disabled:opacity-60">📷 {subiendoImg ? "Subiendo…" : "Imagen"}</button>
                       <button onClick={() => setMostrarVideo((v) => !v)} className="text-[13px] font-semibold text-sub hover:text-accent transition">🎬 Video</button>
-                      <button onClick={() => setAvisoEncuesta((v) => !v)} className="text-[13px] font-semibold text-sub hover:text-accent transition">📊 Encuesta</button>
-                      <button onClick={publicar} disabled={publicando || (!texto.trim() && !imagenUrl && !videoUrl.trim())} className="ml-auto bg-accent text-white rounded-xl px-5 py-2 text-[13px] font-bold hover:brightness-110 disabled:opacity-50 transition">
+                      <button onClick={() => setMostrarEnlace((v) => !v)} className="text-[13px] font-semibold text-sub hover:text-accent transition">🔗 Enlace</button>
+                      <button onClick={publicar} disabled={publicando || (!texto.trim() && !imagenUrl && !videoUrl.trim() && !enlaceUrl.trim())} className="ml-auto bg-accent text-white rounded-xl px-5 py-2 text-[13px] font-bold hover:brightness-110 disabled:opacity-50 transition">
                         {publicando ? "Publicando…" : "Publicar"}
                       </button>
                     </div>
@@ -171,6 +180,16 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
                     </div>
                   )}
                 </>
+              ) : tab === "grupos" ? (
+                <div className="bg-surface border border-border rounded-3xl p-8 sm:p-10 text-center shadow-sm">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/octi.png" alt="" className="w-20 sm:w-24 mx-auto" />
+                  <h3 className="font-display font-extrabold text-lg mt-3">Los grupos están en camino</h3>
+                  <p className="text-sub text-[13.5px] mt-2 max-w-sm mx-auto leading-snug">
+                    Vas a poder proponer un grupo, juntar apoyos de la comunidad y, cuando llegue a la meta,
+                    se crea con todas las personas que lo apoyaron dentro.
+                  </p>
+                </div>
               ) : (
                 <div className="space-y-4">
                   {retosComunidad.length === 0 ? (
@@ -312,7 +331,12 @@ function PostCard({ post }: { post: ForoPost }) {
             <Link href={`/app/creador/${post.autorId}`} className="hover:text-accent transition">{post.autorNombre}</Link>
             <span className="text-sub font-normal text-[12px]"> · Nivel {post.autorNivel}</span>
           </div>
-          <div className="text-[12px] text-hint">{haceRato(post.fecha)}</div>
+          <div className="flex items-center gap-2">
+            <span className="text-[12px] text-hint">{haceRato(post.fecha)}</span>
+            {Date.now() - new Date(post.fecha).getTime() < 864e5 && (
+              <span className="text-[10.5px] font-bold text-accent bg-accent-soft rounded-full px-2 py-0.5">Nuevo</span>
+            )}
+          </div>
         </div>
       </div>
       {post.texto && <p className="text-[14px] text-text leading-relaxed whitespace-pre-wrap">{post.texto}</p>}
@@ -333,7 +357,7 @@ function PostCard({ post }: { post: ForoPost }) {
       <div className="flex items-center gap-5 mt-3 text-[13px]">
         <button onClick={like} className={`flex items-center gap-1.5 font-semibold transition ${meGusta ? "text-pink" : "text-sub hover:text-pink"}`}>♥ {likes}</button>
         <button onClick={abrir} className="flex items-center gap-1.5 font-semibold text-sub hover:text-accent transition">💬 {num} {num === 1 ? "respuesta" : "respuestas"}</button>
-        {post.categoria !== "General" && <span className="ml-auto text-[11px] font-semibold text-accent bg-accent-soft rounded-full px-2.5 py-0.5">{post.categoria}</span>}
+        <span className="ml-auto text-[11px] font-semibold text-accent bg-accent-soft rounded-full px-2.5 py-0.5 truncate max-w-[45%]">{post.categoria}</span>
       </div>
 
       {abierto && (
