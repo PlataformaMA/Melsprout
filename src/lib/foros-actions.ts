@@ -30,13 +30,15 @@ async function perfilMap(admin: ReturnType<typeof createAdminClient>, ids: strin
   return new Map((data || []).map((p) => [p.id as string, p]));
 }
 
-export async function getForoPosts(categoria: string): Promise<ForoPost[]> {
+export async function getForoPosts(categoria: string, grupoId?: string): Promise<ForoPost[]> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const admin = createAdminClient();
 
   let q = admin.from("foros_posts").select("*").eq("oculto", false).order("created_at", { ascending: false }).limit(50);
-  if (categoria && categoria !== "General") q = q.eq("categoria", categoria);
+  // El muro de un grupo trae solo lo suyo; el foro general excluye lo de grupos.
+  q = grupoId ? q.eq("grupo_id", grupoId) : q.is("grupo_id", null);
+  if (!grupoId && categoria && categoria !== "General") q = q.eq("categoria", categoria);
   const { data: posts } = await q;
   if (!posts || posts.length === 0) return [];
 
@@ -73,7 +75,7 @@ export async function getForoPosts(categoria: string): Promise<ForoPost[]> {
   });
 }
 
-export async function crearPost(categoria: string, texto: string, extra?: { enlaceUrl?: string; imagenUrl?: string; videoUrl?: string }): Promise<{ ok: true } | { error: string }> {
+export async function crearPost(categoria: string, texto: string, extra?: { enlaceUrl?: string; imagenUrl?: string; videoUrl?: string; grupoId?: string }): Promise<{ ok: true } | { error: string }> {
   const t = texto.trim();
   if (!t) return { error: "Escribe algo para publicar." };
   const supabase = await createClient();
@@ -81,7 +83,7 @@ export async function crearPost(categoria: string, texto: string, extra?: { enla
   if (!user) return { error: "Inicia sesión." };
   const admin = createAdminClient();
   const { error } = await admin.from("foros_posts").insert({
-    autor_id: user.id, categoria: categoria || "General", texto: t,
+    autor_id: user.id, categoria: categoria || "General", texto: t, grupo_id: extra?.grupoId || null,
     enlace_url: extra?.enlaceUrl || null, imagen_url: extra?.imagenUrl || null, video_url: extra?.videoUrl || null,
   });
   if (error) return { error: "No se pudo publicar." };

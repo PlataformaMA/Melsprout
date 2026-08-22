@@ -12,12 +12,15 @@ import {
   type ForoPost, type ForoRespuesta,
 } from "@/lib/foros-actions";
 import { type RetoComunidad } from "@/lib/comunidad-retos-actions";
+import { GruposVista } from "@/components/GruposVista";
+import type { Grupo } from "@/lib/grupos-actions";
 
 type Actividad = { id: string; userId: string; nombre: string; avatar: string | null; texto: string; xp?: number; hace: string };
 type Props = {
   postsIniciales: ForoPost[];
   topColaboradores: { id: string; nombre: string; avatar: string | null; xp: number }[];
   retosComunidad: RetoComunidad[];
+  grupos?: { propuestas: Grupo[]; mios: Grupo[]; otros: Grupo[] };
   actividad?: Actividad[];
   nombre: string; avatarUrl: string | null; gemas: number; racha: number;
 };
@@ -29,7 +32,7 @@ function haceRato(iso: string): string {
   return `hace ${Math.floor(h / 24)} d`;
 }
 
-export function ComunidadVista({ postsIniciales, topColaboradores, retosComunidad, actividad = [], nombre, avatarUrl, gemas, racha }: Props) {
+export function ComunidadVista({ postsIniciales, topColaboradores, retosComunidad, grupos, actividad = [], nombre, avatarUrl, gemas, racha }: Props) {
   const router = useRouter();
   const [tab, setTab] = useState<"foros" | "grupos" | "retos">("foros");
   const [cat, setCat] = useState("General");
@@ -181,15 +184,11 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
                   )}
                 </>
               ) : tab === "grupos" ? (
-                <div className="bg-surface border border-border rounded-3xl p-8 sm:p-10 text-center shadow-sm">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/octi.png" alt="" className="w-20 sm:w-24 mx-auto" />
-                  <h3 className="font-display font-extrabold text-lg mt-3">Los grupos están en camino</h3>
-                  <p className="text-sub text-[13.5px] mt-2 max-w-sm mx-auto leading-snug">
-                    Vas a poder proponer un grupo, juntar apoyos de la comunidad y, cuando llegue a la meta,
-                    se crea con todas las personas que lo apoyaron dentro.
-                  </p>
-                </div>
+                <GruposVista
+                  propuestas={grupos?.propuestas ?? []}
+                  mios={grupos?.mios ?? []}
+                  otros={grupos?.otros ?? []}
+                />
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {retosComunidad.length === 0 ? (
