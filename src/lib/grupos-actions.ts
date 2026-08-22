@@ -26,7 +26,9 @@ export type Grupo = {
 
 // Meta de apoyos para que una propuesta se convierta en grupo. Con la comunidad
 // pequeña, 50 era inalcanzable; se sube cuando haya más gente.
-export const META_APOYOS = 10;
+// (Sin export: en un archivo "use server" solo se exportan funciones async.
+//  El mismo número está en GruposVista para el texto del modal.)
+const META_APOYOS = 10;
 
 async function yo(): Promise<string | null> {
   const s = await createClient();
