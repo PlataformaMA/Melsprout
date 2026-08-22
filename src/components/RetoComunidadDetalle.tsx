@@ -164,6 +164,24 @@ export function RetoComunidadDetalle({
                   <p className="text-[13px] text-sub leading-relaxed">{detalle.info}</p>
                 </section>
 
+                {detalle.recursos.length > 0 && (
+                  <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
+                    <h3 className="font-display font-extrabold text-[15px] mb-3">Recursos para este reto</h3>
+                    <div className="space-y-1">
+                      {detalle.recursos.map((r, i) => (
+                        <a key={i} href={r.url} target="_blank" rel="noreferrer"
+                          className="flex items-center gap-2.5 rounded-xl px-2 py-2 hover:bg-bg transition group">
+                          <span className="w-7 h-7 rounded-lg bg-accent-soft grid place-items-center text-[13px] shrink-0">
+                            {r.tipo === "video" ? "▶️" : r.tipo === "plantilla" ? "📗" : r.tipo === "guia" ? "📘" : "📄"}
+                          </span>
+                          <span className="flex-1 min-w-0 text-[13px] font-semibold truncate group-hover:text-accent transition">{r.titulo}</span>
+                          <span className="text-hint shrink-0">›</span>
+                        </a>
+                      ))}
+                    </div>
+                  </section>
+                )}
+
                 <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-display font-extrabold text-[15px]">Tu progreso</h3>
@@ -188,7 +206,44 @@ export function RetoComunidadDetalle({
             </div>
           ) : (
             /* ——— Participantes ——— */
-            <div className="max-w-lg">
+            <div className="max-w-2xl">
+              <h2 className="font-display font-extrabold text-lg mb-1">🏆 Ranking de participantes</h2>
+              <p className="text-[13px] text-sub mb-4">Así van los participantes en este reto.</p>
+
+              {top.length >= 3 && (
+                <div className="grid grid-cols-3 gap-2 sm:gap-3 items-end mb-6">
+                  {[1, 0, 2].map((idx) => {
+                    const p = top[idx];
+                    const puesto = idx + 1;
+                    const alto = puesto === 1 ? "h-24 sm:h-28" : puesto === 2 ? "h-16 sm:h-20" : "h-12 sm:h-16";
+                    return (
+                      <div key={p.id} className="text-center">
+                        <div className="relative inline-block">
+                          {p.avatar ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={p.avatar} alt={p.nombre} className={`rounded-full object-cover mx-auto ${puesto === 1 ? "w-16 h-16 sm:w-20 sm:h-20" : "w-12 h-12 sm:w-14 sm:h-14"}`} />
+                          ) : (
+                            <span className={`rounded-full bg-accent-soft text-accent grid place-items-center font-bold mx-auto ${puesto === 1 ? "w-16 h-16 sm:w-20 sm:h-20 text-lg" : "w-12 h-12 sm:w-14 sm:h-14"}`}>
+                              {p.nombre.slice(0, 2).toUpperCase()}
+                            </span>
+                          )}
+                          <span className={`absolute -top-1 -right-1 w-6 h-6 rounded-full grid place-items-center text-[11px] font-extrabold text-white ${
+                            puesto === 1 ? "bg-amber" : puesto === 2 ? "bg-[#B9BDC7]" : "bg-[#C98B4B]"
+                          }`}>{puesto}</span>
+                        </div>
+                        <div className="text-[12.5px] font-bold truncate mt-1.5">{p.nombre}</div>
+                        <div className="text-[11.5px] text-accent font-semibold">⭐ {p.xp.toLocaleString("es-MX")} XP</div>
+                        <div className={`${alto} mt-2 rounded-t-2xl grid place-items-center font-display font-extrabold text-2xl ${
+                          puesto === 1 ? "bg-accent text-white" : "bg-accent-soft text-accent"
+                        }`}>
+                          {puesto === 1 ? "🏆" : puesto}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               <h2 className="font-display font-extrabold text-lg mb-3">Top participantes</h2>
               <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm space-y-1.5 mb-6">
                 {top.length === 0 ? <p className="text-sub text-[13px] text-center py-4">Aún no hay participantes.</p> : top.map((p, i) => (

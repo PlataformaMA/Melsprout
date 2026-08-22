@@ -11,10 +11,15 @@ function nivelDeXp(xp: number): number {
   return n;
 }
 
+export type RecursoReto = { titulo: string; tipo?: string; url: string };
 export type RetoComunidad = {
   id: string; titulo: string; descripcion: string; info: string;
   dias: number; xp_dia: number; xp_bonus: number; emoji: string;
   inscritos: number; miInscrito: boolean; misDias: number;
+  portada: string | null;
+  iniciaAt: string | null;      // null = disponible desde ya
+  disponible: boolean;          // ya arrancó (o no tiene fecha)
+  recursos: RecursoReto[];
 };
 export type PostReto = {
   id: string; dia: number; texto: string; media_url: string | null; created_at: string;
@@ -36,6 +41,11 @@ function mapReto(r: Record<string, unknown>, inscritos: number, miInscrito: bool
     info: (r.info as string) || "", dias: r.dias as number, xp_dia: r.xp_dia as number,
     xp_bonus: r.xp_bonus as number, emoji: (r.emoji as string) || "💡",
     inscritos, miInscrito, misDias,
+    portada: (r.portada as string) || null,
+    iniciaAt: (r.inicia_at as string) || null,
+    // Sin fecha se considera disponible; con fecha futura, "Próximamente".
+    disponible: !r.inicia_at || new Date(r.inicia_at as string).getTime() <= Date.now(),
+    recursos: Array.isArray(r.recursos) ? (r.recursos as RecursoReto[]) : [],
   };
 }
 

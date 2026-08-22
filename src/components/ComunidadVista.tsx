@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
@@ -191,41 +191,14 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
                   </p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {retosComunidad.length === 0 ? (
                     <div className="bg-surface border border-dashed border-border rounded-3xl p-10 text-center text-sub">
                       <div className="text-4xl mb-2">🔥</div>
                       <p className="text-[14px]">Aún no hay retos en comunidad. ¡Pronto habrá!</p>
                     </div>
                   ) : retosComunidad.map((r, i) => (
-                    <Link key={r.id} href={`/app/comunidad/reto/${r.id}`}
-                      className="block bg-surface border border-border rounded-2xl overflow-hidden shadow-sm hover:border-accent/30 hover:shadow-md transition group">
-                      <div className="relative h-28 p-4 flex items-end text-white" style={{ background: "linear-gradient(120deg,#2b1055,#7c1fa0 60%,#c026d3)" }}>
-                        <span className="absolute right-4 top-3 text-5xl opacity-30">{r.emoji}</span>
-                        <span className="absolute left-4 top-3 bg-white/20 text-[11px] font-bold rounded px-2 py-0.5">{String(i + 1).padStart(2, "0")}</span>
-                        <h3 className="relative font-display text-xl font-extrabold leading-tight">{r.titulo}</h3>
-                      </div>
-                      <div className="p-4">
-                        <p className="text-[13px] text-sub">{r.descripcion}</p>
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 text-[12px] font-semibold text-sub">
-                          <span>👥 {r.inscritos} inscritos</span>
-                          <span>🗓️ {r.dias} días</span>
-                          <span className="text-accent">⭐ +{r.xp_dia} XP/día</span>
-                        </div>
-                        {r.miInscrito && (
-                          <div className="mt-3">
-                            <div className="flex items-center justify-between text-[11px] font-bold mb-1">
-                              <span className="text-accent">Tu progreso</span>
-                              <span className="text-sub">{r.misDias}/{r.dias} días</span>
-                            </div>
-                            <div className="h-2 rounded-full bg-bg overflow-hidden">
-                              <div className="h-full bg-accent rounded-full" style={{ width: `${r.dias ? (r.misDias / r.dias) * 100 : 0}%` }} />
-                            </div>
-                          </div>
-                        )}
-                        <div className="mt-3 text-[13px] font-bold text-accent group-hover:underline">{r.miInscrito ? "Continuar reto →" : "Ver reto →"}</div>
-                      </div>
-                    </Link>
+                    <RetoCard key={r.id} reto={r} indice={i} />
                   ))}
                 </div>
               )}
@@ -394,5 +367,96 @@ function PostCard({ post }: { post: ForoPost }) {
         </div>
       )}
     </article>
+  );
+}
+
+
+// ————— Tarjeta de reto en comunidad —————
+function RetoCard({ reto, indice }: { reto: RetoComunidad; indice: number }) {
+  const [faltan, setFaltan] = useState<string | null>(null);
+
+  // La cuenta regresiva se calcula ya en el navegador: si se hiciera durante el
+  // render, el HTML del servidor y el del cliente no coincidirían.
+  useEffect(() => {
+    if (!reto.iniciaAt || reto.disponible) return;
+    const tic = () => {
+      const ms = new Date(reto.iniciaAt as string).getTime() - Date.now();
+      if (ms <= 0) { setFaltan(null); return; }
+      const d = Math.floor(ms / 864e5), h = Math.floor((ms % 864e5) / 36e5), m = Math.floor((ms % 36e5) / 6e4);
+      setFaltan(`${String(d).padStart(2, "0")}d ${String(h).padStart(2, "0")}h ${String(m).padStart(2, "0")}min`);
+    };
+    tic();
+    const id = setInterval(tic, 60000);
+    return () => clearInterval(id);
+  }, [reto.iniciaAt, reto.disponible]);
+
+  const pct = reto.dias ? Math.min(100, Math.round((reto.misDias / reto.dias) * 100)) : 0;
+  const cuerpo = (
+    <>
+      <div className="relative aspect-[16/7] grid place-items-center overflow-hidden"
+        style={{ background: "linear-gradient(120deg,#2b1055,#7c1fa0 60%,#c026d3)" }}>
+        {reto.portada ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={reto.portada} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        ) : (
+          <>
+            <span className="absolute right-4 top-3 text-5xl opacity-30">{reto.emoji}</span>
+            <h3 className="relative font-display text-white text-xl font-extrabold leading-tight px-4 text-center drop-shadow">
+              {reto.titulo}
+            </h3>
+          </>
+        )}
+        <span className="absolute left-3 top-3 bg-black/45 text-white text-[11px] font-bold rounded px-2 py-0.5 backdrop-blur">
+          {String(indice + 1).padStart(2, "0")}
+        </span>
+        <span className={`absolute right-3 top-3 text-[11px] font-bold rounded-full px-2.5 py-1 ${
+          reto.disponible ? "bg-green text-white" : "bg-white/90 text-sub"
+        }`}>
+          {reto.disponible ? "Disponible" : "Próximamente"}
+        </span>
+      </div>
+
+      <div className="p-4">
+        <h3 className="font-display font-extrabold text-[15px] leading-tight">{reto.titulo}</h3>
+        <p className="text-[13px] text-sub mt-1 line-clamp-2">{reto.descripcion}</p>
+
+        {reto.disponible ? (
+          <p className="text-[12.5px] text-green font-semibold mt-2.5">✅ ¡Ya disponible! Participa ahora.</p>
+        ) : faltan ? (
+          <p className="text-[12.5px] text-sub mt-2.5">⏱ Empieza en <b className="text-text">{faltan}</b></p>
+        ) : null}
+
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 text-[12px] font-semibold text-sub">
+          <span>👥 {reto.inscritos} inscritos</span>
+          <span>🗓️ {reto.dias} días</span>
+          <span className="text-accent">⭐ +{reto.xp_dia} XP</span>
+        </div>
+
+        {reto.miInscrito && (
+          <div className="mt-3">
+            <div className="flex items-center justify-between text-[11px] font-bold mb-1">
+              <span className="text-accent">Tu progreso</span>
+              <span className="text-sub">{reto.misDias}/{reto.dias} días</span>
+            </div>
+            <div className="h-2 rounded-full bg-[#EEEBF6] overflow-hidden">
+              <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} />
+            </div>
+          </div>
+        )}
+
+        <span className={`mt-4 block text-center rounded-xl py-2.5 text-[13px] font-bold transition ${
+          reto.disponible ? "bg-accent text-white group-hover:brightness-110" : "bg-bg text-sub border border-border"
+        }`}>
+          {reto.miInscrito ? "Seguir el reto" : reto.disponible ? "🏆 Participar" : "Ver el reto"}
+        </span>
+      </div>
+    </>
+  );
+
+  return (
+    <Link href={`/app/comunidad/reto/${reto.id}`}
+      className="group block bg-surface border border-border rounded-2xl overflow-hidden shadow-sm hover:border-accent/30 hover:shadow-md transition">
+      {cuerpo}
+    </Link>
   );
 }
