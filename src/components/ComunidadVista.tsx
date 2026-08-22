@@ -11,7 +11,7 @@ import {
   getForoPosts, crearPost, toggleLike, getRespuestas, crearRespuesta, toggleLikeRespuesta,
   type ForoPost, type ForoRespuesta,
 } from "@/lib/foros-actions";
-import { type RetoComunidad } from "@/lib/comunidad-retos-actions";
+import { inscribirseReto, type RetoComunidad } from "@/lib/comunidad-retos-actions";
 import { GruposVista } from "@/components/GruposVista";
 import type { Grupo } from "@/lib/grupos-actions";
 
@@ -372,7 +372,22 @@ function PostCard({ post }: { post: ForoPost }) {
 
 // ————— Tarjeta de reto en comunidad —————
 function RetoCard({ reto, indice }: { reto: RetoComunidad; indice: number }) {
+  const router = useRouter();
   const [faltan, setFaltan] = useState<string | null>(null);
+  const [inscrito, setInscrito] = useState(reto.miInscrito);
+  const [inscribiendo, setInscribiendo] = useState(false);
+
+  // El botón inscribe aquí mismo: antes solo parecía botón y llevaba al detalle.
+  async function participar(e: React.MouseEvent) {
+    e.preventDefault();
+    if (inscrito) { router.push(`/app/comunidad/reto/${reto.id}`); return; }
+    setInscribiendo(true);
+    const r = await inscribirseReto(reto.id);
+    setInscribiendo(false);
+    if ("error" in r) { alert(r.error); return; }
+    setInscrito(true);
+    router.refresh();
+  }
 
   // La cuenta regresiva se calcula ya en el navegador: si se hiciera durante el
   // render, el HTML del servidor y el del cliente no coincidirían.
@@ -431,7 +446,7 @@ function RetoCard({ reto, indice }: { reto: RetoComunidad; indice: number }) {
           <span className="text-accent">⭐ +{reto.xp_dia} XP</span>
         </div>
 
-        {reto.miInscrito && (
+        {inscrito && (
           <div className="mt-3">
             <div className="flex items-center justify-between text-[11px] font-bold mb-1">
               <span className="text-accent">Tu progreso</span>
@@ -443,11 +458,18 @@ function RetoCard({ reto, indice }: { reto: RetoComunidad; indice: number }) {
           </div>
         )}
 
-        <span className={`mt-4 block text-center rounded-xl py-2.5 text-[13px] font-bold transition ${
-          reto.disponible ? "bg-accent text-white group-hover:brightness-110" : "bg-bg text-sub border border-border"
-        }`}>
-          {reto.miInscrito ? "Seguir el reto" : reto.disponible ? "🏆 Participar" : "Ver el reto"}
-        </span>
+        {reto.disponible ? (
+          <button onClick={participar} disabled={inscribiendo}
+            className={`mt-4 w-full rounded-xl py-2.5 text-[13px] font-bold transition disabled:opacity-60 ${
+              inscrito ? "bg-accent-soft text-accent hover:brightness-95" : "bg-accent text-white hover:brightness-110"
+            }`}>
+            {inscribiendo ? "Inscribiendo…" : inscrito ? "Seguir el reto →" : "🏆 Unirme al reto"}
+          </button>
+        ) : (
+          <span className="mt-4 block text-center rounded-xl py-2.5 text-[13px] font-bold bg-bg text-sub border border-border">
+            Ver el reto
+          </span>
+        )}
       </div>
     </>
   );
