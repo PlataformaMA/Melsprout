@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { proponerGrupo, apoyarGrupo, alternarMembresia, type Grupo } from "@/lib/grupos-actions";
 
+const META = 10;   // debe coincidir con META_APOYOS del servidor
+
 export function GruposVista({ propuestas, mios, otros }: { propuestas: Grupo[]; mios: Grupo[]; otros: Grupo[] }) {
   const router = useRouter();
   const [abrirModal, setAbrirModal] = useState(false);
@@ -260,7 +262,7 @@ function ModalProponer({ onCerrar, onCreado }: { onCerrar: () => void; onCreado:
         </label>
 
         <p className="text-[12px] text-sub bg-accent-soft/50 border border-accent/10 rounded-xl px-3.5 py-2.5 leading-snug">
-          ℹ️ Cuando alcance <b className="text-accent">50 apoyos</b>, el grupo se creará y todos los que lo apoyaron serán los primeros miembros.
+          ℹ️ Cuando alcance <b className="text-accent">{META} apoyos</b>, el grupo se creará y todos los que lo apoyaron serán los primeros miembros.
         </p>
 
         {error && <p className="text-[12.5px] text-pink mt-3">{error}</p>}

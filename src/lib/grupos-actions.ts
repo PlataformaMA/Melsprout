@@ -24,6 +24,10 @@ export type Grupo = {
   soyMiembro: boolean;
 };
 
+// Meta de apoyos para que una propuesta se convierta en grupo. Con la comunidad
+// pequeña, 50 era inalcanzable; se sube cuando haya más gente.
+export const META_APOYOS = 10;
+
 async function yo(): Promise<string | null> {
   const s = await createClient();
   const { data } = await s.auth.getUser();
@@ -134,7 +138,7 @@ export async function proponerGrupo(datos: {
 
   const { data: creado, error } = await admin.from("grupos")
     .insert({
-      nombre, descripcion, creador_id: user.id,
+      nombre, descripcion, creador_id: user.id, meta_apoyos: META_APOYOS,
       portada: datos.portada || null, emoji: datos.emoji || "👥",
     })
     .select("id").single();
