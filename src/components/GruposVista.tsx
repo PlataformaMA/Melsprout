@@ -214,17 +214,32 @@ function TarjetaGrupo({ grupo }: { grupo: Grupo; conBotonUnirse?: boolean }) {
         <p className="text-[13px] text-sub mt-1 line-clamp-2 leading-snug">{grupo.descripcion}</p>
         <div className="flex items-center gap-3 mt-3">
           <span className="text-[12.5px] font-semibold text-sub">👥 {miembros} miembro{miembros === 1 ? "" : "s"}</span>
-          {soyMiembro ? (
-            <button onClick={invitar}
-              className="ml-auto rounded-xl px-3.5 py-1.5 text-[12.5px] font-bold bg-accent text-white hover:brightness-110 transition">
-              {copiado ? "¡Link copiado! ✓" : "👥 Invitar"}
-            </button>
-          ) : (
-            <button onClick={unirse} disabled={pendiente}
-              className="ml-auto rounded-xl px-3.5 py-1.5 text-[12.5px] font-bold border border-accent/40 text-accent hover:bg-accent-soft disabled:opacity-60 transition">
-              Unirme
-            </button>
-          )}
+          <div className="ml-auto flex items-center gap-2">
+            {soyMiembro ? (
+              <>
+                {/* Ya dentro: invitar a alguien, o salirse si el grupo no era para ti. */}
+                <button onClick={unirse} disabled={pendiente}
+                  className="rounded-xl px-3 py-1.5 text-[12.5px] font-semibold text-sub hover:text-pink hover:bg-pink-soft disabled:opacity-60 transition">
+                  Salir
+                </button>
+                <button onClick={invitar}
+                  className="rounded-xl px-3.5 py-1.5 text-[12.5px] font-bold bg-accent text-white hover:brightness-110 transition">
+                  {copiado ? "¡Link copiado! ✓" : "👥 Invitar"}
+                </button>
+              </>
+            ) : (
+              <>
+                <button onClick={invitar}
+                  className="rounded-xl px-3 py-1.5 text-[12.5px] font-semibold text-sub hover:text-accent transition">
+                  {copiado ? "¡Copiado! ✓" : "Invitar"}
+                </button>
+                <button onClick={unirse} disabled={pendiente}
+                  className="rounded-xl px-3.5 py-1.5 text-[12.5px] font-bold bg-accent text-white hover:brightness-110 disabled:opacity-60 transition">
+                  {pendiente ? "…" : "Unirme"}
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </Link>
