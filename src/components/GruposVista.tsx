@@ -12,6 +12,7 @@ export function GruposVista({ propuestas, mios, otros }: { propuestas: Grupo[]; 
   const router = useRouter();
   const [abrirModal, setAbrirModal] = useState(false);
   const [busca, setBusca] = useState("");
+  const [vista, setVista] = useState<"grupos" | "propuestas">("grupos");
 
   const filtra = (lista: Grupo[]) =>
     !busca.trim() ? lista : lista.filter((g) => g.nombre.toLowerCase().includes(busca.trim().toLowerCase()));
@@ -31,6 +32,18 @@ export function GruposVista({ propuestas, mios, otros }: { propuestas: Grupo[]; 
           className="flex-1 bg-surface border border-border rounded-xl px-4 py-2.5 text-[13.5px] outline-none focus:border-accent transition" />
       </div>
 
+      {/* Modalidad: los que ya existen o las propuestas que buscan apoyos */}
+      <div className="flex gap-2 mb-5">
+        {([["grupos", `Grupos (${mios.length + otros.length})`], ["propuestas", `Propuestas (${propuestas.length})`]] as const).map(([k, txt]) => (
+          <button key={k} onClick={() => setVista(k)}
+            className={`rounded-full px-4 py-2 text-[13px] font-bold transition ${
+              vista === k ? "bg-accent text-white" : "bg-surface border border-border text-sub hover:bg-bg"
+            }`}>
+            {txt}
+          </button>
+        ))}
+      </div>
+
       {vacio && (
         <div className="bg-surface border border-border rounded-3xl p-8 sm:p-10 text-center shadow-sm">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -44,7 +57,7 @@ export function GruposVista({ propuestas, mios, otros }: { propuestas: Grupo[]; 
         </div>
       )}
 
-      {props.length > 0 && (
+      {vista === "propuestas" && props.length > 0 && (
         <section className="mb-8">
           <h2 className="font-display font-extrabold text-lg">Solicitudes de grupos</h2>
           <p className="text-[13px] text-sub mb-3">Apoya las ideas que te gustaría ver en la comunidad.</p>
@@ -54,7 +67,7 @@ export function GruposVista({ propuestas, mios, otros }: { propuestas: Grupo[]; 
         </section>
       )}
 
-      {tus.length > 0 && (
+      {vista === "grupos" && tus.length > 0 && (
         <section className="mb-8">
           <h2 className="font-display font-extrabold text-lg">Tus grupos</h2>
           <p className="text-[13px] text-sub mb-3">Comunidades a las que perteneces.</p>
@@ -64,14 +77,27 @@ export function GruposVista({ propuestas, mios, otros }: { propuestas: Grupo[]; 
         </section>
       )}
 
-      {mas.length > 0 && (
+      {vista === "grupos" && mas.length > 0 && (
         <section>
           <h2 className="font-display font-extrabold text-lg">Más grupos</h2>
           <p className="text-[13px] text-sub mb-3">Descubre comunidades y únete.</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {mas.map((g) => <TarjetaGrupo key={g.id} grupo={g} conBotonUnirse />)}
+            {mas.map((g) => <TarjetaGrupo key={g.id} grupo={g} />)}
           </div>
         </section>
+      )}
+
+      {vista === "propuestas" && props.length === 0 && !vacio && (
+        <div className="bg-surface border border-dashed border-border rounded-2xl p-8 text-center text-sub">
+          <div className="text-3xl mb-2">💡</div>
+          <p className="text-[13.5px]">No hay propuestas por ahora. Propón la tuya y junta apoyos.</p>
+        </div>
+      )}
+      {vista === "grupos" && tus.length === 0 && mas.length === 0 && !vacio && (
+        <div className="bg-surface border border-dashed border-border rounded-2xl p-8 text-center text-sub">
+          <div className="text-3xl mb-2">👥</div>
+          <p className="text-[13.5px]">Todavía no hay grupos activos. Mira las propuestas y apoya la que te guste.</p>
+        </div>
       )}
 
       {abrirModal && <ModalProponer onCerrar={() => setAbrirModal(false)} onCreado={() => { setAbrirModal(false); router.refresh(); }} />}
@@ -144,11 +170,22 @@ function TarjetaPropuesta({ grupo, onCambio }: { grupo: Grupo; onCambio: () => v
 }
 
 // ————— Grupo ya activo —————
-function TarjetaGrupo({ grupo, conBotonUnirse }: { grupo: Grupo; conBotonUnirse?: boolean }) {
+function TarjetaGrupo({ grupo }: { grupo: Grupo; conBotonUnirse?: boolean }) {
   const router = useRouter();
   const [soyMiembro, setSoyMiembro] = useState(grupo.soyMiembro);
   const [miembros, setMiembros] = useState(grupo.miembros);
+  const [copiado, setCopiado] = useState(false);
   const [pendiente, startTransition] = useTransition();
+
+  // Ya eres miembro: el botón sirve para traer a alguien más.
+  function invitar(e: React.MouseEvent) {
+    e.preventDefault();
+    const liga = `${window.location.origin}/app/comunidad/grupo/${grupo.id}`;
+    navigator.clipboard?.writeText(liga).then(() => {
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2500);
+    });
+  }
 
   function unirse(e: React.MouseEvent) {
     e.preventDefault();
@@ -176,13 +213,16 @@ function TarjetaGrupo({ grupo, conBotonUnirse }: { grupo: Grupo; conBotonUnirse?
         <h3 className="font-display font-extrabold text-[15px] leading-tight">{grupo.nombre}</h3>
         <p className="text-[13px] text-sub mt-1 line-clamp-2 leading-snug">{grupo.descripcion}</p>
         <div className="flex items-center gap-3 mt-3">
-          <span className="text-[12.5px] font-semibold text-sub">👥 {miembros} miembros</span>
-          {conBotonUnirse && (
+          <span className="text-[12.5px] font-semibold text-sub">👥 {miembros} miembro{miembros === 1 ? "" : "s"}</span>
+          {soyMiembro ? (
+            <button onClick={invitar}
+              className="ml-auto rounded-xl px-3.5 py-1.5 text-[12.5px] font-bold bg-accent text-white hover:brightness-110 transition">
+              {copiado ? "¡Link copiado! ✓" : "👥 Invitar"}
+            </button>
+          ) : (
             <button onClick={unirse} disabled={pendiente}
-              className={`ml-auto rounded-xl px-3.5 py-1.5 text-[12.5px] font-bold transition disabled:opacity-60 ${
-                soyMiembro ? "bg-accent-soft text-accent" : "border border-accent/40 text-accent hover:bg-accent-soft"
-              }`}>
-              {soyMiembro ? "✓ Eres miembro" : "Unirme"}
+              className="ml-auto rounded-xl px-3.5 py-1.5 text-[12.5px] font-bold border border-accent/40 text-accent hover:bg-accent-soft disabled:opacity-60 transition">
+              Unirme
             </button>
           )}
         </div>
