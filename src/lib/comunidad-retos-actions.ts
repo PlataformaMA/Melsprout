@@ -25,7 +25,9 @@ export type PostReto = {
   id: string; dia: number; texto: string; media_url: string | null; created_at: string;
   autorNombre: string; autorAvatar: string | null; autorNivel: number; likes: number; yoDiLike: boolean;
 };
-export type Participante = { id: string; nombre: string; avatar: string | null; xp: number; nivel: number };
+// OJO: xp aquí es el XP ganado EN ESTE RETO (días publicados × xp_dia, más el
+// bonus si lo completó), no el XP global del perfil.
+export type Participante = { id: string; nombre: string; avatar: string | null; xp: number; nivel: number; dias: number };
 export type RetoComunidadDetalle = RetoComunidad & { publicaciones: PostReto[]; participantes: Participante[] };
 
 async function miId(): Promise<string | null> {
@@ -95,13 +97,26 @@ export async function getRetoComunidad(id: string): Promise<RetoComunidadDetalle
     };
   });
 
+  const totalDias = (r.dias as number) || 0;
+  const xpDia = (r.xp_dia as number) || 0;
+  const xpBonus = (r.xp_bonus as number) || 0;
   const participantes: Participante[] = (ins || [])
     .map((i) => {
-      const pr = pMap.get(i.user_id as string);
-      const xp = (pr?.xp as number) ?? 0;
-      return { id: i.user_id as string, nombre: (pr?.full_name as string) || "Creador", avatar: (pr?.avatar_url as string) ?? null, xp, nivel: nivelDeXp(xp) };
+      const uid = i.user_id as string;
+      const pr = pMap.get(uid);
+      // Días distintos publicados por esa persona dentro de este reto.
+      const dias = new Set((posts || []).filter((p) => p.user_id === uid).map((p) => p.dia)).size;
+      const xp = dias * xpDia + (totalDias > 0 && dias >= totalDias ? xpBonus : 0);
+      return {
+        id: uid,
+        nombre: (pr?.full_name as string) || "Creador",
+        avatar: (pr?.avatar_url as string) ?? null,
+        xp, dias,
+        nivel: nivelDeXp((pr?.xp as number) ?? 0),
+      };
     })
-    .sort((a, b) => b.xp - a.xp);
+    // Manda quien más días lleva; a igualdad de días, quien más XP juntó.
+    .sort((a, b) => b.dias - a.dias || b.xp - a.xp);
 
   const misDias = new Set((posts || []).filter((p) => p.user_id === me).map((p) => p.dia)).size;
   const base = mapReto(r, (ins || []).length, (ins || []).some((i) => i.user_id === me), misDias);

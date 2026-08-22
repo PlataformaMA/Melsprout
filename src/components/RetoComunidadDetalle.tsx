@@ -233,6 +233,7 @@ export function RetoComunidadDetalle({
                         </div>
                         <div className="text-[12.5px] font-bold truncate mt-1.5">{p.nombre}</div>
                         <div className="text-[11.5px] text-accent font-semibold">⭐ {p.xp.toLocaleString("es-MX")} XP</div>
+                        <div className="text-[11px] text-sub">{p.dias}/{detalle.dias} días</div>
                         <div className={`${alto} mt-2 rounded-t-2xl grid place-items-center font-display font-extrabold text-2xl ${
                           puesto === 1 ? "bg-accent text-white" : "bg-accent-soft text-accent"
                         }`}>
@@ -255,7 +256,7 @@ export function RetoComunidadDetalle({
                     ) : <span className="w-9 h-9 rounded-full bg-accent/15 text-accent grid place-items-center text-[12px] font-bold">{p.nombre.slice(0, 2).toUpperCase()}</span>}
                     <div className="flex-1 min-w-0">
                       <div className="text-[13.5px] font-semibold truncate leading-tight">{p.nombre}</div>
-                      <div className="text-[11px] text-sub">Nivel {p.nivel}</div>
+                      <div className="text-[11px] text-sub">{p.dias} de {detalle.dias} días · Nivel {p.nivel}</div>
                     </div>
                     <span className="text-[12px] font-bold text-accent">{p.xp.toLocaleString("es-MX")} XP</span>
                     {i < 3 && <span className="text-[15px]">👑</span>}
@@ -274,7 +275,7 @@ export function RetoComunidadDetalle({
                     ) : <span className="w-8 h-8 rounded-full bg-accent/15 text-accent grid place-items-center text-[11px] font-bold">{p.nombre.slice(0, 2).toUpperCase()}</span>}
                     <div className="flex-1 min-w-0">
                       <div className="text-[13px] font-semibold truncate leading-tight">{p.nombre}</div>
-                      <div className="text-[11px] text-sub">Nivel {p.nivel}</div>
+                      <div className="text-[11px] text-sub">{p.dias} de {detalle.dias} días · Nivel {p.nivel}</div>
                     </div>
                   </div>
                 ))}
