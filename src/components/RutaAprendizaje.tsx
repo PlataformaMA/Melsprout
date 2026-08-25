@@ -43,10 +43,10 @@ function construirPath(pts: { x: number; y: number }[]): string {
 type EClase = "completada" | "actual" | "bloqueada";
 type EReto = "completada" | "en-revision" | "rechazada" | "pendiente" | "bloqueada";
 type Elemento =
-  | { tipo: "clase"; clase: Clase; estado: EClase }
-  | { tipo: "reto"; clase: Clase; estado: EReto }
-  | { tipo: "hito"; modulo: ModuloCurso; estado: "completada" | "bloqueada" }
-  | { tipo: "gate"; modulo: ModuloCurso; estado: "desbloqueada" | "bloqueada" };
+  | { tipo: "clase"; clase: Clase; estado: EClase; mIdx: number }
+  | { tipo: "reto"; clase: Clase; estado: EReto; mIdx: number }
+  | { tipo: "hito"; modulo: ModuloCurso; estado: "completada" | "bloqueada"; mIdx: number }
+  | { tipo: "gate"; modulo: ModuloCurso; siguiente: ModuloCurso | null; estado: "desbloqueada" | "bloqueada"; mIdx: number };
 
 // Construye los nodos según el progreso REAL. `completadas` es la FRONTERA:
 // hasta dónde llegó el alumno (la clase más avanzada que terminó, +1). `hechas`
@@ -54,7 +54,7 @@ type Elemento =
 function construirElementos(cursos: ModuloCurso[], completadas: number, retoEstados: Record<string, EReto>, hechas: Set<string>): Elemento[] {
   const els: Elemento[] = [];
   let gi = 0;
-  cursos.forEach((modulo) => {
+  cursos.forEach((modulo, mIdx) => {
     const inicioModulo = gi;
     modulo.clases.forEach((clase) => {
       const ec: EClase = hechas.has(clase.id)
@@ -65,14 +65,18 @@ function construirElementos(cursos: ModuloCurso[], completadas: number, retoEsta
       // El reto se puede intentar si su clase ya está disponible (actual o completada).
       const disponible = gi <= completadas || TODO_DESBLOQUEADO;
       const er: EReto = retoEstados[clase.id] ?? (disponible ? "pendiente" : "bloqueada");
-      els.push({ tipo: "clase", clase, estado: ec });
-      els.push({ tipo: "reto", clase, estado: er });
+      els.push({ tipo: "clase", clase, estado: ec, mIdx });
+      els.push({ tipo: "reto", clase, estado: er, mIdx });
       gi++;
     });
     const moduloDone = inicioModulo + modulo.clases.length <= completadas;
     const moduloAbierto = moduloDone || TODO_DESBLOQUEADO;
-    els.push({ tipo: "hito", modulo, estado: moduloDone ? "completada" : "bloqueada" });
-    els.push({ tipo: "gate", modulo, estado: moduloAbierto ? "desbloqueada" : "bloqueada" });
+    els.push({ tipo: "hito", modulo, estado: moduloDone ? "completada" : "bloqueada", mIdx });
+    // La puerta es la salida del módulo: solo existe si hay uno siguiente.
+    const siguiente = cursos[mIdx + 1] ?? null;
+    if (siguiente) {
+      els.push({ tipo: "gate", modulo, siguiente, estado: moduloAbierto ? "desbloqueada" : "bloqueada", mIdx });
+    }
   });
   return els;
 }
@@ -93,36 +97,12 @@ export function RutaAprendizaje({
     () => cursos.map((m) => ({ ...m, clases: m.clases.filter((c) => !c.proximamente) })),
     [cursos]
   );
-  const elementos = construirElementos(cursosSeq, completadas, retoEstados, hechas);
-  // TODOS los nodos siguen la misma onda senoidal → serpentina continua y suave (sin codos).
-  const pts = elementos.map((_, i) => ({
-    x: serpX(i),
-    y: TOP + i * SPACING,
-  }));
-  const altura = TOP + elementos.length * SPACING + 40;
-
+  const todos = construirElementos(cursosSeq, completadas, retoEstados, hechas);
   // Módulo actual (el que contiene la clase "actual")
-  const idxActual = elementos.findIndex((e) => e.tipo === "clase" && e.estado === "actual");
-  const moduloActual = idxActual >= 0 && elementos[idxActual].tipo === "clase"
-    ? cursos.find((m) => m.clases.includes((elementos[idxActual] as { clase: Clase }).clase))
+  const idxGlobal = todos.findIndex((e) => e.tipo === "clase" && e.estado === "actual");
+  const moduloActual = idxGlobal >= 0 && todos[idxGlobal].tipo === "clase"
+    ? cursos.find((m) => m.clases.includes((todos[idxGlobal] as { clase: Clase }).clase))
     : cursos[0];
-
-  // Octi ACOMPAÑA a la clase actual, a su misma altura. OJO: la serpentina pasa
-  // por TRES carriles (16%, 48% y 81%), no dos — el central también lleva nodos.
-  // Por eso Octi se coloca en el carril opuesto al del nodo actual, calculado,
-  // y nunca con un porcentaje fijo (así era como se encimaba en móvil).
-  const idxOcti = idxActual >= 0 ? idxActual : 0;
-  // A media distancia entre el nodo actual y el siguiente: en esa franja no
-  // hay nodos, así que Octi acompaña sin taparle el clic a nadie.
-  const octiY = (pts[idxOcti]?.y ?? TOP) + SPACING / 2;
-  const claseActual = elementos[idxOcti]?.tipo === "clase"
-    ? (elementos[idxOcti] as { clase: Clase }).clase
-    : null;
-  // Carril opuesto al nodo actual, acotado: en móvil el contenedor es angosto y
-  // sin este tope a Octi se le cortaba el cuerpo contra el borde.
-  const OCTI_MIN = 100, OCTI_MAX = 540;
-  const octiX = Math.min(OCTI_MAX, Math.max(OCTI_MIN,
-    serpX(idxOcti) >= CX ? CX - AMP : CX + AMP));
 
   // Progreso del MÓDULO actual (para el banner "Tu progreso").
   const modIdx = Math.max(0, cursos.indexOf(moduloActual ?? cursos[0]));
@@ -185,16 +165,38 @@ export function RutaAprendizaje({
     return out;
   }, [cursosSeq]);
 
+  // El camino muestra UN módulo a la vez: se sale de él por la puerta del final.
+  const modVisible = mundoFiltro ?? modIdx;
+  const elementos = todos.filter((e) => e.mIdx === modVisible);
+  // Todos los nodos siguen la misma onda senoidal → serpentina continua y suave.
+  const pts = elementos.map((_, i) => ({ x: serpX(i), y: TOP + i * SPACING }));
+  const altura = TOP + elementos.length * SPACING + 40;
+  const idxActual = elementos.findIndex((e) => e.tipo === "clase" && e.estado === "actual");
+
+  // Octi ACOMPAÑA a la clase actual, a su misma altura. OJO: la serpentina pasa
+  // por TRES carriles (16%, 48% y 81%), no dos — el central también lleva nodos.
+  // Por eso Octi se coloca en el carril opuesto al del nodo actual, calculado,
+  // y nunca con un porcentaje fijo (así era como se encimaba en móvil).
+  const idxOcti = idxActual >= 0 ? idxActual : 0;
+  // A media distancia entre el nodo actual y el siguiente: en esa franja no
+  // hay nodos, así que Octi acompaña sin taparle el clic a nadie.
+  const octiY = (pts[idxOcti]?.y ?? TOP) + SPACING / 2;
+  const claseActual = elementos[idxOcti]?.tipo === "clase"
+    ? (elementos[idxOcti] as { clase: Clase }).clase
+    : null;
+  // Carril opuesto al nodo actual, acotado: en móvil el contenedor es angosto y
+  // sin este tope a Octi se le cortaba el cuerpo contra el borde.
+  const OCTI_MIN = 100, OCTI_MAX = 540;
+  const octiX = Math.min(OCTI_MAX, Math.max(OCTI_MIN,
+    serpX(idxOcti) >= CX ? CX - AMP : CX + AMP));
+
+
   function irAModulo(i: number) {
     setMenuMundo(false);
     setMundoFiltro(i);
     if (vista === "bloques") return; // en bloques basta con filtrar
-
-    const gi = inicioDeModulo[i] ?? 0;
-    // Cada clase ocupa 2 nodos (clase + reto) y cada módulo agrega hito + gate.
-    const idx = gi * 2 + i * 2;
-    const y = TOP + idx * SPACING;
-    window.scrollTo({ top: Math.max(0, y - 120), behavior: "smooth" });
+    // El camino se redibuja con el módulo elegido: se empieza desde arriba.
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
   const [cofreAbierto, setCofreAbierto] = useState(false);
   const [recursosAbierto, setRecursosAbierto] = useState(false);
@@ -292,23 +294,27 @@ export function RutaAprendizaje({
                 <div className="relative">
                   <button onClick={() => setMenuMundo((v) => !v)}
                     className="flex items-center gap-2 bg-surface border border-border rounded-2xl px-4 py-2.5 font-display font-extrabold shadow-sm hover:border-accent/40 transition">
-                    {mundoFiltro === null ? "Todos los mundos" : `Mundo ${mundoFiltro + 1}`}
+                    {vista === "camino"
+                      ? `Mundo ${modVisible + 1}`
+                      : mundoFiltro === null ? "Todos los mundos" : `Mundo ${mundoFiltro + 1}`}
                     <span className={`text-sub transition-transform ${menuMundo ? "rotate-180" : ""}`}>⌄</span>
                   </button>
                   {menuMundo && (
                     <div className="absolute left-0 top-12 z-30 w-[min(80vw,290px)] bg-surface border border-border rounded-2xl shadow-xl overflow-hidden max-h-[60vh] overflow-y-auto">
-                      <button onClick={() => { setMundoFiltro(null); setMenuMundo(false); }}
-                        className={`w-full px-4 py-2.5 text-left text-[13px] font-bold transition ${
-                          mundoFiltro === null ? "bg-accent-soft text-accent" : "hover:bg-bg"
-                        }`}>
-                        🌍 Todos los mundos
-                      </button>
+                      {vista === "bloques" && (
+                        <button onClick={() => { setMundoFiltro(null); setMenuMundo(false); }}
+                          className={`w-full px-4 py-2.5 text-left text-[13px] font-bold transition ${
+                            mundoFiltro === null ? "bg-accent-soft text-accent" : "hover:bg-bg"
+                          }`}>
+                          🌍 Todos los mundos
+                        </button>
+                      )}
                       {cursos.map((m, i) => {
                         const abierto = (inicioDeModulo[i] ?? 0) <= completadas || TODO_DESBLOQUEADO;
                         return (
-                          <button key={m.nombre} onClick={() => irAModulo(i)}
+                          <button key={m.nombre} onClick={() => abierto && irAModulo(i)} disabled={!abierto}
                             className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-left transition ${
-                              mundoFiltro === i ? "bg-accent-soft" : "hover:bg-bg"
+                              modVisible === i && vista === "camino" ? "bg-accent-soft" : mundoFiltro === i ? "bg-accent-soft" : abierto ? "hover:bg-bg" : "cursor-not-allowed"
                             }`}>
                             <span className="shrink-0">{abierto ? "🌊" : "🔒"}</span>
                             <span className="min-w-0 flex-1">
@@ -340,7 +346,7 @@ export function RutaAprendizaje({
                   // esos dos siempre van al centro.
                   <div key={i} className="absolute z-[5]"
                     style={{ left: pctX(el.tipo === "gate" || el.tipo === "hito" ? CX : pts[i].x), top: pts[i].y, transform: "translate(-50%,-50%)" }}>
-                    <NodoElemento el={el} />
+                    <NodoElemento el={el} onCruzar={() => irAModulo(modVisible + 1)} />
                   </div>
                 ))}
 
@@ -589,7 +595,7 @@ function TipReto({ texto, clase }: { texto: string; clase: string }) {
   );
 }
 
-function NodoElemento({ el }: { el: Elemento }) {
+function NodoElemento({ el, onCruzar }: { el: Elemento; onCruzar?: () => void }) {
   if (el.tipo === "clase") {
     // Sin video cargado no hay nada que ver: se marca Pendiente y no abre.
     if (!el.clase.grabada && el.estado !== "completada") {
@@ -688,8 +694,14 @@ function NodoElemento({ el }: { el: Elemento }) {
     return <TrofeoBurbuja apagado={el.estado === "bloqueada"} />;
   }
 
-  // gate
-  return <HieloNivel bloqueado={el.estado === "bloqueada"} />;
+  // gate: la puerta al siguiente módulo
+  return (
+    <PuertaModulo
+      siguiente={el.siguiente}
+      bloqueada={el.estado === "bloqueada"}
+      onCruzar={onCruzar}
+    />
+  );
 }
 
 // Nodo de reto en chico para la vista Bloques — mismos colores y sombra 3D que el mapa.
@@ -731,68 +743,62 @@ function TrofeoBurbuja({ apagado }: { apagado?: boolean }) {
   );
 }
 
-function HieloNivel({ bloqueado }: { bloqueado?: boolean }) {
-  // Isla = frontera de "mundo"/nivel (réplica del asset gris con palmeras).
+function CandadoGris() {
   return (
-    <div className="relative grid place-items-center">
-      <IslaMundoSvg apagado={bloqueado} />
-      {bloqueado && (
-        <>
-          <span className="absolute top-[38%] left-1/2 -translate-x-1/2 w-9 h-9 rounded-full bg-white/90 grid place-items-center shadow-md"><LockIcon /></span>
-          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-accent text-white text-[11px] font-bold rounded-lg px-3 py-1 shadow whitespace-nowrap">Siguiente mundo</span>
-        </>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9AA0AD" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </svg>
+  );
+}
+
+// Puerta al siguiente módulo: cierra el camino del módulo actual. Cuando está
+// abierta es el ÚNICO paso al siguiente; cerrada, muestra qué falta por delante.
+function PuertaModulo({
+  siguiente,
+  bloqueada,
+  onCruzar,
+}: {
+  siguiente: ModuloCurso | null;
+  bloqueada?: boolean;
+  onCruzar?: () => void;
+}) {
+  const Envoltura = bloqueada || !onCruzar ? "div" : "button";
+  return (
+    <div className="flex flex-col items-center w-[min(92vw,560px)]">
+      <div className="flex items-end gap-3 w-full">
+        <span className="flex-1 h-px bg-border mb-2.5" />
+        <Envoltura
+          type={Envoltura === "button" ? "button" : undefined}
+          onClick={bloqueada ? undefined : onCruzar}
+          aria-label={bloqueada ? "Siguiente módulo bloqueado" : `Entrar a ${siguiente?.nombre ?? "el siguiente módulo"}`}
+          className={`shrink-0 transition ${bloqueada ? "cursor-default" : "hover:-translate-y-1 active:translate-y-0 cursor-pointer"}`}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/puerta.png"
+            alt=""
+            width={132}
+            height={106}
+            draggable={false}
+            className={`select-none w-[112px] sm:w-[132px] ${bloqueada ? "" : "drop-shadow-lg"}`}
+          />
+        </Envoltura>
+        <span className="flex-1 h-px bg-border mb-2.5" />
+      </div>
+
+      {siguiente && (
+        <div className={`flex items-center gap-1.5 mt-2.5 text-[12.5px] font-semibold ${bloqueada ? "text-hint" : "text-accent"}`}>
+          {bloqueada ? <CandadoGris /> : <span>➜</span>}
+          <span className="text-center">{siguiente.nombre}</span>
+        </div>
+      )}
+      {!bloqueada && siguiente && (
+        <span className="text-[11.5px] text-hint mt-0.5">Toca la puerta para entrar</span>
       )}
     </div>
   );
 }
 
-// Isla con palmeras (réplica en SVG del asset gris). Más grande en desktop.
-function IslaMundoSvg({ apagado }: { apagado?: boolean }) {
-  return (
-    <svg viewBox="0 0 220 180" className={`w-44 sm:w-52 select-none ${apagado ? "opacity-90" : ""}`} fill="none">
-      <defs>
-        <linearGradient id="islaHumo" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#A7A7AF" />
-          <stop offset="1" stopColor="#6C6C76" />
-        </linearGradient>
-        <linearGradient id="islaPalma" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#B7B7BE" />
-          <stop offset="1" stopColor="#7C7C86" />
-        </linearGradient>
-        <linearGradient id="islaTronco" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#A2A2AA" />
-          <stop offset="1" stopColor="#75757E" />
-        </linearGradient>
-      </defs>
-      {/* Sombra / arena rosada */}
-      <ellipse cx="110" cy="158" rx="98" ry="16" fill="#EAD9D9" opacity="0.85" />
-      <ellipse cx="150" cy="150" rx="40" ry="9" fill="#EAD9D9" opacity="0.7" />
-      {/* Troncos (curvos) */}
-      <path d="M104 148 C98 110 92 80 96 46" stroke="url(#islaTronco)" strokeWidth="10" strokeLinecap="round" />
-      <path d="M138 150 C142 120 148 100 150 78" stroke="url(#islaTronco)" strokeWidth="9" strokeLinecap="round" />
-      {/* Palmera 1 (grande, izq) */}
-      <g fill="url(#islaPalma)">
-        <path d="M96 46 C74 30 52 30 40 40 C60 40 78 44 96 52 Z" />
-        <path d="M96 46 C118 28 142 30 156 42 C134 40 114 44 96 52 Z" />
-        <path d="M96 48 C80 24 60 16 44 18 C64 26 82 38 96 54 Z" />
-        <path d="M96 48 C112 22 134 14 150 18 C130 26 112 38 96 54 Z" />
-        <path d="M96 50 C92 30 92 18 98 8 C104 22 104 40 100 54 Z" />
-      </g>
-      {/* Palmera 2 (mediana, der) */}
-      <g fill="url(#islaPalma)">
-        <path d="M150 78 C132 66 114 66 104 74 C122 74 138 78 152 84 Z" />
-        <path d="M150 78 C168 64 188 66 200 76 C182 74 164 78 152 84 Z" />
-        <path d="M150 80 C138 60 122 54 108 56 C126 62 142 72 152 86 Z" />
-        <path d="M150 80 C164 58 184 52 198 56 C178 62 162 72 152 86 Z" />
-        <path d="M150 82 C148 64 150 52 156 44 C160 58 158 74 154 86 Z" />
-      </g>
-      {/* Humos (montículos) */}
-      <path d="M20 150 C20 118 44 100 70 100 C96 100 116 118 116 150 Z" fill="url(#islaHumo)" />
-      <path d="M120 150 C120 122 140 106 162 106 C186 106 204 124 204 150 Z" fill="url(#islaHumo)" />
-      <path d="M62 152 C62 116 90 94 118 94 C148 94 172 116 172 152 Z" fill="url(#islaHumo)" />
-    </svg>
-  );
-}
 
 function AlgaRoja() {
   // eslint-disable-next-line @next/next/no-img-element
