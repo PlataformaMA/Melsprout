@@ -90,18 +90,8 @@ export function ReproductorClase({
   const curSeg = (progreso / 100) * totalSeg;
   const video = videoUrl ? parseVideo(videoUrl) : null;
 
-  // Avance del video (simulado hasta conectar el video real).
-  useEffect(() => {
-    if (!reproduciendo || terminado) return;
-    const t = setInterval(() => {
-      setProgreso((p) => {
-        const n = p + 1.5;
-        if (n >= 100) { setReproduciendo(false); setTerminado(true); return 100; }
-        return n;
-      });
-    }, 200);
-    return () => clearInterval(t);
-  }, [reproduciendo, terminado]);
+  // (Se eliminó el avance simulado del viejo panel DEMO: el progreso real
+  //  lo lleva onTimeUpdate con los segundos efectivamente reproducidos.)
 
   // Guarda el avance (segundos vistos) cada 15s y al salir, para que NO se pierda.
   useEffect(() => {
@@ -128,16 +118,6 @@ export function ReproductorClase({
   // Puede avanzar cuando el video llegó al final (o ya estaba completada).
   const claseLista = progreso >= 100 || completadas.has(clase.id);
 
-  function togglePlay() {
-    if (terminado) { setTerminado(false); setProgreso(0); setReproduciendo(true); return; }
-    setReproduciendo((v) => !v);
-  }
-  function seek(e: React.MouseEvent<HTMLDivElement>) {
-    const r = e.currentTarget.getBoundingClientRect();
-    const f = Math.min(100, Math.max(0, ((e.clientX - r.left) / r.width) * 100));
-    setProgreso(f);
-    if (f >= 99) { setTerminado(true); setReproduciendo(false); } else setTerminado(false);
-  }
 
   return (
     <div className="min-h-screen bg-bg flex">
@@ -229,7 +209,18 @@ export function ReproductorClase({
                       {progreso < 100 && <button onClick={() => setProgreso(100)} className="text-[12px] font-bold text-accent hover:underline">Marcar como vista ✓</button>}
                     </div>
                   ) : (
-                    <div className="text-[12px] text-sub mt-1">{Math.round(progreso)}% visto {progreso >= 100 ? "· ✅ completada" : "· termina el video para completarla"}</div>
+                    <div className="text-[12px] text-sub mt-1">
+                      {progreso >= 100 ? (
+                        <>100% visto · ✅ completada</>
+                      ) : (
+                        <>
+                          {Math.round(progreso)}% visto · {Math.round(vistoRef.current / 60)} min de esta clase
+                          <span className="block text-[11.5px] text-hint mt-0.5">
+                            Se marca sola al llegar al final. Adelantar el video no cuenta como visto.
+                          </span>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
               ) : (
