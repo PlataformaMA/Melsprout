@@ -41,13 +41,14 @@ export async function listarClasesVivo(): Promise<ClaseVivo[]> {
   return filas.length > 0 ? filas : clasesVivoEjemplo();
 }
 
-// Clases en vivo de EJEMPLO. El "Entrar" abre el enlace de Zoom (reemplázalo por
-// el real desde el panel admin). Las grabaciones abren su URL.
+// Clases en vivo de EJEMPLO (solo se muestran mientras no haya ninguna en la BD).
+// No llevan enlaces: los reales se cargan desde el panel admin. Las grabaciones
+// sin video se ven como "Próximamente" en vez de mandar a otro sitio.
 function clasesVivoEjemplo(): ClaseVivo[] {
   const ahora = Date.now();
   const enH = (h: number) => new Date(ahora + h * 3600_000).toISOString();
-  const ZOOM = "https://zoom.us/j/0000000000"; // ← reemplazar por tu enlace real de Zoom
-  const REC = "https://www.youtube.com/@marketingconmelissa"; // ← reemplazar por la grabación real
+  const ZOOM = null; // ← el enlace real de la sesión se pone desde el panel admin
+  const REC = null;  // ← la grabación real se sube desde el panel admin
   return [
     { id: "ej-live", titulo: "Cómo generar ideas de contenido que conectan", descripcion: "En vivo con Melissa.", categoria: "Marketing de contenido", instructor: "Melissa Arria", inicia_at: enH(-0.1), duracion_min: 60, thumbnail_url: null, stream_url: ZOOM, grabacion_url: null, xp: 50, activo: true },
     { id: "ej-2", titulo: "Edición rápida para redes sociales (CapCut)", descripcion: "Aprende a editar rápido y con impacto.", categoria: "Edición y video", instructor: "Diego Avilés", inicia_at: enH(2), duracion_min: 75, thumbnail_url: null, stream_url: ZOOM, grabacion_url: null, xp: 50, activo: true },

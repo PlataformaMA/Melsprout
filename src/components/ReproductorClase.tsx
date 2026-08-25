@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { AvatarInstructor } from "@/components/Instructor";
 import { useRouter } from "next/navigation";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
@@ -261,9 +262,7 @@ export function ReproductorClase({
               {/* Instructor + acciones */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#A78BFA] to-accent grid place-items-center text-white font-bold shrink-0">
-                    {clase.instructor.slice(0, 1)}
-                  </div>
+                  <AvatarInstructor nombre={clase.instructor} size={48} />
                   <div>
                     <div className="font-display font-extrabold">{clase.instructor}</div>
                     <div className="text-[12px] text-sub">Instructor</div>

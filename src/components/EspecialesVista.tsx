@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AvatarInstructor } from "@/components/Instructor";
 import type { CursoEspecial } from "@/lib/cursos-db";
 import { AppSidebar } from "@/components/AppSidebar";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
@@ -73,9 +74,7 @@ export function EspecialesVista({
                       </div>
 
                       <div className="flex items-center gap-2 mt-3">
-                        <span className="w-6 h-6 rounded-full bg-accent-soft text-accent grid place-items-center text-[10px] font-bold">
-                          {c.instructor.slice(0, 2).toUpperCase()}
-                        </span>
+                        <AvatarInstructor nombre={c.instructor} size={24} />
                         <span className="text-[13px] font-semibold">{c.instructor}</span>
                       </div>
 

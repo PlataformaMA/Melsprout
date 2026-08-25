@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { asistirClaseVivo, type ClaseVivo } from "@/lib/vivo-actions";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { AvatarInstructor } from "@/components/Instructor";
 
 type Props = {
   clases: ClaseVivo[]; asistidas: string[]; nombre: string; avatarUrl: string | null; gemas: number; racha: number;
@@ -80,7 +82,7 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, gemas, racha }
   const cerrarIntro = () => { localStorage.setItem("melsprout_vivo_intro", "1"); setPopup(false); };
 
   const proximas = clases.filter((c) => estadoDe(c) !== "terminada");
-  const grabaciones = clases.filter((c) => c.grabacion_url);
+  const grabaciones = clases.filter((c) => c.grabacion_url || estadoDe(c) === "terminada");
 
   async function asistir(c: ClaseVivo) {
     const st = estadoDe(c);
@@ -153,8 +155,10 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, gemas, racha }
                     <Vacio texto="Aún no hay grabaciones disponibles." />
                   ) : (
                     <div className="space-y-3">
-                      {grabaciones.map((c) => (
-                        <a key={c.id} href={c.grabacion_url!} target="_blank" rel="noreferrer" className="flex items-center gap-4 bg-surface border border-border rounded-2xl p-3.5 shadow-sm hover:border-accent/30 transition group">
+                      {grabaciones.map((c) => {
+                        const Fila = c.grabacion_url ? Link : "div";
+                        return (
+                        <Fila key={c.id} href={`/app/vivo/${c.id}`} className={`flex items-center gap-4 bg-surface border border-border rounded-2xl p-3.5 shadow-sm transition group ${c.grabacion_url ? "hover:border-accent/30" : "opacity-70"}`}>
                           <span className="w-20 h-14 rounded-xl bg-gradient-to-br from-[#4c1d95] to-[#7c3aed] grid place-items-center text-white shrink-0 overflow-hidden">
                             {c.thumbnail_url ? (
                               // eslint-disable-next-line @next/next/no-img-element
@@ -163,11 +167,17 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, gemas, racha }
                           </span>
                           <div className="flex-1 min-w-0">
                             <div className="font-bold text-[14px] truncate group-hover:text-accent transition">{c.titulo}</div>
-                            <div className="text-[12px] text-sub">{c.instructor} · {dur(c.duracion_min)}</div>
+                            <div className="flex items-center gap-1.5 text-[12px] text-sub mt-0.5">
+                              {c.instructor && <AvatarInstructor nombre={c.instructor} size={18} />}
+                              <span className="truncate">{c.instructor} · {dur(c.duracion_min)}</span>
+                            </div>
                           </div>
-                          <span className="text-accent text-xl shrink-0">▶</span>
-                        </a>
-                      ))}
+                          {c.grabacion_url
+                            ? <span className="text-accent text-xl shrink-0">▶</span>
+                            : <span className="text-[11px] font-bold text-sub bg-bg border border-border rounded-full px-2.5 py-1 shrink-0">Próximamente</span>}
+                        </Fila>
+                        );
+                      })}
                     </div>
                   )}
                 </>
@@ -177,15 +187,15 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, gemas, racha }
             {/* Sidebar */}
             <aside className="space-y-5">
               {/* Grabaciones recientes */}
-              {grabaciones.length > 0 && (
+              {grabaciones.some((c) => c.grabacion_url) && (
                 <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-display font-extrabold text-[15px]">Grabaciones recientes</h3>
                     <button onClick={() => setTab("grabaciones")} className="text-[12px] text-accent font-semibold">Ver todas</button>
                   </div>
                   <div className="space-y-3">
-                    {grabaciones.slice(0, 3).map((c) => (
-                      <a key={c.id} href={c.grabacion_url!} target="_blank" rel="noreferrer" className="flex items-center gap-2.5 group">
+                    {grabaciones.filter((c) => c.grabacion_url).slice(0, 3).map((c) => (
+                      <Link key={c.id} href={`/app/vivo/${c.id}`} className="flex items-center gap-2.5 group">
                         <span className="w-12 h-9 rounded-lg bg-gradient-to-br from-[#4c1d95] to-[#7c3aed] grid place-items-center text-white text-[11px] shrink-0 overflow-hidden">
                           {c.thumbnail_url ? (
                             // eslint-disable-next-line @next/next/no-img-element
@@ -194,7 +204,7 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, gemas, racha }
                         </span>
                         <span className="flex-1 min-w-0 text-[13px] font-semibold truncate group-hover:text-accent transition">{c.titulo}</span>
                         <span className="text-[11px] text-hint shrink-0">{dur(c.duracion_min)}</span>
-                      </a>
+                      </Link>
                     ))}
                   </div>
                 </section>
@@ -237,7 +247,11 @@ function ClaseCard({ c, n, asistio, onAsistir }: { c: ClaseVivo; n: number; asis
         <h3 className="font-display font-extrabold text-[14.5px] leading-tight">{c.titulo}</h3>
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
           {c.categoria && <span className="text-[11px] font-semibold text-accent bg-accent-soft rounded px-2 py-0.5">{c.categoria}</span>}
-          {c.instructor && <span className="text-[12px] text-sub">{c.instructor}</span>}
+          {c.instructor && (
+            <span className="flex items-center gap-1.5 text-[12px] text-sub">
+              <AvatarInstructor nombre={c.instructor} size={18} />{c.instructor}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1.5 text-[12px] text-sub mt-2">⏱ {dur(c.duracion_min)}</div>
         <div className="mt-auto pt-3 flex items-center gap-2">

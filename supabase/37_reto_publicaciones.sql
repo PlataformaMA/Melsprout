@@ -10,6 +10,13 @@ create index if not exists foros_posts_reto_idx
 create unique index if not exists foros_posts_reto_autor_uniq
   on public.foros_posts (reto_id, autor_id) where reto_id is not null;
 
+-- Se libera la cola de revisión acumulada: todo lo publicado queda aprobado.
+-- (La XP ya se dio al publicar, así que esto no reparte puntos de más.)
+update public.reto_submissions
+   set revision = 'aprobado'
+ where estado = 'publicado'
+   and revision = 'pendiente';
+
 -- Relleno: los retos ya publicados y aprobados pasan a la comunidad.
 insert into public.foros_posts (autor_id, reto_id, categoria, texto, imagen_url, video_url, created_at)
 select
