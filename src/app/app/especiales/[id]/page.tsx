@@ -1,10 +1,11 @@
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { getPerfil } from "@/lib/perfil-actions";
 import { getCursoEspecial } from "@/lib/cursos-db";
 import { getClasesCompletadas } from "@/lib/progreso-actions";
-import { CursoEspecialVista } from "@/components/CursoEspecialVista";
+import { tengoAcceso, getTestimonios } from "@/lib/acceso-actions";
+import { VentaCursoVista } from "@/components/VentaCursoVista";
+import { CursoCompradoVista } from "@/components/CursoCompradoVista";
 
 export default async function CursoEspecialPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,40 +20,18 @@ export default async function CursoEspecialPage({ params }: { params: Promise<{ 
   const curso = await getCursoEspecial(id);
   if (!curso) notFound();
 
+  const yo = {
+    nombre: perfil.full_name ?? "Creador",
+    avatar: perfil.avatar_url,
+    racha: perfil.racha,
+    gemas: perfil.gemas,
+  };
+
+  // Sin acceso se ve la landing de venta; con acceso, el curso completo.
+  if (!(await tengoAcceso(id))) {
+    return <VentaCursoVista yo={yo} curso={curso} testimonios={await getTestimonios(id)} />;
+  }
+
   const completadas = await getClasesCompletadas();
-
-  // Ranking: top 5 por XP (solo verificados) y tu posición global.
-  const admin = createAdminClient();
-  const [{ data: topRows }, { count: arriba }] = await Promise.all([
-    admin.from("profiles").select("id, full_name, avatar_url, xp")
-      .eq("onboarding_completo", true).eq("email_verificado", true)
-      .order("xp", { ascending: false }).order("created_at", { ascending: true }).limit(5),
-    admin.from("profiles").select("id", { count: "exact", head: true })
-      .eq("onboarding_completo", true).eq("email_verificado", true)
-      .gt("xp", perfil.xp ?? 0),
-  ]);
-
-  const top = (topRows || []).map((r) => ({
-    id: r.id as string,
-    nombre: (r.full_name as string) || "Creador",
-    avatar: (r.avatar_url as string) || null,
-    xp: (r.xp as number) || 0,
-    esTu: r.id === user.id,
-  }));
-
-  return (
-    <CursoEspecialVista
-      yo={{
-        nombre: perfil.full_name ?? "Creador",
-        avatar: perfil.avatar_url,
-        racha: perfil.racha,
-        gemas: perfil.gemas,
-        xp: perfil.xp ?? 0,
-      }}
-      curso={curso}
-      completadas={[...completadas]}
-      top={top}
-      miPosicion={(arriba ?? 0) + 1}
-    />
-  );
+  return <CursoCompradoVista yo={yo} curso={curso} completadas={[...completadas]} />;
 }

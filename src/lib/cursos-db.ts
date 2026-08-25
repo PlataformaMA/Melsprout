@@ -92,7 +92,27 @@ export type CursoEspecial = {
   clases: Clase[];
   minutos: number;      // duración total
   estudiantes: number;  // cuántas personas ya empezaron alguna clase
+  // Datos de la landing de venta (vacíos hasta que se carguen desde admin)
+  banner: string | null;
+  precio: number | null;
+  moneda: string;
+  checkoutUrl: string | null;
+  aprenderas: string[];
+  habilidades: string[];
+  herramientas: string[];
+  incluye: string | null;
+  nivel: string | null;
+  semanas: number | null;
+  rating: number | null;
+  resenas: number | null;
+  series: number | null;
 };
+
+// Los campos de lista vienen como jsonb: si traen basura, se ignoran.
+function lista(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return v.filter((x): x is string => typeof x === "string" && x.trim().length > 0);
+}
 
 async function armarEspeciales(filtroId?: string): Promise<CursoEspecial[]> {
   const admin = createAdminClient();
@@ -130,6 +150,19 @@ async function armarEspeciales(filtroId?: string): Promise<CursoEspecial[]> {
       instructor: (suyas[0]?.instructor as string) || "Melissa",
       minutos: suyas.reduce((n, c) => n + ((c.duracion_min as number) || 0), 0),
       estudiantes: alumnos.size,
+      banner: (m.banner as string) || null,
+      precio: m.precio != null ? Number(m.precio) : null,
+      moneda: (m.moneda as string) || "MXN",
+      checkoutUrl: (m.checkout_url as string) || null,
+      aprenderas: lista(m.aprenderas),
+      habilidades: lista(m.habilidades),
+      herramientas: lista(m.herramientas),
+      incluye: (m.incluye as string) || null,
+      nivel: (m.nivel as string) || null,
+      semanas: (m.semanas as number) ?? null,
+      rating: m.rating != null ? Number(m.rating) : null,
+      resenas: (m.resenas as number) ?? null,
+      series: (m.series as number) ?? null,
       clases: suyas.map((c): Clase => ({
         id: c.id as string,
         titulo: c.titulo as string,
