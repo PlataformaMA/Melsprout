@@ -50,14 +50,26 @@ export function ReproductorClase({
   const videoRef = useRef<HTMLVideoElement>(null);
   const vistoRef = useRef(vistoInicial);   // segundos REALMENTE vistos (arranca de lo ya guardado)
   const lastTimeRef = useRef(0);
+  const saltandoRef = useRef(false);   // true mientras se arrastra la barra
 
   // Mide el 85% por tiempo reproducido real (adelantar la barrita no cuenta).
+  // Cuenta SOLO lo reproducido, nunca lo que se adelanta con la barra. Antes se
+  // descartaba cualquier salto mayor a 1.5 s, y eso tiraba avance real: al ver a
+  // 2x, o con el navegador en segundo plano, el evento llega más espaciado y esos
+  // segundos —vistos de verdad— se perdían. Ahora el salto se detecta con los
+  // eventos de la barra (seeking/seeked), que es lo que de verdad distingue
+  // "adelantó" de "está viendo".
   function onTimeUpdate(e: React.SyntheticEvent<HTMLVideoElement>) {
     const v = e.currentTarget;
     const delta = v.currentTime - lastTimeRef.current;
-    if (delta > 0 && delta < 1.5) vistoRef.current += delta; // solo reproducción normal
+    if (!saltandoRef.current && delta > 0) {
+      // Tope de 30 s por si el navegador estuvo dormido mucho rato.
+      vistoRef.current += Math.min(delta, 30);
+    }
     lastTimeRef.current = v.currentTime;
-    if (v.duration > 0) setProgreso(Math.min(100, (vistoRef.current / v.duration) * 100));
+    if (v.duration > 0 && Number.isFinite(v.duration)) {
+      setProgreso(Math.min(100, (vistoRef.current / v.duration) * 100));
+    }
   }
   const router = useRouter();
   const [reproduciendo, setReproduciendo] = useState(false);
@@ -162,6 +174,8 @@ export function ReproductorClase({
                   ) : (
                     <video ref={videoRef} src={videoUrl} controls playsInline
                       onTimeUpdate={onTimeUpdate}
+                      onSeeking={() => { saltandoRef.current = true; }}
+                      onSeeked={(e) => { saltandoRef.current = false; lastTimeRef.current = e.currentTarget.currentTime; }}
                       onEnded={() => setTerminado(true)}
                       onLoadedMetadata={(e) => {
                         const v = e.currentTarget;
@@ -424,7 +438,7 @@ function YouTubePlayer({ videoId, vistoInicial = 0, onProgress }: { videoId: str
               const d = player.getDuration();
               if (player.getPlayerState() === 1) {
                 const delta = t - lastRef.current;
-                if (delta > 0 && delta < 1.5) vistoRef.current += delta; // solo reproducción normal
+                if (delta > 0) vistoRef.current += Math.min(delta, 30); // reproducción real, con tope por si el navegador se durmió
               }
               lastRef.current = t;
               if (d > 0) onProgress(Math.min(100, (vistoRef.current / d) * 100), vistoRef.current);
