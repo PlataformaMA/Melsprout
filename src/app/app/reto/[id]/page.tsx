@@ -4,6 +4,7 @@ import { getPerfil } from "@/lib/perfil-actions";
 import { getRetoUnificado } from "@/lib/retos-db";
 import { getRetoSubmission } from "@/lib/retos-actions";
 import { getCursos } from "@/lib/cursos-db";
+import { getPublicacionesReto } from "@/lib/foros-actions";
 import { RetoVista } from "@/components/RetoVista";
 
 export default async function RetoPage({ params }: { params: Promise<{ id: string }> }) {
@@ -23,6 +24,7 @@ export default async function RetoPage({ params }: { params: Promise<{ id: strin
   if (!reto) redirect("/app/retos");
 
   const guardado = await getRetoSubmission(id);
+  const publicaciones = await getPublicacionesReto(id);
 
   // Siguiente clase (para el botón "Ver siguiente clase"): la que sigue a esta
   // en el orden del curso; si es la última, vuelve a la Ruta.
@@ -42,6 +44,7 @@ export default async function RetoPage({ params }: { params: Promise<{ id: strin
       }}
       guardado={guardado}
       siguienteHref={siguienteHref}
+      publicaciones={publicaciones}
     />
   );
 }

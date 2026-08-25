@@ -3,33 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { subirAvatar } from "@/lib/perfil-actions";
-
-// Reduce y recorta la imagen a un cuadrado 256x256 en el navegador (rápido y ligero).
-function procesar(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        const size = 256;
-        const canvas = document.createElement("canvas");
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return reject(new Error("no ctx"));
-        const s = Math.min(img.width, img.height);
-        const sx = (img.width - s) / 2;
-        const sy = (img.height - s) / 2;
-        ctx.drawImage(img, sx, sy, s, s, 0, 0, size, size);
-        resolve(canvas.toDataURL("image/jpeg", 0.85));
-      };
-      img.onerror = () => reject(new Error("img"));
-      img.src = reader.result as string;
-    };
-    reader.onerror = () => reject(new Error("read"));
-    reader.readAsDataURL(file);
-  });
-}
+import { RecortarFoto } from "@/components/RecortarFoto";
 
 function iniciales(nombre: string): string {
   if (!nombre) return "🐙";
@@ -50,14 +24,22 @@ export function AvatarUploader({
   const [preview, setPreview] = useState(avatarUrl);
   const [subiendo, setSubiendo] = useState(false);
   const [error, setError] = useState("");
+  const [porRecortar, setPorRecortar] = useState<File | null>(null);
 
-  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+  // Al elegir archivo abrimos el editor; nada se sube hasta que encuadra.
+  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    if (inputRef.current) inputRef.current.value = "";
     if (!file) return;
+    if (file.size > 12 * 1024 * 1024) { setError("La imagen pesa más de 12 MB."); return; }
     setError("");
+    setPorRecortar(file);
+  }
+
+  async function subir(dataUrl: string) {
+    setPorRecortar(null);
     setSubiendo(true);
     try {
-      const dataUrl = await procesar(file);
       const r = await subirAvatar(dataUrl);
       if ("error" in r) setError(r.error);
       else {
@@ -65,10 +47,9 @@ export function AvatarUploader({
         router.refresh();
       }
     } catch {
-      setError("No se pudo procesar la imagen.");
+      setError("No se pudo subir la imagen.");
     } finally {
       setSubiendo(false);
-      if (inputRef.current) inputRef.current.value = "";
     }
   }
 
@@ -110,6 +91,14 @@ export function AvatarUploader({
         />
       </div>
       {error && <p className="text-[11px] text-pink mt-1 max-w-[140px] text-center">{error}</p>}
+
+      {porRecortar && (
+        <RecortarFoto
+          file={porRecortar}
+          onCancelar={() => setPorRecortar(null)}
+          onListo={subir}
+        />
+      )}
     </div>
   );
 }

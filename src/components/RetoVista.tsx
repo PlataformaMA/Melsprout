@@ -9,6 +9,8 @@ import { UserMenu } from "@/components/UserMenu";
 import { createClient } from "@/lib/supabase/client";
 import type { RetoDef, PasoReto } from "@/lib/retos";
 import { guardarReto, subirImagenReto, type RetoGuardado } from "@/lib/retos-actions";
+import type { ForoPost } from "@/lib/foros-actions";
+import { PostCard } from "@/components/PostCard";
 
 type Perfil = { full_name: string | null; avatar_url: string | null; racha: number; gemas: number };
 
@@ -27,11 +29,13 @@ export function RetoVista({
   perfil,
   guardado,
   siguienteHref = "/app/ruta",
+  publicaciones = [],
 }: {
   reto: RetoDef;
   perfil: Perfil;
   guardado: RetoGuardado;
   siguienteHref?: string;
+  publicaciones?: ForoPost[];
 }) {
   const router = useRouter();
   const [resp, setResp] = useState<Record<string, string>>(guardado?.respuestas || {});
@@ -331,48 +335,45 @@ export function RetoVista({
                 </div>
               </section>
 
-              {/* Ejemplo de publicación */}
+              {/* Publicaciones de la comunidad para este reto */}
               <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
                 <h2 className="font-display font-extrabold mb-4">{reto.ejemplo.tituloCard}</h2>
-                <div className="flex items-center gap-2.5 mb-4">
-                  <span className="w-9 h-9 rounded-full bg-accent/15 text-accent grid place-items-center text-[13px] font-bold">VL</span>
-                  <div>
-                    <div className="font-bold text-[14px] leading-tight">{reto.ejemplo.autor}</div>
-                    <div className="text-[12px] text-sub">{reto.ejemplo.rol}</div>
+
+                {publicaciones.length > 0 ? (
+                  <div className="space-y-3">
+                    {publicaciones.map((p) => (
+                      <PostCard key={p.id} post={p} compacto />
+                    ))}
                   </div>
-                </div>
-                <div className="space-y-3">
-                  {reto.ejemplo.bloques.map((bl, i) => (
-                    <div key={i}>
-                      <div className="text-accent font-bold text-[14px]">{bl.titulo}</div>
-                      {bl.texto && <p className="text-[13px] text-sub mt-0.5 leading-relaxed">{bl.texto}</p>}
-                      {bl.video && (
-                        <div className="mt-2 rounded-xl overflow-hidden bg-gradient-to-br from-[#E9D8FD] to-[#F3E8FF] aspect-video grid place-items-center relative">
-                          <span className="w-12 h-12 rounded-full bg-white/90 grid place-items-center text-accent text-xl shadow">▶</span>
-                          <span className="absolute top-2 right-2 bg-black/60 text-white text-[11px] rounded px-1.5 py-0.5">0:26</span>
-                        </div>
-                      )}
-                      {bl.imagen && (
-                        <div className="mt-2 rounded-xl bg-[#1f2937] text-white/90 p-3 text-[11px]">
-                          <div className="flex items-center gap-2">
-                            <span className="w-8 h-8 rounded-full bg-white/20" />
-                            <div className="flex gap-3 text-center">
-                              <div><div className="font-bold">342</div><div className="opacity-70">Publicaciones</div></div>
-                              <div><div className="font-bold">12.8K</div><div className="opacity-70">Seguidores</div></div>
-                              <div><div className="font-bold">1,024</div><div className="opacity-70">Seguidos</div></div>
-                            </div>
-                          </div>
-                          <div className="mt-2 font-semibold">Melissa Arria | Marketing para Creadores</div>
-                        </div>
-                      )}
+                ) : (
+                  <>
+                    {/* Todavía nadie ha publicado: mostramos un ejemplo, marcado como tal. */}
+                    <div className="flex items-center gap-2.5 mb-4">
+                      <span className="w-9 h-9 rounded-full bg-accent/15 text-accent grid place-items-center text-[13px] font-bold">VL</span>
+                      <div>
+                        <div className="font-bold text-[14px] leading-tight">{reto.ejemplo.autor}</div>
+                        <div className="text-[12px] text-sub">{reto.ejemplo.rol}</div>
+                      </div>
+                      <span className="ml-auto text-[10.5px] font-bold text-sub bg-bg border border-border rounded-full px-2 py-0.5">Ejemplo</span>
                     </div>
-                  ))}
-                </div>
-                <div className="flex items-center gap-5 mt-4 pt-3 border-t border-border text-[13px] text-sub">
-                  <span className="flex items-center gap-1.5"><HeartOutline /> 128</span>
-                  <span className="flex items-center gap-1.5"><ChatIcon /> 32</span>
-                  <span className="flex items-center gap-1.5 ml-auto"><BookmarkIcon /> Guardar</span>
-                </div>
+                    <div className="space-y-3">
+                      {reto.ejemplo.bloques.map((bl, i) => (
+                        <div key={i}>
+                          <div className="text-accent font-bold text-[14px]">{bl.titulo}</div>
+                          {bl.texto && <p className="text-[13px] text-sub mt-0.5 leading-relaxed">{bl.texto}</p>}
+                          {bl.video && (
+                            <div className="mt-2 rounded-xl overflow-hidden bg-gradient-to-br from-[#E9D8FD] to-[#F3E8FF] aspect-video grid place-items-center relative">
+                              <span className="w-12 h-12 rounded-full bg-white/90 grid place-items-center text-accent text-xl shadow">▶</span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[12.5px] text-hint mt-4 pt-3 border-t border-border leading-relaxed">
+                      Todavía nadie ha publicado en este reto. Publica el tuyo y podrán darle me gusta y comentarlo. 💜
+                    </p>
+                  </>
+                )}
               </section>
 
               {/* Consejo de hoy */}
@@ -596,12 +597,10 @@ function Instrucciones({ texto }: { texto: string }) {
 }
 
 function BellIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 0 0 4 0" /></svg>; }
-function HeartOutline() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z" /></svg>; }
 function CheckCircle() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="m8.5 12 2.5 2.5 4.5-5" /></svg>; }
 function FlagIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 21V4M4 4h13l-2 4 2 4H4" /></svg>; }
 function MiniDot() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="8" /><path d="M12 8v4l2.5 2" strokeLinecap="round" /></svg>; }
 function GemIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="#7c3aed"><path d="M6 3h12l3 5-9 13L3 8z" /></svg>; }
-function ChatIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5z" /></svg>; }
 function BookmarkIcon() { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3h12v18l-6-4-6 4z" /></svg>; }
 function UploadIcon() { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 16V4M7 9l5-5 5 5M5 20h14" /></svg>; }
 function MapMini() { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z" /><path d="M9 4v14M15 6v14" /></svg>; }

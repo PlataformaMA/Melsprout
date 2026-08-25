@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { espejarRetoEnComunidad } from "@/lib/reto-publicacion";
 import { registrarRacha } from "@/lib/racha-actions";
 
 export type RetoGuardado = {
@@ -95,6 +96,12 @@ export async function guardarReto(
     await admin.from("profiles").update({ xp: nuevaXp }).eq("id", user.id);
   }
   if (estado === "publicado") await registrarRacha(); // cuenta actividad de hoy
+
+  // Si se aprueba solo (revisión "sola"), ya puede verse en la comunidad y
+  // recibir me gusta y comentarios. Lo que va a revisión se espeja al aprobarse.
+  if (estado === "publicado" && revision === "aprobado") {
+    await espejarRetoEnComunidad({ userId: user.id, retoId, respuestas, archivoUrl });
+  }
   return { ok: true };
 }
 

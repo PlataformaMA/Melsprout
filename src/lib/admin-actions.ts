@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notificar } from "@/lib/notificaciones-actions";
+import { espejarRetoEnComunidad, ocultarRetoEnComunidad } from "@/lib/reto-publicacion";
 import { esAdmin, esAdminUsuario } from "@/lib/admin";
 import { getRetoUnificado, type RetoRow, type RetoTipo } from "@/lib/retos-db";
 
@@ -257,6 +258,23 @@ export async function revisarReto(
     .eq("user_id", userId)
     .eq("reto_id", retoId);
   if (error) return { error: "No se pudo actualizar la revisión." };
+
+  // Aprobado → su respuesta aparece en la comunidad; si no, se oculta.
+  if (revision === "aprobado") {
+    const { data: sub } = await admin
+      .from("reto_submissions")
+      .select("respuestas, archivo_url, estado")
+      .eq("user_id", userId).eq("reto_id", retoId).maybeSingle();
+    if (sub?.estado === "publicado") {
+      await espejarRetoEnComunidad({
+        userId, retoId,
+        respuestas: (sub.respuestas as Record<string, string>) || null,
+        archivoUrl: (sub.archivo_url as string) || null,
+      });
+    }
+  } else {
+    await ocultarRetoEnComunidad(userId, retoId);
+  }
 
   // El alumno se entera del veredicto sin tener que ir a buscarlo.
   if (revision === "aprobado") {

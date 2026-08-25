@@ -30,16 +30,13 @@ async function perfilMap(admin: ReturnType<typeof createAdminClient>, ids: strin
   return new Map((data || []).map((p) => [p.id as string, p]));
 }
 
-export async function getForoPosts(categoria: string, grupoId?: string): Promise<ForoPost[]> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+// Toma filas de foros_posts y las completa con autor, likes y respuestas.
+async function armarPosts(
+  posts: Record<string, unknown>[] | null,
+  userId: string | null,
+): Promise<ForoPost[]> {
   const admin = createAdminClient();
-
-  let q = admin.from("foros_posts").select("*").eq("oculto", false).order("created_at", { ascending: false }).limit(50);
-  // El muro de un grupo trae solo lo suyo; el foro general excluye lo de grupos.
-  q = grupoId ? q.eq("grupo_id", grupoId) : q.is("grupo_id", null);
-  if (!grupoId && categoria && categoria !== "General") q = q.eq("categoria", categoria);
-  const { data: posts } = await q;
+  const user = userId ? { id: userId } : null;
   if (!posts || posts.length === 0) return [];
 
   const ids = posts.map((p) => p.id as string);
@@ -73,6 +70,33 @@ export async function getForoPosts(categoria: string, grupoId?: string): Promise
       esNuevo: Date.now() - new Date(p.created_at as string).getTime() < 864e5,
     };
   });
+}
+
+export async function getForoPosts(categoria: string, grupoId?: string): Promise<ForoPost[]> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const admin = createAdminClient();
+
+  let q = admin.from("foros_posts").select("*").eq("oculto", false).order("created_at", { ascending: false }).limit(50);
+  // El muro de un grupo trae solo lo suyo; el foro general excluye lo de grupos.
+  q = grupoId ? q.eq("grupo_id", grupoId) : q.is("grupo_id", null);
+  if (!grupoId && categoria && categoria !== "General") q = q.eq("categoria", categoria);
+  const { data: posts } = await q;
+  return armarPosts(posts, user?.id ?? null);
+}
+
+// Publicaciones de otras personas para un reto concreto ("Mira otras publicaciones").
+export async function getPublicacionesReto(retoId: string, limite = 6): Promise<ForoPost[]> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const admin = createAdminClient();
+
+  let q = admin.from("foros_posts").select("*")
+    .eq("reto_id", retoId).eq("oculto", false)
+    .order("created_at", { ascending: false }).limit(limite);
+  if (user) q = q.neq("autor_id", user.id); // "otras" publicaciones, no la mía
+  const { data: posts } = await q;
+  return armarPosts(posts, user?.id ?? null);
 }
 
 export async function crearPost(categoria: string, texto: string, extra?: { enlaceUrl?: string; imagenUrl?: string; videoUrl?: string; grupoId?: string }): Promise<{ ok: true } | { error: string }> {
