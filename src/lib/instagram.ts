@@ -14,12 +14,18 @@ function redirectUri(origin: string): string {
   return `${siteBase(origin)}/api/instagram/callback`;
 }
 
-export function buildAuthUrl(origin: string, state: string): string {
+// Permiso mínimo (siempre aprobado) y el de estadísticas, que es el que
+// da seguidores, alcance y audiencia. Si Meta todavía no aprobó el segundo,
+// el callback reintenta solo con el básico: la persona no ve ningún error.
+export const SCOPE_BASICO = "instagram_business_basic";
+export const SCOPE_COMPLETO = "instagram_business_basic,instagram_business_manage_insights";
+
+export function buildAuthUrl(origin: string, state: string, scope = SCOPE_COMPLETO): string {
   const p = new URLSearchParams({
     client_id: IG_APP_ID,
     redirect_uri: redirectUri(origin),
     response_type: "code",
-    scope: "instagram_business_basic",
+    scope,
     state,
   });
   return `https://www.instagram.com/oauth/authorize?${p.toString()}`;

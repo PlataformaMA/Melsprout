@@ -48,9 +48,9 @@ function formatN(n: number): string {
 
 // Redes conectables vía InsightIQ (workPlatformId = id de la plataforma en InsightIQ).
 const REDES = [
-  { key: "tiktok", nombre: "TikTok", color: "#111827", icon: <TikTokIcon />, wp: "de55aeec-0dc8-4119-bf90-16b3d1f0c987" },
-  { key: "instagram", nombre: "Instagram", color: "grad-ig", icon: <InstagramIcon />, wp: "9bb8913b-ddd9-430b-a66a-d74d846e6c66" },
-  { key: "youtube", nombre: "YouTube", color: "#FF0000", icon: <YouTubeIcon />, wp: "14d9ddf5-51c6-415e-bde6-f8ed36ad7054" },
+  { key: "tiktok", nombre: "TikTok", color: "#111827", icon: <TikTokIcon />, wp: "de55aeec-0dc8-4119-bf90-16b3d1f0c987", conectable: false },
+  { key: "instagram", nombre: "Instagram", color: "grad-ig", icon: <InstagramIcon />, wp: "9bb8913b-ddd9-430b-a66a-d74d846e6c66", conectable: true },
+  { key: "youtube", nombre: "YouTube", color: "#FF0000", icon: <YouTubeIcon />, wp: "14d9ddf5-51c6-415e-bde6-f8ed36ad7054", conectable: false },
 ] as const;
 
 // ————————————— Componente principal —————————————
@@ -58,6 +58,21 @@ export function PerfilVista({ perfil, creadoEn, insightiq, avance, social, amigo
   const [tab, setTab] = useState<"Resumen" | "Métricas" | "Amigos">("Resumen");
   // Conexión de redes: "Próximamente" (aún no habilitada). Mantenemos el hook activo.
   useConectarInsightIQ(insightiq ?? null);
+
+  // Resultado de conectar una red: llega como ?r=… desde el callback.
+  const [avisoRed, setAvisoRed] = useState<{ ok: boolean; texto: string } | null>(null);
+  useEffect(() => {
+    const r = new URLSearchParams(window.location.search).get("r");
+    if (!r) return;
+    const textos: Record<string, { ok: boolean; texto: string }> = {
+      instagram_ok: { ok: true, texto: "¡Instagram conectado! Tus métricas se actualizarán en un momento." },
+      instagram_err: { ok: false, texto: "No pudimos conectar Instagram. Revisa que sea una cuenta profesional (empresa o creador) e inténtalo otra vez." },
+      instagram_noconfig: { ok: false, texto: "La conexión con Instagram todavía no está habilitada." },
+    };
+    if (textos[r]) setAvisoRed(textos[r]);
+    // Limpiamos la URL para que el aviso no reaparezca al recargar.
+    window.history.replaceState({}, "", window.location.pathname);
+  }, []);
 
   // Editar "Sobre mí" con el lápiz.
   const [editBio, setEditBio] = useState(false);
@@ -204,6 +219,14 @@ export function PerfilVista({ perfil, creadoEn, insightiq, avance, social, amigo
                 )}
                 <p className="text-hint text-[13px] mt-4">Se unió en {mesAnio(creadoEn)}</p>
               </div>
+
+              {avisoRed && (
+                <div className={`mt-6 rounded-2xl px-4 py-3 text-[13.5px] leading-snug ${
+                  avisoRed.ok ? "bg-green/10 text-green" : "bg-pink/10 text-pink"
+                }`}>
+                  {avisoRed.texto}
+                </div>
+              )}
 
               {/* En MÓVIL: Redes sociales justo debajo de "Sobre mí" */}
               <div className="mt-6 lg:hidden">
@@ -709,7 +732,7 @@ function StatBars() { return <svg width="20" height="20" viewBox="0 0 24 24" fil
 function PinIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z" /><circle cx="12" cy="10" r="2.5" /></svg>; }
 function BuildingIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="3" width="12" height="18" rx="1.5" /><path d="M16 8h4v13M8 7h1M12 7h1M8 11h1M12 11h1M8 15h1M12 15h1" /></svg>; }
 function BarsIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 20v-5M10 20V8M15 20v-9M20 20V5" /></svg>; }
-type RedItem = { key: string; nombre: string; color: string; icon: React.ReactNode; wp: string };
+type RedItem = { key: string; nombre: string; color: string; icon: React.ReactNode; wp: string; conectable: boolean };
 function RedesCard({ perfil, REDES }: {
   perfil: Perfil; REDES: readonly RedItem[]; tieneRedes?: boolean;
 }) {
@@ -717,9 +740,6 @@ function RedesCard({ perfil, REDES }: {
     <section className="bg-surface border border-border rounded-3xl p-5 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-display font-extrabold">Redes sociales</h2>
-        <span className="text-[11px] font-semibold rounded-full px-2.5 py-1 text-accent bg-accent-soft">
-          Próximamente
-        </span>
       </div>
       <div className="space-y-4">
         {REDES.map((r) => {
@@ -732,10 +752,17 @@ function RedesCard({ perfil, REDES }: {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="font-bold text-[14px] leading-tight">{r.nombre}</div>
-                <div className="text-[13px] text-sub truncate">{handle ? `@${handle}` : "Muy pronto podrás conectarla"}</div>
+                <div className="text-[13px] text-sub truncate">
+                  {handle ? `@${handle}` : r.conectable ? "Conéctala para ver tus métricas" : "Muy pronto podrás conectarla"}
+                </div>
               </div>
               {handle ? (
                 <span className="w-6 h-6 rounded-full bg-green text-white grid place-items-center text-[12px] shrink-0">✓</span>
+              ) : r.conectable ? (
+                <a href={`/api/${r.key}/connect?volver=${encodeURIComponent("/app/perfil")}`}
+                  className="text-[11.5px] font-bold text-white bg-accent rounded-lg px-3 py-1.5 shrink-0 hover:brightness-110 transition">
+                  Conectar
+                </a>
               ) : (
                 <span className="text-[11px] font-bold text-sub bg-bg rounded-lg px-2.5 py-1.5 shrink-0">Próximamente</span>
               )}
