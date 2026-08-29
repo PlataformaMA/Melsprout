@@ -76,3 +76,62 @@ export async function setVideoClaseDB(id: string, videoUrl: string): Promise<{ o
   if (error) return { error: "No se pudo guardar el video." };
   return { ok: true };
 }
+
+// ————— Textos de venta de un curso especial (landing) —————
+export type VentaCurso = {
+  descripcion: string;
+  aprenderas: string[];
+  habilidades: string[];
+  herramientas: string[];
+  incluye: string;
+  nivel: string;
+  semanas: number | null;
+  series: number | null;
+  precio: number | null;
+  moneda: string;
+  checkoutUrl: string;
+};
+
+export async function getVentaCurso(id: string): Promise<VentaCurso | null> {
+  const admin = await comoAdmin();
+  if (!admin) return null;
+  const { data } = await admin.from("cursos_modulos")
+    .select("descripcion, aprenderas, habilidades, herramientas, incluye, nivel, semanas, series, precio, moneda, checkout_url")
+    .eq("id", id).maybeSingle();
+  if (!data) return null;
+  const lista = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : []);
+  return {
+    descripcion: (data.descripcion as string) || "",
+    aprenderas: lista(data.aprenderas),
+    habilidades: lista(data.habilidades),
+    herramientas: lista(data.herramientas),
+    incluye: (data.incluye as string) || "",
+    nivel: (data.nivel as string) || "",
+    semanas: (data.semanas as number) ?? null,
+    series: (data.series as number) ?? null,
+    precio: data.precio != null ? Number(data.precio) : null,
+    moneda: (data.moneda as string) || "MXN",
+    checkoutUrl: (data.checkout_url as string) || "",
+  };
+}
+
+export async function guardarVentaCurso(id: string, v: VentaCurso): Promise<{ ok: true } | { error: string }> {
+  const admin = await comoAdmin();
+  if (!admin) return { error: "No autorizado." };
+  const limpiar = (xs: string[]) => xs.map((x) => x.trim()).filter(Boolean).slice(0, 20);
+  const { error } = await admin.from("cursos_modulos").update({
+    descripcion: v.descripcion.trim(),
+    aprenderas: limpiar(v.aprenderas),
+    habilidades: limpiar(v.habilidades),
+    herramientas: limpiar(v.herramientas),
+    incluye: v.incluye.trim() || null,
+    nivel: v.nivel.trim() || null,
+    semanas: v.semanas,
+    series: v.series,
+    precio: v.precio,
+    moneda: v.moneda || "MXN",
+    checkout_url: v.checkoutUrl.trim() || null,
+  }).eq("id", id);
+  if (error) return { error: "No se pudo guardar." };
+  return { ok: true };
+}

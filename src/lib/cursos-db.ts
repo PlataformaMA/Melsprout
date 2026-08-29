@@ -70,7 +70,7 @@ export async function getVideoClaseDB(claseId: string): Promise<string | null> {
 }
 
 // Datos crudos para el panel admin (con ids reales para editar).
-export type ModuloRow = { id: string; nombre: string; descripcion: string; color: string; orden: number; activo: boolean };
+export type ModuloRow = { id: string; nombre: string; descripcion: string; color: string; orden: number; activo: boolean; especial?: boolean | null };
 export type ClaseRow = { id: string; modulo_id: string; titulo: string; instructor: string; duracion_min: number; nivel: string; video_url: string | null; reto_texto: string; reto_instrucciones: string; portada: string | null; revision: string; orden: number; activo: boolean; subtitulos_url: string | null; subtitulos_job: string | null };
 
 export async function getCursosAdmin(): Promise<{ modulos: ModuloRow[]; clases: ClaseRow[] }> {

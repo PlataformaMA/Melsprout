@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cerrarSesion } from "@/lib/auth-actions";
@@ -21,7 +21,7 @@ import {
   type ComentarioAdmin,
 } from "@/lib/admin-actions";
 import { crearClaseVivo, actualizarClaseVivo, borrarClaseVivo, type ClaseVivo, type ClaseVivoInput } from "@/lib/vivo-actions";
-import { crearModulo, actualizarModulo, borrarModulo, crearClase, actualizarClase, borrarClase, setVideoClaseDB, type ClaseInput } from "@/lib/cursos-actions";
+import { crearModulo, actualizarModulo, borrarModulo, crearClase, actualizarClase, borrarClase, setVideoClaseDB, getVentaCurso, guardarVentaCurso, type ClaseInput, type VentaCurso } from "@/lib/cursos-actions";
 import { generarSubtitulos, revisarSubtitulos, borrarSubtitulos } from "@/lib/subtitulos-actions";
 import type { ModuloRow, ClaseRow } from "@/lib/cursos-db";
 import { createClient } from "@/lib/supabase/client";
@@ -504,6 +504,7 @@ function ModuloBloque({ modulo, clases, onCambio }: { modulo: ModuloRow; clases:
   const [nombre, setNombre] = useState(modulo.nombre);
   const [nuevaClase, setNuevaClase] = useState("");
   const [editando, setEditando] = useState(false);
+  const [venta, setVenta] = useState(false);
   const inputC = "bg-bg border border-border rounded-lg px-3 py-2 text-[13px] outline-none focus:border-accent";
 
   async function guardarNombre() { await actualizarModulo(modulo.id, nombre, modulo.descripcion, modulo.color); setEditando(false); onCambio(); }
@@ -522,16 +523,93 @@ function ModuloBloque({ modulo, clases, onCambio }: { modulo: ModuloRow; clases:
           <>
             <h3 className="font-display font-extrabold flex-1">{modulo.nombre} <span className="text-[12px] text-hint font-normal">({clases.length})</span></h3>
             <button onClick={() => setEditando(true)} className="text-[12px] font-semibold text-accent">Renombrar</button>
+            {modulo.especial && (
+              <button onClick={() => setVenta((v) => !v)} className="text-[12px] font-semibold text-accent">
+                {venta ? "Cerrar textos" : "Textos de venta"}
+              </button>
+            )}
             <button onClick={borrar} className="text-[12px] font-semibold text-red-500">Borrar</button>
           </>
         )}
       </div>
+      {venta && <TextosVenta moduloId={modulo.id} />}
+
       <div className="space-y-2">
         {clases.map((c) => <ClaseCursoFila key={c.id} clase={c} onCambio={onCambio} />)}
       </div>
       <div className="flex gap-2 mt-3">
         <input value={nuevaClase} onChange={(e) => setNuevaClase(e.target.value)} placeholder="Título de nueva clase" className={`${inputC} flex-1`} />
         <button onClick={agregarClase} className="bg-surface border border-border rounded-lg px-3 py-2 text-[13px] font-semibold hover:bg-bg shrink-0">+ Clase</button>
+      </div>
+    </div>
+  );
+}
+
+// Textos de la landing de un curso especial: la promesa, las listas y el precio.
+function TextosVenta({ moduloId }: { moduloId: string }) {
+  const [v, setV] = useState<VentaCurso | null>(null);
+  const [estado, setEstado] = useState("");
+  const inputC = "bg-bg border border-border rounded-lg px-3 py-2 text-[13px] outline-none focus:border-accent w-full";
+
+  useEffect(() => { getVentaCurso(moduloId).then(setV); }, [moduloId]);
+  if (!v) return <p className="text-[13px] text-hint py-3">Cargando textos…</p>;
+
+  const set = (p: Partial<VentaCurso>) => setV({ ...v, ...p });
+  // Las listas se editan como líneas: una por renglón.
+  const lineas = (xs: string[]) => xs.join("\n");
+  const aLista = (t: string) => t.split("\n");
+
+  async function guardar() {
+    setEstado("Guardando…");
+    const r = await guardarVentaCurso(moduloId, v!);
+    setEstado("error" in r ? r.error : "Guardado ✓");
+    setTimeout(() => setEstado(""), 2500);
+  }
+
+  return (
+    <div className="border border-border rounded-2xl p-4 bg-bg mb-3 space-y-3">
+      <div>
+        <label className="text-[12px] font-bold text-sub">La promesa (sale en la landing y en Detalles)</label>
+        <textarea value={v.descripcion} onChange={(e) => set({ descripcion: e.target.value })} rows={3} className={`${inputC} mt-1 resize-none`} />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="text-[12px] font-bold text-sub">Habilidades que obtendrás (una por línea)</label>
+          <textarea value={lineas(v.habilidades)} onChange={(e) => set({ habilidades: aLista(e.target.value) })} rows={6} className={`${inputC} mt-1 resize-none`} />
+        </div>
+        <div>
+          <label className="text-[12px] font-bold text-sub">Herramientas que aprenderás (una por línea)</label>
+          <textarea value={lineas(v.herramientas)} onChange={(e) => set({ herramientas: aLista(e.target.value) })} rows={6} className={`${inputC} mt-1 resize-none`} />
+        </div>
+      </div>
+
+      <div>
+        <label className="text-[12px] font-bold text-sub">Nota del patrocinador (recuadro morado del certificado)</label>
+        <textarea value={v.incluye} onChange={(e) => set({ incluye: e.target.value })} rows={2} className={`${inputC} mt-1 resize-none`} />
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div><label className="text-[12px] font-bold text-sub">Nivel</label>
+          <input value={v.nivel} onChange={(e) => set({ nivel: e.target.value })} className={`${inputC} mt-1`} /></div>
+        <div><label className="text-[12px] font-bold text-sub">Semanas</label>
+          <input type="number" value={v.semanas ?? ""} onChange={(e) => set({ semanas: e.target.value ? Number(e.target.value) : null })} className={`${inputC} mt-1`} /></div>
+        <div><label className="text-[12px] font-bold text-sub">Series</label>
+          <input type="number" value={v.series ?? ""} onChange={(e) => set({ series: e.target.value ? Number(e.target.value) : null })} className={`${inputC} mt-1`} /></div>
+        <div><label className="text-[12px] font-bold text-sub">Precio</label>
+          <input type="number" step="0.01" value={v.precio ?? ""} onChange={(e) => set({ precio: e.target.value ? Number(e.target.value) : null })} className={`${inputC} mt-1`} /></div>
+        <div><label className="text-[12px] font-bold text-sub">Moneda</label>
+          <input value={v.moneda} onChange={(e) => set({ moneda: e.target.value.toUpperCase() })} placeholder="MXN" className={`${inputC} mt-1`} /></div>
+      </div>
+
+      <div>
+        <label className="text-[12px] font-bold text-sub">Enlace de pago (deja vacío y el botón dice «Próximamente»)</label>
+        <input value={v.checkoutUrl} onChange={(e) => set({ checkoutUrl: e.target.value })} placeholder="https://…" className={`${inputC} mt-1`} />
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button onClick={guardar} className="bg-accent text-white rounded-lg px-4 py-2 text-[13px] font-bold hover:brightness-110 transition">Guardar textos</button>
+        {estado && <span className="text-[12.5px] font-semibold text-sub">{estado}</span>}
       </div>
     </div>
   );
