@@ -106,6 +106,9 @@ export type CursoEspecial = {
   rating: number | null;
   resenas: number | null;
   series: number | null;
+  instructores: { nombre: string; foto: string | null }[];
+  horasSemana: number | null;
+  inscritos: number | null;   // si viene vacío, se usa el conteo real
 };
 
 // Los campos de lista vienen como jsonb: si traen basura, se ignoran.
@@ -163,6 +166,13 @@ async function armarEspeciales(filtroId?: string): Promise<CursoEspecial[]> {
       rating: m.rating != null ? Number(m.rating) : null,
       resenas: (m.resenas as number) ?? null,
       series: (m.series as number) ?? null,
+      instructores: Array.isArray(m.instructores)
+        ? (m.instructores as { nombre?: string; foto?: string | null }[])
+            .filter((i) => typeof i?.nombre === "string" && i.nombre.trim())
+            .map((i) => ({ nombre: i.nombre as string, foto: i.foto || null }))
+        : [],
+      horasSemana: (m.horas_semana as number) ?? null,
+      inscritos: (m.inscritos as number) ?? null,
       clases: suyas.map((c): Clase => ({
         id: c.id as string,
         titulo: c.titulo as string,
