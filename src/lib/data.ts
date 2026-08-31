@@ -14,6 +14,8 @@ export type Clase = {
   portada?: string | null;
   subtitulos?: string | null;   // .vtt generado automáticamente
   proximamente?: boolean;       // se ve, pero aún no está grabada
+  seccion?: string | null;      // módulo interno (cursos especiales)
+  instructorRol?: string | null;
 };
 
 export type ModuloCurso = {

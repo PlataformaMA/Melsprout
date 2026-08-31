@@ -183,6 +183,8 @@ async function armarEspeciales(filtroId?: string): Promise<CursoEspecial[]> {
         grabada: !!c.video_url,
         portada: portadaDe(c.portada, c.video_url),
         subtitulos: (c.subtitulos_url as string) || null,
+        seccion: (c.seccion as string) || null,
+        instructorRol: (c.instructor_rol as string) || null,
       })),
     };
   });

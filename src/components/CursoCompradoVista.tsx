@@ -8,17 +8,11 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import { UserMenu } from "@/components/UserMenu";
 import { AvatarInstructor } from "@/components/Instructor";
-import { BannerCurso } from "@/components/VentaCursoVista";
 import { formatoDuracion } from "@/components/EspecialesVista";
 
 type Pestana = "contenido" | "certificado" | "detalles";
 
-function dur(min: number): string {
-  const h = Math.floor(min / 60), m = min % 60;
-  return h ? `${h}:${String(m).padStart(2, "0")}h` : `${m} min`;
-}
-
-// Lo que ve quien YA tiene el curso: sus clases, el certificado y los detalles.
+// Lo que ve quien YA tiene el curso: sus módulos, el certificado y los detalles.
 export function CursoCompradoVista({
   yo, curso, completadas,
 }: {
@@ -29,8 +23,19 @@ export function CursoCompradoVista({
   const [tab, setTab] = useState<Pestana>("contenido");
   const hechas = new Set(completadas);
   const listas = curso.clases.filter((c) => hechas.has(c.id)).length;
-  const pct = curso.clases.length ? Math.round((listas / curso.clases.length) * 100) : 0;
   const completo = curso.clases.length > 0 && listas === curso.clases.length;
+
+  // Los cursos especiales agrupan sus clases en módulos internos. Si no
+  // tienen sección, van todas juntas en uno solo.
+  const modulos: { nombre: string; clases: Clase[] }[] = [];
+  curso.clases.forEach((c) => {
+    const nombre = c.seccion || "Contenido del curso";
+    const ya = modulos.find((m) => m.nombre === nombre);
+    if (ya) ya.clases.push(c);
+    else modulos.push({ nombre, clases: [c] });
+  });
+  // La numeración de las clases es continua a lo largo de todo el curso.
+  const numero = new Map(curso.clases.map((c, i) => [c.id, i + 1]));
 
   return (
     <div className="min-h-screen bg-bg flex">
@@ -49,16 +54,24 @@ export function CursoCompradoVista({
             className="w-10 h-10 rounded-full bg-surface border border-border grid place-items-center text-lg hover:border-accent/40 transition mb-4"
             aria-label="Volver">←</Link>
 
-          <BannerCurso curso={curso} />
-
-          {/* Progreso del curso */}
-          <div className="flex items-center gap-3 mt-5">
-            <div className="flex-1 h-2.5 rounded-full bg-border/60 overflow-hidden">
-              <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} />
-            </div>
-            <span className="text-[12.5px] font-bold text-sub shrink-0">
-              {listas}/{curso.clases.length} clases
-            </span>
+          {/* Banner con el patrocinador a un lado */}
+          <div className="rounded-3xl overflow-hidden bg-surface border border-border shadow-sm flex flex-col sm:flex-row items-stretch">
+            {curso.patrocinador && (
+              <div className="bg-accent-soft px-5 py-4 sm:py-0 grid place-items-center shrink-0 sm:w-[190px]">
+                <div className="text-center">
+                  <div className="text-[11.5px] font-bold text-accent/80">Patrocinado por:</div>
+                  {curso.patrocinadorLogo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={curso.patrocinadorLogo} alt={curso.patrocinador} className="h-5 object-contain mt-1.5 mx-auto" />
+                  ) : <b className="text-[15px] text-accent">{curso.patrocinador}</b>}
+                </div>
+              </div>
+            )}
+            {(curso.banner || curso.portada) && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={curso.banner || curso.portada || ""} alt={curso.nombre}
+                className="w-full min-w-0 object-cover select-none" draggable={false} />
+            )}
           </div>
 
           {/* Pestañas */}
@@ -78,9 +91,9 @@ export function CursoCompradoVista({
           </div>
 
           {tab === "contenido" && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-              {curso.clases.map((c, i) => (
-                <TarjetaClase key={c.id} c={c} n={i + 1} hecha={hechas.has(c.id)} />
+            <div className="space-y-4">
+              {modulos.map((m) => (
+                <ModuloBloque key={m.nombre} nombre={m.nombre} clases={m.clases} hechas={hechas} numero={numero} />
               ))}
             </div>
           )}
@@ -122,12 +135,19 @@ export function CursoCompradoVista({
                   <span>👥 {curso.estudiantes}</span>
                   {curso.nivel && <span>📊 Nivel {curso.nivel}</span>}
                 </div>
-                <div className="flex items-center gap-2.5 mt-4 pt-4 border-t border-border">
-                  <AvatarInstructor nombre={curso.instructor} size={38} />
-                  <div>
-                    <div className="font-bold text-[14px] leading-tight">{curso.instructor}</div>
-                    <div className="text-[12px] text-sub">Instructor</div>
-                  </div>
+                <div className="mt-4 pt-4 border-t border-border space-y-2.5">
+                  {(curso.instructores.length ? curso.instructores : [{ nombre: curso.instructor, foto: null }]).map((i) => (
+                    <div key={i.nombre} className="flex items-center gap-2.5">
+                      {i.foto ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={i.foto} alt={i.nombre} className="w-9 h-9 rounded-full object-cover shrink-0" />
+                      ) : <AvatarInstructor nombre={i.nombre} size={36} />}
+                      <div>
+                        <div className="font-bold text-[14px] leading-tight">{i.nombre}</div>
+                        <div className="text-[12px] text-sub">Instructor</div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </section>
 
@@ -157,6 +177,50 @@ export function CursoCompradoVista({
   );
 }
 
+function ModuloBloque({
+  nombre, clases, hechas, numero,
+}: {
+  nombre: string; clases: Clase[]; hechas: Set<string>; numero: Map<string, number>;
+}) {
+  const [abierto, setAbierto] = useState(true);
+  const listas = clases.filter((c) => hechas.has(c.id)).length;
+  const pct = clases.length ? Math.round((listas / clases.length) * 100) : 0;
+
+  return (
+    <section className="bg-surface border border-border rounded-3xl p-4 sm:p-5 shadow-sm">
+      <div className="flex items-center gap-4">
+        <button onClick={() => setAbierto((v) => !v)} className="flex-1 min-w-0 text-left">
+          <h2 className="font-display font-extrabold text-[16px] leading-tight">{nombre}</h2>
+        </button>
+        <div className="hidden sm:flex items-center gap-2.5 w-[210px] shrink-0">
+          <div className="flex-1 h-2 rounded-full bg-border/60 overflow-hidden">
+            <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} />
+          </div>
+          <span className="text-[12px] font-bold text-sub whitespace-nowrap">{pct}% completado</span>
+        </div>
+        <button onClick={() => setAbierto((v) => !v)}
+          aria-label={abierto ? "Cerrar módulo" : "Abrir módulo"}
+          className={`text-sub text-lg shrink-0 transition-transform ${abierto ? "rotate-180" : ""}`}>⌄</button>
+      </div>
+
+      <div className="sm:hidden flex items-center gap-2.5 mt-2.5">
+        <div className="flex-1 h-2 rounded-full bg-border/60 overflow-hidden">
+          <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
+        </div>
+        <span className="text-[12px] font-bold text-sub whitespace-nowrap">{pct}% completado</span>
+      </div>
+
+      {abierto && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mt-4">
+          {clases.map((c) => (
+            <TarjetaClase key={c.id} c={c} n={numero.get(c.id) ?? 1} hecha={hechas.has(c.id)} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function TarjetaClase({ c, n, hecha }: { c: Clase; n: number; hecha: boolean }) {
   const pendiente = !c.grabada;
   const Contenedor = pendiente ? "div" : Link;
@@ -164,39 +228,45 @@ function TarjetaClase({ c, n, hecha }: { c: Clase; n: number; hecha: boolean }) 
   return (
     <Contenedor
       href={`/app/clase/${c.id}`}
-      className={`bg-surface border border-border rounded-3xl p-3 shadow-sm flex flex-col transition ${
-        pendiente ? "opacity-70" : "hover:border-accent/40"
+      className={`bg-surface border border-border rounded-2xl p-2.5 flex flex-col transition ${
+        pendiente ? "opacity-75" : "hover:border-accent/40 hover:shadow-sm"
       }`}
     >
-      <div className="relative rounded-2xl overflow-hidden aspect-video bg-[#0B0B12] grid place-items-center">
+      <div className="relative rounded-xl overflow-hidden aspect-video bg-gradient-to-br from-[#3b0764] to-[#7c3aed] grid place-items-center">
         {c.portada ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={c.portada} alt="" className="w-full h-full object-cover" />
-        ) : <span className="text-white/70 text-2xl">▶</span>}
-        <span className="absolute bottom-2 right-2 bg-black/65 text-white text-[11px] font-bold rounded px-1.5 py-0.5">
-          {dur(c.duracionMin)}
+        ) : <span className="text-white/80 text-xl">▶</span>}
+        <span className="absolute top-1.5 right-1.5 bg-black/65 text-white text-[10.5px] font-bold rounded px-1.5 py-0.5">
+          {c.duracionMin} min
         </span>
+        {hecha && (
+          <span className="absolute top-1.5 left-1.5 w-5 h-5 rounded-full bg-green text-white grid place-items-center text-[11px]">✓</span>
+        )}
       </div>
 
-      <div className="text-[11.5px] font-bold text-accent mt-2.5">Clase {n}</div>
-      <h3 className="font-display font-extrabold text-[14.5px] leading-tight mt-0.5">{c.titulo}</h3>
+      <div className="text-[11px] font-bold text-accent mt-2">Clase {n}</div>
+      <h3 className="font-display font-extrabold text-[13.5px] leading-tight mt-0.5">{c.titulo}</h3>
 
       <div className="flex items-center gap-2 mt-2.5">
-        <AvatarInstructor nombre={c.instructor} size={22} />
-        <span className="text-[12.5px] text-sub font-semibold truncate">{c.instructor}</span>
+        <AvatarInstructor nombre={c.instructor} size={26} />
+        <div className="min-w-0">
+          <div className="text-[12px] font-semibold truncate">{c.instructor}</div>
+          {c.instructorRol && <div className="text-[10.5px] text-hint truncate">{c.instructorRol}</div>}
+        </div>
       </div>
 
-      <div className="mt-3">
+      <div className="mt-2.5">
         {pendiente ? (
-          <span className="inline-block text-[11.5px] font-bold text-sub bg-bg border border-border rounded-full px-2.5 py-1">
+          <span className="inline-block text-[11px] font-bold text-sub bg-bg border border-border rounded-full px-2.5 py-1">
             Próximamente
           </span>
         ) : hecha ? (
-          <span className="inline-block text-[11.5px] font-bold text-green bg-green/10 rounded-full px-2.5 py-1">
+          <span className="inline-block text-[11px] font-bold text-green bg-green/10 rounded-full px-2.5 py-1">
             Completado ✓
           </span>
         ) : (
-          <span className="inline-block text-[11.5px] font-bold text-accent bg-accent-soft rounded-full px-2.5 py-1">
+          <span className="inline-block text-[11px] font-bold text-accent bg-accent-soft rounded-full px-2.5 py-1">
             Pendiente
           </span>
         )}
