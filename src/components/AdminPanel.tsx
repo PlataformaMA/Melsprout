@@ -104,7 +104,7 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
     personal: "bg-pink-soft text-pink", curso: "bg-amber-100 text-amber-700",
   };
 
-  const TITULOS: Record<string, string> = { resumen: "Resumen", retos: "Retos", clases: "Clases y recursos", vivo: "Clases en vivo", avances: "Revisión de retos", comentarios: "Comunidad", usuarios: "Usuarios" };
+  const TITULOS: Record<string, string> = { resumen: "Resumen", retos: "Retos", clases: "Clases y recursos", vivo: "Clases en vivo", avances: "Revisión de retos", comentarios: "Comunidad", usuarios: "Estudiantes" };
 
   return (
     <div className="min-h-screen bg-bg flex">
@@ -198,30 +198,30 @@ function AdminSidebar({ tab, setTab, adminEmail, counts }: {
   tab: AdminTab; setTab: (t: AdminTab) => void; adminEmail: string;
   counts: { retos: number; vivo: number; avances: number; comentarios: number; usuarios: number };
 }) {
-  const items: { id: AdminTab; label: string; icon: string; count: number }[] = [
-    { id: "resumen", label: "Resumen", icon: "📋", count: -1 },
-    { id: "usuarios", label: "Usuarios", icon: "👥", count: counts.usuarios },
-    { id: "clases", label: "Clases y recursos", icon: "🎬", count: -1 },
-    { id: "retos", label: "Retos", icon: "🎯", count: counts.retos },
-    { id: "avances", label: "Revisión de retos", icon: "📊", count: counts.avances },
-    { id: "comentarios", label: "Comunidad", icon: "💬", count: counts.comentarios },
-    { id: "vivo", label: "Clases en vivo", icon: "📡", count: counts.vivo },
+  const items: { id: AdminTab; label: string; icon: React.ReactNode; count: number }[] = [
+    { id: "resumen", label: "Resumen", icon: <IcoCasa />, count: -1 },
+    { id: "usuarios", label: "Estudiantes", icon: <IcoGente />, count: counts.usuarios },
+    { id: "clases", label: "Clases y recursos", icon: <IcoLibro />, count: -1 },
+    { id: "retos", label: "Retos", icon: <IcoEscudo />, count: counts.retos },
+    { id: "comentarios", label: "Comunidad", icon: <IcoComunidad />, count: counts.comentarios },
+    { id: "avances", label: "Revisión de retos", icon: <IcoTabla />, count: counts.avances },
+    { id: "vivo", label: "Clases en vivo", icon: <IcoSenal />, count: counts.vivo },
   ];
   return (
     <div className="hidden md:flex flex-col w-64 shrink-0 bg-surface border-r border-border min-h-screen sticky top-0 p-4">
-      <div className="flex items-center gap-2.5 px-2 mb-6">
-        <div className="w-9 h-9 rounded-xl bg-accent grid place-items-center text-white font-extrabold">M</div>
-        <div>
+      <div className="flex items-center gap-3 px-2 mb-7">
+        <div className="w-10 h-10 rounded-2xl bg-accent grid place-items-center text-white font-display font-extrabold text-lg shrink-0">M</div>
+        <div className="min-w-0">
           <div className="font-display font-extrabold leading-tight">Melsprout</div>
-          <div className="text-[11px] text-accent font-bold">SUPERADMIN</div>
+          <div className="text-[11.5px] text-sub">Superadmin</div>
         </div>
       </div>
 
-      <nav className="flex flex-col gap-1">
+      <nav className="flex flex-col gap-1.5">
         {items.map((it) => (
           <button key={it.id} onClick={() => setTab(it.id)}
-            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[14px] font-semibold transition ${tab === it.id ? "bg-accent-soft text-accent" : "text-sub hover:bg-bg"}`}>
-            <span>{it.icon}</span>
+            className={`flex items-center gap-3 rounded-2xl px-3.5 py-3 text-[14px] font-semibold transition ${tab === it.id ? "bg-accent-soft text-accent" : "text-[#6B7280] hover:bg-bg"}`}>
+            <span className="shrink-0">{it.icon}</span>
             <span className="flex-1 text-left">{it.label}</span>
             {it.count >= 0 && <span className={`text-[11px] font-bold rounded-full px-2 py-0.5 ${tab === it.id ? "bg-accent text-white" : "bg-bg text-hint"}`}>{it.count}</span>}
           </button>
@@ -246,11 +246,21 @@ function AdminSidebar({ tab, setTab, adminEmail, counts }: {
 }
 
 // Selector de sección para móvil (la barra lateral se oculta en móvil).
+// ————— Iconos de la barra lateral (línea, como el diseño) —————
+const traz = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+function IcoCasa() { return <svg width="20" height="20" viewBox="0 0 24 24" {...traz}><path d="M3.5 10.5 12 4l8.5 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-3.5V15h-7v5.5H5A1.5 1.5 0 0 1 3.5 19z" /></svg>; }
+function IcoGente() { return <svg width="20" height="20" viewBox="0 0 24 24" {...traz}><circle cx="9" cy="8" r="3.2" /><path d="M3 20a6 6 0 0 1 12 0" /><path d="M16.5 5.4a3 3 0 0 1 0 5.6M21 20a6 6 0 0 0-3.6-5.5" /></svg>; }
+function IcoLibro() { return <svg width="20" height="20" viewBox="0 0 24 24" {...traz}><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15.5H5.5A1.5 1.5 0 0 0 4 21z" /><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v15.5h5.5A1.5 1.5 0 0 1 20 21z" /></svg>; }
+function IcoEscudo() { return <svg width="20" height="20" viewBox="0 0 24 24" {...traz}><path d="M12 3.5 5.5 6v5.5c0 4 2.8 7.4 6.5 8.9 3.7-1.5 6.5-4.9 6.5-8.9V6z" /><path d="m9.4 12.2 1.9 1.9 3.4-3.6" /></svg>; }
+function IcoComunidad() { return <svg width="20" height="20" viewBox="0 0 24 24" {...traz}><circle cx="9.5" cy="8" r="3.2" /><path d="M3.5 20a6 6 0 0 1 12 0" /><path d="M18 6.5v4M20 8.5h-4" /></svg>; }
+function IcoTabla() { return <svg width="20" height="20" viewBox="0 0 24 24" {...traz}><rect x="4" y="4" width="16" height="16" rx="2.5" /><path d="M8 15v-3M12 15V9M16 15v-5" /></svg>; }
+function IcoSenal() { return <svg width="20" height="20" viewBox="0 0 24 24" {...traz}><circle cx="12" cy="12" r="2.5" /><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 16.2a6 6 0 0 0 0-8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 19.1a10 10 0 0 0 0-14.2" /></svg>; }
+
 function AdminTabsMovil({ tab, setTab }: { tab: AdminTab; setTab: (t: AdminTab) => void }) {
   return (
     <div className="md:hidden flex flex-wrap gap-1 bg-surface border border-border rounded-2xl p-1 mb-5 shadow-sm">
       {([
-        ["resumen", "Resumen"], ["usuarios", "Usuarios"], ["clases", "Clases"], ["retos", "Retos"],
+        ["resumen", "Resumen"], ["usuarios", "Estudiantes"], ["clases", "Clases"], ["retos", "Retos"],
         ["avances", "Revisión"], ["comentarios", "Comunidad"], ["vivo", "En vivo"],
       ] as [AdminTab, string][]).map(([t, txt]) => (
         <button key={t} onClick={() => setTab(t)}
