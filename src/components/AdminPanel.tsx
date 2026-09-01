@@ -10,7 +10,6 @@ import {
   crearReto,
   actualizarReto,
   borrarReto,
-  crearUsuarioAdmin,
   marcarAdmin,
   revisarReto,
   moderarComentario,
@@ -22,6 +21,7 @@ import {
 } from "@/lib/admin-actions";
 import { crearClaseVivo, actualizarClaseVivo, borrarClaseVivo, type ClaseVivo, type ClaseVivoInput } from "@/lib/vivo-actions";
 import { SuperadminResumen } from "@/components/SuperadminResumen";
+import { CrearUsuarioModal } from "@/components/CrearUsuarioModal";
 import { crearModulo, actualizarModulo, borrarModulo, crearClase, actualizarClase, borrarClase, setVideoClaseDB, getVentaCurso, guardarVentaCurso, type ClaseInput, type VentaCurso } from "@/lib/cursos-actions";
 import { generarSubtitulos, revisarSubtitulos, borrarSubtitulos } from "@/lib/subtitulos-actions";
 import type { ModuloRow, ClaseRow } from "@/lib/cursos-db";
@@ -881,52 +881,39 @@ function ComentarioFila({ c, onCambio }: { c: ComentarioAdmin; onCambio: () => v
 
 // ————— Usuarios —————
 function UsuariosTab({ usuarios, onCreado }: { usuarios: UsuarioAdmin[]; onCreado: () => void }) {
-  const [email, setEmail] = useState("");
-  const [nombre, setNombre] = useState("");
-  const [pass, setPass] = useState("");
-  const [rolAdmin, setRolAdmin] = useState(false);
-  const [creando, setCreando] = useState(false);
-  const [msg, setMsg] = useState("");
-  const inputC = "w-full bg-bg border border-border rounded-lg px-3 py-2 text-[14px] outline-none focus:border-accent";
+  const [modal, setModal] = useState(false);
+  const [busca, setBusca] = useState("");
 
-  async function crear() {
-    setCreando(true); setMsg("");
-    const r = await crearUsuarioAdmin(email, nombre, pass, rolAdmin);
-    setCreando(false);
-    if ("error" in r) { setMsg(r.error); return; }
-    setEmail(""); setNombre(""); setPass(""); setRolAdmin(false); setMsg("✅ Usuario creado"); onCreado();
-  }
+  const q = busca.trim().toLowerCase();
+  const lista = q
+    ? usuarios.filter((u) =>
+        (u.nombre || "").toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q))
+    : usuarios;
 
   return (
     <div>
-      <div className="bg-surface border border-border rounded-2xl p-5 shadow-sm space-y-3 max-w-lg">
-        <h2 className="font-display font-extrabold text-lg">Crear usuario</h2>
-        <input value={nombre} onChange={(e) => setNombre(e.target.value)} className={inputC} placeholder="Nombre completo" />
-        <input value={email} onChange={(e) => setEmail(e.target.value)} className={inputC} placeholder="correo@ejemplo.com" type="email" />
-        <input value={pass} onChange={(e) => setPass(e.target.value)} className={inputC} placeholder="Contraseña (mín. 6)" type="text" />
-        {/* Rol */}
-        <div className="flex gap-2">
-          <button type="button" onClick={() => setRolAdmin(false)}
-            className={`flex-1 rounded-xl px-3 py-2.5 text-[13.5px] font-bold border transition ${!rolAdmin ? "bg-accent-soft border-accent text-accent" : "bg-bg border-border text-sub"}`}>
-            👤 Usuario normal
-          </button>
-          <button type="button" onClick={() => setRolAdmin(true)}
-            className={`flex-1 rounded-xl px-3 py-2.5 text-[13.5px] font-bold border transition ${rolAdmin ? "bg-accent-soft border-accent text-accent" : "bg-bg border-border text-sub"}`}>
-            ⚙️ Admin
-          </button>
-        </div>
-        {msg && <p className="text-[13px] text-sub">{msg}</p>}
-        <button onClick={crear} disabled={creando} className="bg-accent text-white rounded-xl px-5 py-2.5 text-[14px] font-bold hover:brightness-110 disabled:opacity-60 transition">
-          {creando ? "Creando…" : `Crear ${rolAdmin ? "admin" : "usuario"}`}
+      <div className="flex flex-wrap items-center gap-3 mb-5">
+        <input value={busca} onChange={(e) => setBusca(e.target.value)}
+          placeholder="Buscar por nombre o correo…"
+          className="flex-1 min-w-[220px] bg-surface border border-border rounded-xl px-4 py-2.5 text-[14px] outline-none focus:border-accent" />
+        <button onClick={() => setModal(true)}
+          className="bg-accent text-white rounded-xl px-4 py-2.5 text-[13.5px] font-bold hover:brightness-110 transition shrink-0">
+          + Crear usuario
         </button>
       </div>
 
-      <h3 className="font-display font-extrabold mt-8 mb-3">Usuarios ({usuarios.length})</h3>
+      <h3 className="font-display font-extrabold mb-3">
+        Usuarios <span className="text-hint font-normal text-[13px]">({lista.length})</span>
+      </h3>
       <div className="space-y-1.5">
-        {usuarios.map((u) => (
+        {lista.length === 0 ? (
+          <p className="text-[13.5px] text-hint">Nadie coincide con esa búsqueda.</p>
+        ) : lista.map((u) => (
           <UsuarioFila key={u.id} u={u} onCambio={onCreado} />
         ))}
       </div>
+
+      {modal && <CrearUsuarioModal onCerrar={() => setModal(false)} onCreado={onCreado} />}
     </div>
   );
 }

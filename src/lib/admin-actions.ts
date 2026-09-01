@@ -314,3 +314,55 @@ export async function crearUsuarioAdmin(
   });
   return { ok: true };
 }
+
+export type NuevoUsuario = {
+  nombre: string;
+  email: string;
+  rol: "alumna" | "instructor" | "admin";
+  telefono?: string;
+  avatarDataUrl?: string;   // foto opcional, ya recortada en el navegador
+};
+
+// Alta desde el panel: se crea la cuenta y se le manda un correo para que
+// ella misma ponga su contraseña. Así nadie tiene que inventarle una.
+export async function altaUsuario(u: NuevoUsuario): Promise<{ ok: true } | { error: string }> {
+  const admin = await comoAdmin();
+  if (!admin) return { error: "No autorizado." };
+
+  const email = u.email?.trim().toLowerCase();
+  const nombre = u.nombre?.trim();
+  if (!nombre) return { error: "Escribe el nombre completo." };
+  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: "El correo no es válido." };
+
+  const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
+    data: { full_name: nombre },
+  });
+  if (error || !data.user) {
+    const msg = error?.message || "";
+    if (/already|registered|exists/i.test(msg)) return { error: "Ya existe una cuenta con ese correo." };
+    return { error: "No se pudo crear la cuenta. Revisa el correo e inténtalo de nuevo." };
+  }
+
+  const perfil: Record<string, unknown> = {
+    id: data.user.id,
+    full_name: nombre,
+    is_admin: u.rol === "admin",
+  };
+  if (u.telefono?.trim()) perfil.whatsapp = u.telefono.trim();
+  await admin.from("profiles").upsert(perfil);
+
+  // La foto va al bucket de avatares con la llave de servicio.
+  if (u.avatarDataUrl?.startsWith("data:image/")) {
+    const coma = u.avatarDataUrl.indexOf(",");
+    const bytes = Buffer.from(u.avatarDataUrl.slice(coma + 1), "base64");
+    const ruta = `${data.user.id}/avatar.jpeg`;
+    const { error: eSubida } = await admin.storage.from("avatars")
+      .upload(ruta, bytes, { contentType: "image/jpeg", upsert: true });
+    if (!eSubida) {
+      const { data: pub } = admin.storage.from("avatars").getPublicUrl(ruta);
+      await admin.from("profiles").update({ avatar_url: `${pub.publicUrl}?v=${Date.now()}` }).eq("id", data.user.id);
+    }
+  }
+
+  return { ok: true };
+}
