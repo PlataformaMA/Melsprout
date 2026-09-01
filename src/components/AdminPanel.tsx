@@ -21,6 +21,7 @@ import {
   type ComentarioAdmin,
 } from "@/lib/admin-actions";
 import { crearClaseVivo, actualizarClaseVivo, borrarClaseVivo, type ClaseVivo, type ClaseVivoInput } from "@/lib/vivo-actions";
+import { SuperadminResumen } from "@/components/SuperadminResumen";
 import { crearModulo, actualizarModulo, borrarModulo, crearClase, actualizarClase, borrarClase, setVideoClaseDB, getVentaCurso, guardarVentaCurso, type ClaseInput, type VentaCurso } from "@/lib/cursos-actions";
 import { generarSubtitulos, revisarSubtitulos, borrarSubtitulos } from "@/lib/subtitulos-actions";
 import type { ModuloRow, ClaseRow } from "@/lib/cursos-db";
@@ -67,7 +68,7 @@ function rowToForm(r: RetoRow): FormReto {
 export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, cursos, adminEmail }: { retos: RetoRow[]; usuarios: UsuarioAdmin[]; avances: Avance[]; comentarios: ComentarioAdmin[]; clasesVivo: ClaseVivo[]; cursos: { modulos: ModuloRow[]; clases: ClaseRow[] }; adminEmail: string }) {
   const router = useRouter();
   const clasesLista = cursos.clases.map((c) => ({ id: c.id, titulo: c.titulo }));
-  const [tab, setTab] = useState<AdminTab>("retos");
+  const [tab, setTab] = useState<AdminTab>("resumen");
   const [form, setForm] = useState<FormReto | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [msg, setMsg] = useState("");
@@ -103,7 +104,7 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
     personal: "bg-pink-soft text-pink", curso: "bg-amber-100 text-amber-700",
   };
 
-  const TITULOS: Record<string, string> = { retos: "Retos", clases: "Videos de clases", vivo: "Clases en vivo", avances: "Avances de usuarios", comentarios: "Comentarios", usuarios: "Usuarios" };
+  const TITULOS: Record<string, string> = { resumen: "Resumen", retos: "Retos", clases: "Clases y recursos", vivo: "Clases en vivo", avances: "Revisión de retos", comentarios: "Comunidad", usuarios: "Usuarios" };
 
   return (
     <div className="min-h-screen bg-bg flex">
@@ -132,7 +133,9 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
 
           <AdminTabsMovil tab={tab} setTab={(t) => { setTab(t); setForm(null); }} />
 
-          {tab === "retos" ? (
+          {tab === "resumen" ? (
+            <SuperadminResumen irA={(t) => setTab(t as AdminTab)} />
+          ) : tab === "retos" ? (
             <div>
               {!form ? (
                 <>
@@ -190,18 +193,19 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
 }
 
 // ————— Barra lateral del admin —————
-type AdminTab = "retos" | "clases" | "vivo" | "avances" | "comentarios" | "usuarios";
+type AdminTab = "resumen" | "retos" | "clases" | "vivo" | "avances" | "comentarios" | "usuarios";
 function AdminSidebar({ tab, setTab, adminEmail, counts }: {
   tab: AdminTab; setTab: (t: AdminTab) => void; adminEmail: string;
   counts: { retos: number; vivo: number; avances: number; comentarios: number; usuarios: number };
 }) {
   const items: { id: AdminTab; label: string; icon: string; count: number }[] = [
-    { id: "retos", label: "Retos", icon: "🎯", count: counts.retos },
-    { id: "clases", label: "Clases (videos)", icon: "🎬", count: -1 },
-    { id: "vivo", label: "Clases en vivo", icon: "📡", count: counts.vivo },
-    { id: "avances", label: "Avances", icon: "📊", count: counts.avances },
-    { id: "comentarios", label: "Comentarios", icon: "💬", count: counts.comentarios },
+    { id: "resumen", label: "Resumen", icon: "📋", count: -1 },
     { id: "usuarios", label: "Usuarios", icon: "👥", count: counts.usuarios },
+    { id: "clases", label: "Clases y recursos", icon: "🎬", count: -1 },
+    { id: "retos", label: "Retos", icon: "🎯", count: counts.retos },
+    { id: "avances", label: "Revisión de retos", icon: "📊", count: counts.avances },
+    { id: "comentarios", label: "Comunidad", icon: "💬", count: counts.comentarios },
+    { id: "vivo", label: "Clases en vivo", icon: "📡", count: counts.vivo },
   ];
   return (
     <div className="hidden md:flex flex-col w-64 shrink-0 bg-surface border-r border-border min-h-screen sticky top-0 p-4">
@@ -209,7 +213,7 @@ function AdminSidebar({ tab, setTab, adminEmail, counts }: {
         <div className="w-9 h-9 rounded-xl bg-accent grid place-items-center text-white font-extrabold">M</div>
         <div>
           <div className="font-display font-extrabold leading-tight">Melsprout</div>
-          <div className="text-[11px] text-accent font-bold">ADMIN</div>
+          <div className="text-[11px] text-accent font-bold">SUPERADMIN</div>
         </div>
       </div>
 
@@ -245,10 +249,13 @@ function AdminSidebar({ tab, setTab, adminEmail, counts }: {
 function AdminTabsMovil({ tab, setTab }: { tab: AdminTab; setTab: (t: AdminTab) => void }) {
   return (
     <div className="md:hidden flex flex-wrap gap-1 bg-surface border border-border rounded-2xl p-1 mb-5 shadow-sm">
-      {(["retos", "clases", "vivo", "avances", "comentarios", "usuarios"] as AdminTab[]).map((t) => (
+      {([
+        ["resumen", "Resumen"], ["usuarios", "Usuarios"], ["clases", "Clases"], ["retos", "Retos"],
+        ["avances", "Revisión"], ["comentarios", "Comunidad"], ["vivo", "En vivo"],
+      ] as [AdminTab, string][]).map(([t, txt]) => (
         <button key={t} onClick={() => setTab(t)}
           className={`px-3 py-2 rounded-xl text-[13px] font-bold transition ${tab === t ? "bg-accent text-white" : "text-sub"}`}>
-          {t.charAt(0).toUpperCase() + t.slice(1)}
+          {txt}
         </button>
       ))}
     </div>
