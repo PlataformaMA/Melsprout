@@ -147,3 +147,119 @@ export async function exportarClases(): Promise<{ csv: string; nombre: string } 
     nombre: `clases-${new Date().toISOString().slice(0, 10)}.csv`,
   };
 }
+
+// ————— Alta y edición de una clase desde el panel —————
+export type ClaseForm = {
+  id?: string;
+  titulo: string;
+  moduloId: string;
+  instructor: string;
+  instructorRol: string;
+  nivel: string;
+  duracionMin: number;
+  videoUrl: string;
+  portadaDataUrl?: string;   // portada nueva, ya recortada en el navegador
+  portadaActual?: string | null;
+  activo: boolean;
+};
+
+export async function guardarClase(f: ClaseForm): Promise<{ ok: true; id: string } | { error: string }> {
+  if (!(await soyAdmin())) return { error: "No autorizado." };
+  const titulo = f.titulo?.trim();
+  if (!titulo) return { error: "Ponle título a la clase." };
+  if (!f.moduloId) return { error: "Elige el mundo al que pertenece." };
+
+  const admin = createAdminClient();
+
+  const fila: Record<string, unknown> = {
+    titulo,
+    modulo_id: f.moduloId,
+    instructor: f.instructor?.trim() || "Melissa",
+    instructor_rol: f.instructorRol?.trim() || null,
+    nivel: f.nivel?.trim() || null,
+    duracion_min: Number(f.duracionMin) || 0,
+    video_url: f.videoUrl?.trim() || null,
+    activo: f.activo,
+  };
+
+  let id = f.id;
+  if (id) {
+    const { error } = await admin.from("cursos_clases").update(fila).eq("id", id);
+    if (error) return { error: "No se pudo guardar la clase." };
+  } else {
+    const { data: max } = await admin.from("cursos_clases")
+      .select("orden").eq("modulo_id", f.moduloId).order("orden", { ascending: false }).limit(1).maybeSingle();
+    const { data, error } = await admin.from("cursos_clases")
+      .insert({ ...fila, orden: ((max?.orden as number) || 0) + 1, reto_texto: "", reto_instrucciones: "" })
+      .select("id").single();
+    if (error || !data) return { error: "No se pudo crear la clase." };
+    id = data.id as string;
+  }
+
+  // La portada va al bucket público de recursos de retos.
+  if (f.portadaDataUrl?.startsWith("data:image/")) {
+    const coma = f.portadaDataUrl.indexOf(",");
+    const bytes = Buffer.from(f.portadaDataUrl.slice(coma + 1), "base64");
+    const ruta = `portadas/${id}.jpg`;
+    const { error: eSub } = await admin.storage.from("retos")
+      .upload(ruta, bytes, { contentType: "image/jpeg", upsert: true });
+    if (!eSub) {
+      const { data: pub } = admin.storage.from("retos").getPublicUrl(ruta);
+      await admin.from("cursos_clases").update({ portada: `${pub.publicUrl}?v=${Date.now()}` }).eq("id", id);
+    }
+  }
+
+  return { ok: true, id: id as string };
+}
+
+export async function borrarClaseAdmin(id: string): Promise<{ ok: true } | { error: string }> {
+  if (!(await soyAdmin())) return { error: "No autorizado." };
+  const admin = createAdminClient();
+  const { error } = await admin.from("cursos_clases").delete().eq("id", id);
+  if (error) return { error: "No se pudo borrar (¿tiene progreso o retos?)." };
+  return { ok: true };
+}
+
+// ————— Recursos descargables de una clase —————
+export async function subirRecurso(
+  claseId: string, nombre: string, dataUrl: string
+): Promise<{ ok: true } | { error: string }> {
+  if (!(await soyAdmin())) return { error: "No autorizado." };
+  if (!dataUrl.startsWith("data:")) return { error: "Archivo no válido." };
+
+  const admin = createAdminClient();
+  const coma = dataUrl.indexOf(",");
+  const tipoMime = dataUrl.slice(5, dataUrl.indexOf(";"));
+  const bytes = Buffer.from(dataUrl.slice(coma + 1), "base64");
+  if (bytes.length > 25 * 1024 * 1024) return { error: "El archivo pasa de 25 MB." };
+
+  const limpio = nombre.replace(/[^\w.\-]+/g, "_").slice(0, 80);
+  const ruta = `clases/${claseId}/${Date.now()}-${limpio}`;
+  const { error: eSub } = await admin.storage.from("retos")
+    .upload(ruta, bytes, { contentType: tipoMime || "application/octet-stream", upsert: false });
+  if (eSub) return { error: "No se pudo subir el archivo." };
+
+  const { data: pub } = admin.storage.from("retos").getPublicUrl(ruta);
+  const { data: max } = await admin.from("recursos")
+    .select("orden").eq("clase_id", claseId).order("orden", { ascending: false }).limit(1).maybeSingle();
+
+  const { error } = await admin.from("recursos").insert({
+    clase_id: claseId,
+    titulo: nombre.slice(0, 120),
+    tipo: tipoMime?.split("/")[1]?.toUpperCase() || "Archivo",
+    url: pub.publicUrl,
+    peso: `${(bytes.length / 1024 / 1024).toFixed(1)} MB`,
+    orden: ((max?.orden as number) || 0) + 1,
+    activo: true,
+  });
+  if (error) return { error: "Se subió el archivo pero no se pudo registrar." };
+  return { ok: true };
+}
+
+export async function borrarRecurso(id: string): Promise<{ ok: true } | { error: string }> {
+  if (!(await soyAdmin())) return { error: "No autorizado." };
+  const admin = createAdminClient();
+  const { error } = await admin.from("recursos").update({ activo: false }).eq("id", id);
+  if (error) return { error: "No se pudo quitar." };
+  return { ok: true };
+}

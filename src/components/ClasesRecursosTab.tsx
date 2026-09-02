@@ -6,6 +6,8 @@ import {
   type ClaseAdmin, type MundoAdmin, type EstadoClase,
 } from "@/lib/clases-admin-actions";
 import { DetalleClase } from "@/components/DetalleClase";
+import { FormClase } from "@/components/FormClase";
+import { VistaPreviaRuta } from "@/components/VistaPreviaRuta";
 
 const ESTADOS: Record<EstadoClase, { texto: string; clase: string }> = {
   publicada: { texto: "Publicada", clase: "bg-green/10 text-green" },
@@ -28,6 +30,8 @@ export function ClasesRecursosTab() {
   const [estado, setEstado] = useState<EstadoClase | "todos">("todos");
   const [menu, setMenu] = useState<string | null>(null);
   const [abierta, setAbierta] = useState<ClaseAdmin | null>(null);
+  const [editando, setEditando] = useState<ClaseAdmin | null | undefined>(undefined); // undefined = cerrado
+  const [previa, setPrevia] = useState(false);
 
   const cargar = () => listarClasesAdmin().then(setDatos);
   useEffect(() => { cargar(); }, []);
@@ -72,10 +76,20 @@ export function ClasesRecursosTab() {
           <h1 className="font-display text-2xl font-extrabold leading-tight">Clases de la ruta</h1>
           <p className="text-sub text-[13px] mt-0.5">Gestiona todas las clases y los recursos de aprendizaje.</p>
         </div>
-        <button onClick={exportar}
-          className="border border-border bg-surface rounded-xl px-4 py-2.5 text-[13.5px] font-bold text-sub hover:border-accent/40 transition">
-          ⬇ Exportar
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button onClick={() => setPrevia(true)}
+            className="border border-border bg-surface rounded-xl px-4 py-2.5 text-[13.5px] font-bold text-sub hover:border-accent/40 transition">
+            👁 Vista previa
+          </button>
+          <button onClick={exportar}
+            className="border border-border bg-surface rounded-xl px-4 py-2.5 text-[13.5px] font-bold text-sub hover:border-accent/40 transition">
+            ⬇ Exportar
+          </button>
+          <button onClick={() => setEditando(null)}
+            className="bg-accent text-white rounded-xl px-4 py-2.5 text-[13.5px] font-bold hover:brightness-110 transition">
+            + Nueva clase
+          </button>
+        </div>
       </div>
 
       {/* Filtros */}
@@ -165,6 +179,8 @@ export function ClasesRecursosTab() {
                       </div>
                     </td>
                     <td className="px-3 py-2.5 relative">
+                      <button onClick={(e) => { e.stopPropagation(); setEditando(c); }}
+                        aria-label="Editar" className="text-sub hover:text-accent px-1.5 text-[15px]">✎</button>
                       <button onClick={(e) => { e.stopPropagation(); setMenu(menu === c.id ? null : c.id); }}
                         aria-label="Acciones" className="text-sub hover:text-accent px-2 text-lg leading-none">⋮</button>
                       {menu === c.id && (
@@ -174,13 +190,14 @@ export function ClasesRecursosTab() {
                             className="w-full text-left px-4 py-2.5 text-[13px] font-semibold hover:bg-bg transition">
                             Ver detalle
                           </button>
+                          <button onClick={() => { setEditando(c); setMenu(null); }}
+                            className="w-full text-left px-4 py-2.5 text-[13px] font-semibold hover:bg-bg transition">
+                            Editar clase
+                          </button>
                           <button onClick={() => ocultar(c)}
                             className="w-full text-left px-4 py-2.5 text-[13px] font-semibold hover:bg-bg transition">
                             {c.estado === "oculta" ? "Mostrar en la plataforma" : "Ocultar de la plataforma"}
                           </button>
-                          {c.tieneVideo && (
-                            <a href={`/api/admin/diag`} onClick={(e) => e.preventDefault()} className="hidden" />
-                          )}
                         </div>
                       )}
                     </td>
@@ -194,6 +211,21 @@ export function ClasesRecursosTab() {
 
       {abierta && (
         <DetalleClase clase={abierta} onCerrar={() => setAbierta(null)} onCambio={() => { cargar(); }} />
+      )}
+      {editando !== undefined && (
+        <FormClase
+          clase={editando}
+          mundos={datos?.mundos || []}
+          onCerrar={() => setEditando(undefined)}
+          onGuardado={cargar}
+        />
+      )}
+      {previa && (
+        <VistaPreviaRuta
+          clases={datos?.clases || []}
+          mundos={datos?.mundos || []}
+          onCerrar={() => setPrevia(false)}
+        />
       )}
     </div>
   );
