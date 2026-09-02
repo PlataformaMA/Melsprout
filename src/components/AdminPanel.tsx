@@ -104,7 +104,7 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
     personal: "bg-pink-soft text-pink", curso: "bg-amber-100 text-amber-700",
   };
 
-  const TITULOS: Record<string, string> = { resumen: "Resumen", retos: "Retos", clases: "Clases y recursos", vivo: "Clases en vivo", avances: "Revisión de retos", comentarios: "Comunidad", usuarios: "Estudiantes" };
+  const TITULOS: Record<string, string> = { resumen: "Resumen", retos: "Retos", clases: "Clases y Recursos", vivo: "Clases en vivo", avances: "Revisión de retos", comentarios: "Comunidad", usuarios: "Estudiantes" };
 
   return (
     <div className="min-h-screen bg-bg flex">
@@ -132,6 +132,14 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
           </div>
 
           <AdminTabsMovil tab={tab} setTab={(t) => { setTab(t); setForm(null); }} />
+
+          {/* Subpestañas: lo que en el menú va junto, aquí se separa. */}
+          {(tab === "clases" || tab === "vivo") && (
+            <SubPestanas tab={tab} setTab={setTab} opciones={[["clases", "Clases"], ["vivo", "Clases en vivo"]]} />
+          )}
+          {(tab === "retos" || tab === "avances") && (
+            <SubPestanas tab={tab} setTab={setTab} opciones={[["retos", "Retos"], ["avances", "Revisión de retos"]]} />
+          )}
 
           {tab === "resumen" ? (
             <SuperadminResumen irA={(t) => setTab(t as AdminTab)} />
@@ -201,12 +209,16 @@ function AdminSidebar({ tab, setTab, adminEmail, counts }: {
   const items: { id: AdminTab; label: string; icon: React.ReactNode; count: number }[] = [
     { id: "resumen", label: "Resumen", icon: <IcoCasa />, count: -1 },
     { id: "usuarios", label: "Estudiantes", icon: <IcoGente />, count: counts.usuarios },
-    { id: "clases", label: "Clases y recursos", icon: <IcoLibro />, count: -1 },
+    { id: "clases", label: "Clases y Recursos", icon: <IcoLibro />, count: -1 },
     { id: "retos", label: "Retos", icon: <IcoEscudo />, count: counts.retos },
     { id: "comentarios", label: "Comunidad", icon: <IcoComunidad />, count: counts.comentarios },
-    { id: "avances", label: "Revisión de retos", icon: <IcoTabla />, count: counts.avances },
-    { id: "vivo", label: "Clases en vivo", icon: <IcoSenal />, count: counts.vivo },
   ];
+  // "Clases en vivo" y "Revisión de retos" viven dentro de su sección, así que
+  // la pestaña sigue marcada aunque estemos en la subpestaña.
+  const activo = (id: AdminTab) =>
+    id === tab ||
+    (id === "clases" && tab === "vivo") ||
+    (id === "retos" && tab === "avances");
   return (
     <div className="hidden md:flex flex-col w-64 shrink-0 bg-surface border-r border-border min-h-screen sticky top-0 p-4">
       <div className="flex items-center gap-3 px-2 mb-7">
@@ -220,10 +232,10 @@ function AdminSidebar({ tab, setTab, adminEmail, counts }: {
       <nav className="flex flex-col gap-1.5">
         {items.map((it) => (
           <button key={it.id} onClick={() => setTab(it.id)}
-            className={`flex items-center gap-3 rounded-2xl px-3.5 py-3 text-[14px] font-semibold transition ${tab === it.id ? "bg-accent-soft text-accent" : "text-[#6B7280] hover:bg-bg"}`}>
+            className={`flex items-center gap-3 rounded-2xl px-3.5 py-3 text-[14px] font-semibold transition ${activo(it.id) ? "bg-accent-soft text-accent" : "text-[#6B7280] hover:bg-bg"}`}>
             <span className="shrink-0">{it.icon}</span>
             <span className="flex-1 text-left">{it.label}</span>
-            {it.count >= 0 && <span className={`text-[11px] font-bold rounded-full px-2 py-0.5 ${tab === it.id ? "bg-accent text-white" : "bg-bg text-hint"}`}>{it.count}</span>}
+            {it.count >= 0 && <span className={`text-[11px] font-bold rounded-full px-2 py-0.5 ${activo(it.id) ? "bg-accent text-white" : "bg-bg text-hint"}`}>{it.count}</span>}
           </button>
         ))}
         <div className="text-[11px] text-hint font-semibold px-3 pt-4 pb-1 uppercase">Próximamente</div>
@@ -256,12 +268,30 @@ function IcoComunidad() { return <svg width="20" height="20" viewBox="0 0 24 24"
 function IcoTabla() { return <svg width="20" height="20" viewBox="0 0 24 24" {...traz}><rect x="4" y="4" width="16" height="16" rx="2.5" /><path d="M8 15v-3M12 15V9M16 15v-5" /></svg>; }
 function IcoSenal() { return <svg width="20" height="20" viewBox="0 0 24 24" {...traz}><circle cx="12" cy="12" r="2.5" /><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 16.2a6 6 0 0 0 0-8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 19.1a10 10 0 0 0 0-14.2" /></svg>; }
 
+// Subpestañas dentro de una sección del menú.
+function SubPestanas({ tab, setTab, opciones }: {
+  tab: AdminTab; setTab: (t: AdminTab) => void; opciones: [AdminTab, string][];
+}) {
+  return (
+    <div className="flex gap-5 border-b border-border mb-5">
+      {opciones.map(([id, txt]) => (
+        <button key={id} onClick={() => setTab(id)}
+          className={`pb-2.5 text-[13.5px] font-bold transition -mb-px border-b-2 whitespace-nowrap ${
+            tab === id ? "text-accent border-accent" : "text-sub border-transparent hover:text-text"
+          }`}>
+          {txt}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function AdminTabsMovil({ tab, setTab }: { tab: AdminTab; setTab: (t: AdminTab) => void }) {
   return (
     <div className="md:hidden flex flex-wrap gap-1 bg-surface border border-border rounded-2xl p-1 mb-5 shadow-sm">
       {([
-        ["resumen", "Resumen"], ["usuarios", "Estudiantes"], ["clases", "Clases"], ["retos", "Retos"],
-        ["avances", "Revisión"], ["comentarios", "Comunidad"], ["vivo", "En vivo"],
+        ["resumen", "Resumen"], ["usuarios", "Estudiantes"], ["clases", "Clases y Recursos"],
+        ["retos", "Retos"], ["comentarios", "Comunidad"],
       ] as [AdminTab, string][]).map(([t, txt]) => (
         <button key={t} onClick={() => setTab(t)}
           className={`px-3 py-2 rounded-xl text-[13px] font-bold transition ${tab === t ? "bg-accent text-white" : "text-sub"}`}>
