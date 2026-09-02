@@ -9,6 +9,7 @@ import { generoDe } from "@/lib/genero";
 import { getNotificaciones } from "@/lib/notificaciones-actions";
 import { getRachaInfo } from "@/lib/racha-actions";
 import { nivelPorXP } from "@/lib/data";
+import { todoDesbloqueado } from "@/lib/ajustes";
 import { RutaAprendizaje } from "@/components/RutaAprendizaje";
 
 type EReto = "completada" | "en-revision" | "rechazada" | "pendiente" | "bloqueada";
@@ -114,8 +115,11 @@ export default async function RutaPage() {
     else if (s.estado === "publicado") retoEstados[rid] = "en-revision";
   }
 
+  const desbloqueado = await todoDesbloqueado();
+
   return (
     <RutaAprendizaje
+      desbloqueado={desbloqueado}
       nombre={perfil.full_name ?? "creador"}
       avatarUrl={perfil.avatar_url}
       gemas={perfil.gemas}

@@ -11,7 +11,6 @@ import { RecursosModal } from "@/components/RecursosModal";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import type { Recurso } from "@/lib/recursos-actions";
 import { octiFrases, type Genero } from "@/lib/genero";
-import { TODO_DESBLOQUEADO } from "@/lib/flags";
 import { VerificarBanner } from "@/components/VerificarBanner";
 import { type Clase, type ModuloCurso } from "@/lib/data";
 import { type RachaInfo } from "@/lib/racha-actions";
@@ -51,7 +50,7 @@ type Elemento =
 // Construye los nodos según el progreso REAL. `completadas` es la FRONTERA:
 // hasta dónde llegó el alumno (la clase más avanzada que terminó, +1). `hechas`
 // dice cuáles terminó de verdad, para no pintar como vista una que se saltó.
-function construirElementos(cursos: ModuloCurso[], completadas: number, retoEstados: Record<string, EReto>, hechas: Set<string>): Elemento[] {
+function construirElementos(cursos: ModuloCurso[], completadas: number, retoEstados: Record<string, EReto>, hechas: Set<string>, TODO_DESBLOQUEADO: boolean): Elemento[] {
   const els: Elemento[] = [];
   let gi = 0;
   cursos.forEach((modulo, mIdx) => {
@@ -84,12 +83,14 @@ function construirElementos(cursos: ModuloCurso[], completadas: number, retoEsta
 export type TopCreador = { id: string; nombre: string; avatarUrl: string | null; xp: number; esTu: boolean };
 
 export function RutaAprendizaje({
-  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [], completadas = 0, completadasIds = [], retoEstados = {}, cursos, recursos = [], genero = "neutro", notifSinLeer = 0, tuRanking, ranking = [], emailVerificado = true, xp = 0, rachaInfo,
+  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [], completadas = 0, completadasIds = [], retoEstados = {}, cursos, recursos = [], genero = "neutro", notifSinLeer = 0, tuRanking, ranking = [], emailVerificado = true, xp = 0, rachaInfo, desbloqueado = true,
 }: {
   nombre: string; avatarUrl: string | null; gemas: number; racha: number; perfilPct: number; topCreadores?: TopCreador[];
   completadas?: number; completadasIds?: string[]; recursos?: Recurso[]; genero?: Genero; notifSinLeer?: number; retoEstados?: Record<string, EReto>; cursos: ModuloCurso[]; tuRanking?: { pos: number; xp: number };
   ranking?: RankItem[]; emailVerificado?: boolean; xp?: number; rachaInfo?: RachaInfo;
+  desbloqueado?: boolean;   // todas las clases abiertas (se cambia desde el panel)
 }) {
+  const TODO_DESBLOQUEADO = desbloqueado;
   const hechas = new Set(completadasIds);
   // Las clases "Próximamente" se ven, pero NO entran en la secuencia: si entraran,
   // todos se frenarían al llegar a una clase que todavía no está grabada.
@@ -97,7 +98,7 @@ export function RutaAprendizaje({
     () => cursos.map((m) => ({ ...m, clases: m.clases.filter((c) => !c.proximamente) })),
     [cursos]
   );
-  const todos = construirElementos(cursosSeq, completadas, retoEstados, hechas);
+  const todos = construirElementos(cursosSeq, completadas, retoEstados, hechas, TODO_DESBLOQUEADO);
   // Módulo actual (el que contiene la clase "actual")
   const idxGlobal = todos.findIndex((e) => e.tipo === "clase" && e.estado === "actual");
   const moduloActual = idxGlobal >= 0 && todos[idxGlobal].tipo === "clase"
@@ -330,7 +331,7 @@ export function RutaAprendizaje({
               </div>
 
               {vista === "bloques" ? (
-                <BloquesVista cursos={cursos} completadas={completadas} hechas={hechas} retoEstados={retoEstados} inicios={inicioDeModulo} filtro={mundoFiltro} />
+                <BloquesVista cursos={cursos} completadas={completadas} hechas={hechas} retoEstados={retoEstados} inicios={inicioDeModulo} filtro={mundoFiltro} TODO_DESBLOQUEADO={TODO_DESBLOQUEADO} />
               ) : (
               /* Camino */
               <div className="relative mx-auto w-full overflow-x-hidden" style={{ maxWidth: 640, height: altura }}>
@@ -956,8 +957,9 @@ function OjoIcon() {
 }
 
 function BloquesVista({
-  cursos, completadas, hechas, retoEstados, inicios, filtro,
+  cursos, completadas, hechas, retoEstados, inicios, filtro, TODO_DESBLOQUEADO,
 }: {
+  TODO_DESBLOQUEADO: boolean;
   cursos: ModuloCurso[];
   completadas: number;
   hechas: Set<string>;
