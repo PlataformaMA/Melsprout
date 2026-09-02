@@ -12,6 +12,7 @@ import { VistaPreviaRuta } from "@/components/VistaPreviaRuta";
 const ESTADOS: Record<EstadoClase, { texto: string; clase: string }> = {
   publicada: { texto: "Publicada", clase: "bg-green/10 text-green" },
   borrador: { texto: "Borrador", clase: "bg-amber-100 text-amber-700" },
+  programada: { texto: "Programada", clase: "bg-blue-soft text-blue" },
   oculta: { texto: "Oculta", clase: "bg-bg text-hint border border-border" },
 };
 
@@ -115,6 +116,7 @@ export function ClasesRecursosTab() {
           <option value="todos">Todos los estados</option>
           <option value="publicada">Publicadas</option>
           <option value="borrador">Borrador</option>
+          <option value="programada">Programadas</option>
           <option value="oculta">Ocultas</option>
         </select>
       </div>
@@ -129,7 +131,7 @@ export function ClasesRecursosTab() {
             <table className="w-full text-[13px]">
               <thead className="bg-bg text-sub">
                 <tr>
-                  {["#", "Clase", "Nivel", "Mundo", "Duración", "Recursos", "Estado", "AVD", ""].map((h) => (
+                  {["#", "Clase", "Nivel", "Mundo", "Duración", "Recursos", "Estado", "AVD", "Calificación", "Comentarios", ""].map((h) => (
                     <th key={h} className="text-left font-bold px-3 py-2.5 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -178,6 +180,13 @@ export function ClasesRecursosTab() {
                         <b className="text-[11.5px] shrink-0">{c.avd}%</b>
                       </div>
                     </td>
+                    <td className="px-3 py-2.5 whitespace-nowrap">
+                      {c.calificacion
+                        ? <span className="font-bold">{c.calificacion} <span className="text-[#F5B301]">★</span>
+                            <span className="text-hint font-normal text-[11.5px]"> ({c.votos})</span></span>
+                        : <span className="text-hint">—</span>}
+                    </td>
+                    <td className="px-3 py-2.5 text-sub whitespace-nowrap">{c.comentarios || "—"}</td>
                     <td className="px-3 py-2.5 relative">
                       <button onClick={(e) => { e.stopPropagation(); setEditando(c); }}
                         aria-label="Editar" className="text-sub hover:text-accent px-1.5 text-[15px]">✎</button>

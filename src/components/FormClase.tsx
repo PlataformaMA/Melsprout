@@ -22,6 +22,7 @@ export function FormClase({
   const [nivel, setNivel] = useState(clase?.nivel || "");
   const [duracion, setDuracion] = useState(String(clase?.duracionMin ?? ""));
   const [videoUrl, setVideoUrl] = useState("");
+  const [publicarAt, setPublicarAt] = useState(clase?.publicarAt ? clase.publicarAt.slice(0, 16) : "");
   const [portada, setPortada] = useState<string | null>(clase?.portada || null);
   const [portadaNueva, setPortadaNueva] = useState<string | null>(null);
   const [recursos, setRecursos] = useState<RecursoClase[]>([]);
@@ -87,6 +88,7 @@ export function FormClase({
       titulo, moduloId, instructor, instructorRol: rol, nivel,
       duracionMin: Number(duracion) || 0,
       videoUrl,
+      publicarAt,
       portadaDataUrl: portadaNueva || undefined,
       activo: publicar,
     });
@@ -172,6 +174,14 @@ export function FormClase({
             <label className="text-[12.5px] font-bold text-sub">Enlace del video</label>
             <input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://…" className={`${inputC} mt-1.5`} />
             <p className="text-[11.5px] text-hint mt-1">Sin video, la clase queda como borrador y no se puede abrir.</p>
+          </div>
+
+          <div>
+            <label className="text-[12.5px] font-bold text-sub">Publicar en una fecha (opcional)</label>
+            <input type="datetime-local" value={publicarAt} onChange={(e) => setPublicarAt(e.target.value)} className={`${inputC} mt-1.5`} />
+            <p className="text-[11.5px] text-hint mt-1">
+              Hasta esa fecha aparece como <b>Programada</b> y las alumnas no la ven. Déjalo vacío para publicarla de una vez.
+            </p>
           </div>
 
           {/* Recursos */}

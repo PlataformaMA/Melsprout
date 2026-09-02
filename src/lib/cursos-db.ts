@@ -30,6 +30,8 @@ export async function getCursos(incluirEspeciales = false): Promise<ModuloCurso[
       .from("cursos_clases")
       .select("*")
       .eq("activo", true)
+      // Las programadas para más adelante todavía no se muestran.
+      .or(`publicar_at.is.null,publicar_at.lte.${new Date().toISOString()}`)
       .order("orden", { ascending: true });
 
     return mods.map((m, i) => ({

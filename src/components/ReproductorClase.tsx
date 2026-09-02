@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AvatarInstructor } from "@/components/Instructor";
+import { ClaseSocial } from "@/components/ClaseSocial";
 import { useRouter } from "next/navigation";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
@@ -288,6 +289,11 @@ export function ReproductorClase({
                     )
                   )}
                 </div>
+              </div>
+
+              {/* Calificación y comentarios de la clase */}
+              <div className="mt-6">
+                <ClaseSocial claseId={clase.id} />
               </div>
 
               {/* ——— Bloque MÓVIL: progreso + tabs (Recursos | Clases) ——— */}

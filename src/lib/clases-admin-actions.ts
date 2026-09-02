@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { esAdminUsuario } from "@/lib/admin";
 
-export type EstadoClase = "publicada" | "borrador" | "oculta";
+export type EstadoClase = "publicada" | "borrador" | "oculta" | "programada";
 
 export type ClaseAdmin = {
   id: string;
@@ -24,6 +24,10 @@ export type ClaseAdmin = {
   avd: number;            // % promedio visto de quienes la abrieron
   iniciaron: number;
   completaron: number;
+  publicarAt: string | null;   // si es futura, la clase está programada
+  calificacion: number | null;
+  votos: number;
+  comentarios: number;
 };
 
 export type MundoAdmin = { id: string; nombre: string; orden: number };
@@ -40,11 +44,14 @@ export async function listarClasesAdmin(): Promise<{ clases: ClaseAdmin[]; mundo
   if (!(await soyAdmin())) return { clases: [], mundos: [] };
   const admin = createAdminClient();
 
-  const [{ data: clases }, { data: modulos }, { data: recursos }, { data: progreso }] = await Promise.all([
+  const [{ data: clases }, { data: modulos }, { data: recursos }, { data: progreso },
+         { data: calif }, { data: coments }] = await Promise.all([
     admin.from("cursos_clases").select("*").order("orden"),
     admin.from("cursos_modulos").select("id, nombre, orden").order("orden"),
     admin.from("recursos").select("clase_id").eq("activo", true),
     admin.from("clase_progreso").select("clase_id, segundos_vistos, completada"),
+    admin.from("clase_calificaciones").select("clase_id, estrellas"),
+    admin.from("clase_comentarios").select("clase_id").eq("oculto", false),
   ]);
 
   const nombreModulo = new Map((modulos || []).map((m) => [m.id as string, m.nombre as string]));
@@ -61,6 +68,18 @@ export async function listarClasesAdmin(): Promise<{ clases: ClaseAdmin[]; mundo
     const v = vistoPorClase.get(c)!;
     v.seg.push((p.segundos_vistos as number) || 0);
     if (p.completada) v.hechas++;
+  }
+
+  const califPorClase = new Map<string, number[]>();
+  for (const c of calif || []) {
+    const k = c.clase_id as string;
+    if (!califPorClase.has(k)) califPorClase.set(k, []);
+    califPorClase.get(k)!.push((c.estrellas as number) || 0);
+  }
+  const comentariosPorClase = new Map<string, number>();
+  for (const c of coments || []) {
+    const k = c.clase_id as string;
+    comentariosPorClase.set(k, (comentariosPorClase.get(k) || 0) + 1);
   }
 
   const salida: ClaseAdmin[] = (clases || []).map((c, i) => {
@@ -86,10 +105,22 @@ export async function listarClasesAdmin(): Promise<{ clases: ClaseAdmin[]; mundo
       recursos: recursosPorClase.get(id) || 0,
       tieneVideo,
       tieneSubtitulos: !!c.subtitulos_url,
-      estado: !c.activo ? "oculta" : tieneVideo ? "publicada" : "borrador",
+      estado: !c.activo
+        ? "oculta"
+        : c.publicar_at && new Date(c.publicar_at as string).getTime() > Date.now()
+          ? "programada"
+          : tieneVideo ? "publicada" : "borrador",
       avd,
       iniciaron,
       completaron: v?.hechas ?? 0,
+      publicarAt: (c.publicar_at as string) || null,
+      calificacion: (() => {
+        const xs = califPorClase.get(id);
+        if (!xs?.length) return null;
+        return Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10;
+      })(),
+      votos: califPorClase.get(id)?.length ?? 0,
+      comentarios: comentariosPorClase.get(id) || 0,
     };
   });
 
@@ -158,6 +189,7 @@ export type ClaseForm = {
   nivel: string;
   duracionMin: number;
   videoUrl: string;
+  publicarAt: string;        // "" = sin programar
   portadaDataUrl?: string;   // portada nueva, ya recortada en el navegador
   portadaActual?: string | null;
   activo: boolean;
@@ -179,6 +211,7 @@ export async function guardarClase(f: ClaseForm): Promise<{ ok: true; id: string
     nivel: f.nivel?.trim() || null,
     duracion_min: Number(f.duracionMin) || 0,
     video_url: f.videoUrl?.trim() || null,
+    publicar_at: f.publicarAt ? new Date(f.publicarAt).toISOString() : null,
     activo: f.activo,
   };
 

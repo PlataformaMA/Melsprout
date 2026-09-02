@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { recursosDeClase, alternarVisibilidad, type ClaseAdmin, type RecursoClase } from "@/lib/clases-admin-actions";
 import { AvatarInstructor } from "@/components/Instructor";
+import { getComentariosClase, ocultarComentarioClase, type ComentarioClase } from "@/lib/clase-social-actions";
 
 const num = (n: number) => n.toLocaleString("es-MX");
 
@@ -16,12 +17,16 @@ function dur(min: number): string {
 export function DetalleClase({ clase, onCerrar, onCambio }: {
   clase: ClaseAdmin; onCerrar: () => void; onCambio: () => void;
 }) {
-  const [tab, setTab] = useState<"info" | "recursos">("info");
+  const [tab, setTab] = useState<"info" | "recursos" | "comentarios">("info");
+  const [coments, setComents] = useState<ComentarioClase[] | null>(null);
   const [recursos, setRecursos] = useState<RecursoClase[] | null>(null);
   const [visible, setVisible] = useState(clase.estado !== "oculta");
   const [guardando, setGuardando] = useState(false);
 
-  useEffect(() => { recursosDeClase(clase.id).then(setRecursos); }, [clase.id]);
+  useEffect(() => {
+    recursosDeClase(clase.id).then(setRecursos);
+    getComentariosClase(clase.id).then(setComents);
+  }, [clase.id]);
 
   const finalizacion = clase.iniciaron ? Math.round((clase.completaron / clase.iniciaron) * 100) : 0;
 
@@ -66,7 +71,11 @@ export function DetalleClase({ clase, onCerrar, onCambio }: {
             </div>
 
             <div className="flex gap-6 border-b border-border mt-4 mb-4">
-              {([["info", "Descripción"], ["recursos", `Recursos (${recursos?.length ?? 0})`]] as const).map(([id, txt]) => (
+              {([
+                ["info", "Descripción"],
+                ["recursos", `Recursos (${recursos?.length ?? 0})`],
+                ["comentarios", `Comentarios (${coments?.length ?? 0})`],
+              ] as const).map(([id, txt]) => (
                 <button key={id} onClick={() => setTab(id)}
                   className={`pb-2.5 text-[13.5px] font-bold transition -mb-px border-b-2 ${
                     tab === id ? "text-accent border-accent" : "text-sub border-transparent hover:text-text"
@@ -84,6 +93,39 @@ export function DetalleClase({ clase, onCerrar, onCambio }: {
                     : "Todavía no tiene subtítulos."}
                 </p>
               </div>
+            ) : tab === "comentarios" ? (
+              coments === null ? (
+                <p className="text-[13.5px] text-hint">Cargando comentarios…</p>
+              ) : coments.length === 0 ? (
+                <p className="text-[13.5px] text-hint">Nadie ha comentado esta clase.</p>
+              ) : (
+                <div className="space-y-3">
+                  {coments.map((c) => (
+                    <div key={c.id} className="flex items-start gap-2.5">
+                      {c.autorAvatar ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={c.autorAvatar} alt={c.autorNombre} className="w-8 h-8 rounded-full object-cover shrink-0" />
+                      ) : (
+                        <span className="w-8 h-8 rounded-full bg-accent/15 text-accent grid place-items-center text-[11px] font-bold shrink-0">
+                          {c.autorNombre.slice(0, 2).toUpperCase()}
+                        </span>
+                      )}
+                      <div className="min-w-0 flex-1 bg-bg rounded-2xl px-3 py-2">
+                        <div className="font-bold text-[12.5px]">{c.autorNombre}</div>
+                        <p className="text-[13px] whitespace-pre-wrap leading-relaxed">{c.texto}</p>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          if (!confirm("¿Ocultar este comentario?")) return;
+                          const r = await ocultarComentarioClase(c.id);
+                          if ("error" in r) { alert(r.error); return; }
+                          setComents(await getComentariosClase(clase.id));
+                        }}
+                        className="text-[11.5px] font-bold text-sub hover:text-pink shrink-0">Ocultar</button>
+                    </div>
+                  ))}
+                </div>
+              )
             ) : recursos === null ? (
               <p className="text-[13.5px] text-hint">Cargando recursos…</p>
             ) : recursos.length === 0 ? (
@@ -116,6 +158,7 @@ export function DetalleClase({ clase, onCerrar, onCambio }: {
                   ["Nivel", clase.nivel || "—"],
                   ["Duración", dur(clase.duracionMin)],
                   ["Recursos", `${clase.recursos}`],
+                  ["Calificación", clase.calificacion ? `${clase.calificacion} ★ (${clase.votos})` : "Sin votos"],
                   ["Video", clase.tieneVideo ? "Sí" : "Todavía no"],
                   ["Estado", visible ? (clase.tieneVideo ? "Publicada" : "Borrador") : "Oculta"],
                 ] as [string, string][]).map(([k, v]) => (
