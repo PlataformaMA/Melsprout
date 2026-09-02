@@ -23,6 +23,7 @@ import { crearClaseVivo, actualizarClaseVivo, borrarClaseVivo, type ClaseVivo, t
 import { SuperadminResumen } from "@/components/SuperadminResumen";
 import { CrearUsuarioModal } from "@/components/CrearUsuarioModal";
 import { MensajesTab, ReportesTab, ConfigTab } from "@/components/SuperadminExtras";
+import { EstudiantesTab } from "@/components/EstudiantesTab";
 import { crearModulo, actualizarModulo, borrarModulo, crearClase, actualizarClase, borrarClase, setVideoClaseDB, getVentaCurso, guardarVentaCurso, type ClaseInput, type VentaCurso } from "@/lib/cursos-actions";
 import { generarSubtitulos, revisarSubtitulos, borrarSubtitulos } from "@/lib/subtitulos-actions";
 import type { ModuloRow, ClaseRow } from "@/lib/cursos-db";
@@ -105,7 +106,7 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
     personal: "bg-pink-soft text-pink", curso: "bg-amber-100 text-amber-700",
   };
 
-  const TITULOS: Record<string, string> = { resumen: "Resumen", retos: "Retos", clases: "Clases y recursos", vivo: "Clases en vivo", avances: "Revisión de retos", comentarios: "Comunidad", usuarios: "Usuarios", mensajes: "Mensajes", reportes: "Reportes", config: "Configuración" };
+  const TITULOS: Record<string, string> = { resumen: "Resumen", retos: "Retos", clases: "Clases y recursos", vivo: "Clases en vivo", avances: "Revisión de retos", comentarios: "Comunidad", usuarios: "Usuarios", mensajes: "Mensajes", reportes: "Reportes", config: "Configuración", estudiantes: "Estudiantes" };
 
   return (
     <div className="min-h-screen bg-bg flex">
@@ -144,6 +145,8 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
 
           {tab === "resumen" ? (
             <SuperadminResumen irA={(t) => setTab(t as AdminTab)} />
+          ) : tab === "estudiantes" ? (
+            <EstudiantesTab />
           ) : tab === "mensajes" ? (
             <MensajesTab />
           ) : tab === "reportes" ? (
@@ -208,13 +211,14 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
 }
 
 // ————— Barra lateral del admin —————
-type AdminTab = "resumen" | "retos" | "clases" | "vivo" | "avances" | "comentarios" | "usuarios" | "mensajes" | "reportes" | "config";
+type AdminTab = "resumen" | "retos" | "clases" | "vivo" | "avances" | "comentarios" | "usuarios" | "mensajes" | "reportes" | "config" | "estudiantes";
 function AdminSidebar({ tab, setTab, adminEmail, counts }: {
   tab: AdminTab; setTab: (t: AdminTab) => void; adminEmail: string;
   counts: { retos: number; vivo: number; avances: number; comentarios: number; usuarios: number };
 }) {
   const items: { id: AdminTab; label: string; icon: React.ReactNode; count: number }[] = [
     { id: "resumen", label: "Resumen", icon: <IcoCasa />, count: -1 },
+    { id: "estudiantes", label: "Estudiantes", icon: <IcoGorro />, count: -1 },
     { id: "usuarios", label: "Usuarios", icon: <IcoGente />, count: counts.usuarios },
     { id: "clases", label: "Clases y recursos", icon: <IcoLibro />, count: -1 },
     { id: "retos", label: "Retos", icon: <IcoEscudo />, count: counts.retos },
@@ -277,6 +281,7 @@ function IcoEscudo() { return <svg width="20" height="20" viewBox="0 0 24 24" {.
 function IcoComunidad() { return <svg width="20" height="20" viewBox="0 0 24 24" {...traz}><circle cx="9.5" cy="8" r="3.2" /><path d="M3.5 20a6 6 0 0 1 12 0" /><path d="M18 6.5v4M20 8.5h-4" /></svg>; }
 function IcoTabla() { return <svg width="20" height="20" viewBox="0 0 24 24" {...traz}><rect x="4" y="4" width="16" height="16" rx="2.5" /><path d="M8 15v-3M12 15V9M16 15v-5" /></svg>; }
 function IcoSenal() { return <svg width="20" height="20" viewBox="0 0 24 24" {...traz}><circle cx="12" cy="12" r="2.5" /><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 16.2a6 6 0 0 0 0-8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 19.1a10 10 0 0 0 0-14.2" /></svg>; }
+function IcoGorro() { return <svg width="20" height="20" viewBox="0 0 24 24" {...traz}><path d="M12 4 2.5 8.5 12 13l9.5-4.5z" /><path d="M6.5 10.6V15c0 1.7 2.5 3 5.5 3s5.5-1.3 5.5-3v-4.4" /><path d="M21.5 8.5V14" /></svg>; }
 function IcoMensaje() { return <svg width="20" height="20" viewBox="0 0 24 24" {...traz}><path d="M20.5 11.5a8 8 0 0 1-11.6 7.1L4 20l1.4-4.6A8 8 0 1 1 20.5 11.5z" /></svg>; }
 function IcoBarras() { return <svg width="20" height="20" viewBox="0 0 24 24" {...traz}><path d="M6 20v-6M12 20V6M18 20v-9" /><path d="M3.5 20h17" /></svg>; }
 function IcoEngrane() { return <svg width="20" height="20" viewBox="0 0 24 24" {...traz}><circle cx="12" cy="12" r="3" /><path d="M19.4 14a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V20a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H4a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H10a1.6 1.6 0 0 0 1-1.5V4a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V10a1.6 1.6 0 0 0 1.5 1H20a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z" /></svg>; }
@@ -303,7 +308,7 @@ function AdminTabsMovil({ tab, setTab }: { tab: AdminTab; setTab: (t: AdminTab) 
   return (
     <div className="md:hidden flex flex-wrap gap-1 bg-surface border border-border rounded-2xl p-1 mb-5 shadow-sm">
       {([
-        ["resumen", "Resumen"], ["usuarios", "Usuarios"], ["clases", "Clases y recursos"],
+        ["resumen", "Resumen"], ["estudiantes", "Estudiantes"], ["usuarios", "Usuarios"], ["clases", "Clases y recursos"],
         ["retos", "Retos"], ["comentarios", "Comunidad"], ["mensajes", "Mensajes"],
         ["reportes", "Reportes"], ["config", "Configuración"],
       ] as [AdminTab, string][]).map(([t, txt]) => (
