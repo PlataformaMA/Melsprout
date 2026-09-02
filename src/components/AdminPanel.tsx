@@ -24,6 +24,7 @@ import { SuperadminResumen } from "@/components/SuperadminResumen";
 import { CrearUsuarioModal } from "@/components/CrearUsuarioModal";
 import { MensajesTab, ReportesTab, ConfigTab } from "@/components/SuperadminExtras";
 import { EstudiantesTab } from "@/components/EstudiantesTab";
+import { ClasesRecursosTab } from "@/components/ClasesRecursosTab";
 import { crearModulo, actualizarModulo, borrarModulo, crearClase, actualizarClase, borrarClase, setVideoClaseDB, getVentaCurso, guardarVentaCurso, type ClaseInput, type VentaCurso } from "@/lib/cursos-actions";
 import { generarSubtitulos, revisarSubtitulos, borrarSubtitulos } from "@/lib/subtitulos-actions";
 import type { ModuloRow, ClaseRow } from "@/lib/cursos-db";
@@ -106,7 +107,7 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
     personal: "bg-pink-soft text-pink", curso: "bg-amber-100 text-amber-700",
   };
 
-  const TITULOS: Record<string, string> = { resumen: "Resumen", retos: "Retos", clases: "Clases y recursos", vivo: "Clases en vivo", avances: "Revisión de retos", comentarios: "Comunidad", usuarios: "Usuarios", mensajes: "Mensajes", reportes: "Reportes", config: "Configuración", estudiantes: "Estudiantes" };
+  const TITULOS: Record<string, string> = { resumen: "Resumen", retos: "Retos", clases: "Clases y recursos", vivo: "Clases en vivo", avances: "Revisión de retos", comentarios: "Comunidad", usuarios: "Usuarios", mensajes: "Mensajes", reportes: "Reportes", config: "Configuración", estudiantes: "Estudiantes", videos: "Videos y módulos" };
 
   return (
     <div className="min-h-screen bg-bg flex">
@@ -136,8 +137,8 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
           <AdminTabsMovil tab={tab} setTab={(t) => { setTab(t); setForm(null); }} />
 
           {/* Subpestañas: lo que en el menú va junto, aquí se separa. */}
-          {(tab === "clases" || tab === "vivo") && (
-            <SubPestanas tab={tab} setTab={setTab} opciones={[["clases", "Clases"], ["vivo", "Clases en vivo"]]} />
+          {(tab === "clases" || tab === "vivo" || tab === "videos") && (
+            <SubPestanas tab={tab} setTab={setTab} opciones={[["clases", "Clases"], ["videos", "Videos y módulos"], ["vivo", "Clases en vivo"]]} />
           )}
           {(tab === "retos" || tab === "avances") && (
             <SubPestanas tab={tab} setTab={setTab} opciones={[["retos", "Retos"], ["avances", "Revisión de retos"]]} />
@@ -147,6 +148,8 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
             <SuperadminResumen irA={(t) => setTab(t as AdminTab)} />
           ) : tab === "estudiantes" ? (
             <EstudiantesTab />
+          ) : tab === "clases" ? (
+            <ClasesRecursosTab />
           ) : tab === "mensajes" ? (
             <MensajesTab />
           ) : tab === "reportes" ? (
@@ -193,7 +196,7 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
                 <RetoForm form={form} setForm={setForm} guardar={guardar} guardando={guardando} cancelar={() => setForm(null)} msg={msg} clases={clasesLista} />
               )}
             </div>
-          ) : tab === "clases" ? (
+          ) : tab === "videos" ? (
             <CursosTab cursos={cursos} onCambio={() => router.refresh()} />
           ) : tab === "vivo" ? (
             <VivoTab clases={clasesVivo} onCambio={() => router.refresh()} />
@@ -211,7 +214,7 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
 }
 
 // ————— Barra lateral del admin —————
-type AdminTab = "resumen" | "retos" | "clases" | "vivo" | "avances" | "comentarios" | "usuarios" | "mensajes" | "reportes" | "config" | "estudiantes";
+type AdminTab = "resumen" | "retos" | "clases" | "vivo" | "avances" | "comentarios" | "usuarios" | "mensajes" | "reportes" | "config" | "estudiantes" | "videos";
 function AdminSidebar({ tab, setTab, adminEmail, counts }: {
   tab: AdminTab; setTab: (t: AdminTab) => void; adminEmail: string;
   counts: { retos: number; vivo: number; avances: number; comentarios: number; usuarios: number };
@@ -231,7 +234,7 @@ function AdminSidebar({ tab, setTab, adminEmail, counts }: {
   // la pestaña sigue marcada aunque estemos en la subpestaña.
   const activo = (id: AdminTab) =>
     id === tab ||
-    (id === "clases" && tab === "vivo") ||
+    (id === "clases" && (tab === "vivo" || tab === "videos")) ||
     (id === "retos" && tab === "avances");
   return (
     <div className="hidden md:flex flex-col w-64 shrink-0 bg-surface border-r border-border min-h-screen sticky top-0 p-4">
