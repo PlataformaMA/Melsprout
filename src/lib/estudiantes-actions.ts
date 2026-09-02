@@ -29,6 +29,7 @@ export type Estudiante = {
   edad: number | null;
   miembroDesde: string;
   certificado: boolean;
+  experiencia: string | null;   // lo que contestó en el onboarding
 };
 
 const DIA = 864e5;
@@ -59,7 +60,7 @@ export async function listarEstudiantes(): Promise<Estudiante[]> {
   const [{ data: perfiles }, { data: progreso }, { data: subs }, { data: clases }, { data: modulos }] =
     await Promise.all([
       admin.from("profiles")
-        .select("id, full_name, avatar_url, xp, racha, pais, fecha_nacimiento, created_at, ultima_actividad, notas_equipo, renovacion")
+        .select("id, full_name, avatar_url, xp, racha, pais, fecha_nacimiento, created_at, ultima_actividad, notas_equipo, renovacion, experiencia")
         .eq("onboarding_completo", true)
         .order("xp", { ascending: false }),
       admin.from("clase_progreso").select("user_id, clase_id, completada"),
@@ -138,6 +139,7 @@ export async function listarEstudiantes(): Promise<Estudiante[]> {
       edad: edadDe(p.fecha_nacimiento),
       miembroDesde: p.created_at as string,
       certificado,
+      experiencia: (p.experiencia as string) || null,
     };
   });
 }

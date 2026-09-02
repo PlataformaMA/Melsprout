@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { listarEstudiantes, type Estudiante, type EstadoAlumna } from "@/lib/estudiantes-actions";
 import { CrearUsuarioModal } from "@/components/CrearUsuarioModal";
 import { FichaEstudiante } from "@/components/FichaEstudiante";
+import { IconoExperiencia } from "@/components/IconoExperiencia";
 
 const num = (n: number) => n.toLocaleString("es-MX");
 
@@ -140,7 +141,7 @@ export function EstudiantesTab() {
             <table className="w-full text-[13px]">
               <thead className="bg-bg text-sub">
                 <tr>
-                  {["Estudiante", "Nivel", "Retos", "Estado", "Mundo actual", "Progreso", "XP", "Racha", "Última actividad", "Renovación", "Comentarios", ""].map((h) => (
+                  {["Estudiante", "Nivel", "Retos", "Estado", "Mundo actual", "Progreso", "XP", "Experiencia", "Racha", "Última actividad", "Renovación", "Comentarios", ""].map((h) => (
                     <th key={h} className="text-left font-bold px-3 py-2.5 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -184,6 +185,7 @@ export function EstudiantesTab() {
                       </div>
                     </td>
                     <td className="px-3 py-2.5 font-bold whitespace-nowrap">{num(e.xp)}</td>
+                    <td className="px-3 py-2.5"><IconoExperiencia texto={e.experiencia} /></td>
                     <td className="px-3 py-2.5 whitespace-nowrap">🔥 {e.racha}</td>
                     <td className="px-3 py-2.5 text-sub whitespace-nowrap">{hace(e.ultimaActividad)}</td>
                     <td className="px-3 py-2.5 whitespace-nowrap">
@@ -256,6 +258,7 @@ function Tarjeta({ e, onAbrir }: { e: Estudiante; onAbrir: () => void }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-sub mt-2.5">
+        <IconoExperiencia texto={e.experiencia} size={22} />
         <span className="font-bold text-accent">{e.nivel}</span>
         <span>{num(e.xp)} XP</span>
         <span>🔥 {e.racha}</span>

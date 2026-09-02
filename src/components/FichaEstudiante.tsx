@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { Estudiante } from "@/lib/estudiantes-actions";
 import { guardarNotas, setRenovacion } from "@/lib/estudiantes-actions";
 import { listarAvances, revisarReto, type Avance } from "@/lib/admin-actions";
+import { ExperienciaConTexto } from "@/components/IconoExperiencia";
 
 const num = (n: number) => n.toLocaleString("es-MX");
 const fecha = (iso: string | null) =>
@@ -90,7 +91,8 @@ function Resumen({ e, onCambio }: { e: Estudiante; onCambio: () => void }) {
     if (!("error" in a) && !("error" in b)) setTimeout(onCambio, 700);
   }
 
-  const datos: [string, string][] = [
+  const datos: [string, React.ReactNode][] = [
+    ["Experiencia", <ExperienciaConTexto key="exp" texto={e.experiencia} />],
     ["Edad", e.edad ? `${e.edad} años` : "—"],
     ["País", e.pais || "—"],
     ["Nivel actual", e.nivel],
