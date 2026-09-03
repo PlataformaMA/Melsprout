@@ -27,6 +27,7 @@ import { EstudiantesTab } from "@/components/EstudiantesTab";
 import { ClasesRecursosTab } from "@/components/ClasesRecursosTab";
 import { RetosAdminTab } from "@/components/RetosAdminTab";
 import { ModeracionTab } from "@/components/ModeracionTab";
+import { VivoAdminTab } from "@/components/VivoAdminTab";
 import { crearModulo, actualizarModulo, borrarModulo, crearClase, actualizarClase, borrarClase, setVideoClaseDB, getVentaCurso, guardarVentaCurso, type ClaseInput, type VentaCurso } from "@/lib/cursos-actions";
 import { generarSubtitulos, revisarSubtitulos, borrarSubtitulos } from "@/lib/subtitulos-actions";
 import type { ModuloRow, ClaseRow } from "@/lib/cursos-db";
@@ -205,7 +206,7 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
           ) : tab === "videos" ? (
             <CursosTab cursos={cursos} onCambio={() => router.refresh()} />
           ) : tab === "vivo" ? (
-            <VivoTab clases={clasesVivo} onCambio={() => router.refresh()} />
+            <VivoAdminTab />
           ) : tab === "avances" ? (
             <AvancesTab avances={avances} onCambio={() => router.refresh()} />
           ) : tab === "comentarios" ? (
@@ -812,89 +813,6 @@ function ClaseCursoFila({ clase, onCambio }: { clase: ClaseRow; onCambio: () => 
 // ————— Clases en vivo —————
 type FormVivo = { id?: string; titulo: string; categoria: string; instructor: string; fecha: string; hora: string; duracion_min: number; thumbnail_url: string; stream_url: string; grabacion_url: string; xp: number; descripcion: string };
 const VIVO_VACIO: FormVivo = { titulo: "", categoria: "", instructor: "", fecha: "", hora: "", duracion_min: 60, thumbnail_url: "", stream_url: "", grabacion_url: "", xp: 50, descripcion: "" };
-
-function VivoTab({ clases, onCambio }: { clases: ClaseVivo[]; onCambio: () => void }) {
-  const [form, setForm] = useState<FormVivo | null>(null);
-  const [guardando, setGuardando] = useState(false);
-  const [msg, setMsg] = useState("");
-  const inputC = "w-full bg-bg border border-border rounded-lg px-3 py-2 text-[14px] outline-none focus:border-accent";
-
-  function editar(c: ClaseVivo) {
-    const d = new Date(c.inicia_at);
-    const iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString();
-    setForm({ id: c.id, titulo: c.titulo, categoria: c.categoria || "", instructor: c.instructor || "", fecha: iso.slice(0, 10), hora: iso.slice(11, 16), duracion_min: c.duracion_min, thumbnail_url: c.thumbnail_url || "", stream_url: c.stream_url || "", grabacion_url: c.grabacion_url || "", xp: c.xp, descripcion: c.descripcion || "" });
-    setMsg("");
-  }
-
-  async function guardar() {
-    if (!form) return;
-    if (!form.titulo.trim() || !form.fecha || !form.hora) { setMsg("Título, fecha y hora son obligatorios."); return; }
-    setGuardando(true); setMsg("");
-    const input: ClaseVivoInput = {
-      titulo: form.titulo, categoria: form.categoria, instructor: form.instructor, descripcion: form.descripcion,
-      inicia_at: new Date(`${form.fecha}T${form.hora}`).toISOString(),
-      duracion_min: Number(form.duracion_min) || 60, thumbnail_url: form.thumbnail_url, stream_url: form.stream_url, grabacion_url: form.grabacion_url, xp: Number(form.xp) || 50,
-    };
-    const r = form.id ? await actualizarClaseVivo(form.id, input) : await crearClaseVivo(input);
-    setGuardando(false);
-    if ("error" in r) { setMsg(r.error); return; }
-    setForm(null); onCambio();
-  }
-  async function eliminar(id: string) {
-    if (!confirm("¿Borrar esta clase en vivo?")) return;
-    const r = await borrarClaseVivo(id);
-    if ("error" in r) { alert(r.error); return; }
-    onCambio();
-  }
-
-  return (
-    <div>
-      {!form ? (
-        <>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-display font-extrabold text-lg">Clases en vivo</h2>
-            <button onClick={() => setForm({ ...VIVO_VACIO })} className="bg-accent text-white rounded-xl px-4 py-2.5 text-[14px] font-bold hover:brightness-110 transition shadow-sm">+ Nueva clase</button>
-          </div>
-          <div className="space-y-2.5">
-            {clases.length === 0 && <div className="bg-surface border border-dashed border-border rounded-2xl p-8 text-center text-sub"><div className="text-3xl mb-2">📡</div>Aún no hay clases en vivo.</div>}
-            {clases.map((c) => (
-              <div key={c.id} className="flex items-center gap-3 bg-surface border border-border rounded-2xl px-4 py-3.5 shadow-sm">
-                <span className="w-11 h-11 rounded-2xl bg-bg grid place-items-center text-xl shrink-0">📡</span>
-                <div className="flex-1 min-w-0">
-                  <div className="font-bold text-[14.5px] truncate">{c.titulo}</div>
-                  <div className="text-[12px] text-sub">{new Date(c.inicia_at).toLocaleString("es-MX", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })} · {c.instructor || "—"} · +{c.xp} XP {c.grabacion_url ? "· 🎬 grabación" : ""}</div>
-                </div>
-                <button onClick={() => editar(c)} className="text-[13px] text-accent font-semibold px-2 py-1 rounded-lg hover:bg-accent-soft transition">Editar</button>
-                <button onClick={() => eliminar(c.id)} className="text-[13px] text-red-500 font-semibold px-2 py-1 rounded-lg hover:bg-red-50 transition">Borrar</button>
-              </div>
-            ))}
-          </div>
-        </>
-      ) : (
-        <div className="bg-surface border border-border rounded-2xl p-5 shadow-sm space-y-3 max-w-xl">
-          <h2 className="font-display font-extrabold text-lg">{form.id ? "Editar clase en vivo" : "Nueva clase en vivo"}</h2>
-          <input value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} className={inputC} placeholder="Título" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <input value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} className={inputC} placeholder="Categoría (ej. TikTok)" />
-            <input value={form.instructor} onChange={(e) => setForm({ ...form, instructor: e.target.value })} className={inputC} placeholder="Instructor" />
-            <label className="text-[12px] font-semibold text-sub">Fecha<input type="date" value={form.fecha} onChange={(e) => setForm({ ...form, fecha: e.target.value })} className={inputC} /></label>
-            <label className="text-[12px] font-semibold text-sub">Hora<input type="time" value={form.hora} onChange={(e) => setForm({ ...form, hora: e.target.value })} className={inputC} /></label>
-            <label className="text-[12px] font-semibold text-sub">Duración (min)<input type="number" value={form.duracion_min} onChange={(e) => setForm({ ...form, duracion_min: Number(e.target.value) })} className={inputC} /></label>
-            <label className="text-[12px] font-semibold text-sub">XP<input type="number" value={form.xp} onChange={(e) => setForm({ ...form, xp: Number(e.target.value) })} className={inputC} /></label>
-          </div>
-          <input value={form.stream_url} onChange={(e) => setForm({ ...form, stream_url: e.target.value })} className={inputC} placeholder="Enlace de la transmisión (Zoom/YouTube/Meet)" />
-          <input value={form.grabacion_url} onChange={(e) => setForm({ ...form, grabacion_url: e.target.value })} className={inputC} placeholder="Enlace de la grabación (opcional, al terminar)" />
-          <input value={form.thumbnail_url} onChange={(e) => setForm({ ...form, thumbnail_url: e.target.value })} className={inputC} placeholder="URL de imagen/portada (opcional)" />
-          {msg && <p className="text-[13px] text-pink bg-pink-soft rounded-lg px-3 py-2">{msg}</p>}
-          <div className="flex gap-2">
-            <button onClick={guardar} disabled={guardando} className="bg-accent text-white rounded-xl px-5 py-2.5 text-[14px] font-bold hover:brightness-110 disabled:opacity-60 transition">{guardando ? "Guardando…" : "Guardar"}</button>
-            <button onClick={() => setForm(null)} className="bg-surface border border-border rounded-xl px-4 py-2.5 text-[14px] font-semibold">Cancelar</button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ————— Comentarios (moderación) —————
 function ComentariosTab({ comentarios, onCambio }: { comentarios: ComentarioAdmin[]; onCambio: () => void }) {
