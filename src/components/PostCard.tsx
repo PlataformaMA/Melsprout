@@ -69,6 +69,9 @@ export function PostCard({ post, compacto = false }: { post: ForoPost; compacto?
           </div>
         </div>
       </div>
+      {post.titulo && (
+        <h3 className="font-display font-extrabold text-[15.5px] leading-snug mb-1">{post.titulo}</h3>
+      )}
       {post.texto && <p className="text-[14px] text-text leading-relaxed whitespace-pre-wrap">{post.texto}</p>}
       {post.imagenUrl && (
         // eslint-disable-next-line @next/next/no-img-element

@@ -12,6 +12,7 @@ export type ForoPost = {
   autorAvatar: string | null;
   autorNivel: number;
   categoria: string;
+  titulo: string | null;
   texto: string;
   imagenUrl: string | null;
   videoUrl: string | null;
@@ -59,6 +60,7 @@ async function armarPosts(
       autorAvatar: (per?.avatar_url as string) || null,
       autorNivel: nivelPorXP((per?.xp as number) || 0).actual.nivel,
       categoria: p.categoria as string,
+      titulo: (p.titulo as string) || null,
       texto: p.texto as string,
       imagenUrl: (p.imagen_url as string) || null,
       videoUrl: (p.video_url as string) || null,
@@ -99,7 +101,7 @@ export async function getPublicacionesReto(retoId: string, limite = 6): Promise<
   return armarPosts(posts, user?.id ?? null);
 }
 
-export async function crearPost(categoria: string, texto: string, extra?: { enlaceUrl?: string; imagenUrl?: string; videoUrl?: string; grupoId?: string }): Promise<{ ok: true } | { error: string }> {
+export async function crearPost(categoria: string, texto: string, extra?: { enlaceUrl?: string; imagenUrl?: string; videoUrl?: string; grupoId?: string; titulo?: string }): Promise<{ ok: true } | { error: string }> {
   const t = texto.trim();
   if (!t) return { error: "Escribe algo para publicar." };
   const supabase = await createClient();
@@ -108,6 +110,7 @@ export async function crearPost(categoria: string, texto: string, extra?: { enla
   const admin = createAdminClient();
   const { error } = await admin.from("foros_posts").insert({
     autor_id: user.id, categoria: categoria || "General", texto: t, grupo_id: extra?.grupoId || null,
+    titulo: extra?.titulo?.trim().slice(0, 120) || null,
     enlace_url: extra?.enlaceUrl || null, imagen_url: extra?.imagenUrl || null, video_url: extra?.videoUrl || null,
   });
   if (error) return { error: "No se pudo publicar." };

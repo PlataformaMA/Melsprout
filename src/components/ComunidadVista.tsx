@@ -32,6 +32,8 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
   const [tab, setTab] = useState<"foros" | "grupos" | "retos">("foros");
   const [cat, setCat] = useState("General");
   const [posts, setPosts] = useState<ForoPost[]>(postsIniciales);
+  const [titulo, setTitulo] = useState("");
+  const [verTodas, setVerTodas] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [texto, setTexto] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
@@ -56,6 +58,7 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
 
   async function cambiarCat(c: string) {
     setCat(c); setCargando(true);
+    setVerTodas(false);
     setPosts(await getForoPosts(c));
     setCargando(false);
   }
@@ -66,10 +69,11 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
       imagenUrl: imagenUrl || undefined,
       videoUrl: videoUrl.trim() || undefined,
       enlaceUrl: enlaceUrl.trim() || undefined,
+      titulo: titulo.trim() || undefined,
     });
     setPublicando(false);
     if ("error" in r) { alert(r.error); return; }
-    setTexto(""); setVideoUrl(""); setImagenUrl(""); setEnlaceUrl("");
+    setTexto(""); setTitulo(""); setVideoUrl(""); setImagenUrl(""); setEnlaceUrl("");
     setMostrarVideo(false); setMostrarEnlace(false);
     setPosts(await getForoPosts(cat));
     router.refresh(); // XP +10
@@ -106,8 +110,16 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/octi.png" alt="Octi" className="shrink-0 w-24 sm:w-36 drop-shadow-lg" draggable={false} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-accent font-extrabold text-lg sm:text-2xl leading-snug">¡Se aprende mejor en comunidad!</p>
-                  <p className="text-sub text-[14px] sm:text-[15px] mt-1.5">Comparte, conecta y crece. Publica y gana <b className="text-accent">+10 XP</b> 💎</p>
+                  <p className="text-accent font-extrabold text-lg sm:text-2xl leading-snug">
+                    {tab === "grupos" ? "¡Busca a tu gente!"
+                      : tab === "retos" ? "¡Los retos se disfrutan en bola!"
+                      : "¡Se aprende mejor en comunidad!"}
+                  </p>
+                  <p className="text-sub text-[14px] sm:text-[15px] mt-1.5">
+                    {tab === "grupos" ? <>Únete a un grupo o propón el tuyo. Los grupos nacen con <b className="text-accent">10 apoyos</b> 💜</>
+                      : tab === "retos" ? <>Participa cada día y suma <b className="text-accent">XP</b> con tu constancia 🔥</>
+                      : <>Comparte, conecta y crece. Publica y gana <b className="text-accent">+10 XP</b> 💎</>}
+                  </p>
                 </div>
               </div>
 
@@ -135,6 +147,9 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
 
                   {/* Composer */}
                   <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm mb-5">
+                    <input value={titulo} onChange={(e) => setTitulo(e.target.value)} maxLength={120}
+                      placeholder="Ponle un título (opcional)"
+                      className="w-full bg-bg border border-border rounded-xl px-4 py-2.5 text-[14px] font-bold outline-none focus:border-accent mb-2" />
                     <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={2}
                       placeholder={`Escribe algo en ${cat === "General" ? "el foro general" : cat}…`}
                       className="w-full bg-bg border border-border rounded-xl px-4 py-3 text-[14px] outline-none focus:border-accent resize-none" />
@@ -173,9 +188,17 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
                   ) : posts.length === 0 ? (
                     <div className="bg-surface border border-dashed border-border rounded-2xl p-8 text-center text-sub"><div className="text-3xl mb-2">💬</div>Sé el primero en publicar en {cat}.</div>
                   ) : (
-                    <div className="space-y-3">
-                      {posts.map((p) => <PostCard key={p.id} post={p} />)}
-                    </div>
+                    <>
+                      <div className="space-y-3">
+                        {(verTodas ? posts : posts.slice(0, 8)).map((p) => <PostCard key={p.id} post={p} />)}
+                      </div>
+                      {!verTodas && posts.length > 8 && (
+                        <button onClick={() => setVerTodas(true)}
+                          className="w-full mt-4 bg-surface border border-border rounded-2xl py-3 text-[13.5px] font-bold text-accent hover:border-accent/40 transition">
+                          Cargar más publicaciones ⌄
+                        </button>
+                      )}
+                    </>
                   )}
                 </>
               ) : tab === "grupos" ? (
