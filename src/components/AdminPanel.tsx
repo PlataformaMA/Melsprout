@@ -26,6 +26,7 @@ import { MensajesTab, ReportesTab, ConfigTab } from "@/components/SuperadminExtr
 import { EstudiantesTab } from "@/components/EstudiantesTab";
 import { ClasesRecursosTab } from "@/components/ClasesRecursosTab";
 import { RetosAdminTab } from "@/components/RetosAdminTab";
+import { ModeracionTab } from "@/components/ModeracionTab";
 import { crearModulo, actualizarModulo, borrarModulo, crearClase, actualizarClase, borrarClase, setVideoClaseDB, getVentaCurso, guardarVentaCurso, type ClaseInput, type VentaCurso } from "@/lib/cursos-actions";
 import { generarSubtitulos, revisarSubtitulos, borrarSubtitulos } from "@/lib/subtitulos-actions";
 import type { ModuloRow, ClaseRow } from "@/lib/cursos-db";
@@ -108,7 +109,7 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
     personal: "bg-pink-soft text-pink", curso: "bg-amber-100 text-amber-700",
   };
 
-  const TITULOS: Record<string, string> = { resumen: "Resumen", retos: "Retos", clases: "Clases y recursos", vivo: "Clases en vivo", avances: "Revisión de retos", comentarios: "Comunidad", usuarios: "Usuarios", mensajes: "Mensajes", reportes: "Reportes", config: "Configuración", estudiantes: "Estudiantes", videos: "Videos y módulos", "retos-libres": "Retos sueltos" };
+  const TITULOS: Record<string, string> = { resumen: "Resumen", retos: "Retos", clases: "Clases y recursos", vivo: "Clases en vivo", avances: "Revisión de retos", comentarios: "Comunidad", usuarios: "Usuarios", mensajes: "Mensajes", reportes: "Reportes", config: "Configuración", estudiantes: "Estudiantes", videos: "Videos y módulos", "retos-libres": "Retos sueltos", moderacion: "Moderación" };
 
   return (
     <div className="min-h-screen bg-bg flex">
@@ -153,6 +154,8 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
             <ClasesRecursosTab />
           ) : tab === "retos" ? (
             <RetosAdminTab />
+          ) : tab === "moderacion" ? (
+            <ModeracionTab />
           ) : tab === "mensajes" ? (
             <MensajesTab />
           ) : tab === "reportes" ? (
@@ -217,7 +220,7 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
 }
 
 // ————— Barra lateral del admin —————
-type AdminTab = "resumen" | "retos" | "clases" | "vivo" | "avances" | "comentarios" | "usuarios" | "mensajes" | "reportes" | "config" | "estudiantes" | "videos" | "retos-libres";
+type AdminTab = "resumen" | "retos" | "clases" | "vivo" | "avances" | "comentarios" | "usuarios" | "mensajes" | "reportes" | "config" | "estudiantes" | "videos" | "retos-libres" | "moderacion";
 function AdminSidebar({ tab, setTab, adminEmail, counts }: {
   tab: AdminTab; setTab: (t: AdminTab) => void; adminEmail: string;
   counts: { retos: number; vivo: number; avances: number; comentarios: number; usuarios: number };
@@ -229,6 +232,7 @@ function AdminSidebar({ tab, setTab, adminEmail, counts }: {
     { id: "clases", label: "Clases y recursos", icon: <IcoLibro />, count: -1 },
     { id: "retos", label: "Retos", icon: <IcoEscudo />, count: counts.retos },
     { id: "comentarios", label: "Comunidad", icon: <IcoComunidad />, count: counts.comentarios },
+    { id: "moderacion", label: "Moderación", icon: <IcoEscudo />, count: -1 },
     { id: "mensajes", label: "Mensajes", icon: <IcoMensaje />, count: -1 },
     { id: "reportes", label: "Reportes", icon: <IcoBarras />, count: -1 },
     { id: "config", label: "Configuración", icon: <IcoEngrane />, count: -1 },
@@ -313,7 +317,7 @@ function AdminTabsMovil({ tab, setTab }: { tab: AdminTab; setTab: (t: AdminTab) 
     <div className="md:hidden flex flex-wrap gap-1 bg-surface border border-border rounded-2xl p-1 mb-5 shadow-sm">
       {([
         ["resumen", "Resumen"], ["estudiantes", "Estudiantes"], ["usuarios", "Usuarios"], ["clases", "Clases y recursos"],
-        ["retos", "Retos"], ["comentarios", "Comunidad"], ["mensajes", "Mensajes"],
+        ["retos", "Retos"], ["comentarios", "Comunidad"], ["moderacion", "Moderación"], ["mensajes", "Mensajes"],
         ["reportes", "Reportes"], ["config", "Configuración"],
       ] as [AdminTab, string][]).map(([t, txt]) => (
         <button key={t} onClick={() => setTab(t)}
