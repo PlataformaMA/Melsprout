@@ -1,12 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { cerrarSesion } from "@/lib/auth-actions";
+import { soyAdminAhora } from "@/lib/admin-actions";
 import { NAV_ITEMS } from "@/components/nav-items";
 
-export function UserMenu({ avatarUrl, nombre, esAdmin = false }: { avatarUrl: string | null; nombre: string; esAdmin?: boolean }) {
+export function UserMenu({ avatarUrl, nombre, esAdmin }: { avatarUrl: string | null; nombre: string; esAdmin?: boolean }) {
   const [abierto, setAbierto] = useState(false);
+  // Si la página no dice si es admin, el menú lo averigua solo al abrirse.
+  // Así el enlace al panel sale en toda la app, no solo donde se acordaron de pasarlo.
+  const [admin, setAdmin] = useState(esAdmin ?? false);
+  useEffect(() => {
+    if (esAdmin !== undefined || !abierto || admin) return;
+    soyAdminAhora().then(setAdmin);
+  }, [abierto, esAdmin, admin]);
   return (
     <div className="relative">
       <button onClick={() => setAbierto((v) => !v)} aria-label="Menú de cuenta"
@@ -36,7 +44,7 @@ export function UserMenu({ avatarUrl, nombre, esAdmin = false }: { avatarUrl: st
             <Item href="/app/perfil" icon={<UserIcon />}>Mi perfil</Item>
             <Item href="/app/config" icon={<GearIcon />}>Configuración</Item>
             <Item href="/app/config" icon={<ShieldIcon />}>Seguridad y 2FA</Item>
-            {esAdmin && (
+            {admin && (
               <>
                 <div className="h-px bg-border my-1" />
                 <Item href="/app/admin" icon={<span className="text-[15px]">⚙️</span>}>Panel admin</Item>

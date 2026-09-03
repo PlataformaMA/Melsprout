@@ -366,3 +366,12 @@ export async function altaUsuario(u: NuevoUsuario): Promise<{ ok: true } | { err
 
   return { ok: true };
 }
+
+// ¿La persona que está viendo la app es admin? Lo usa el menú de cuenta para
+// mostrar el enlace al panel sin que cada página tenga que acordarse de pasarlo.
+export async function soyAdminAhora(): Promise<boolean> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+  return esAdminUsuario(user.id, user.email);
+}
