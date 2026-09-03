@@ -25,6 +25,7 @@ import { CrearUsuarioModal } from "@/components/CrearUsuarioModal";
 import { MensajesTab, ReportesTab, ConfigTab } from "@/components/SuperadminExtras";
 import { EstudiantesTab } from "@/components/EstudiantesTab";
 import { ClasesRecursosTab } from "@/components/ClasesRecursosTab";
+import { RetosAdminTab } from "@/components/RetosAdminTab";
 import { crearModulo, actualizarModulo, borrarModulo, crearClase, actualizarClase, borrarClase, setVideoClaseDB, getVentaCurso, guardarVentaCurso, type ClaseInput, type VentaCurso } from "@/lib/cursos-actions";
 import { generarSubtitulos, revisarSubtitulos, borrarSubtitulos } from "@/lib/subtitulos-actions";
 import type { ModuloRow, ClaseRow } from "@/lib/cursos-db";
@@ -107,7 +108,7 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
     personal: "bg-pink-soft text-pink", curso: "bg-amber-100 text-amber-700",
   };
 
-  const TITULOS: Record<string, string> = { resumen: "Resumen", retos: "Retos", clases: "Clases y recursos", vivo: "Clases en vivo", avances: "Revisión de retos", comentarios: "Comunidad", usuarios: "Usuarios", mensajes: "Mensajes", reportes: "Reportes", config: "Configuración", estudiantes: "Estudiantes", videos: "Videos y módulos" };
+  const TITULOS: Record<string, string> = { resumen: "Resumen", retos: "Retos", clases: "Clases y recursos", vivo: "Clases en vivo", avances: "Revisión de retos", comentarios: "Comunidad", usuarios: "Usuarios", mensajes: "Mensajes", reportes: "Reportes", config: "Configuración", estudiantes: "Estudiantes", videos: "Videos y módulos", "retos-libres": "Retos sueltos" };
 
   return (
     <div className="min-h-screen bg-bg flex">
@@ -140,8 +141,8 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
           {(tab === "clases" || tab === "vivo" || tab === "videos") && (
             <SubPestanas tab={tab} setTab={setTab} opciones={[["clases", "Clases"], ["videos", "Videos y módulos"], ["vivo", "Clases en vivo"]]} />
           )}
-          {(tab === "retos" || tab === "avances") && (
-            <SubPestanas tab={tab} setTab={setTab} opciones={[["retos", "Retos"], ["avances", "Revisión de retos"]]} />
+          {(tab === "retos" || tab === "avances" || tab === "retos-libres") && (
+            <SubPestanas tab={tab} setTab={setTab} opciones={[["retos", "Retos"], ["retos-libres", "Retos sueltos"], ["avances", "Revisión de retos"]]} />
           )}
 
           {tab === "resumen" ? (
@@ -150,13 +151,15 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
             <EstudiantesTab />
           ) : tab === "clases" ? (
             <ClasesRecursosTab />
+          ) : tab === "retos" ? (
+            <RetosAdminTab />
           ) : tab === "mensajes" ? (
             <MensajesTab />
           ) : tab === "reportes" ? (
             <ReportesTab />
           ) : tab === "config" ? (
             <ConfigTab />
-          ) : tab === "retos" ? (
+          ) : tab === "retos-libres" ? (
             <div>
               {!form ? (
                 <>
@@ -214,7 +217,7 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
 }
 
 // ————— Barra lateral del admin —————
-type AdminTab = "resumen" | "retos" | "clases" | "vivo" | "avances" | "comentarios" | "usuarios" | "mensajes" | "reportes" | "config" | "estudiantes" | "videos";
+type AdminTab = "resumen" | "retos" | "clases" | "vivo" | "avances" | "comentarios" | "usuarios" | "mensajes" | "reportes" | "config" | "estudiantes" | "videos" | "retos-libres";
 function AdminSidebar({ tab, setTab, adminEmail, counts }: {
   tab: AdminTab; setTab: (t: AdminTab) => void; adminEmail: string;
   counts: { retos: number; vivo: number; avances: number; comentarios: number; usuarios: number };
@@ -235,7 +238,7 @@ function AdminSidebar({ tab, setTab, adminEmail, counts }: {
   const activo = (id: AdminTab) =>
     id === tab ||
     (id === "clases" && (tab === "vivo" || tab === "videos")) ||
-    (id === "retos" && tab === "avances");
+    (id === "retos" && (tab === "avances" || tab === "retos-libres"));
   return (
     <div className="hidden md:flex flex-col w-64 shrink-0 bg-surface border-r border-border min-h-screen sticky top-0 p-4">
       <div className="flex items-center gap-3 px-2 mb-7">
