@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { getResumen, type Rango, type Resumen, type Barra } from "@/lib/superadmin-actions";
+import type { Rango, Resumen, Barra, ResumenRes } from "@/lib/superadmin-actions";
 
 const num = (n: number) => n.toLocaleString("es-MX");
 
@@ -16,23 +16,13 @@ export function SuperadminResumen({ irA }: { irA?: (tab: string) => void }) {
   useEffect(() => {
     empezar(async () => {
       try {
-        const r = await getResumen(rango);
+        const res = await fetch(`/api/admin/resumen?rango=${rango}`, { cache: "no-store" });
+        const r: ResumenRes = await res.json();
         if (r.ok) {
           setDatos(r.datos);
           setMotivo(null);
           try { sessionStorage.removeItem("melsprout_recargado"); } catch {}
         } else {
-          // Si el navegador tiene cargada una versión anterior de la app, sus
-          // llamadas al servidor ya no existen. Se recarga una vez y listo.
-          if (/Server Components render|Failed to find Server Action/i.test(r.motivo)) {
-            let yaLoIntente = false;
-            try { yaLoIntente = sessionStorage.getItem("melsprout_recargado") === "1"; } catch {}
-            if (!yaLoIntente) {
-              try { sessionStorage.setItem("melsprout_recargado", "1"); } catch {}
-              window.location.reload();
-              return;
-            }
-          }
           setDatos(null);
           setMotivo(r.motivo);
         }
