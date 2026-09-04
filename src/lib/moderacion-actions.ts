@@ -10,7 +10,7 @@ export type Accion = "aprobar" | "ocultar" | "spam";
 
 export type ItemModeracion = {
   id: string;
-  origen: "clase" | "post" | "respuesta";
+  origen: "clase" | "post" | "respuesta" | "reto";
   autorId: string;
   autorNombre: string;
   autorAvatar: string | null;
@@ -145,6 +145,34 @@ export async function listarModeracion(ambito: Ambito): Promise<{
         moduloId: null, mundo: null,
       });
     }
+    // Las publicaciones de los retos de comunidad también son de la comunidad.
+    const { data: retoPosts } = await admin
+      .from("comunidad_reto_posts")
+      .select("id, user_id, texto, dia, reto_id, created_at, estado")
+      .order("created_at", { ascending: false }).limit(200);
+
+    if (retoPosts?.length) {
+      const { data: retos } = await admin.from("comunidad_retos").select("id, titulo");
+      const tituloReto = new Map((retos || []).map((r) => [r.id as string, r.titulo as string]));
+      const perfilesReto = await perfilesDe([...new Set(retoPosts.map((r) => r.user_id as string))]);
+      for (const r of retoPosts) {
+        const per = perfilesReto.get(r.user_id as string);
+        items.push({
+          id: r.id as string, origen: "reto",
+          autorId: r.user_id as string,
+          autorNombre: (per?.full_name as string) || "Creador",
+          autorAvatar: (per?.avatar_url as string) || null,
+          grupo: grupoDe.get(r.user_id as string) || null,
+          texto: r.texto as string,
+          fecha: r.created_at as string,
+          estado: ((r.estado as string) || "pendiente") as EstadoMod,
+          dondeId: null,
+          donde: `Reto · ${tituloReto.get(r.reto_id as string) || "de comunidad"} · día ${r.dia ?? "?"}`,
+          moduloId: null, mundo: null,
+        });
+      }
+    }
+
     items.sort((a, b) => b.fecha.localeCompare(a.fecha));
   }
 
@@ -170,9 +198,10 @@ export async function moderar(
     clase: "clase_comentarios",
     post: "foros_posts",
     respuesta: "foros_respuestas",
+    reto: "comunidad_reto_posts",
   } as const;
 
-  for (const origen of ["clase", "post", "respuesta"] as const) {
+  for (const origen of ["clase", "post", "respuesta", "reto"] as const) {
     const ids = items.filter((i) => i.origen === origen).map((i) => i.id);
     if (!ids.length) continue;
     const { error } = await admin.from(tabla[origen]).update({ estado, oculto }).in("id", ids);
