@@ -10,10 +10,20 @@ const num = (n: number) => n.toLocaleString("es-MX");
 export function SuperadminResumen({ irA }: { irA?: (tab: string) => void }) {
   const [rango, setRango] = useState<Rango>("7d");
   const [datos, setDatos] = useState<Resumen | null>(null);
+  const [motivo, setMotivo] = useState<string | null>(null);
   const [cargando, empezar] = useTransition();
 
   useEffect(() => {
-    empezar(async () => setDatos(await getResumen(rango)));
+    empezar(async () => {
+      try {
+        const r = await getResumen(rango);
+        if (r.ok) { setDatos(r.datos); setMotivo(null); }
+        else { setDatos(null); setMotivo(r.motivo); }
+      } catch (e) {
+        setDatos(null);
+        setMotivo(e instanceof Error ? e.message : "No se pudo hablar con el servidor.");
+      }
+    });
   }, [rango]);
 
   return (
@@ -36,8 +46,21 @@ export function SuperadminResumen({ irA }: { irA?: (tab: string) => void }) {
       </div>
 
       {!datos ? (
-        <div className="bg-surface border border-border rounded-3xl p-10 text-center text-sub text-[13.5px]">
-          {cargando ? "Cargando datos…" : "No pudimos cargar el resumen."}
+        <div className="bg-surface border border-border rounded-3xl p-8 text-center">
+          {cargando ? (
+            <p className="text-sub text-[13.5px]">Cargando datos…</p>
+          ) : (
+            <>
+              <div className="text-3xl mb-2">😕</div>
+              <p className="font-bold text-[14px]">No pudimos cargar el resumen</p>
+              {motivo && (
+                <p className="text-[12.5px] text-pink mt-2 max-w-lg mx-auto break-words">{motivo}</p>
+              )}
+              <button onClick={() => setRango((r) => r)} className="mt-4 text-[13px] font-bold text-accent">
+                Reintentar
+              </button>
+            </>
+          )}
         </div>
       ) : (
         <div className={cargando ? "opacity-60 transition" : "transition"}>

@@ -34,7 +34,7 @@ export function ClasesRecursosTab() {
   const [editando, setEditando] = useState<ClaseAdmin | null | undefined>(undefined); // undefined = cerrado
   const [previa, setPrevia] = useState(false);
 
-  const cargar = () => listarClasesAdmin().then(setDatos);
+  const cargar = () => listarClasesAdmin().then(setDatos).catch(() => setDatos({ clases: [], mundos: [] }));
   useEffect(() => { cargar(); }, []);
 
   const niveles = useMemo(

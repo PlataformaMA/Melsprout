@@ -24,8 +24,8 @@ export function DetalleClase({ clase, onCerrar, onCambio }: {
   const [guardando, setGuardando] = useState(false);
 
   useEffect(() => {
-    recursosDeClase(clase.id).then(setRecursos);
-    getComentariosClase(clase.id).then(setComents);
+    recursosDeClase(clase.id).then(setRecursos).catch(() => setRecursos([]));
+    getComentariosClase(clase.id).then(setComents).catch(() => setComents([]));
   }, [clase.id]);
 
   const finalizacion = clase.iniciaron ? Math.round((clase.completaron / clase.iniciaron) * 100) : 0;

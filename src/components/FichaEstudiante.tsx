@@ -20,7 +20,7 @@ export function FichaEstudiante({
   const [retos, setRetos] = useState<Avance[] | null>(null);
 
   useEffect(() => {
-    listarAvances().then((todos) => setRetos(todos.filter((a) => a.userId === estudiante.id)));
+    listarAvances().then((todos) => setRetos(todos.filter((a) => a.userId === estudiante.id))).catch(() => setRetos([]));
   }, [estudiante.id]);
 
   const pendientes = (retos || []).filter((r) => r.revision === "pendiente" && r.estado === "publicado");

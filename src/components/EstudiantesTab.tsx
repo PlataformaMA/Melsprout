@@ -39,7 +39,7 @@ export function EstudiantesTab() {
   const [crear, setCrear] = useState(false);
   const [abierta, setAbierta] = useState<Estudiante | null>(null);
 
-  const cargar = () => listarEstudiantes().then(setLista);
+  const cargar = () => listarEstudiantes().then(setLista).catch(() => setLista([]));
   useEffect(() => { cargar(); }, []);
 
   const niveles = useMemo(

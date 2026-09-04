@@ -48,7 +48,22 @@ async function soyAdmin(): Promise<boolean> {
 }
 
 // Todo el tablero del superadmin, con datos reales, en una sola pasada.
-export async function getResumen(rango: Rango = "7d"): Promise<Resumen | null> {
+export type ResumenRes = { ok: true; datos: Resumen } | { ok: false; motivo: string };
+
+// Envuelve el cálculo para que un fallo se pueda leer en pantalla en vez de
+// tumbar el panel con la pantalla de error del servidor.
+export async function getResumen(rango: Rango = "7d"): Promise<ResumenRes> {
+  try {
+    const datos = await calcularResumen(rango);
+    if (!datos) return { ok: false, motivo: "Tu cuenta no tiene permiso de administradora." };
+    return { ok: true, datos };
+  } catch (e) {
+    console.error("[getResumen]", e);
+    return { ok: false, motivo: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+async function calcularResumen(rango: Rango): Promise<Resumen | null> {
   if (!(await soyAdmin())) return null;
   const admin = createAdminClient();
   const dias = rango === "hoy" ? 1 : rango === "7d" ? 7 : 30;

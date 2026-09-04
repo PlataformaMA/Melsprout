@@ -33,10 +33,9 @@ export function ModeracionTab() {
   const cargar = () => {
     setDatos(null);
     setMarcados(new Set());
-    listarModeracion(ambito).then((d) => {
-      setDatos(d);
-      setAbierto(null);
-    });
+    listarModeracion(ambito)
+      .then((d) => { setDatos(d); setAbierto(null); })
+      .catch(() => { setDatos({ items: [], mundos: [] }); setAbierto(null); });
   };
   useEffect(cargar, [ambito]);
 

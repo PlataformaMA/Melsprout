@@ -44,7 +44,7 @@ function RetosDeLaRuta() {
   const [estado, setEstado] = useState<EstadoReto | "todos">("todos");
   const [editando, setEditando] = useState<RetoRuta | null>(null);
 
-  const cargar = () => listarRetosRuta().then(setDatos);
+  const cargar = () => listarRetosRuta().then(setDatos).catch(() => setDatos({ retos: [], mundos: [] }));
   useEffect(() => { cargar(); }, []);
 
   const niveles = useMemo(
@@ -198,7 +198,7 @@ function RetosDeLaComunidad() {
   const [lista, setLista] = useState<RetoComunidadAdmin[] | null>(null);
   const [editando, setEditando] = useState<RetoComunidadAdmin | null | undefined>(undefined);
 
-  const cargar = () => listarRetosComunidadAdmin().then(setLista);
+  const cargar = () => listarRetosComunidadAdmin().then(setLista).catch(() => setLista([]));
   useEffect(() => { cargar(); }, []);
 
   return (
