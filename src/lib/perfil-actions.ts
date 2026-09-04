@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cumpleEdadMinima, EDAD_MINIMA } from "@/lib/edad";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -71,7 +72,11 @@ export type DatosOnboarding = {
   habilidades?: string[];
   como_conocio?: string;
   redes?: Record<string, string>;
+  headline?: string;        // profesión / a qué se dedica
+  bio?: string;             // descripción corta
+  avatarDataUrl?: string;   // foto ya recortada en el navegador
 };
+
 
 const XP_BIENVENIDA = 50;
 
@@ -114,6 +119,14 @@ export async function guardarOnboarding(
   } = await supabase.auth.getUser();
   if (!user) return { error: "Inicia sesión de nuevo." };
 
+  // La fecha de nacimiento es obligatoria y hay que ser mayor de edad.
+  if (!datos.fecha_nacimiento) {
+    return { error: "Necesitamos tu fecha de nacimiento para continuar." };
+  }
+  if (!cumpleEdadMinima(datos.fecha_nacimiento)) {
+    return { error: `Tienes que tener al menos ${EDAD_MINIMA} años para usar Melsprout.` };
+  }
+
   // ¿Ya lo hizo antes? No volvemos a dar XP.
   const { data: actual } = await supabase
     .from("profiles")
@@ -140,6 +153,8 @@ export async function guardarOnboarding(
     habilidades: datos.habilidades ?? [],
     como_conocio: datos.como_conocio ?? null,
     redes: datos.redes ?? {},
+    headline: datos.headline?.trim() || null,
+    bio: datos.bio?.trim() || null,
     onboarding_completo: true,
     xp: nuevoXP,
   };
@@ -155,8 +170,19 @@ export async function guardarOnboarding(
     delete seguro.tiempo_semanal;
     delete seguro.habilidades;
     delete seguro.como_conocio;
+    delete seguro.headline;
+    delete seguro.bio;
     const { error: e2 } = await supabase.from("profiles").update(seguro).eq("id", user.id);
     if (e2) return { error: "No se pudo guardar. Inténtalo de nuevo." };
+  }
+
+  // La foto va al final: si algo falla ahí, el onboarding ya quedó guardado.
+  if (datos.avatarDataUrl?.startsWith("data:image/")) {
+    try {
+      await subirImagen(datos.avatarDataUrl, "avatar");
+    } catch {
+      // Sin foto se puede seguir; la pone después desde su perfil.
+    }
   }
 
   revalidatePath("/", "layout");

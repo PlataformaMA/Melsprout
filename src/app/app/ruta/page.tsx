@@ -6,7 +6,7 @@ import { getClasesCompletadas } from "@/lib/progreso-actions";
 import { getCursos } from "@/lib/cursos-db";
 import { getRecursos } from "@/lib/recursos-actions";
 import { generoDe } from "@/lib/genero";
-import { getNotificaciones } from "@/lib/notificaciones-actions";
+import { getNotificaciones, recordarPerfilIncompleto } from "@/lib/notificaciones-actions";
 import { getRachaInfo } from "@/lib/racha-actions";
 import { nivelPorXP } from "@/lib/data";
 import { todoDesbloqueado } from "@/lib/ajustes";
@@ -59,6 +59,9 @@ export default async function RutaPage() {
 
   // Info de racha (para el pop-up "cada nuevo día").
   const rachaInfo = await getRachaInfo();
+  // Al entrar a la Ruta se revisa si le falta algo del perfil y, si es así,
+  // le llega el recordatorio a la campanita (como mucho, cada tres días).
+  await recordarPerfilIncompleto();
   const { sinLeer } = await getNotificaciones();
 
   // Ranking COMPLETO (modal "Ranking de estudiantes"): todos los estudiantes por XP, con su nivel.

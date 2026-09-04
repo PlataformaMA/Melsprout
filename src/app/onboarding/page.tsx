@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Octi } from "@/components/Octi";
 import { Confetti } from "@/components/Confetti";
 import { guardarOnboarding } from "@/lib/perfil-actions";
+import { cumpleEdadMinima, EDAD_MINIMA } from "@/lib/edad";
+import { RecortarFoto } from "@/components/RecortarFoto";
 import { NICHOS as CAT_NICHOS } from "@/lib/catalogos";
 
 const PAISES = [
@@ -26,7 +28,7 @@ const AUDIENCIAS = ["0–500", "500–5K", "5K–50K", "50K+"];
 // Solo define cómo le habla Octi (creadora / creador / neutro). Nada más.
 const GENEROS = ["Femenino", "Masculino", "Prefiero neutro"];
 
-type Clave = "nicho" | "objetivo" | "experiencia" | "tiempo" | "habilidades" | "como_conocio" | "plataforma" | "audiencia" | "genero" | "datos";
+type Clave = "nicho" | "objetivo" | "experiencia" | "tiempo" | "habilidades" | "como_conocio" | "plataforma" | "audiencia" | "genero" | "perfil" | "datos";
 type Pregunta = { clave: Clave; pregunta: string; opciones: string[] | null; octi: string; multi?: boolean };
 
 const PREGUNTAS: Pregunta[] = [
@@ -39,8 +41,15 @@ const PREGUNTAS: Pregunta[] = [
   { clave: "plataforma", pregunta: "¿Cuál es tu plataforma?", opciones: PLATAFORMAS, octi: "¿Dónde quieres brillar primero? 📱" },
   { clave: "audiencia", pregunta: "¿Cuántos te siguen hoy?", opciones: AUDIENCIAS, octi: "Todos empezamos en algún punto. 💜" },
   { clave: "genero", pregunta: "¿Cómo prefieres que te hable?", opciones: GENEROS, octi: "Para no decirte \"bienvenido\" si eres bienvenida. 🐙" },
+  { clave: "perfil", pregunta: "Arma tu perfil", opciones: null, octi: "Así te conoce la comunidad. Puedes cambiarlo cuando quieras. 📸" },
   { clave: "datos", pregunta: "Solo un par de datos más", opciones: null, octi: "Con esto personalizo tu experiencia. 🐙" },
 ];
+
+// Explica en concreto por qué no puede pasar.
+function mensajeEdad(fecha: string): string {
+  if (!fecha) return "Pon tu fecha de nacimiento para continuar.";
+  return `Tienes que tener al menos ${EDAD_MINIMA} años para usar Melsprout.`;
+}
 
 // La etiqueta que ve el alumno → el valor que guardamos.
 function generoClave(v: string): "femenino" | "masculino" | "neutro" | undefined {
@@ -79,6 +88,11 @@ export default function OnboardingPage() {
   const [pais, setPais] = useState("México");
   const [nacimiento, setNacimiento] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
+  const [headline, setHeadline] = useState("");
+  const [bio, setBio] = useState("");
+  const [foto, setFoto] = useState<string | null>(null);
+  const [porRecortar, setPorRecortar] = useState<File | null>(null);
+  const fotoRef = useRef<HTMLInputElement>(null);
   const [waOptin, setWaOptin] = useState(true);
 
   const valores: Record<string, string> = { nicho, objetivo, experiencia, tiempo, como_conocio: comoConocio, plataforma, audiencia, genero };
@@ -93,7 +107,13 @@ export default function OnboardingPage() {
   const actual = PREGUNTAS[paso];
   const esUltimo = paso >= total - 1;
   const otroSinLlenar = actual.clave === "nicho" && nicho === "Otro" && !nichoOtro.trim();
-  const puedeSiguiente = (actual.clave === "datos" || actual.multi ? true : !!valores[actual.clave]) && !otroSinLlenar;
+  const edadOk = !!nacimiento && cumpleEdadMinima(nacimiento);
+  const puedeSiguiente =
+    (actual.clave === "datos"
+      ? edadOk
+      : actual.clave === "perfil" || actual.multi
+        ? true
+        : !!valores[actual.clave]) && !otroSinLlenar;
 
   // Cuenta el XP hacia arriba al celebrar (0 → 50)
   useEffect(() => {
@@ -110,8 +130,11 @@ export default function OnboardingPage() {
       objetivo, plataforma_principal: plataforma, tamano_audiencia: audiencia,
       experiencia: experiencia || undefined, tiempo_semanal: tiempo || undefined,
       habilidades, como_conocio: comoConocio || undefined,
+      headline: headline.trim() || undefined,
+      bio: bio.trim() || undefined,
+      avatarDataUrl: foto || undefined,
     }),
-    [pais, genero, nacimiento, whatsapp, waOptin, nicho, nichoOtro, objetivo, plataforma, audiencia, experiencia, tiempo, habilidades, comoConocio]
+    [pais, genero, nacimiento, whatsapp, waOptin, nicho, nichoOtro, objetivo, plataforma, audiencia, experiencia, tiempo, habilidades, comoConocio, headline, bio, foto]
   );
 
   function guardar(conCelebracion: boolean) {
@@ -129,12 +152,18 @@ export default function OnboardingPage() {
   }
 
   function siguiente() {
-    if (esUltimo) { setError(""); setFase("resumen"); return; }
+    if (esUltimo) {
+      if (!edadOk) { setError(mensajeEdad(nacimiento)); return; }
+      setError(""); setFase("resumen"); return;
+    }
     setError("");
     setPaso((p) => Math.min(total - 1, p + 1));
   }
   function masTarde() {
-    if (esUltimo) { setError(""); setFase("resumen"); return; }
+    if (esUltimo) {
+      if (!edadOk) { setError(mensajeEdad(nacimiento)); return; }
+      setError(""); setFase("resumen"); return;
+    }
     setError("");
     setPaso((p) => Math.min(total - 1, p + 1));
   }
@@ -271,6 +300,48 @@ export default function OnboardingPage() {
                     className="mt-3 w-full rounded-xl border-2 border-accent/40 bg-white px-4 py-3 text-sm outline-none focus:border-accent transition" />
                 )}
               </div>
+            ) : actual.clave === "perfil" ? (
+              <div className="max-w-md mx-auto w-full space-y-4 bg-white/80 backdrop-blur rounded-3xl border border-white shadow-lg p-5 sm:p-6">
+                <div className="flex flex-col items-center gap-2.5">
+                  <button type="button" onClick={() => fotoRef.current?.click()}
+                    className="w-24 h-24 rounded-full overflow-hidden border-4 border-accent/25 grid place-items-center bg-white shadow-sm hover:border-accent/50 transition">
+                    {foto ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={foto} alt="" className="w-full h-full object-cover" />
+                    ) : <span className="text-3xl">📷</span>}
+                  </button>
+                  <button type="button" onClick={() => fotoRef.current?.click()}
+                    className="text-[13px] font-bold text-accent">
+                    {foto ? "Cambiar foto" : "Subir tu foto"}
+                  </button>
+                  <input ref={fotoRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (fotoRef.current) fotoRef.current.value = "";
+                      if (!f) return;
+                      if (f.size > 12 * 1024 * 1024) { setError("La imagen pesa más de 12 MB."); return; }
+                      setError("");
+                      setPorRecortar(f);
+                    }} />
+                </div>
+
+                <Campo label="¿A qué te dedicas?">
+                  <input value={headline} onChange={(e) => setHeadline(e.target.value)} maxLength={60}
+                    placeholder="Ej. Creadora de contenido de belleza"
+                    className="w-full rounded-xl border-2 border-border bg-white px-3.5 py-3 text-sm outline-none focus:border-accent transition" />
+                </Campo>
+
+                <Campo label="Cuéntanos de ti">
+                  <textarea value={bio} onChange={(e) => setBio(e.target.value)} maxLength={280} rows={3}
+                    placeholder="Lo que quieras que vean las demás al entrar a tu perfil…"
+                    className="w-full rounded-xl border-2 border-border bg-white px-3.5 py-3 text-sm outline-none focus:border-accent transition resize-none" />
+                  <p className="text-[11.5px] text-hint text-right mt-1">{bio.length}/280</p>
+                </Campo>
+
+                <p className="text-[12px] text-sub text-center leading-snug">
+                  Todo esto es opcional y lo puedes cambiar después desde tu perfil.
+                </p>
+              </div>
             ) : (
               <div className="max-w-md mx-auto w-full space-y-4 bg-white/80 backdrop-blur rounded-3xl border border-white shadow-lg p-5 sm:p-6">
                 <Campo label="¿De qué país eres?">
@@ -279,9 +350,17 @@ export default function OnboardingPage() {
                     {PAISES.map((p) => (<option key={p} value={p}>{p}</option>))}
                   </select>
                 </Campo>
-                <Campo label="Fecha de nacimiento (opcional)">
+                <Campo label="Fecha de nacimiento">
                   <input type="date" value={nacimiento} onChange={(e) => setNacimiento(e.target.value)}
-                    className="w-full rounded-xl border-2 border-border bg-white px-3.5 py-3 text-sm outline-none focus:border-accent transition" />
+                    max={new Date().toISOString().slice(0, 10)}
+                    className={`w-full rounded-xl border-2 bg-white px-3.5 py-3 text-sm outline-none transition ${
+                      nacimiento && !edadOk ? "border-pink" : "border-border focus:border-accent"
+                    }`} />
+                  <p className={`text-[12px] mt-1.5 leading-snug ${nacimiento && !edadOk ? "text-pink" : "text-hint"}`}>
+                    {nacimiento && !edadOk
+                      ? `Melsprout es para mayores de ${EDAD_MINIMA} años.`
+                      : `Necesitamos confirmar que tienes ${EDAD_MINIMA} años o más.`}
+                  </p>
                 </Campo>
                 <Campo label="WhatsApp (opcional)">
                   <input type="tel" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="Ej. +52 55 1234 5678"
@@ -295,6 +374,14 @@ export default function OnboardingPage() {
             )}
 
             {error && <p className="mt-5 text-[13px] text-pink bg-pink-soft rounded-lg px-3 py-2.5 text-center max-w-md mx-auto w-full">{error}</p>}
+
+            {porRecortar && (
+              <RecortarFoto
+                file={porRecortar}
+                onCancelar={() => setPorRecortar(null)}
+                onListo={(url) => { setFoto(url); setPorRecortar(null); }}
+              />
+            )}
            </div>
 
             {/* Navegación (abajo) */}
