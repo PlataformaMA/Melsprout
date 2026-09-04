@@ -17,8 +17,25 @@ export function SuperadminResumen({ irA }: { irA?: (tab: string) => void }) {
     empezar(async () => {
       try {
         const r = await getResumen(rango);
-        if (r.ok) { setDatos(r.datos); setMotivo(null); }
-        else { setDatos(null); setMotivo(r.motivo); }
+        if (r.ok) {
+          setDatos(r.datos);
+          setMotivo(null);
+          try { sessionStorage.removeItem("melsprout_recargado"); } catch {}
+        } else {
+          // Si el navegador tiene cargada una versión anterior de la app, sus
+          // llamadas al servidor ya no existen. Se recarga una vez y listo.
+          if (/Server Components render|Failed to find Server Action/i.test(r.motivo)) {
+            let yaLoIntente = false;
+            try { yaLoIntente = sessionStorage.getItem("melsprout_recargado") === "1"; } catch {}
+            if (!yaLoIntente) {
+              try { sessionStorage.setItem("melsprout_recargado", "1"); } catch {}
+              window.location.reload();
+              return;
+            }
+          }
+          setDatos(null);
+          setMotivo(r.motivo);
+        }
       } catch (e) {
         setDatos(null);
         setMotivo(e instanceof Error ? e.message : "No se pudo hablar con el servidor.");
@@ -54,10 +71,18 @@ export function SuperadminResumen({ irA }: { irA?: (tab: string) => void }) {
               <div className="text-3xl mb-2">😕</div>
               <p className="font-bold text-[14px]">No pudimos cargar el resumen</p>
               {motivo && (
-                <p className="text-[12.5px] text-pink mt-2 max-w-lg mx-auto break-words">{motivo}</p>
+                /Server Components render|Failed to find Server Action/i.test(motivo) ? (
+                  <p className="text-[13px] text-sub mt-2 max-w-md mx-auto leading-snug">
+                    Tu navegador tiene guardada una versión anterior de la plataforma.
+                    Recarga con <b>⌘ + Shift + R</b> (o Ctrl + Shift + R en Windows) y listo.
+                  </p>
+                ) : (
+                  <p className="text-[12.5px] text-pink mt-2 max-w-lg mx-auto break-words">{motivo}</p>
+                )
               )}
-              <button onClick={() => setRango((r) => r)} className="mt-4 text-[13px] font-bold text-accent">
-                Reintentar
+              <button onClick={() => window.location.reload()}
+                className="mt-4 bg-accent text-white rounded-xl px-4 py-2 text-[13px] font-bold hover:brightness-110 transition">
+                Recargar la página
               </button>
             </>
           )}
