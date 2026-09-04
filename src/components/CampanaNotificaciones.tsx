@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { getNotificaciones, marcarLeidas, type Notificacion } from "@/lib/notificaciones-actions";
+import { marcarLeidas, type Notificacion } from "@/lib/notificaciones-actions";
 import { responderSolicitud } from "@/lib/seguidores-actions";
 import { useRouter } from "next/navigation";
 
@@ -30,6 +30,17 @@ export function CampanaNotificaciones({ sinLeerInicial = 0 }: { sinLeerInicial?:
   const [, startTransition] = useTransition();
   const caja = useRef<HTMLDivElement>(null);
 
+  // El número de pendientes se pide al cargar, para que salga bien en todas
+  // las pantallas y no solo donde la página se acuerda de pasarlo.
+  useEffect(() => {
+    let vivo = true;
+    fetch("/api/notificaciones?conteo=1", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => { if (vivo && typeof j.sinLeer === "number") setSinLeer(j.sinLeer); })
+      .catch(() => {});
+    return () => { vivo = false; };
+  }, []);
+
   // Cerrar al tocar fuera.
   useEffect(() => {
     if (!abierto) return;
@@ -46,7 +57,10 @@ export function CampanaNotificaciones({ sinLeerInicial = 0 }: { sinLeerInicial?:
     if (!nuevo) return;
     setCargando(true);
     startTransition(async () => {
-      const { lista: l } = await getNotificaciones();
+      const datos: { lista: Notificacion[] } = await fetch("/api/notificaciones", { cache: "no-store" })
+        .then((r) => r.json())
+        .catch(() => ({ lista: [] }));
+      const l = datos.lista ?? [];
       setLista(l);
       setCargando(false);
       // Al abrirlas se dan por vistas: el punto rojo desaparece.
