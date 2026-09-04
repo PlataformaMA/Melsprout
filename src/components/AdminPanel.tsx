@@ -27,6 +27,7 @@ import { EstudiantesTab } from "@/components/EstudiantesTab";
 import { ClasesRecursosTab } from "@/components/ClasesRecursosTab";
 import { RetosAdminTab } from "@/components/RetosAdminTab";
 import { ModeracionTab } from "@/components/ModeracionTab";
+import { ComunidadAdminTab } from "@/components/ComunidadAdminTab";
 import { VivoAdminTab } from "@/components/VivoAdminTab";
 import { crearModulo, actualizarModulo, borrarModulo, crearClase, actualizarClase, borrarClase, setVideoClaseDB, getVentaCurso, guardarVentaCurso, type ClaseInput, type VentaCurso } from "@/lib/cursos-actions";
 import { generarSubtitulos, revisarSubtitulos, borrarSubtitulos } from "@/lib/subtitulos-actions";
@@ -210,7 +211,7 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
           ) : tab === "avances" ? (
             <AvancesTab avances={avances} onCambio={() => router.refresh()} />
           ) : tab === "comentarios" ? (
-            <ComentariosTab comentarios={comentarios} onCambio={() => router.refresh()} />
+            <ComunidadAdminTab />
           ) : (
             <UsuariosTab usuarios={usuarios} onCreado={() => router.refresh()} />
           )}
@@ -814,22 +815,6 @@ function ClaseCursoFila({ clase, onCambio }: { clase: ClaseRow; onCambio: () => 
 type FormVivo = { id?: string; titulo: string; categoria: string; instructor: string; fecha: string; hora: string; duracion_min: number; thumbnail_url: string; stream_url: string; grabacion_url: string; xp: number; descripcion: string };
 const VIVO_VACIO: FormVivo = { titulo: "", categoria: "", instructor: "", fecha: "", hora: "", duracion_min: 60, thumbnail_url: "", stream_url: "", grabacion_url: "", xp: 50, descripcion: "" };
 
-// ————— Comentarios (moderación) —————
-function ComentariosTab({ comentarios, onCambio }: { comentarios: ComentarioAdmin[]; onCambio: () => void }) {
-  if (comentarios.length === 0) {
-    return (
-      <div className="bg-surface border border-dashed border-border rounded-2xl p-8 text-center text-sub">
-        <div className="text-3xl mb-2">💬</div>
-        Aún no hay comentarios en la comunidad.
-      </div>
-    );
-  }
-  return (
-    <div className="space-y-2.5">
-      {comentarios.map((c) => <ComentarioFila key={c.id} c={c} onCambio={onCambio} />)}
-    </div>
-  );
-}
 
 function ComentarioFila({ c, onCambio }: { c: ComentarioAdmin; onCambio: () => void }) {
   const [cargando, setCargando] = useState(false);
