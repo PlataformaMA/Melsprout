@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notificar } from "@/lib/notificaciones-actions";
 import { nivelPorXP } from "@/lib/data";
+import { registrarRacha } from "@/lib/racha-actions";
 
 export type ForoPost = {
   id: string;
@@ -117,6 +118,7 @@ export async function crearPost(categoria: string, texto: string, extra?: { enla
   // +10 XP por publicar.
   const { data: p } = await admin.from("profiles").select("xp").eq("id", user.id).single();
   await admin.from("profiles").update({ xp: (p?.xp ?? 0) + 10 }).eq("id", user.id);
+  await registrarRacha(); // publicar es actividad: cuenta para la racha
   return { ok: true };
 }
 
@@ -174,6 +176,7 @@ export async function crearRespuesta(postId: string, texto: string): Promise<{ o
   const admin = createAdminClient();
   const { error } = await admin.from("foros_respuestas").insert({ post_id: postId, autor_id: user.id, texto: t });
   if (error) return { error: "No se pudo responder." };
+  await registrarRacha(); // responder también es actividad
 
   const { data: post } = await admin.from("foros_posts").select("autor_id").eq("id", postId).maybeSingle();
   const dueno = post?.autor_id as string | undefined;

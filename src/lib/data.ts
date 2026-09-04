@@ -84,6 +84,12 @@ export const NIVELES_XP = [
   { nivel: 8, nombre: "Referente", xp: 4000 },
   { nivel: 9, nombre: "Mentor de la comunidad", xp: 6500 },
   { nivel: 10, nombre: "Leyenda Melsprout", xp: 10000 },
+  // Antes el nivel 10 era el techo y quien lo alcanzaba se quedaba sin meta.
+  // Estos siguen subiendo, con saltos cada vez mayores para que cueste.
+  { nivel: 11, nombre: "Mentora estrella", xp: 14000 },
+  { nivel: 12, nombre: "Creadora referente", xp: 19000 },
+  { nivel: 13, nombre: "Ícono Melsprout", xp: 26000 },
+  { nivel: 14, nombre: "Constelación", xp: 35000 },
 ];
 
 export function nivelPorXP(xp: number) {

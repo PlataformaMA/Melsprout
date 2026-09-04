@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { esAdminUsuario } from "@/lib/admin";
 import { notificar } from "@/lib/notificaciones-actions";
+import { registrarRacha } from "@/lib/racha-actions";
 
 export type ComentarioClase = {
   id: string;
@@ -89,6 +90,7 @@ export async function comentarClase(
   const { error } = await admin.from("clase_comentarios")
     .insert({ clase_id: claseId, autor_id: user.id, texto: t, responde_a: respondeA || null });
   if (error) return { error: "No se pudo publicar tu comentario." };
+  await registrarRacha(); // comentar una clase es actividad
 
   // Si responde a alguien, se le avisa.
   if (respondeA) {

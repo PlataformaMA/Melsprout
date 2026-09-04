@@ -38,17 +38,24 @@ export async function registrarRacha(): Promise<void> {
   if (p?.racha_congelada) {
     await supabase
       .from("profiles")
-      .update({ racha_congelada: false, racha_fecha: hoyStr })
+      .update({ racha_congelada: false, racha_fecha: hoyStr, ultima_actividad: new Date().toISOString() })
       .eq("id", user.id);
     return;
   }
 
   const ultima = (p?.racha_fecha as string) ?? null;
 
-  if (ultima === hoyStr) return; // ya contamos hoy
+  const ahora = new Date().toISOString();
+  if (ultima === hoyStr) {
+    // Ya contamos hoy, pero sigue siendo actividad: se anota la hora.
+    await supabase.from("profiles").update({ ultima_actividad: ahora }).eq("id", user.id);
+    return;
+  }
 
   const nuevaRacha = ultima === ayerStr ? ((p?.racha as number) || 0) + 1 : 1;
-  await supabase.from("profiles").update({ racha: nuevaRacha, racha_fecha: hoyStr }).eq("id", user.id);
+  await supabase.from("profiles")
+    .update({ racha: nuevaRacha, racha_fecha: hoyStr, ultima_actividad: ahora })
+    .eq("id", user.id);
 }
 
 export type RachaInfo = {

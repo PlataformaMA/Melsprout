@@ -12,7 +12,7 @@ import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import type { Recurso } from "@/lib/recursos-actions";
 import { octiFrases, type Genero } from "@/lib/genero";
 import { VerificarBanner } from "@/components/VerificarBanner";
-import { type Clase, type ModuloCurso } from "@/lib/data";
+import { nivelPorXP, type Clase, type ModuloCurso } from "@/lib/data";
 import { type RachaInfo } from "@/lib/racha-actions";
 
 // ————— Geometría del camino serpenteante (S amplia y suave) —————
@@ -113,6 +113,12 @@ export function RutaAprendizaje({
   const clasesMod = Math.max(0, Math.min(totalMod, completadas - startIdx));
   const retosMod = (mod?.clases ?? []).filter((c) => retoEstados[c.id] === "completada").length;
   const pctMod = totalMod ? Math.round((clasesMod / totalMod) * 100) : 0;
+
+  // Nivel y cuánto falta para el siguiente, para enseñarlo aquí y no solo en el perfil.
+  const nivel = nivelPorXP(xp);
+  const pctNivel = nivel.siguiente
+    ? Math.round(((xp - nivel.actual.xp) / (nivel.siguiente.xp - nivel.actual.xp)) * 100)
+    : 100;
 
   // ——— Pop-ups diarios: racha (check-in) y ranking, 1 vez al día. ———
   // Nunca en el PRIMER login del usuario. La racha sale primero; al cerrarla,
@@ -282,6 +288,25 @@ export function RutaAprendizaje({
                       style={{ background: "#7C3AED", clipPath: "polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)" }}>★</span>
                   </div>
                 </div>
+
+                {/* Nivel y cuánto falta para el siguiente */}
+                <div className="mt-4 pt-3.5 border-t border-accent/10">
+                  <div className="flex items-center justify-between gap-3 mb-1.5">
+                    <span className="text-[12.5px] font-extrabold text-accent truncate">
+                      ⭐ Nivel {nivel.actual.nivel} · {nivel.actual.nombre}
+                    </span>
+                    <span className="text-[12px] font-bold text-sub shrink-0">{xp.toLocaleString("es-MX")} XP</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-white/70 border border-accent/10 overflow-hidden">
+                    <div className="h-full rounded-full bg-gradient-to-r from-[#A78BFA] to-accent transition-all duration-700"
+                      style={{ width: `${Math.max(3, pctNivel)}%` }} />
+                  </div>
+                  <p className="text-[12px] text-sub mt-1.5 leading-snug">
+                    {nivel.siguiente
+                      ? <>Te faltan <b className="text-accent">{nivel.faltan.toLocaleString("es-MX")} XP</b> para llegar a <b className="text-text">{nivel.siguiente.nombre}</b>.</>
+                      : <>Llegaste al nivel más alto. ¡Increíble! 🎉</>}
+                  </p>
+                </div>
               </div>
 
               {/* Botones rápidos (solo íconos): Cofre + Brújula, debajo de "Tu progreso", a la derecha */}
@@ -358,7 +383,10 @@ export function RutaAprendizaje({
                 <div className="absolute z-10 -translate-x-1/2 -translate-y-1/2 transition-all duration-700 ease-out pointer-events-none"
                      style={{ top: octiY, left: `clamp(88px, ${pctX(octiX)}, calc(100% - 88px))` }}>
                   <div className="pointer-events-auto">
-                    <OctiRuta nombre={nombre} genero={genero} />
+                    <OctiRuta nombre={nombre} genero={genero}
+                      progreso={nivel.siguiente
+                        ? `Te faltan ${nivel.faltan.toLocaleString("es-MX")} XP para ${nivel.siguiente.nombre} 🚀`
+                        : null} />
                   </div>
                 </div>
               </div>
@@ -837,8 +865,11 @@ function DecorMar({ pts }: { pts: { x: number; y: number }[] }) {
   return <div className="absolute inset-0 pointer-events-none z-[1] overflow-hidden">{decos}</div>;
 }
 
-function OctiRuta({ nombre, genero }: { nombre: string; genero: Genero }) {
-  const MENSAJES = octiFrases(genero, nombre).animo;
+function OctiRuta({ nombre, genero, progreso }: { nombre: string; genero: Genero; progreso?: string | null }) {
+  // El primer mensaje es cuánto le falta para subir de nivel; luego rota los de ánimo.
+  const MENSAJES = progreso
+    ? [progreso, ...octiFrases(genero, nombre).animo]
+    : octiFrases(genero, nombre).animo;
   const [i, setI] = useState(0);
   const [wiggle, setWiggle] = useState(false);
 
