@@ -71,7 +71,7 @@ export function SuperadminResumen({ irA }: { irA?: (tab: string) => void }) {
               <div className="text-3xl mb-2">😕</div>
               <p className="font-bold text-[14px]">No pudimos cargar el resumen</p>
               {motivo && (
-                /Server Components render|Failed to find Server Action/i.test(motivo) ? (
+                /Failed to find Server Action/i.test(motivo) ? (
                   <p className="text-[13px] text-sub mt-2 max-w-md mx-auto leading-snug">
                     Tu navegador tiene guardada una versión anterior de la plataforma.
                     Recarga con <b>⌘ + Shift + R</b> (o Ctrl + Shift + R en Windows) y listo.

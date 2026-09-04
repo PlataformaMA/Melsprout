@@ -59,7 +59,20 @@ export async function getResumen(rango: Rango = "7d"): Promise<ResumenRes> {
     return { ok: true, datos };
   } catch (e) {
     console.error("[getResumen]", e);
-    return { ok: false, motivo: e instanceof Error ? e.message : String(e) };
+    const paso = e instanceof Error && "paso" in e ? ` (paso: ${(e as { paso?: string }).paso})` : "";
+    const detalle = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+    return { ok: false, motivo: detalle + paso };
+  }
+}
+
+// Marca en qué punto se rompió, para poder verlo sin los registros de Vercel.
+async function paso<T>(nombre: string, fn: () => Promise<T> | T): Promise<T> {
+  try {
+    return await fn();
+  } catch (e) {
+    const err = e instanceof Error ? e : new Error(String(e));
+    (err as Error & { paso?: string }).paso = nombre;
+    throw err;
   }
 }
 
@@ -76,7 +89,7 @@ async function calcularResumen(rango: Rango): Promise<Resumen | null> {
     { data: progreso },
     { data: clases },
     { data: modulos },
-  ] = await Promise.all([
+  ] = await paso("consultas", () => Promise.all([
     admin.from("profiles")
       .select("id, full_name, username, avatar_url, xp, created_at, ultima_actividad")
       .eq("onboarding_completo", true),
@@ -84,7 +97,7 @@ async function calcularResumen(rango: Rango): Promise<Resumen | null> {
     admin.from("clase_progreso").select("user_id, clase_id, completada, updated_at"),
     admin.from("cursos_clases").select("id, modulo_id").eq("activo", true),
     admin.from("cursos_modulos").select("id, nombre, orden").eq("activo", true).order("orden"),
-  ]);
+  ]));
 
   const gente = perfiles || [];
   const total = gente.length;
@@ -127,15 +140,17 @@ async function calcularResumen(rango: Rango): Promise<Resumen | null> {
   ).length;
 
   // ——— Distribución por niveles ———
+  const niveles: Barra[] = await paso("niveles", () => {
   const porNivel = new Map<string, number>();
   for (const p of gente) {
     const n = nivelPorXP((p.xp as number) || 0).actual;
     porNivel.set(n.nombre, (porNivel.get(n.nombre) || 0) + 1);
   }
-  const niveles: Barra[] = [...porNivel.entries()]
-    .map(([etiqueta, valor]) => ({ etiqueta, valor }))
-    .sort((a, b) => b.valor - a.valor)
-    .slice(0, 6);
+    return [...porNivel.entries()]
+      .map(([etiqueta, valor]) => ({ etiqueta, valor }))
+      .sort((a, b) => b.valor - a.valor)
+      .slice(0, 6);
+  });
 
   // ——— Último acceso ———
   const cubo = { hoy: 0, semana: 0, mes: 0, viejo: 0 };
@@ -175,16 +190,18 @@ async function calcularResumen(rango: Rango): Promise<Resumen | null> {
   ];
 
   // ——— Avance promedio por mundo ———
+  const avancePorMundo = await paso("avance por mundo", () => {
   const completasPorClase = new Set(
     (progreso || []).filter((p) => p.completada).map((p) => `${p.user_id}|${p.clase_id}`)
   );
-  const avancePorMundo = (modulos || []).map((m) => {
-    const suyas = (clases || []).filter((c) => c.modulo_id === m.id);
-    if (!suyas.length || !total) return { nombre: m.nombre as string, pct: 0 };
-    let hechas = 0;
-    for (const p of gente) for (const c of suyas)
-      if (completasPorClase.has(`${p.id}|${c.id}`)) hechas++;
-    return { nombre: m.nombre as string, pct: Math.round((hechas / (suyas.length * total)) * 100) };
+    return (modulos || []).map((m) => {
+      const suyas = (clases || []).filter((c) => c.modulo_id === m.id);
+      if (!suyas.length || !total) return { nombre: m.nombre as string, pct: 0 };
+      let hechas = 0;
+      for (const p of gente) for (const c of suyas)
+        if (completasPorClase.has(`${p.id}|${c.id}`)) hechas++;
+      return { nombre: m.nombre as string, pct: Math.round((hechas / (suyas.length * total)) * 100) };
+    });
   });
 
   // ——— Top de alumnas ———
@@ -201,6 +218,7 @@ async function calcularResumen(rango: Rango): Promise<Resumen | null> {
     }));
 
   // ——— Actividad reciente ———
+  const actividad: Evento[] = await paso("actividad reciente", () => {
   const nombreDe = (id: string) =>
     (gente.find((g) => g.id === id)?.full_name as string) || "Alguien";
   const eventos: { icono: string; texto: string; fecha: string }[] = [];
@@ -225,10 +243,11 @@ async function calcularResumen(rango: Rango): Promise<Resumen | null> {
       fecha: p.created_at as string,
     });
   }
-  const actividad: Evento[] = eventos
-    .sort((a, b) => b.fecha.localeCompare(a.fecha))
-    .slice(0, 8)
-    .map((e) => ({ icono: e.icono, texto: e.texto, hace: hace(e.fecha) }));
+    return eventos
+      .sort((a, b) => b.fecha.localeCompare(a.fecha))
+      .slice(0, 8)
+      .map((e) => ({ icono: e.icono, texto: e.texto, hace: hace(e.fecha) }));
+  });
 
   return {
     retosPendientes, enRiesgo, estudiantes: total, nuevosSemana,
