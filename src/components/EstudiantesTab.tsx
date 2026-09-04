@@ -39,7 +39,9 @@ export function EstudiantesTab() {
   const [crear, setCrear] = useState(false);
   const [abierta, setAbierta] = useState<Estudiante | null>(null);
 
-  const cargar = () => listarEstudiantes().then(setLista).catch(() => setLista([]));
+  const cargar = () => fetch(`/api/admin/datos?que=estudiantes`, { cache: "no-store" }).then((r) => r.json())
+    .then((d) => setLista(Array.isArray(d) ? d : []))
+    .catch(() => setLista([]));
   useEffect(() => { cargar(); }, []);
 
   const niveles = useMemo(

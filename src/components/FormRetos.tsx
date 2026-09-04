@@ -2,9 +2,10 @@
 
 import { useRef, useState } from "react";
 import {
-  guardarRetoRuta, guardarRetoComunidad, borrarRetoComunidad, TIPOS_RETO,
+  guardarRetoRuta, guardarRetoComunidad, borrarRetoComunidad,
   type RetoRuta, type RetoComunidadAdmin,
 } from "@/lib/retos-admin-actions";
+import { TIPOS_RETO } from "@/lib/opciones-admin";
 
 const inputC = "w-full bg-bg border border-border rounded-xl px-3.5 py-2.5 text-[14px] outline-none focus:border-accent";
 

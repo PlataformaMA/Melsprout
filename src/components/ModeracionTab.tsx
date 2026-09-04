@@ -33,8 +33,9 @@ export function ModeracionTab() {
   const cargar = () => {
     setDatos(null);
     setMarcados(new Set());
-    listarModeracion(ambito)
-      .then((d) => { setDatos(d); setAbierto(null); })
+    fetch(`/api/admin/datos?que=moderacion&ambito=${ambito}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => { setDatos(d.error ? { items: [], mundos: [] } : d); setAbierto(null); })
       .catch(() => { setDatos({ items: [], mundos: [] }); setAbierto(null); });
   };
   useEffect(cargar, [ambito]);

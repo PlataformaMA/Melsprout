@@ -20,8 +20,14 @@ export function ComunidadAdminTab() {
   const [busca, setBusca] = useState("");
 
   const cargar = () => {
-    getComunidadAdmin().then(setDatos).catch(() => setDatos(null));
-    listarSugerencias().then(setSugerencias).catch(() => setSugerencias([]));
+    fetch("/api/admin/datos?que=comunidad", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setDatos(d.error ? null : d))
+      .catch(() => setDatos(null));
+    fetch("/api/admin/datos?que=sugerencias", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setSugerencias(Array.isArray(d) ? d : []))
+      .catch(() => setSugerencias([]));
   };
   useEffect(() => { cargar(); }, []);
 

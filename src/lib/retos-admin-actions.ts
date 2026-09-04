@@ -36,8 +36,6 @@ export type RetoComunidadAdmin = {
   diaActual: number;        // en qué día va, 0 si no ha empezado
 };
 
-export const TIPOS_RETO = ["Tarea", "Entrega", "Reto", "Proyecto", "Análisis"];
-
 async function soyAdmin(): Promise<boolean> {
   const s = await createClient();
   const { data: { user } } = await s.auth.getUser();

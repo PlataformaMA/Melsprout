@@ -30,7 +30,9 @@ export function VivoAdminTab() {
   const [estado, setEstado] = useState<EstadoVivo | "todos">("todos");
   const [editando, setEditando] = useState<ClaseVivoAdmin | null | undefined>(undefined);
 
-  const cargar = () => listarVivoAdmin().then(setDatos).catch(() => setDatos({ clases: [], mundos: [] }));
+  const cargar = () => fetch(`/api/admin/datos?que=vivo`, { cache: "no-store" }).then((r) => r.json())
+    .then((d) => setDatos(d.error ? { clases: [], mundos: [] } : d))
+    .catch(() => setDatos({ clases: [], mundos: [] }));
   useEffect(() => { cargar(); }, []);
 
   const lista = useMemo(() => {

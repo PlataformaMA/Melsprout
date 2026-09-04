@@ -44,7 +44,9 @@ function RetosDeLaRuta() {
   const [estado, setEstado] = useState<EstadoReto | "todos">("todos");
   const [editando, setEditando] = useState<RetoRuta | null>(null);
 
-  const cargar = () => listarRetosRuta().then(setDatos).catch(() => setDatos({ retos: [], mundos: [] }));
+  const cargar = () => fetch(`/api/admin/datos?que=retos`, { cache: "no-store" }).then((r) => r.json())
+    .then((d) => setDatos(d.error ? { retos: [], mundos: [] } : d))
+    .catch(() => setDatos({ retos: [], mundos: [] }));
   useEffect(() => { cargar(); }, []);
 
   const niveles = useMemo(
@@ -198,7 +200,9 @@ function RetosDeLaComunidad() {
   const [lista, setLista] = useState<RetoComunidadAdmin[] | null>(null);
   const [editando, setEditando] = useState<RetoComunidadAdmin | null | undefined>(undefined);
 
-  const cargar = () => listarRetosComunidadAdmin().then(setLista).catch(() => setLista([]));
+  const cargar = () => fetch(`/api/admin/datos?que=retos-comunidad`, { cache: "no-store" }).then((r) => r.json())
+    .then((d) => setLista(Array.isArray(d) ? d : []))
+    .catch(() => setLista([]));
   useEffect(() => { cargar(); }, []);
 
   return (

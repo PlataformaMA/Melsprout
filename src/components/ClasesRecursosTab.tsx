@@ -34,7 +34,9 @@ export function ClasesRecursosTab() {
   const [editando, setEditando] = useState<ClaseAdmin | null | undefined>(undefined); // undefined = cerrado
   const [previa, setPrevia] = useState(false);
 
-  const cargar = () => listarClasesAdmin().then(setDatos).catch(() => setDatos({ clases: [], mundos: [] }));
+  const cargar = () => fetch(`/api/admin/datos?que=clases`, { cache: "no-store" }).then((r) => r.json())
+    .then((d) => setDatos(d.error ? { clases: [], mundos: [] } : d))
+    .catch(() => setDatos({ clases: [], mundos: [] }));
   useEffect(() => { cargar(); }, []);
 
   const niveles = useMemo(
