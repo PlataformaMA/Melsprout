@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { notificar } from "@/lib/notificaciones-actions";
 import { espejarRetoEnComunidad, ocultarRetoEnComunidad } from "@/lib/reto-publicacion";
 import { esAdmin, esAdminUsuario } from "@/lib/admin";
-import { getRetoUnificado, type RetoRow, type RetoTipo } from "@/lib/retos-db";
+import { type RetoRow, type RetoTipo } from "@/lib/retos-db";
 
 // Verifica que quien llama sea admin. Devuelve el admin client o null.
 async function comoAdmin() {
@@ -155,21 +155,17 @@ export async function listarComentariosAdmin(): Promise<ComentarioAdmin[]> {
   const autorIds = [...new Set(data.map((c) => c.autor_id as string))];
   const { data: perfiles } = await admin.from("profiles").select("id, full_name").in("id", autorIds);
   const pMap = new Map((perfiles || []).map((p) => [p.id as string, (p.full_name as string) || "Creador"]));
-  const retoCache = new Map<string, string>();
+  const retoCache = await tituloDeRetos(admin);
   const out: ComentarioAdmin[] = [];
   for (const c of data) {
     const rid = c.reto_id as string;
-    if (!retoCache.has(rid)) {
-      const r = await getRetoUnificado(rid);
-      retoCache.set(rid, r?.titulo || rid);
-    }
     out.push({
       id: c.id as string,
       autorNombre: pMap.get(c.autor_id as string) || "Creador",
       texto: c.texto as string,
       oculto: c.oculto as boolean,
       fecha: c.created_at as string,
-      retoTitulo: retoCache.get(rid)!,
+      retoTitulo: retoCache.get(rid)?.titulo ?? rid,
     });
   }
   return out;
@@ -205,6 +201,29 @@ export type Avance = {
   actualizado: string;
 };
 
+// Títulos de todos los retos de una vez. Antes se preguntaba uno por uno y el
+// panel llegaba a hacer más de doscientas consultas por carga.
+async function tituloDeRetos(
+  admin: ReturnType<typeof createAdminClient>
+): Promise<Map<string, { titulo: string; emoji: string }>> {
+  const [{ data: sueltos }, { data: clases }] = await Promise.all([
+    admin.from("retos").select("id, titulo, emoji"),
+    admin.from("cursos_clases").select("id, titulo, reto_texto"),
+  ]);
+  const m = new Map<string, { titulo: string; emoji: string }>();
+  for (const r of sueltos || []) {
+    m.set(r.id as string, { titulo: (r.titulo as string) || "Reto", emoji: (r.emoji as string) || "🎯" });
+  }
+  for (const c of clases || []) {
+    // El reto de una clase se identifica con el id de la clase.
+    m.set(c.id as string, {
+      titulo: ((c.reto_texto as string) || "").trim() || (c.titulo as string) || "Reto",
+      emoji: "🎯",
+    });
+  }
+  return m;
+}
+
 export async function listarAvances(): Promise<Avance[]> {
   const admin = await comoAdmin();
   if (!admin) return [];
@@ -219,16 +238,12 @@ export async function listarAvances(): Promise<Avance[]> {
   const { data: perfiles } = await admin.from("profiles").select("id, full_name").in("id", ids);
   const nombreMap = new Map((perfiles || []).map((p) => [p.id as string, (p.full_name as string) || "Creador"]));
 
-  // Títulos de retos (cache por reto_id).
-  const retoCache = new Map<string, { titulo: string; emoji: string }>();
+  // Títulos de retos: dos consultas, no una por reto.
+  const retoCache = await tituloDeRetos(admin);
   const out: Avance[] = [];
   for (const s of subs) {
     const rid = s.reto_id as string;
-    if (!retoCache.has(rid)) {
-      const r = await getRetoUnificado(rid);
-      retoCache.set(rid, { titulo: r?.titulo || rid, emoji: r?.emoji || "🎯" });
-    }
-    const info = retoCache.get(rid)!;
+    const info = retoCache.get(rid) ?? { titulo: rid, emoji: "🎯" };
     out.push({
       userId: s.user_id as string,
       nombre: nombreMap.get(s.user_id as string) || "Creador",

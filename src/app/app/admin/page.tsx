@@ -36,13 +36,24 @@ export default async function AdminPage() {
     );
   }
 
+  // Si una consulta falla, esa sección se queda vacía pero el panel abre.
+  // Antes bastaba con que una tardara de más para tumbar toda la pantalla.
+  async function seguro<T>(p: Promise<T>, siFalla: T, que: string): Promise<T> {
+    try {
+      return await p;
+    } catch (e) {
+      console.error(`[admin] falló ${que}:`, e);
+      return siFalla;
+    }
+  }
+
   const [retos, usuarios, avances, comentarios, clasesVivo, cursos] = await Promise.all([
-    listarRetosAdmin(),
-    listarUsuariosAdmin(),
-    listarAvances(),
-    listarComentariosAdmin(),
-    listarClasesVivoAdmin(),
-    getCursosAdmin(),
+    seguro(listarRetosAdmin(), [], "retos"),
+    seguro(listarUsuariosAdmin(), [], "usuarios"),
+    seguro(listarAvances(), [], "avances"),
+    seguro(listarComentariosAdmin(), [], "comentarios"),
+    seguro(listarClasesVivoAdmin(), [], "clases en vivo"),
+    seguro(getCursosAdmin(), { modulos: [], clases: [] }, "cursos"),
   ]);
 
   return <AdminPanel retos={retos} usuarios={usuarios} avances={avances} comentarios={comentarios} clasesVivo={clasesVivo} cursos={cursos} adminEmail={user.email ?? ""} />;
