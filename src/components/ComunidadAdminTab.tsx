@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   getComunidadAdmin, alternarVisible, activarGrupo, borrarGrupoAdmin,
-  type PublicacionAdmin, type GrupoAdmin, type ComentarioReto,
+  listarSugerencias, marcarSugerencia,
+  type PublicacionAdmin, type GrupoAdmin, type ComentarioReto, type SugerenciaAdmin,
 } from "@/lib/comunidad-admin-actions";
 
 type Datos = Awaited<ReturnType<typeof getComunidadAdmin>>;
@@ -14,10 +15,14 @@ const fecha = (iso: string) =>
 // Comunidad: lo mismo que ven las alumnas, con las herramientas del equipo.
 export function ComunidadAdminTab() {
   const [datos, setDatos] = useState<Datos | null>(null);
-  const [vista, setVista] = useState<"publicaciones" | "grupos" | "retos">("publicaciones");
+  const [vista, setVista] = useState<"publicaciones" | "grupos" | "sugerencias" | "retos">("publicaciones");
+  const [sugerencias, setSugerencias] = useState<SugerenciaAdmin[]>([]);
   const [busca, setBusca] = useState("");
 
-  const cargar = () => getComunidadAdmin().then(setDatos).catch(() => setDatos(null));
+  const cargar = () => {
+    getComunidadAdmin().then(setDatos).catch(() => setDatos(null));
+    listarSugerencias().then(setSugerencias).catch(() => setSugerencias([]));
+  };
   useEffect(() => { cargar(); }, []);
 
   const t = datos?.totales;
@@ -49,6 +54,7 @@ export function ComunidadAdminTab() {
         {([
           ["publicaciones", "Publicaciones"],
           ["grupos", "Grupos"],
+          ["sugerencias", `Sugerencias${sugerencias.filter((x) => !x.atendida).length ? ` (${sugerencias.filter((x) => !x.atendida).length})` : ""}`],
           ["retos", "Comentarios de retos"],
         ] as const).map(([id, txt]) => (
           <button key={id} onClick={() => setVista(id)}
@@ -68,6 +74,8 @@ export function ComunidadAdminTab() {
         <Publicaciones lista={datos.publicaciones} busca={busca} onCambio={cargar} />
       ) : vista === "grupos" ? (
         <Grupos lista={datos.grupos} busca={busca} onCambio={cargar} />
+      ) : vista === "sugerencias" ? (
+        <Sugerencias lista={sugerencias} busca={busca} onCambio={cargar} />
       ) : (
         <ComentariosDeRetos lista={datos.comentariosReto} busca={busca} onCambio={cargar} />
       )}
@@ -210,6 +218,65 @@ function ComentariosDeRetos({ lista, busca, onCambio }: {
             {c.visible ? "Ocultar" : "Mostrar"}
           </button>
         </div>
+      ))}
+    </div>
+  );
+}
+
+function Sugerencias({ lista, busca, onCambio }: {
+  lista: SugerenciaAdmin[]; busca: string; onCambio: () => void;
+}) {
+  const q = busca.trim().toLowerCase();
+  const filtrada = lista.filter((s) => !q || s.texto.toLowerCase().includes(q) || s.autor.toLowerCase().includes(q));
+
+  if (!filtrada.length) {
+    return (
+      <div className="bg-surface border border-dashed border-border rounded-2xl p-8 text-center">
+        <div className="text-3xl mb-2">💡</div>
+        <p className="text-[13.5px] text-sub">
+          Todavía nadie ha sugerido un curso. Las sugerencias llegan desde
+          Cursos Especiales, en la caja «Sugerir cursos».
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2.5">
+      {filtrada.map((s) => (
+        <article key={s.id}
+          className={`bg-surface border rounded-2xl p-4 shadow-sm ${s.atendida ? "border-border opacity-70" : "border-accent/40"}`}>
+          <div className="flex items-start gap-3">
+            {s.avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={s.avatar} alt={s.autor} className="w-9 h-9 rounded-full object-cover shrink-0" />
+            ) : (
+              <span className="w-9 h-9 rounded-full bg-accent/15 text-accent grid place-items-center text-[12px] font-bold shrink-0">
+                {s.autor.slice(0, 2).toUpperCase()}
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <Link href={`/app/creador/${s.autorId}`} target="_blank"
+                  className="font-bold text-[13.5px] hover:text-accent transition">{s.autor}</Link>
+                <span className="text-[11.5px] text-hint">{fecha(s.fecha)}</span>
+                {s.atendida && (
+                  <span className="text-[11px] font-bold text-green bg-green/10 rounded-full px-2 py-0.5">Atendida ✓</span>
+                )}
+              </div>
+              <p className="text-[13.5px] text-text leading-relaxed mt-1 whitespace-pre-wrap">{s.texto}</p>
+            </div>
+            <button
+              onClick={async () => {
+                const r = await marcarSugerencia(s.id, !s.atendida);
+                if ("error" in r) { alert(r.error); return; }
+                onCambio();
+              }}
+              className={`text-[12.5px] font-bold shrink-0 ${s.atendida ? "text-sub hover:text-accent" : "text-accent"}`}>
+              {s.atendida ? "Reabrir" : "Marcar atendida"}
+            </button>
+          </div>
+        </article>
       ))}
     </div>
   );

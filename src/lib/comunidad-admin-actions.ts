@@ -199,3 +199,48 @@ export async function borrarGrupoAdmin(id: string): Promise<{ ok: true } | { err
   if (error) return { error: "No se pudo borrar." };
   return { ok: true };
 }
+
+// ————— Sugerencias de cursos que manda la comunidad —————
+export type SugerenciaAdmin = {
+  id: string;
+  autorId: string;
+  autor: string;
+  avatar: string | null;
+  texto: string;
+  fecha: string;
+  atendida: boolean;
+};
+
+export async function listarSugerencias(): Promise<SugerenciaAdmin[]> {
+  if (!(await soyAdmin())) return [];
+  const admin = createAdminClient();
+  const { data } = await admin.from("sugerencias_cursos")
+    .select("id, user_id, texto, atendida, created_at")
+    .order("created_at", { ascending: false }).limit(300);
+  if (!data?.length) return [];
+
+  const ids = [...new Set(data.map((s) => s.user_id as string))];
+  const { data: perfiles } = await admin.from("profiles").select("id, full_name, avatar_url").in("id", ids);
+  const pm = new Map((perfiles || []).map((p) => [p.id as string, p]));
+
+  return data.map((s) => {
+    const p = pm.get(s.user_id as string);
+    return {
+      id: s.id as string,
+      autorId: s.user_id as string,
+      autor: (p?.full_name as string) || "Creador",
+      avatar: (p?.avatar_url as string) || null,
+      texto: s.texto as string,
+      fecha: s.created_at as string,
+      atendida: s.atendida === true,
+    };
+  });
+}
+
+export async function marcarSugerencia(id: string, atendida: boolean): Promise<{ ok: true } | { error: string }> {
+  if (!(await soyAdmin())) return { error: "No autorizado." };
+  const admin = createAdminClient();
+  const { error } = await admin.from("sugerencias_cursos").update({ atendida }).eq("id", id);
+  if (error) return { error: "No se pudo guardar." };
+  return { ok: true };
+}
