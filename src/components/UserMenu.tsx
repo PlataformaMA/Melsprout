@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { cerrarSesion } from "@/lib/auth-actions";
-import { soyAdminAhora } from "@/lib/admin-actions";
+import { soyAdminAhora } from "@/lib/soy-admin";
 import { NAV_ITEMS } from "@/components/nav-items";
 
 export function UserMenu({ avatarUrl, nombre, esAdmin }: { avatarUrl: string | null; nombre: string; esAdmin?: boolean }) {
@@ -13,7 +13,7 @@ export function UserMenu({ avatarUrl, nombre, esAdmin }: { avatarUrl: string | n
   const [admin, setAdmin] = useState(esAdmin ?? false);
   useEffect(() => {
     if (esAdmin !== undefined || !abierto || admin) return;
-    soyAdminAhora().then(setAdmin);
+    soyAdminAhora().then(setAdmin).catch(() => {});
   }, [abierto, esAdmin, admin]);
   return (
     <div className="relative">
