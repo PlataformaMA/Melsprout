@@ -36,29 +36,11 @@ export async function listarClasesVivo(): Promise<ClaseVivo[]> {
     .select("*")
     .eq("activo", true)
     .order("inicia_at", { ascending: true });
-  const filas = (data || []) as ClaseVivo[];
-  // Si aún no hay clases en la BD, mostramos ejemplos (para no ver la pantalla vacía).
-  return filas.length > 0 ? filas : clasesVivoEjemplo();
+  // Solo lo real: si no hay clases cargadas, la pantalla lo dice y ya.
+  // Antes se mostraban ejemplos que no existían en el panel.
+  return (data || []) as ClaseVivo[];
 }
 
-// Clases en vivo de EJEMPLO (solo se muestran mientras no haya ninguna en la BD).
-// No llevan enlaces: los reales se cargan desde el panel admin. Las grabaciones
-// sin video se ven como "Próximamente" en vez de mandar a otro sitio.
-function clasesVivoEjemplo(): ClaseVivo[] {
-  const ahora = Date.now();
-  const enH = (h: number) => new Date(ahora + h * 3600_000).toISOString();
-  const ZOOM = null; // ← el enlace real de la sesión se pone desde el panel admin
-  const REC = null;  // ← la grabación real se sube desde el panel admin
-  return [
-    { id: "ej-live", titulo: "Cómo generar ideas de contenido que conectan", descripcion: "En vivo con Melissa.", categoria: "Marketing de contenido", instructor: "Melissa Arria", inicia_at: enH(-0.1), duracion_min: 60, thumbnail_url: null, stream_url: ZOOM, grabacion_url: null, xp: 50, activo: true },
-    { id: "ej-2", titulo: "Edición rápida para redes sociales (CapCut)", descripcion: "Aprende a editar rápido y con impacto.", categoria: "Edición y video", instructor: "Diego Avilés", inicia_at: enH(2), duracion_min: 75, thumbnail_url: null, stream_url: ZOOM, grabacion_url: null, xp: 50, activo: true },
-    { id: "ej-3", titulo: "Estrategias para crecer en TikTok en 2024", descripcion: "Tácticas para crecer en TikTok.", categoria: "TikTok", instructor: "Valentina R.", inicia_at: enH(24), duracion_min: 60, thumbnail_url: null, stream_url: ZOOM, grabacion_url: null, xp: 50, activo: true },
-    { id: "ej-4", titulo: "Branding personal: construye tu marca", descripcion: "Define y potencia tu marca personal.", categoria: "Branding personal", instructor: "Andrés García", inicia_at: enH(24 * 3), duracion_min: 60, thumbnail_url: null, stream_url: ZOOM, grabacion_url: null, xp: 50, activo: true },
-    { id: "ej-g1", titulo: "Guiones que venden (Parte 1)", descripcion: null, categoria: "Copywriting", instructor: "Melissa Arria", inicia_at: enH(-48), duracion_min: 65, thumbnail_url: null, stream_url: null, grabacion_url: REC, xp: 50, activo: true },
-    { id: "ej-g2", titulo: "Optimiza tu perfil de IG para crecer", descripcion: null, categoria: "Instagram", instructor: "Alexia", inicia_at: enH(-96), duracion_min: 68, thumbnail_url: null, stream_url: null, grabacion_url: REC, xp: 50, activo: true },
-    { id: "ej-g3", titulo: "Hooks que sí funcionan", descripcion: null, categoria: "Contenido", instructor: "George", inicia_at: enH(-144), duracion_min: 47, thumbnail_url: null, stream_url: null, grabacion_url: REC, xp: 50, activo: true },
-  ];
-}
 
 // Registra asistencia y da +50 XP una sola vez.
 export async function asistirClaseVivo(id: string): Promise<{ ok: true; xpDado: boolean } | { error: string }> {
