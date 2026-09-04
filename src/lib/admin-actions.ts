@@ -340,45 +340,67 @@ export type NuevoUsuario = {
 
 // Alta desde el panel: se crea la cuenta y se le manda un correo para que
 // ella misma ponga su contraseña. Así nadie tiene que inventarle una.
-export async function altaUsuario(u: NuevoUsuario): Promise<{ ok: true } | { error: string }> {
-  const admin = await comoAdmin();
-  if (!admin) return { error: "No autorizado." };
+export async function altaUsuario(u: NuevoUsuario): Promise<{ ok: true; aviso?: string } | { error: string }> {
+  try {
+    const admin = await comoAdmin();
+    if (!admin) return { error: "No autorizado." };
 
-  const email = u.email?.trim().toLowerCase();
-  const nombre = u.nombre?.trim();
-  if (!nombre) return { error: "Escribe el nombre completo." };
-  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: "El correo no es válido." };
+    const email = u.email?.trim().toLowerCase();
+    const nombre = u.nombre?.trim();
+    if (!nombre) return { error: "Escribe el nombre completo." };
+    if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: "El correo no es válido." };
 
-  const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
-    data: { full_name: nombre },
-  });
-  if (error || !data.user) {
-    const msg = error?.message || "";
-    if (/already|registered|exists/i.test(msg)) return { error: "Ya existe una cuenta con ese correo." };
-    return { error: "No se pudo crear la cuenta. Revisa el correo e inténtalo de nuevo." };
-  }
-
-  const perfil: Record<string, unknown> = {
-    id: data.user.id,
-    full_name: nombre,
-    is_admin: u.rol === "admin",
-  };
-  if (u.telefono?.trim()) perfil.whatsapp = u.telefono.trim();
-  await admin.from("profiles").upsert(perfil);
-
-  // La foto va al bucket de avatares con la llave de servicio.
-  if (u.avatarDataUrl?.startsWith("data:image/")) {
-    const coma = u.avatarDataUrl.indexOf(",");
-    const bytes = Buffer.from(u.avatarDataUrl.slice(coma + 1), "base64");
-    const ruta = `${data.user.id}/avatar.jpeg`;
-    const { error: eSubida } = await admin.storage.from("avatars")
-      .upload(ruta, bytes, { contentType: "image/jpeg", upsert: true });
-    if (!eSubida) {
-      const { data: pub } = admin.storage.from("avatars").getPublicUrl(ruta);
-      await admin.from("profiles").update({ avatar_url: `${pub.publicUrl}?v=${Date.now()}` }).eq("id", data.user.id);
+    // ¿Ya existe? Se avisa en vez de intentar crearla otra vez.
+    const { data: lista } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    if ((lista?.users || []).some((x) => (x.email || "").toLowerCase() === email)) {
+      return { error: "Ya existe una cuenta con ese correo." };
     }
-  }
 
-  return { ok: true };
+    let userId: string | null = null;
+    let aviso: string | undefined;
+
+    // Primero se intenta la invitación por correo.
+    const inv = await admin.auth.admin.inviteUserByEmail(email, { data: { full_name: nombre } });
+    if (inv.data?.user) {
+      userId = inv.data.user.id;
+    } else {
+      // Si el correo no se pudo mandar (límite del proveedor, por ejemplo),
+      // se crea igual con una contraseña temporal para no dejar el alta a medias.
+      const temporal = `Mel${Math.random().toString(36).slice(2, 10)}!${Math.floor(Math.random() * 90 + 10)}`;
+      const { data, error } = await admin.auth.admin.createUser({
+        email, password: temporal, email_confirm: true, user_metadata: { full_name: nombre },
+      });
+      if (error || !data.user) {
+        return { error: "No se pudo crear la cuenta. Revisa el correo e inténtalo de nuevo." };
+      }
+      userId = data.user.id;
+      aviso = `No se pudo enviar el correo de invitación, así que la cuenta se creó con esta contraseña temporal: ${temporal} — pásasela y que la cambie al entrar.`;
+    }
+
+    const perfil: Record<string, unknown> = { id: userId, full_name: nombre, is_admin: u.rol === "admin" };
+    if (u.telefono?.trim()) perfil.whatsapp = u.telefono.trim();
+    await admin.from("profiles").upsert(perfil);
+
+    if (u.avatarDataUrl?.startsWith("data:image/")) {
+      try {
+        const coma = u.avatarDataUrl.indexOf(",");
+        const bytes = Buffer.from(u.avatarDataUrl.slice(coma + 1), "base64");
+        const ruta = `${userId}/avatar.jpeg`;
+        const { error: eSubida } = await admin.storage.from("avatars")
+          .upload(ruta, bytes, { contentType: "image/jpeg", upsert: true });
+        if (!eSubida) {
+          const { data: pub } = admin.storage.from("avatars").getPublicUrl(ruta);
+          await admin.from("profiles").update({ avatar_url: `${pub.publicUrl}?v=${Date.now()}` }).eq("id", userId);
+        }
+      } catch {
+        // La foto es lo de menos: si falla, la cuenta ya quedó creada.
+      }
+    }
+
+    return aviso ? { ok: true, aviso } : { ok: true };
+  } catch (e) {
+    console.error("[altaUsuario]", e);
+    return { error: "Algo falló al crear la cuenta. Inténtalo otra vez en un momento." };
+  }
 }
 

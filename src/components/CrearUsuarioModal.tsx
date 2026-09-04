@@ -29,14 +29,22 @@ export function CrearUsuarioModal({ onCerrar, onCreado }: { onCerrar: () => void
     if (!listo) return;
     setGuardando(true);
     setError("");
-    const r = await altaUsuario({
-      nombre, email, rol: rol as NuevoUsuario["rol"],
-      telefono: telefono || undefined,
-      avatarDataUrl: foto || undefined,
-    });
+    let r: Awaited<ReturnType<typeof altaUsuario>>;
+    try {
+      r = await altaUsuario({
+        nombre, email, rol: rol as NuevoUsuario["rol"],
+        telefono: telefono || undefined,
+        avatarDataUrl: foto || undefined,
+      });
+    } catch {
+      setGuardando(false);
+      setError("No pudimos hablar con el servidor. Revisa tu conexión e inténtalo otra vez.");
+      return;
+    }
     setGuardando(false);
     if ("error" in r) { setError(r.error); return; }
     onCreado();
+    if (r.aviso) alert(r.aviso);
     onCerrar();
   }
 
