@@ -21,7 +21,7 @@ export function InvitarCard({ userId }: { userId: string }) {
         Comparte Melsprout y gana <b className="text-accent">+100 XP</b> por cada amigo que se registre 💜
       </p>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/octi.png" alt="" className="w-24 mx-auto my-3 select-none" draggable={false} />
+      <img src="/octi.png" alt="" className="octi-vivo w-24 mx-auto my-3 select-none" draggable={false} />
       <button onClick={invitar}
         className="w-full bg-accent text-white rounded-full py-2.5 text-[13.5px] font-bold hover:brightness-110 transition">
         {copiado ? "¡Link copiado! ✓" : "Invitar ahora →"}

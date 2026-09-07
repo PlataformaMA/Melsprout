@@ -283,7 +283,7 @@ export function RutaAprendizaje({
                   <div className="relative flex-1 h-3 rounded-full bg-white/70 border border-accent/10">
                     <div className="absolute inset-y-0 left-0 rounded-full bg-accent transition-all duration-700" style={{ width: `${pctMod}%` }} />
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/octi.png" alt="" className="absolute -top-4 w-8 -translate-x-1/2 transition-all duration-700 drop-shadow" style={{ left: `clamp(16px, ${pctMod}%, calc(100% - 16px))` }} draggable={false} />
+                    <img src="/octi.png" alt="" className="octi-vivo absolute -top-4 w-8 -translate-x-1/2 transition-all duration-700 drop-shadow" style={{ left: `clamp(16px, ${pctMod}%, calc(100% - 16px))` }} draggable={false} />
                   </div>
                   <div className="shrink-0 flex items-center gap-1.5">
                     <span className="hidden sm:inline text-[11px] font-bold text-accent">Mundo {modIdx + 1}</span>
@@ -319,7 +319,7 @@ export function RutaAprendizaje({
                   onClick={() => setDesafiosAbierto(true)} soloMovil />
                 <BotonIcono img="/trofeo.png" emoji="🏆" label="Ranking"
                   onClick={() => setRankingAbierto(true)} soloMovil />
-                <BotonIcono img="/cofre.png" emoji="🧰" label="Cofre · recompensas" onClick={() => setCofreAbierto(true)} />
+                <BotonIcono img="/cofre.png" emoji="🧰" label="Cofre · recompensas" celebrar onClick={() => setCofreAbierto(true)} />
                 <BotonIcono img="/brujula.png" emoji="🧭" label="Brújula · tus mundos" onClick={() => setMundosAbierto(true)} />
               </div>
 
@@ -543,16 +543,43 @@ function Isla({ img, emoji, glow, bloqueado, resaltar }: { img: string; emoji: s
 }
 
 // Botón de ícono (solo la ilustración) con respaldo a emoji si falta la imagen.
-function BotonIcono({ img, emoji, label, onClick, soloMovil }: { img: string; emoji: string; label: string; onClick: () => void; soloMovil?: boolean }) {
+// Con `celebrar` el ícono se sacude y suelta destellos antes de abrir: es el
+// gesto del cofre al abrirse.
+function BotonIcono({ img, emoji, label, onClick, soloMovil, celebrar }: {
+  img: string; emoji: string; label: string; onClick: () => void; soloMovil?: boolean; celebrar?: boolean;
+}) {
   const [err, setErr] = useState(false);
+  const [abriendo, setAbriendo] = useState(false);
+
+  function pulsar() {
+    if (!celebrar) { onClick(); return; }
+    setAbriendo(true);
+    // El modal entra cuando termina la animación, para que se vea el gesto.
+    setTimeout(() => { setAbriendo(false); onClick(); }, 620);
+  }
+
+  // Destellos que salen del cofre, cada uno hacia su lado.
+  const chispas = [
+    { dx: "-26px", dy: "-30px", d: "0s",    c: "#F5B301" },
+    { dx: "22px",  dy: "-34px", d: "0.06s", c: "#7C3AED" },
+    { dx: "-14px", dy: "-42px", d: "0.12s", c: "#F472B6" },
+    { dx: "30px",  dy: "-18px", d: "0.09s", c: "#F5B301" },
+    { dx: "-32px", dy: "-14px", d: "0.15s", c: "#7C3AED" },
+  ];
+
   return (
-    <button onClick={onClick} title={label} aria-label={label}
-      className={`w-[54px] h-[54px] sm:w-[76px] sm:h-[76px] rounded-2xl bg-surface border border-border shadow-sm grid place-items-center hover:border-accent/40 hover:-translate-y-0.5 active:scale-95 transition ${soloMovil ? "lg:hidden" : ""}`}>
+    <button onClick={pulsar} title={label} aria-label={label}
+      className={`relative w-[54px] h-[54px] sm:w-[76px] sm:h-[76px] rounded-2xl bg-surface border border-border shadow-sm grid place-items-center hover:border-accent/40 hover:-translate-y-0.5 active:scale-95 transition ${soloMovil ? "lg:hidden" : ""}`}>
+      {abriendo && chispas.map((ch, i) => (
+        <span key={i} aria-hidden className="chispa absolute w-2 h-2 rounded-full pointer-events-none"
+          style={{ background: ch.c, animationDelay: ch.d, ["--dx" as string]: ch.dx, ["--dy" as string]: ch.dy }} />
+      ))}
       {err ? (
-        <span className="text-[24px] sm:text-[34px]">{emoji}</span>
+        <span className={`text-[24px] sm:text-[34px] ${abriendo ? "cofre-abriendo" : ""}`}>{emoji}</span>
       ) : (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={img} alt={label} onError={() => setErr(true)} className="w-9 h-9 sm:w-14 sm:h-14 object-contain" draggable={false} />
+        <img src={img} alt={label} onError={() => setErr(true)}
+          className={`w-9 h-9 sm:w-14 sm:h-14 object-contain ${abriendo ? "cofre-abriendo" : ""}`} draggable={false} />
       )}
     </button>
   );
@@ -911,7 +938,7 @@ function OctiRuta({ nombre, genero, progreso }: { nombre: string; genero: Genero
         <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white rotate-45" />
       </div>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/octi.png" alt="Octi" className={`octi-float select-none shrink-0 w-24 sm:w-32 lg:w-44 drop-shadow-lg ${wiggle ? "octi-wiggle" : ""}`} draggable={false} />
+      <img src="/octi.png" alt="Octi" className={`octi-vivo select-none shrink-0 w-24 sm:w-32 lg:w-44 drop-shadow-lg ${wiggle ? "octi-wiggle" : ""}`} draggable={false} />
     </button>
   );
 }

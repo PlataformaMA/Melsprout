@@ -307,3 +307,53 @@ body {
     animation: none;
   }
 }
+
+/* ————— Octi con vida: se mece y flota como si moviera los tentáculos ————— */
+@keyframes octi-flota {
+  0%,  100% { transform: translateY(0)      rotate(-1.5deg) scaleX(1);     }
+  25%       { transform: translateY(-5px)   rotate(1.5deg)  scaleX(0.985); }
+  50%       { transform: translateY(-2px)   rotate(-1deg)   scaleX(1.015); }
+  75%       { transform: translateY(-6px)   rotate(2deg)    scaleX(0.99);  }
+}
+/* La parte de abajo se estira y encoge: es lo que lee como tentáculos. */
+@keyframes octi-tentaculos {
+  0%,  100% { transform: scaleY(1)     translateY(0);    }
+  30%       { transform: scaleY(1.045) translateY(1.5px);}
+  60%       { transform: scaleY(0.965) translateY(-1px); }
+}
+.octi-vivo {
+  animation: octi-flota 5.5s ease-in-out infinite;
+  transform-origin: 50% 85%;
+  will-change: transform;
+}
+.octi-vivo > * , .octi-vivo img {
+  animation: octi-tentaculos 3.1s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
+/* ————— Cofre: se sacude y se abre al tocarlo ————— */
+@keyframes cofre-abre {
+  0%   { transform: rotate(0)      scale(1);    }
+  15%  { transform: rotate(-7deg)  scale(1.04); }
+  30%  { transform: rotate(7deg)   scale(1.06); }
+  45%  { transform: rotate(-5deg)  scale(1.08); }
+  60%  { transform: rotate(4deg)   scale(1.12); }
+  80%  { transform: rotate(0)      scale(1.18); }
+  100% { transform: rotate(0)      scale(1);    }
+}
+.cofre-abriendo { animation: cofre-abre 0.65s ease-out; }
+
+/* Destellos que salen del cofre al abrirse. */
+@keyframes chispa-sale {
+  0%   { opacity: 0; transform: translate(0, 0) scale(0.4); }
+  25%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.1); }
+}
+.chispa { animation: chispa-sale 0.75s ease-out forwards; }
+
+/* Quien pide menos movimiento en su sistema, no lo recibe. */
+@media (prefers-reduced-motion: reduce) {
+  .octi-vivo, .octi-vivo > *, .octi-vivo img, .cofre-abriendo, .chispa {
+    animation: none !important;
+  }
+}

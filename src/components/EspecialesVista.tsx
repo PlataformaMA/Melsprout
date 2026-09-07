@@ -45,7 +45,7 @@ export function EspecialesVista({
               {cursos.length === 0 ? (
                 <div className="bg-surface border border-border rounded-3xl p-10 text-center shadow-sm">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/octi.png" alt="" className="w-24 mx-auto" />
+                  <img src="/octi.png" alt="" className="octi-vivo w-24 mx-auto" />
                   <h2 className="font-display font-extrabold text-lg mt-3">Todavía no hay cursos especiales</h2>
                   <p className="text-sub text-[13.5px] mt-1.5 max-w-sm mx-auto leading-snug">
                     Aquí van los cursos patrocinados y los bonus. Cuando publiquemos uno, lo vas a ver en esta sección.

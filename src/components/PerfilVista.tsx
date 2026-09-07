@@ -168,7 +168,7 @@ export function PerfilVista({ perfil, creadoEn, insightiq, avance, social, amigo
                     <div className="absolute z-10 transition-all duration-700"
                       style={{ left: `clamp(0px, calc(${xpPct}% - 25px), calc(100% - 50px))`, top: "50%", transform: "translateY(-50%)" }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/octi.png" alt="Octi" width={50} className="select-none drop-shadow-[0_3px_4px_rgba(124,58,237,0.25)]" draggable={false} />
+                      <img src="/octi.png" alt="Octi" width={50} className="octi-vivo select-none drop-shadow-[0_3px_4px_rgba(124,58,237,0.25)]" draggable={false} />
                     </div>
                   </div>
                   <span className="text-[13px] text-sub shrink-0 sm:text-right">
@@ -677,7 +677,7 @@ function TabResumen({ perfil, nivel, avance }: { perfil: Perfil; nivel: ReturnTy
                 </p>
               </div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/octi.png" alt="" className="w-20 shrink-0 self-end -mb-1 opacity-95" />
+              <img src="/octi.png" alt="" className="octi-vivo w-20 shrink-0 self-end -mb-1 opacity-95" />
             </div>
           </div>
         ) : (

@@ -47,7 +47,7 @@ export function GruposVista({ propuestas, mios, otros }: { propuestas: Grupo[]; 
       {vacio && (
         <div className="bg-surface border border-border rounded-3xl p-8 sm:p-10 text-center shadow-sm">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/octi.png" alt="" className="w-20 sm:w-24 mx-auto" />
+          <img src="/octi.png" alt="" className="octi-vivo w-20 sm:w-24 mx-auto" />
           <h3 className="font-display font-extrabold text-lg mt-3">
             {busca ? "Nada con ese nombre" : "Todavía no hay grupos"}
           </h3>

@@ -144,7 +144,7 @@ export function ReproductorClase({
         <div className="fixed inset-0 z-[95] bg-black/50 grid place-items-center p-4" role="dialog" aria-modal="true">
           <div className="bg-surface rounded-3xl w-full max-w-[380px] p-6 text-center shadow-2xl">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/octi.png" alt="" className="w-20 mx-auto" draggable={false} />
+            <img src="/octi.png" alt="" className="octi-vivo w-20 mx-auto" draggable={false} />
             <h2 className="font-display font-extrabold text-lg mt-2">No se puede adelantar</h2>
             <p className="text-[13.5px] text-sub mt-1.5 leading-relaxed">
               La clase cuenta como vista cuando llegas al final. Puedes regresar
@@ -336,7 +336,7 @@ export function ReproductorClase({
                     <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#8B5CF6] to-accent" style={{ width: `${(posicion / total) * 100}%` }} />
                     <div className="absolute top-1/2 -translate-y-1/2" style={{ left: `calc(${(posicion / total) * 100}% - 16px)` }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/octi.png" alt="Octi" width={32} className="select-none" draggable={false} />
+                      <img src="/octi.png" alt="Octi" width={32} className="octi-vivo select-none" draggable={false} />
                     </div>
                   </div>
                   <span className="text-xl">🏆</span>
@@ -398,7 +398,7 @@ export function ReproductorClase({
                     <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-[#8B5CF6] to-accent" style={{ width: `${(posicion / total) * 100}%` }} />
                     <div className="absolute top-1/2 -translate-y-1/2" style={{ left: `calc(${(posicion / total) * 100}% - 16px)` }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/octi.png" alt="Octi" width={32} className="select-none" draggable={false} />
+                      <img src="/octi.png" alt="Octi" width={32} className="octi-vivo select-none" draggable={false} />
                     </div>
                   </div>
                   <span className="text-xl">🏆</span>

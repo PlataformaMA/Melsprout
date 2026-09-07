@@ -108,7 +108,7 @@ export function ChatVista({
                         }`}>
                           <div className="flex items-center gap-2.5">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src="/octi.png" alt="" className="w-9 shrink-0" />
+                            <img src="/octi.png" alt="" className="octi-vivo w-9 shrink-0" />
                             <div className="min-w-0">
                               <p className="font-display font-extrabold text-[13.5px] leading-tight">
                                 {s?.titulo ?? "¡Ánimo!"} {s?.emoji}
@@ -140,7 +140,7 @@ export function ChatVista({
                   <button key={s.clave} onClick={() => mandar(s.clave)}
                     className="shrink-0 w-[74px] rounded-xl border border-border hover:border-accent hover:bg-accent-soft/50 transition p-1.5 text-center">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/octi.png" alt="" className="w-8 mx-auto" />
+                    <img src="/octi.png" alt="" className="octi-vivo w-8 mx-auto" />
                     <span className="block text-[9.5px] font-bold leading-tight mt-0.5 truncate">{s.titulo}</span>
                   </button>
                 ))}

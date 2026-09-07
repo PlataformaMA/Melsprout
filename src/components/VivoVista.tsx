@@ -109,7 +109,7 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, gemas, racha }
           {/* Banner Octi */}
           <div className="mt-4 rounded-3xl p-6 sm:p-8 flex items-center gap-5 sm:gap-7 shadow-sm" style={{ background: "linear-gradient(120deg,#F3F0FF,#FBFAFF)" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/octi.png" alt="Octi" className="shrink-0 w-24 sm:w-36 drop-shadow-lg" draggable={false} />
+            <img src="/octi.png" alt="Octi" className="octi-vivo shrink-0 w-24 sm:w-36 drop-shadow-lg" draggable={false} />
             <div className="flex-1 min-w-0">
               <p className="text-accent font-extrabold text-lg sm:text-2xl leading-snug">Aprende en tiempo real con los mejores creadores.</p>
               <p className="text-sub text-[14px] sm:text-[15px] mt-1.5">Asistir da <b className="text-accent">+50 XP</b> (mínimo 10 minutos dentro; entrar y salirse no cuenta). 💎</p>
@@ -377,7 +377,7 @@ function CalendarioModal({ clases, asist, onAsistir, onClose }: {
             {/* Sincronizar */}
             <div className="rounded-2xl p-4 text-center" style={{ background: "linear-gradient(160deg,#F3F0FF,#FBFAFF)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/octi.png" alt="Octi" width={70} height={70} className="mx-auto" />
+              <img src="/octi.png" alt="Octi" width={70} height={70} className="octi-vivo mx-auto" />
               <div className="font-display font-extrabold text-accent mt-1">¡Octi quiere ayudarte!</div>
               <p className="text-[12.5px] text-sub mt-1">Suscríbete y tu calendario se actualiza solo cuando haya nuevas clases.</p>
               <div className="mt-3 space-y-2">

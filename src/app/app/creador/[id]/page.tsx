@@ -123,7 +123,7 @@ export default async function CreadorPage({ params }: { params: Promise<{ id: st
                 <div className="relative mt-4 h-2.5 rounded-full bg-[#EEEBF6]">
                   <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} />
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/octi.png" alt="" className="absolute -top-3.5 w-8 -translate-x-1/2"
+                  <img src="/octi.png" alt="" className="octi-vivo absolute -top-3.5 w-8 -translate-x-1/2"
                     style={{ left: `clamp(16px, ${pct}%, calc(100% - 16px))` }} />
                 </div>
 
@@ -213,7 +213,7 @@ export default async function CreadorPage({ params }: { params: Promise<{ id: st
                         </p>
                       </div>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/octi.png" alt="" className="w-20 shrink-0 self-end -mb-1 opacity-95" />
+                      <img src="/octi.png" alt="" className="octi-vivo w-20 shrink-0 self-end -mb-1 opacity-95" />
                     </div>
                   </div>
                 ) : (

@@ -108,7 +108,7 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
               {/* Banner Octi */}
               <div className="rounded-3xl p-6 sm:p-8 flex items-center gap-5 sm:gap-7 shadow-sm mb-5" style={{ background: "linear-gradient(120deg,#F3F0FF,#FBFAFF)" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/octi.png" alt="Octi" className="shrink-0 w-24 sm:w-36 drop-shadow-lg" draggable={false} />
+                <img src="/octi.png" alt="Octi" className="octi-vivo shrink-0 w-24 sm:w-36 drop-shadow-lg" draggable={false} />
                 <div className="flex-1 min-w-0">
                   <p className="text-accent font-extrabold text-lg sm:text-2xl leading-snug">
                     {tab === "grupos" ? "¡Busca a tu gente!"

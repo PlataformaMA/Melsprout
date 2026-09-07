@@ -84,7 +84,7 @@ export function AmigosVista({
               {actividad.length === 0 ? (
                 <div className="bg-surface border border-border rounded-3xl p-8 text-center shadow-sm">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/octi.png" alt="" className="w-20 mx-auto" />
+                  <img src="/octi.png" alt="" className="octi-vivo w-20 mx-auto" />
                   <h3 className="font-display font-extrabold mt-3">Todavía no hay actividad</h3>
                   <p className="text-sub text-[13.5px] mt-1.5 max-w-sm mx-auto leading-snug">
                     Cuando tus amigos completen clases, retos o hagan racha, lo vas a ver aquí para felicitarlos.
