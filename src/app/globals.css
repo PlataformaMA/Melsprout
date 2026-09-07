@@ -335,13 +335,15 @@ body {
 
 /* ————— Cofre: la tapa se levanta de verdad ————— */
 @keyframes cofre-tapa-abre {
-  0%   { transform: rotate(0)      translateY(0)    }
-  20%  { transform: rotate(6deg)   translateY(1px)  }
-  100% { transform: rotate(-102deg) translateY(-3px) }
+  0%   { transform: perspective(240px) rotateX(0)       }
+  18%  { transform: perspective(240px) rotateX(9deg)    }
+  100% { transform: perspective(240px) rotateX(-118deg) }
 }
 .cofre-tapa-abriendo {
-  animation: cofre-tapa-abre 0.55s cubic-bezier(.34,1.3,.64,1) forwards;
+  /* La bisagra va en el borde de atrás y se inclina hacia atrás, no de lado. */
+  transform-box: fill-box;
   transform-origin: 50% 100%;
+  animation: cofre-tapa-abre 0.6s cubic-bezier(.34,1.25,.64,1) forwards;
 }
 @keyframes cofre-base-tiembla {
   0%, 100% { transform: translateX(0)     }
@@ -373,4 +375,30 @@ body {
   .cofre-tapa-abriendo, .cofre-base-tiembla, .cofre-luz, .chispa {
     animation: none !important;
   }
+}
+
+/* ————— Secuencia de apertura del cofre ————— */
+@keyframes cofre-crece {
+  0%   { transform: scale(0.25) translateY(40px); opacity: 0 }
+  60%  { transform: scale(1.12) translateY(0);    opacity: 1 }
+  100% { transform: scale(1)    translateY(0);    opacity: 1 }
+}
+.cofre-crece  { animation: cofre-crece 0.42s cubic-bezier(.34,1.4,.64,1) forwards; }
+.cofre-grande { transform: scale(1); }
+
+@keyframes cofre-vuela {
+  0%   { opacity: 0; transform: translate(0,0) scale(0.3) rotate(0) }
+  15%  { opacity: 1 }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.15) rotate(var(--rot)) }
+}
+.cofre-vuela { animation: cofre-vuela 1.1s cubic-bezier(.2,.7,.4,1) forwards; }
+
+@keyframes octi-aparece {
+  0%   { opacity: 0; transform: translateY(10px) }
+  100% { opacity: 1; transform: translateY(0) }
+}
+.octi-aparece { animation: octi-aparece 0.35s ease-out forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cofre-crece, .cofre-vuela, .octi-aparece { animation: none !important; opacity: 1 !important; }
 }

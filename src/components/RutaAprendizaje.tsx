@@ -6,7 +6,8 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { RankingModal, type RankItem } from "@/components/RankingModal";
 import { CofreModal } from "@/components/CofreModal";
-import { CofreAnimado } from "@/components/CofreAnimado";
+import { CofreVector } from "@/components/CofreVector";
+import { AbrirCofre } from "@/components/AbrirCofre";
 import { RachaModal } from "@/components/RachaModal";
 import { RecursosModal } from "@/components/RecursosModal";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
@@ -208,6 +209,7 @@ export function RutaAprendizaje({
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
   const [cofreAbierto, setCofreAbierto] = useState(false);
+  const [abriendoCofre, setAbriendoCofre] = useState(false);
   const [desafiosAbierto, setDesafiosAbierto] = useState(false);
   const [recursosAbierto, setRecursosAbierto] = useState(false);
   const mundos = cursos.map((m, i) => {
@@ -320,9 +322,10 @@ export function RutaAprendizaje({
                   onClick={() => setDesafiosAbierto(true)} soloMovil />
                 <BotonIcono img="/trofeo.png" emoji="🏆" label="Ranking"
                   onClick={() => setRankingAbierto(true)} soloMovil />
-                <span className="w-[54px] h-[54px] sm:w-[76px] sm:h-[76px] rounded-2xl bg-surface border border-border shadow-sm grid place-items-center hover:border-accent/40 transition">
-                  <CofreAnimado size={44} onAbierto={() => setCofreAbierto(true)} />
-                </span>
+                <button onClick={() => setAbriendoCofre(true)} title="Cofre · recompensas" aria-label="Cofre · recompensas"
+                  className="w-[54px] h-[54px] sm:w-[76px] sm:h-[76px] rounded-2xl bg-surface border border-border shadow-sm grid place-items-center hover:border-accent/40 hover:-translate-y-0.5 active:scale-95 transition">
+                  <CofreVector size={44} />
+                </button>
                 <BotonIcono img="/brujula.png" emoji="🧭" label="Brújula · tus mundos" onClick={() => setMundosAbierto(true)} />
               </div>
 
@@ -490,6 +493,9 @@ export function RutaAprendizaje({
 
       {mundosAbierto && <MundosModal mundos={mundos} onClose={() => setMundosAbierto(false)} />}
       {rankingAbierto && <RankingModal ranking={ranking} onClose={() => setRankingAbierto(false)} />}
+      {abriendoCofre && (
+        <AbrirCofre onListo={() => { setAbriendoCofre(false); setCofreAbierto(true); }} />
+      )}
       {cofreAbierto && <CofreModal xp={xp} onClose={() => setCofreAbierto(false)} />}
       {desafiosAbierto && (
         <div className="fixed inset-0 z-[80] bg-black/50 grid place-items-center p-4 lg:hidden" role="dialog" aria-modal="true">
