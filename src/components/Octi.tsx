@@ -62,6 +62,26 @@ export function Octi({
   );
 }
 
+// Los ocho movimientos de Octi: cada tentáculo con su ancla (donde nace),
+// su duración y su retraso, para que el vaivén nunca coincida.
+const TENTACULOS = [
+  { id: "at-izq", atras: true,  ancla: [70, 122] as const, dur: 3.6, retraso: 0,    giro: 4.5,
+    d: "M64 118 C46 138 36 160 46 178 C53 188 64 183 62 170 C60 156 66 138 78 128 Z",
+    ventosas: [[57, 168, 3], [61, 176, 2.4]] as const },
+  { id: "at-der", atras: true,  ancla: [130, 122] as const, dur: 4.1, retraso: 0.7, giro: -4.5,
+    d: "M136 118 C154 138 164 160 154 178 C147 188 136 183 138 170 C140 156 134 138 122 128 Z",
+    ventosas: [[143, 168, 3], [139, 176, 2.4]] as const },
+  { id: "fr-izq", atras: false, ancla: [86, 130] as const, dur: 2.9, retraso: 0.25, giro: 6,
+    d: "M80 128 C68 150 62 170 70 182 C76 190 86 186 84 173 C82 160 86 142 94 134 Z",
+    ventosas: [[78, 171, 3], [81, 180, 2.4]] as const },
+  { id: "fr-cen", atras: false, ancla: [100, 134] as const, dur: 3.3, retraso: 1.0, giro: 3,
+    d: "M100 132 C95 156 94 176 100 186 C106 176 106 156 100 132 Z",
+    ventosas: [[100, 176, 3], [100, 184, 2.4]] as const },
+  { id: "fr-der", atras: false, ancla: [114, 130] as const, dur: 3.1, retraso: 0.45, giro: -6,
+    d: "M120 128 C132 150 138 170 130 182 C124 190 114 186 116 173 C118 160 114 142 106 134 Z",
+    ventosas: [[122, 171, 3], [119, 180, 2.4]] as const },
+];
+
 function OctiSVG({ size, anim = "octi-float" }: { size: number; anim?: string }) {
   return (
     <svg
@@ -85,25 +105,22 @@ function OctiSVG({ size, anim = "octi-float" }: { size: number; anim?: string })
       {/* sombra suave */}
       <ellipse cx="100" cy="186" rx="48" ry="8" fill="#000" opacity="0.08" />
 
-      {/* tentáculos traseros (más oscuros, dan profundidad) */}
-      <g fill="#6D28D9">
-        <path d="M64 118 C46 138 36 160 46 178 C53 188 64 183 62 170 C60 156 66 138 78 128 Z" />
-        <path d="M136 118 C154 138 164 160 154 178 C147 188 136 183 138 170 C140 156 134 138 122 128 Z" />
-      </g>
-      {/* tentáculos frontales */}
-      <g fill="url(#octiBody)">
-        <path d="M80 128 C68 150 62 170 70 182 C76 190 86 186 84 173 C82 160 86 142 94 134 Z" />
-        <path d="M100 132 C95 156 94 176 100 186 C106 176 106 156 100 132 Z" />
-        <path d="M120 128 C132 150 138 170 130 182 C124 190 114 186 116 173 C118 160 114 142 106 134 Z" />
-      </g>
-      {/* ventositas */}
-      <g fill="#C4B5FD">
-        <circle cx="57" cy="168" r="3" /><circle cx="61" cy="176" r="2.4" />
-        <circle cx="78" cy="171" r="3" /><circle cx="81" cy="180" r="2.4" />
-        <circle cx="100" cy="176" r="3" /><circle cx="100" cy="184" r="2.4" />
-        <circle cx="122" cy="171" r="3" /><circle cx="119" cy="180" r="2.4" />
-        <circle cx="143" cy="168" r="3" /><circle cx="139" cy="176" r="2.4" />
-      </g>
+      {/* Cada tentáculo se mece por su cuenta, con su ritmo y su retraso, y se
+          lleva sus ventositas: así nunca se mueven todos a la vez. */}
+      {TENTACULOS.map((t) => (
+        <g key={t.id} className={anim === "quieto" ? undefined : "octi-tent"}
+          style={{
+            transformOrigin: `${t.ancla[0]}px ${t.ancla[1]}px`,
+            animationDuration: `${t.dur}s`,
+            animationDelay: `${t.retraso}s`,
+            ["--giro" as string]: `${t.giro}deg`,
+          }}>
+          <path d={t.d} fill={t.atras ? "#6D28D9" : "url(#octiBody)"} />
+          {t.ventosas.map(([cx, cy, r], k) => (
+            <circle key={k} cx={cx} cy={cy} r={r} fill="#C4B5FD" />
+          ))}
+        </g>
+      ))}
 
       {/* cabeza / manto */}
       <ellipse cx="100" cy="80" rx="58" ry="55" fill="url(#octiBody)" />

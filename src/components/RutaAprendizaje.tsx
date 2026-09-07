@@ -6,6 +6,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { RankingModal, type RankItem } from "@/components/RankingModal";
 import { CofreModal } from "@/components/CofreModal";
+import { CofreAnimado } from "@/components/CofreAnimado";
 import { RachaModal } from "@/components/RachaModal";
 import { RecursosModal } from "@/components/RecursosModal";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
@@ -319,7 +320,9 @@ export function RutaAprendizaje({
                   onClick={() => setDesafiosAbierto(true)} soloMovil />
                 <BotonIcono img="/trofeo.png" emoji="🏆" label="Ranking"
                   onClick={() => setRankingAbierto(true)} soloMovil />
-                <BotonIcono img="/cofre.png" emoji="🧰" label="Cofre · recompensas" celebrar onClick={() => setCofreAbierto(true)} />
+                <span className="w-[54px] h-[54px] sm:w-[76px] sm:h-[76px] rounded-2xl bg-surface border border-border shadow-sm grid place-items-center hover:border-accent/40 transition">
+                  <CofreAnimado size={44} onAbierto={() => setCofreAbierto(true)} />
+                </span>
                 <BotonIcono img="/brujula.png" emoji="🧭" label="Brújula · tus mundos" onClick={() => setMundosAbierto(true)} />
               </div>
 
