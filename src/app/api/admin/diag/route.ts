@@ -39,6 +39,10 @@ export async function GET() {
       tiktok: !!process.env.TIKTOK_CLIENT_KEY && !!process.env.TIKTOK_CLIENT_SECRET,
       youtube: !!process.env.YOUTUBE_CLIENT_ID && !!process.env.YOUTUBE_CLIENT_SECRET,
       sitio: process.env.NEXT_PUBLIC_SITE_URL || null,
+      // Correos: verificación y bienvenida salen por Resend.
+      correo: !!process.env.RESEND_API_KEY,
+      remitente: process.env.CORREO_REMITENTE || null,
+      subtitulos: !!process.env.ASSEMBLYAI_API_KEY,
     },
   });
 }
