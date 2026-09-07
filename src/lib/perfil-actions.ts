@@ -104,6 +104,10 @@ export async function getPerfil(): Promise<Perfil | null> {
     const { createAdminClient } = await import("@/lib/supabase/admin");
     await createAdminClient().from("profiles").update({ email_verificado: true }).eq("id", user.id);
     (data as { email_verificado?: boolean }).email_verificado = true;
+
+    // Recién verificada: le damos la bienvenida (una sola vez).
+    const { darBienvenida } = await import("@/lib/bienvenida");
+    await darBienvenida(user.id, user.email ?? null, (data as { full_name?: string }).full_name || "");
   }
 
   return data as Perfil;
