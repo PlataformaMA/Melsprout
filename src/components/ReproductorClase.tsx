@@ -230,7 +230,7 @@ export function ReproductorClase({
                   )}
                   {/* Selector de velocidad — colapsable (chico por defecto, se expande al tocar) */}
                   {video.tipo !== "youtube" && video.tipo !== "vimeo" && (
-                    <div className="absolute top-3 right-3 z-10">
+                    <div className="hidden sm:block absolute top-3 right-3 z-10">
                       {velExpand ? (
                         <div className="flex items-center gap-0.5 bg-black/60 backdrop-blur rounded-full px-1 py-1 shadow-lg">
                           {[1, 1.25, 1.5, 2].map((v) => (
@@ -247,6 +247,23 @@ export function ReproductorClase({
                           <GaugeIcon /> {velocidad}x
                         </button>
                       )}
+                    </div>
+                  )}
+                  {/* En móvil la velocidad va debajo, como en YouTube. */}
+                  {video.tipo !== "youtube" && video.tipo !== "vimeo" && (
+                    <div className="sm:hidden flex items-center gap-1.5 mt-2">
+                      <span className="text-[12px] text-sub font-semibold">Velocidad</span>
+                      <div className="flex items-center gap-1 ml-auto">
+                        {[1, 1.25, 1.5, 2].map((v) => (
+                          <button key={v} type="button"
+                            onClick={() => { setVelocidad(v); if (videoRef.current) videoRef.current.playbackRate = v; }}
+                            className={`text-[12px] font-bold rounded-full px-2.5 py-1 transition ${
+                              velocidad === v ? "bg-accent text-white" : "bg-bg border border-border text-sub"
+                            }`}>
+                            {v}x
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                   <div className="mt-2 h-1.5 rounded-full bg-[#EEEBF6] overflow-hidden">
@@ -363,13 +380,16 @@ export function ReproductorClase({
                         <Link key={c.id} href={estado === "bloqueada" ? "#" : `/app/clase/${c.id}`}
                           className={`flex items-center gap-3 ${estado === "bloqueada" ? "opacity-60 cursor-default" : "hover:bg-bg"} rounded-xl p-1.5 -m-1.5 transition`}>
                           <div className="relative w-16 h-11 rounded-lg overflow-hidden shrink-0 grid place-items-center text-white" style={{ background: "linear-gradient(120deg,#7C3AED,#2563EB)" }}>
-                            <span className="text-[7px] font-bold leading-none text-center px-1 opacity-90">EN VIVO</span>
+                            {c.portada && (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={c.portada} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                            )}
                             {estado !== "completada" && (
-                              <span className="absolute inset-0 grid place-items-center bg-black/25">{estado === "actual" ? <PlayIcon /> : <MiniLock />}</span>
+                              <span className="absolute inset-0 grid place-items-center bg-black/30">{estado === "actual" ? <PlayIcon /> : <MiniLock />}</span>
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className={`text-sm font-semibold leading-tight ${estado === "actual" ? "text-accent" : "text-text"}`}>{titleCase(c.titulo)}</div>
+                            <div className={`text-sm font-semibold leading-tight line-clamp-2 ${estado === "actual" ? "text-accent" : "text-text"}`}>{titleCase(c.titulo)}</div>
                           </div>
                           {estado === "completada" ? <span className="w-5 h-5 rounded-full bg-green text-white grid place-items-center text-[11px] shrink-0">✓</span> : estado === "bloqueada" ? <MiniLock /> : null}
                         </Link>
@@ -409,7 +429,7 @@ export function ReproductorClase({
 
               {/* Clases del módulo */}
               <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
-                <h3 className="font-display font-extrabold mb-4">Clases Del Módulo</h3>
+                <h3 className="font-display font-extrabold mb-4">Clases del módulo</h3>
                 <div className="space-y-3">
                   {modulo.clases.map((c, i) => {
                     const estado = estadoClase(i);

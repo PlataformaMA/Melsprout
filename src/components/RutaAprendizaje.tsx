@@ -207,6 +207,7 @@ export function RutaAprendizaje({
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
   const [cofreAbierto, setCofreAbierto] = useState(false);
+  const [desafiosAbierto, setDesafiosAbierto] = useState(false);
   const [recursosAbierto, setRecursosAbierto] = useState(false);
   const mundos = cursos.map((m, i) => {
     const start = cursos.slice(0, i).reduce((a, x) => a + x.clases.length, 0);
@@ -311,8 +312,13 @@ export function RutaAprendizaje({
                 </div>
               </div>
 
-              {/* Botones rápidos (solo íconos): Cofre + Brújula, debajo de "Tu progreso", a la derecha */}
-              <div className="flex gap-3 mb-4 justify-end">
+              {/* Accesos rápidos. En móvil van los cuatro y más chicos, porque
+                  la barra lateral queda hasta el final del mapa. */}
+              <div className="flex gap-2.5 sm:gap-3 mb-4 justify-end">
+                <BotonIcono img="/desafios/diana.png" emoji="🎯" label="Desafíos del día"
+                  onClick={() => setDesafiosAbierto(true)} soloMovil />
+                <BotonIcono img="/trofeo.png" emoji="🏆" label="Ranking"
+                  onClick={() => setRankingAbierto(true)} soloMovil />
                 <BotonIcono img="/cofre.png" emoji="🧰" label="Cofre · recompensas" onClick={() => setCofreAbierto(true)} />
                 <BotonIcono img="/brujula.png" emoji="🧭" label="Brújula · tus mundos" onClick={() => setMundosAbierto(true)} />
               </div>
@@ -399,7 +405,7 @@ export function RutaAprendizaje({
             <aside className="space-y-4 lg:sticky lg:top-5">
               {!emailVerificado && <VerificarBanner />}
 
-              <Tarjeta titulo="Desafíos del día" extra={<span className="text-[12px] text-accent font-semibold cursor-default">Ver todos</span>}>
+              <Tarjeta titulo="Desafíos del día" claseExtra="hidden lg:block" extra={<span className="text-[12px] text-accent font-semibold cursor-default">Ver todos</span>}>
                 <Desafio iconSrc="/desafios/rayo.png" texto="Gana 10 EXP" progreso={0} total={10} />
                 <Desafio iconSrc="/desafios/diana.png" texto="Obtén un puntaje de 90% o más en 1 lección" progreso={0} total={1} />
               </Tarjeta>
@@ -482,6 +488,19 @@ export function RutaAprendizaje({
       {mundosAbierto && <MundosModal mundos={mundos} onClose={() => setMundosAbierto(false)} />}
       {rankingAbierto && <RankingModal ranking={ranking} onClose={() => setRankingAbierto(false)} />}
       {cofreAbierto && <CofreModal xp={xp} onClose={() => setCofreAbierto(false)} />}
+      {desafiosAbierto && (
+        <div className="fixed inset-0 z-[80] bg-black/50 grid place-items-center p-4 lg:hidden" role="dialog" aria-modal="true">
+          <div className="bg-surface rounded-3xl w-full max-w-[380px] p-5 shadow-2xl">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-display font-extrabold text-lg">Desafíos del día</h2>
+              <button onClick={() => setDesafiosAbierto(false)} aria-label="Cerrar"
+                className="text-sub hover:text-text text-xl leading-none">×</button>
+            </div>
+            <Desafio iconSrc="/desafios/rayo.png" texto="Gana 10 EXP" progreso={0} total={10} />
+            <Desafio iconSrc="/desafios/diana.png" texto="Obtén un puntaje de 90% o más en 1 lección" progreso={0} total={1} />
+          </div>
+        </div>
+      )}
       {recursosAbierto && <RecursosModal recursos={recursos} onClose={() => setRecursosAbierto(false)} />}
       {rachaAbierto && rachaInfo && (
         <RachaModal info={rachaInfo} onClose={() => { setRachaAbierto(false); abrirRankingSiToca(); }} />
@@ -524,16 +543,16 @@ function Isla({ img, emoji, glow, bloqueado, resaltar }: { img: string; emoji: s
 }
 
 // Botón de ícono (solo la ilustración) con respaldo a emoji si falta la imagen.
-function BotonIcono({ img, emoji, label, onClick }: { img: string; emoji: string; label: string; onClick: () => void }) {
+function BotonIcono({ img, emoji, label, onClick, soloMovil }: { img: string; emoji: string; label: string; onClick: () => void; soloMovil?: boolean }) {
   const [err, setErr] = useState(false);
   return (
     <button onClick={onClick} title={label} aria-label={label}
-      className="w-[76px] h-[76px] rounded-2xl bg-surface border border-border shadow-sm grid place-items-center hover:border-accent/40 hover:-translate-y-0.5 active:scale-95 transition">
+      className={`w-[54px] h-[54px] sm:w-[76px] sm:h-[76px] rounded-2xl bg-surface border border-border shadow-sm grid place-items-center hover:border-accent/40 hover:-translate-y-0.5 active:scale-95 transition ${soloMovil ? "lg:hidden" : ""}`}>
       {err ? (
-        <span className="text-[34px]">{emoji}</span>
+        <span className="text-[24px] sm:text-[34px]">{emoji}</span>
       ) : (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={img} alt={label} onError={() => setErr(true)} className="w-14 h-14 object-contain" draggable={false} />
+        <img src={img} alt={label} onError={() => setErr(true)} className="w-9 h-9 sm:w-14 sm:h-14 object-contain" draggable={false} />
       )}
     </button>
   );
@@ -901,9 +920,9 @@ function OctiRuta({ nombre, genero, progreso }: { nombre: string; genero: Genero
 function Counter({ icon, valor }: { icon: string; valor: number }) {
   return <div className="flex items-center gap-1.5"><span className="text-lg">{icon}</span><span className="font-display font-extrabold text-[15px] text-text">{valor}</span></div>;
 }
-function Tarjeta({ titulo, children, extra }: { titulo: string; children: React.ReactNode; extra?: React.ReactNode }) {
+function Tarjeta({ titulo, children, extra, claseExtra = "" }: { titulo: string; children: React.ReactNode; extra?: React.ReactNode; claseExtra?: string }) {
   return (
-    <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm">
+    <div className={`bg-surface border border-border rounded-2xl p-4 shadow-sm ${claseExtra}`}>
       <div className="flex items-center justify-between mb-3"><h3 className="font-display font-extrabold text-sm">{titulo}</h3>{extra}</div>
       <div className="space-y-3.5">{children}</div>
     </div>
