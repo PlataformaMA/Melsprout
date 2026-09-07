@@ -53,6 +53,7 @@ export function ReproductorClase({
   const vistoRef = useRef(vistoInicial);   // segundos REALMENTE vistos (arranca de lo ya guardado)
   const lastTimeRef = useRef(0);
   const saltandoRef = useRef(false);   // true mientras se arrastra la barra
+  const maxVistoRef = useRef(0);       // hasta dónde llegó viendo de verdad
 
   // Mide el 85% por tiempo reproducido real (adelantar la barrita no cuenta).
   // Cuenta SOLO lo reproducido, nunca lo que se adelanta con la barra. Antes se
@@ -69,12 +70,16 @@ export function ReproductorClase({
       vistoRef.current += Math.min(delta, 30);
     }
     lastTimeRef.current = v.currentTime;
+    if (!saltandoRef.current && v.currentTime > maxVistoRef.current) {
+      maxVistoRef.current = v.currentTime;
+    }
     if (v.duration > 0 && Number.isFinite(v.duration)) {
       setProgreso(Math.min(100, (vistoRef.current / v.duration) * 100));
     }
   }
   const router = useRouter();
   const [reproduciendo, setReproduciendo] = useState(false);
+  const [avisoSalto, setAvisoSalto] = useState(false);
   // La barra se restaura con la duración REAL del video (al cargar), no con el
   // estimado (duracionMin), para no inflar el % y marcar "ya visto" de más.
   const [progreso, setProgreso] = useState(yaCompletada ? 100 : 0);
@@ -135,6 +140,24 @@ export function ReproductorClase({
 
   return (
     <div className="min-h-screen bg-bg flex">
+      {avisoSalto && (
+        <div className="fixed inset-0 z-[95] bg-black/50 grid place-items-center p-4" role="dialog" aria-modal="true">
+          <div className="bg-surface rounded-3xl w-full max-w-[380px] p-6 text-center shadow-2xl">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/octi.png" alt="" className="w-20 mx-auto" draggable={false} />
+            <h2 className="font-display font-extrabold text-lg mt-2">No se puede adelantar</h2>
+            <p className="text-[13.5px] text-sub mt-1.5 leading-relaxed">
+              La clase cuenta como vista cuando llegas al final. Puedes regresar
+              a repasar lo que quieras, pero no saltarte partes.
+            </p>
+            <button onClick={() => setAvisoSalto(false)}
+              className="mt-4 w-full bg-accent text-white rounded-2xl py-3 text-[14px] font-bold hover:brightness-110 transition">
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
+
       {popup && (
         <PopupClaseCompletada
           completadas={posicion}
@@ -177,7 +200,16 @@ export function ReproductorClase({
                     <video ref={videoRef} src={videoUrl} controls playsInline
                       onTimeUpdate={onTimeUpdate}
                       onSeeking={() => { saltandoRef.current = true; }}
-                      onSeeked={(e) => { saltandoRef.current = false; lastTimeRef.current = e.currentTarget.currentTime; }}
+                      onSeeked={(e) => {
+                        const v = e.currentTarget;
+                        saltandoRef.current = false;
+                        // Se puede regresar, pero no adelantar: la clase se ve completa.
+                        if (v.currentTime > maxVistoRef.current + 1.5) {
+                          v.currentTime = maxVistoRef.current;
+                          setAvisoSalto(true);
+                        }
+                        lastTimeRef.current = v.currentTime;
+                      }}
                       onEnded={() => setTerminado(true)}
                       onLoadedMetadata={(e) => {
                         const v = e.currentTarget;
@@ -293,7 +325,7 @@ export function ReproductorClase({
 
               {/* Calificación y comentarios de la clase */}
               <div className="mt-6">
-                <ClaseSocial claseId={clase.id} />
+                <ClaseSocial claseId={clase.id} puedeCalificar={yaCompletada || terminado} />
               </div>
 
               {/* ——— Bloque MÓVIL: progreso + tabs (Recursos | Clases) ——— */}

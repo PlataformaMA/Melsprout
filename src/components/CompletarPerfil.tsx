@@ -29,6 +29,8 @@ const PLATAFORMAS = [
   { key: "youtube", connect: "/api/youtube/connect" },
 ] as const;
 
+export const EDAD_MINIMA = 18;
+
 function edadDe(fecha: string): number | null {
   if (!fecha) return null;
   const [y, m, d] = fecha.slice(0, 10).split("-").map(Number);
@@ -54,6 +56,14 @@ export function CompletarPerfil({
 
   const [username, setUsername] = useState(perfil.username ?? "");
   const [fechaNac, setFechaNac] = useState(perfil.fecha_nacimiento?.slice(0, 10) ?? "");
+  // Solo mayores de edad: el calendario no deja elegir una fecha más nueva.
+  const maxFechaNac = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - EDAD_MINIMA);
+    return d.toISOString().slice(0, 10);
+  })();
+  const edadActual = edadDe(fechaNac);
+  const menorDeEdad = edadActual != null && edadActual < EDAD_MINIMA;
   const [headline, setHeadline] = useState(perfil.headline ?? "");
   const [bio, setBio] = useState(perfil.bio ?? "");
   const [pais, setPais] = useState(perfil.pais ?? "");
@@ -147,9 +157,18 @@ export function CompletarPerfil({
             {step === "edad" && (
               <Bloque titulo="¿Cuál es tu fecha de nacimiento?">
                 <input type="date" value={fechaNac} onChange={(e) => setFechaNac(e.target.value)}
-                  max={new Date().toISOString().slice(0, 10)}
+                  max={maxFechaNac}
                   className="w-full rounded-xl border-2 border-border bg-white px-3.5 py-3 text-sm outline-none focus:border-accent transition" />
-                {edadDe(fechaNac) && <p className="text-[12px] text-hint mt-2">Tienes <b className="text-accent">{edadDe(fechaNac)} años</b> 🎉</p>}
+                {edadDe(fechaNac) != null && (
+                  menorDeEdad ? (
+                    <p className="text-[12.5px] text-pink mt-2 leading-snug">
+                      Tienes <b>{edadDe(fechaNac)} años</b>. Melsprout es para mayores de {EDAD_MINIMA}.
+                      Si te equivocaste de fecha, corrígela.
+                    </p>
+                  ) : (
+                    <p className="text-[12px] text-hint mt-2">Tienes <b className="text-accent">{edadDe(fechaNac)} años</b> 🎉</p>
+                  )
+                )}
               </Bloque>
             )}
 
@@ -283,10 +302,10 @@ export function CompletarPerfil({
         </div>
 
         <div className="mt-6 flex items-center gap-3">
-          <button onClick={avanzar} disabled={pendiente} className="text-sm font-semibold text-sub hover:text-text px-5 py-3.5">Saltar</button>
+          <button onClick={avanzar} disabled={pendiente || menorDeEdad} className="text-sm font-semibold text-sub hover:text-text px-5 py-3.5 disabled:opacity-40">Saltar</button>
           <button
             onClick={step === "foto" || step === "conectar" ? avanzar : continuar}
-            disabled={pendiente}
+            disabled={pendiente || menorDeEdad}
             className="flex-1 bg-accent text-white font-bold text-sm rounded-2xl py-3.5 shadow-lg shadow-accent/25 hover:brightness-110 active:scale-95 disabled:opacity-60 transition">
             {pendiente ? "Guardando…" : idx === STEPS.length - 1 ? "Terminar 🎉" : "Continuar"}
           </button>

@@ -379,8 +379,20 @@ export async function guardarCampos(campos: {
   const update: Record<string, unknown> = {};
   if (campos.username !== undefined)
     update.username = limpiarUsuario(campos.username) || null;
-  if (campos.fecha_nacimiento !== undefined)
+  if (campos.fecha_nacimiento !== undefined) {
+    // La edad también se valida aquí: el navegador no es la única puerta.
+    if (campos.fecha_nacimiento) {
+      const n = new Date(campos.fecha_nacimiento);
+      const hoy = new Date();
+      let anos = hoy.getFullYear() - n.getFullYear();
+      const m = hoy.getMonth() - n.getMonth();
+      if (m < 0 || (m === 0 && hoy.getDate() < n.getDate())) anos--;
+      if (Number.isNaN(anos) || anos < 18) {
+        return { error: "Melsprout es para mayores de 18 años." };
+      }
+    }
     update.fecha_nacimiento = campos.fecha_nacimiento || null;
+  }
   if (campos.pais !== undefined)
     update.pais = campos.pais.trim().slice(0, 60) || null;
   if (campos.estado !== undefined)

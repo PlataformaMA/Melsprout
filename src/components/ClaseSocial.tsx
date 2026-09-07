@@ -17,7 +17,11 @@ function hace(iso: string): string {
 }
 
 // Debajo de la clase: qué te pareció y qué dice la comunidad.
-export function ClaseSocial({ claseId }: { claseId: string }) {
+export function ClaseSocial({ claseId, puedeCalificar = true }: {
+  claseId: string;
+  // La calificación aparece hasta terminar la clase: primero la recompensa.
+  puedeCalificar?: boolean;
+}) {
   const [cal, setCal] = useState<{ mia: number | null; promedio: number | null; total: number } | null>(null);
   const [hover, setHover] = useState(0);
   const [coments, setComents] = useState<ComentarioClase[] | null>(null);
@@ -51,7 +55,8 @@ export function ClaseSocial({ claseId }: { claseId: string }) {
 
   return (
     <div className="space-y-6">
-      {/* Calificación */}
+      {/* Calificación: solo cuando ya terminó la clase */}
+      {puedeCalificar && (
       <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
         <h2 className="font-display font-extrabold text-[16px]">¿Qué te pareció esta clase?</h2>
         <div className="flex flex-wrap items-center gap-3 mt-2.5">
@@ -72,8 +77,9 @@ export function ClaseSocial({ claseId }: { claseId: string }) {
           )}
         </div>
       </section>
+      )}
 
-      {/* Comentarios */}
+      {/* Comentarios: siempre disponibles */}
       <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
         <h2 className="font-display font-extrabold text-[16px] mb-3">
           Comentarios {coments ? `(${coments.length})` : ""}
