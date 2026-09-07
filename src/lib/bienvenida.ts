@@ -1,7 +1,14 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const SITIO = process.env.NEXT_PUBLIC_SITE_URL || "https://melsprout.boostacademy.io";
+// En producción la variable puede venir apuntando a localhost (queda de las
+// pruebas locales). Si es así se ignora: los enlaces del correo tienen que
+// llevar al sitio real, no a la máquina de nadie.
+const SITIO = (() => {
+  const env = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
+  if (env && !env.includes("localhost") && !env.includes("127.0.0.1")) return env;
+  return "https://melsprout.boostacademy.io";
+})();
 
 // Correo de bienvenida: distinto al de verificación. Este orienta a quien
 // entra por primera vez. Se manda con Resend si hay llave; si no, la persona
