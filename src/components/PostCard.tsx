@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Icono } from "@/components/IconosApp";
 import {
   toggleLike, getRespuestas, crearRespuesta, toggleLikeRespuesta,
   type ForoPost, type ForoRespuesta,
@@ -88,8 +89,12 @@ export function PostCard({ post, compacto = false }: { post: ForoPost; compacto?
       {post.enlaceUrl && <a href={post.enlaceUrl} target="_blank" rel="noreferrer" className="text-accent text-[13px] font-semibold underline break-all mt-1 inline-block">{post.enlaceUrl}</a>}
 
       <div className="flex items-center gap-5 mt-3 text-[13px]">
-        <button onClick={like} className={`flex items-center gap-1.5 font-semibold transition ${meGusta ? "text-pink" : "text-sub hover:text-pink"}`}>♥ {likes}</button>
-        <button onClick={abrir} className="flex items-center gap-1.5 font-semibold text-sub hover:text-accent transition">💬 {num} {num === 1 ? "respuesta" : "respuestas"}</button>
+        <button onClick={like} className={`flex items-center gap-1.5 font-semibold transition ${meGusta ? "text-pink" : "text-sub hover:text-pink"}`}>
+          <Icono nombre={meGusta ? "corazon-lleno" : "corazon"} size={16} /> {likes}
+        </button>
+        <button onClick={abrir} className="flex items-center gap-1.5 font-semibold text-sub hover:text-accent transition">
+          <Icono nombre="comentario-linea" size={16} /> {num} {num === 1 ? "respuesta" : "respuestas"}
+        </button>
         {!compacto && <span className="ml-auto text-[11px] font-semibold text-accent bg-accent-soft rounded-full px-2.5 py-0.5 truncate max-w-[45%]">{post.categoria}</span>}
       </div>
 
@@ -110,8 +115,8 @@ export function PostCard({ post, compacto = false }: { post: ForoPost; compacto?
                 </div>
                 <div className="flex items-center gap-4 mt-1 ml-1 text-[12px]">
                   <button onClick={() => likeResp(c.id)}
-                    className={`font-semibold transition ${c.meGusta ? "text-pink" : "text-sub hover:text-pink"}`}>
-                    ♥ {c.likes || ""}
+                    className={`flex items-center gap-1 font-semibold transition ${c.meGusta ? "text-pink" : "text-sub hover:text-pink"}`}>
+                    <Icono nombre={c.meGusta ? "corazon-lleno" : "corazon"} size={14} /> {c.likes || ""}
                   </button>
                   <button onClick={() => setTexto(`@${c.autorNombre.split(" ")[0]} `)}
                     className="font-semibold text-sub hover:text-accent transition">Responder</button>

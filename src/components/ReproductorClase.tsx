@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AvatarInstructor } from "@/components/Instructor";
 import { ClaseSocial } from "@/components/ClaseSocial";
+import { BotonVolver, Icono } from "@/components/IconosApp";
 import { useRouter } from "next/navigation";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
@@ -181,7 +182,7 @@ export function ReproductorClase({
           </header>
 
           <div className="flex items-center gap-3 mb-4">
-            <Link href="/app/ruta" className="text-sub hover:text-text text-sm">← Ruta</Link>
+            <BotonVolver href="/app/ruta" />
             <h1 className="font-display text-2xl font-extrabold">{titleCase(clase.titulo)}</h1>
           </div>
 
@@ -541,13 +542,15 @@ function ListaRecursos({ recursos }: { recursos: Recurso[] }) {
       {recursos.map((r) => (
         <button key={r.id} onClick={() => bajar(r)} disabled={cargando === r.id}
           className="w-full flex items-center gap-3 bg-accent-soft/60 hover:bg-accent-soft rounded-xl px-3.5 py-3 transition disabled:opacity-60 text-left">
-          <span className="text-lg shrink-0">{r.emoji}</span>
+          <Icono nombre="documento" size={19} color="#7C3AED" />
           <span className="flex-1 min-w-0">
             <span className="block text-sm font-semibold truncate">{r.titulo}</span>
             {r.peso && <span className="block text-[11px] text-sub">{r.peso}</span>}
           </span>
           <span className="text-accent shrink-0">
-            {cargando === r.id ? "…" : bajados.has(r.id) ? <span className="text-green text-sm font-bold">✓</span> : <DownloadIcon />}
+            {cargando === r.id ? "…"
+              : bajados.has(r.id) ? <Icono nombre="completado" size={18} color="#22C55E" />
+              : <Icono nombre="descargar" size={17} color="#7C3AED" />}
           </span>
         </button>
       ))}

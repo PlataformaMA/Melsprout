@@ -13,6 +13,7 @@ import type { Recurso } from "@/lib/recursos-actions";
 import { octiFrases, type Genero } from "@/lib/genero";
 import { VerificarBanner } from "@/components/VerificarBanner";
 import { nivelPorXP, type Clase, type ModuloCurso } from "@/lib/data";
+import { Icono } from "@/components/IconosApp";
 import { type RachaInfo } from "@/lib/racha-actions";
 
 // ————— Geometría del camino serpenteante (S amplia y suave) —————
@@ -244,7 +245,8 @@ export function RutaAprendizaje({
                   className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-bold transition ${
                     vista === v ? "bg-accent text-white shadow-sm" : "text-sub hover:text-text"
                   }`}>
-                  <OjoIcon />
+                  <Icono nombre={v === "camino" ? "mapa" : "cuadricula"} size={16}
+                    color={vista === v ? "#fff" : "#6B7280"} />
                   <span className="hidden sm:inline">{v === "camino" ? "Camino" : "Bloques"}</span>
                 </button>
               ))}
@@ -749,9 +751,7 @@ function NodoRetoMini({ estado }: { estado: EReto }) {
     return (
       <div className="grid place-items-center rounded-full w-11 h-11 bg-[#E9EBEF] border-[4px] border-white shrink-0"
         style={{ boxShadow: sombraGris }}>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#AEB4BF" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" />
-        </svg>
+        <Icono nombre="candado" size={16} color="#AEB4BF" />
       </div>
     );
   return <div className={base} style={{ boxShadow: sombraGris }}><SparkleIcon color="#9AA0AD" /></div>;
@@ -966,8 +966,8 @@ function Sparkle4({ size, className }: { size: number; className?: string }) {
 }
 function PlayMini() { return <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z" /></svg>; }
 function StarIcon() { return <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.7-4.9 4.4 1.4 6.4L12 17.8 6 20l1.4-6.4L2.5 9.2l6.6-.7z" /></svg>; }
-function PlayIcon() { return <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13l11-6.5z" /></svg>; }
-function SparkleIcon({ color }: { color: string }) { return <svg width="28" height="28" viewBox="0 0 24 24" fill={color}><path d="M12 2l1.8 6.4L20 10l-5.4 2.2L13 19l-2.2-5.6L5 12l5.6-2z" /><circle cx="18.5" cy="5.5" r="1.6" /></svg>; }
+function PlayIcon() { return <Icono nombre="play" size={30} />; }
+function SparkleIcon({ color }: { color: string }) { return <Icono nombre="estrella" size={28} color={color} />; }
 function LockIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>; }
 function BellIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#71717a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" /></svg>; }
 function DocIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2h8l4 4v16H6z" /><path d="M14 2v4h4M9 13h6M9 17h6" /></svg>; }
