@@ -159,7 +159,7 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, gemas, racha }
                         const Fila = c.grabacion_url ? Link : "div";
                         return (
                         <Fila key={c.id} href={`/app/vivo/${c.id}`} className={`flex items-center gap-4 bg-surface border border-border rounded-2xl p-3.5 shadow-sm transition group ${c.grabacion_url ? "hover:border-accent/30" : "opacity-70"}`}>
-                          <span className="w-20 h-14 rounded-xl bg-gradient-to-br from-[#4c1d95] to-[#7c3aed] grid place-items-center text-white shrink-0 overflow-hidden">
+                          <span className="w-24 h-[54px] rounded-xl bg-gradient-to-br from-[#4c1d95] to-[#7c3aed] grid place-items-center text-white shrink-0 overflow-hidden">
                             {c.thumbnail_url ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img src={c.thumbnail_url} alt="" className="w-full h-full object-cover" />
@@ -196,7 +196,7 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, gemas, racha }
                   <div className="space-y-3">
                     {grabaciones.filter((c) => c.grabacion_url).slice(0, 3).map((c) => (
                       <Link key={c.id} href={`/app/vivo/${c.id}`} className="flex items-center gap-2.5 group">
-                        <span className="w-12 h-9 rounded-lg bg-gradient-to-br from-[#4c1d95] to-[#7c3aed] grid place-items-center text-white text-[11px] shrink-0 overflow-hidden">
+                        <span className="w-16 h-9 rounded-lg bg-gradient-to-br from-[#4c1d95] to-[#7c3aed] grid place-items-center text-white text-[11px] shrink-0 overflow-hidden">
                           {c.thumbnail_url ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={c.thumbnail_url} alt="" className="w-full h-full object-cover" />
@@ -233,7 +233,7 @@ function ClaseCard({ c, n, asistio, onAsistir }: { c: ClaseVivo; n: number; asis
   const st = estadoDe(c);
   return (
     <div className="bg-surface border border-border rounded-2xl p-3.5 shadow-sm flex flex-col">
-      <div className="relative w-full h-32 rounded-xl overflow-hidden bg-gradient-to-br from-[#3b0764] to-[#7c3aed] grid place-items-center">
+      <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-gradient-to-br from-[#3b0764] to-[#7c3aed] grid place-items-center">
         {c.thumbnail_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={c.thumbnail_url} alt="" className="w-full h-full object-cover" />
