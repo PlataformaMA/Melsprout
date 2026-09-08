@@ -3,6 +3,8 @@
 const FOTOS: Record<string, string> = {
   melissa: "/instructores/melissa.jpg",
   "melissa arria": "/instructores/melissa.jpg",
+  cristian: "/instructores/cristian.jpg",
+  "cristian ibarra": "/instructores/cristian.jpg",
 };
 
 export function fotoInstructor(nombre?: string | null): string | null {
