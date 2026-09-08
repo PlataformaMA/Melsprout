@@ -4,6 +4,7 @@ import { getPerfil } from "@/lib/perfil-actions";
 import { getCursos, getVideoClaseDB } from "@/lib/cursos-db";
 import { getClasesCompletadas } from "@/lib/progreso-actions";
 import { getRecursos } from "@/lib/recursos-actions";
+import { puedeVerClase } from "@/lib/acceso-actions";
 import { ReproductorClase } from "@/components/ReproductorClase";
 
 export default async function ClasePage({ params }: { params: Promise<{ id: string }> }) {
@@ -24,6 +25,8 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
   const clase = modulo.clases.find((c) => c.id === id) ?? modulo.clases[0];
   // Una clase "Próximamente" todavía no existe para el alumno: no se abre.
   if (clase?.proximamente) redirect("/app/ruta");
+  // Un curso especial se abre solo si se compró (o si es del equipo).
+  if (!(await puedeVerClase(clase.id))) redirect("/app/especiales");
 
   // Progreso guardado (para restaurar la barra y no arrancar en 0).
   const { data: prog } = await supabase

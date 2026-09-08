@@ -38,3 +38,28 @@ export async function getTestimonios(moduloId: string): Promise<Testimonio[]> {
     texto: t.texto as string,
   }));
 }
+
+// ¿Puede abrir esta clase? Las de la ruta sí; las de un curso especial solo
+// si lo compró o si es del equipo. Sin esto bastaba con adivinar la URL.
+export async function puedeVerClase(claseId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const admin = createAdminClient();
+  const { data: clase } = await admin
+    .from("cursos_clases").select("modulo_id").eq("id", claseId).maybeSingle();
+  if (!clase) return false;
+
+  const { data: modulo } = await admin
+    .from("cursos_modulos").select("id, especial").eq("id", clase.modulo_id).maybeSingle();
+  if (!modulo || modulo.especial !== true) return true;   // clase normal de la ruta
+
+  const { esAdminUsuario } = await import("@/lib/admin");
+  if (await esAdminUsuario(user.id, user.email)) return true;
+
+  const { data: acceso } = await admin
+    .from("curso_accesos").select("user_id")
+    .eq("user_id", user.id).eq("modulo_id", modulo.id).maybeSingle();
+  return !!acceso;
+}
