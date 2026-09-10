@@ -110,3 +110,23 @@ export async function darAccesoCurso(
   }
   return { ok: true };
 }
+
+// Quitar el acceso a un curso: reembolso, contracargo o baja manual.
+// Sale del curso y de su grupo, pero conserva su cuenta y su progreso.
+export async function quitarAccesoCurso(
+  userId: string, moduloId: string
+): Promise<{ ok: true } | { error: string }> {
+  const admin = createAdminClient();
+
+  const { error } = await admin.from("curso_accesos")
+    .delete().eq("user_id", userId).eq("modulo_id", moduloId);
+  if (error) return { error: "No se pudo quitar el acceso." };
+
+  const { data: grupo } = await admin
+    .from("grupos").select("id").eq("curso_id", moduloId).maybeSingle();
+  if (grupo) {
+    await admin.from("grupo_miembros")
+      .delete().eq("grupo_id", grupo.id).eq("user_id", userId);
+  }
+  return { ok: true };
+}

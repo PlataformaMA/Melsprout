@@ -90,3 +90,65 @@ export async function darBienvenida(userId: string, email: string | null, nombre
     // Si el correo falla, la bienvenida dentro de la plataforma ya se dio.
   }
 }
+
+// Correo de quien acaba de comprar un curso: trae el enlace para poner su
+// contraseña. Devuelve si se pudo mandar; si no, la cuenta ya existe igual
+// y siempre le queda "olvidé mi contraseña" en la pantalla de entrada.
+export async function enviarBienvenidaCompra(
+  email: string, nombre: string, curso: string
+): Promise<boolean> {
+  const llave = process.env.RESEND_API_KEY;
+  const remitente = process.env.CORREO_REMITENTE;
+  if (!llave || !remitente) return false;
+
+  const admin = createAdminClient();
+  const { data, error } = await admin.auth.admin.generateLink({
+    type: "recovery",
+    email,
+    options: { redirectTo: `${SITIO}/restablecer` },
+  });
+  const enlace = data?.properties?.action_link;
+  if (error || !enlace) return false;
+
+  const hola = nombre ? `¡Hola, ${nombre.split(" ")[0]}!` : "¡Hola!";
+  const html = `<!doctype html>
+<html lang="es"><body style="margin:0;background:#FAF9FE;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
+  <div style="max-width:560px;margin:0 auto;padding:28px 20px">
+    <div style="background:#fff;border:1px solid #EDE9F7;border-radius:24px;overflow:hidden">
+      <div style="background:linear-gradient(120deg,#F3F0FF,#FBFAFF);padding:28px 26px;text-align:center">
+        <img src="${SITIO}/octi.png" alt="" width="88" style="display:block;margin:0 auto 10px">
+        <h1 style="margin:0;font-size:21px;color:#7C3AED">${hola} Ya tienes ${curso} 🚀</h1>
+      </div>
+      <div style="padding:24px 26px;color:#3F3D46;font-size:15px;line-height:1.6">
+        <p style="margin:0 0 16px">Tu compra quedó lista y tu cuenta ya está creada. Solo falta que
+        elijas tu contraseña para entrar.</p>
+
+        <a href="${enlace}" style="display:block;background:#7C3AED;color:#fff;text-decoration:none;
+          font-weight:700;text-align:center;border-radius:16px;padding:14px 0;font-size:15px">
+          Crear mi contraseña
+        </a>
+
+        <p style="margin:18px 0 0;font-size:13px;color:#8A8794">Si el botón no abre, copia este enlace:<br>
+        <span style="word-break:break-all;color:#7C3AED">${enlace}</span></p>
+
+        <p style="margin:18px 0 0">Dentro te espera tu curso completo y el grupo de la comunidad,
+        donde puedes compartir tu avance y resolver dudas.</p>
+
+        <p style="margin:18px 0 0;font-size:13px;color:#8A8794">¿Algún problema? Responde este correo.</p>
+      </div>
+    </div>
+    <p style="text-align:center;color:#9AA0AD;font-size:12px;margin:16px 0 0">Melsprout · Marketing con Melissa</p>
+  </div>
+</body></html>`;
+
+  try {
+    const r = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${llave}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: remitente, to: email, subject: `Ya tienes ${curso} 🚀`, html }),
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}
