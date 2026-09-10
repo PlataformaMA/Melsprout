@@ -63,12 +63,25 @@ export async function listarGrupos(): Promise<{
   const admin = createAdminClient();
   const me = await yo();
 
-  const [{ data: grupos }, { data: apoyos }, { data: miembros }] = await Promise.all([
+  const [{ data: todosGrupos }, { data: apoyos }, { data: miembros }] = await Promise.all([
     admin.from("grupos").select("*").order("created_at", { ascending: false }),
     admin.from("grupo_apoyos").select("grupo_id, user_id"),
     admin.from("grupo_miembros").select("grupo_id, user_id"),
   ]);
-  if (!grupos?.length) return { propuestas: [], mios: [], otros: [] };
+  if (!todosGrupos?.length) return { propuestas: [], mios: [], otros: [] };
+
+  // Los grupos que cuelgan de un curso solo se ven si se compró ese curso.
+  const conCurso = todosGrupos.filter((g) => g.curso_id).map((g) => g.curso_id as string);
+  let cursosMios: string[] = [];
+  if (me && conCurso.length) {
+    const { data: acc } = await admin.from("curso_accesos")
+      .select("modulo_id").eq("user_id", me).in("modulo_id", conCurso);
+    cursosMios = (acc || []).map((a) => a.modulo_id as string);
+  }
+  const grupos = todosGrupos.filter(
+    (g) => !g.curso_id || cursosMios.includes(g.curso_id as string)
+  );
+  if (!grupos.length) return { propuestas: [], mios: [], otros: [] };
 
   const ids = [...new Set(grupos.map((g) => g.creador_id as string))];
   const { data: perfiles } = await admin

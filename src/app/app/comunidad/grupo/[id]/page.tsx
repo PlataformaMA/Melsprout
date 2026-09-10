@@ -4,6 +4,7 @@ import { getPerfil } from "@/lib/perfil-actions";
 import { getGrupo } from "@/lib/grupos-actions";
 import { getForoPosts } from "@/lib/foros-actions";
 import { getActividadReciente } from "@/lib/comunidad-actions";
+import { puedeVerGrupo } from "@/lib/acceso-actions";
 import { GrupoDetalle } from "@/components/GrupoDetalle";
 
 export default async function GrupoPage({ params }: { params: Promise<{ id: string }> }) {
@@ -18,6 +19,8 @@ export default async function GrupoPage({ params }: { params: Promise<{ id: stri
 
   const grupo = await getGrupo(id);
   if (!grupo) notFound();
+  // Los grupos de un curso son solo para quien lo compró.
+  if (!(await puedeVerGrupo(id))) redirect("/app/especiales");
 
   const [posts, actividad] = await Promise.all([
     getForoPosts("General", id),

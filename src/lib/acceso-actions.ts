@@ -63,3 +63,50 @@ export async function puedeVerClase(claseId: string): Promise<boolean> {
     .eq("user_id", user.id).eq("modulo_id", modulo.id).maybeSingle();
   return !!acceso;
 }
+
+// ¿Puede entrar a este grupo? Los normales sí; los de un curso, solo quien
+// lo compró (o el equipo). Con esto el enlace no sirve para colarse.
+export async function puedeVerGrupo(grupoId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return false;
+
+  const admin = createAdminClient();
+  const { data: grupo } = await admin
+    .from("grupos").select("curso_id").eq("id", grupoId).maybeSingle();
+  if (!grupo) return false;
+  if (!grupo.curso_id) return true;             // grupo normal de la comunidad
+
+  const { esAdminUsuario } = await import("@/lib/admin");
+  if (await esAdminUsuario(user.id, user.email)) return true;
+
+  const { data: acceso } = await admin
+    .from("curso_accesos").select("user_id")
+    .eq("user_id", user.id).eq("modulo_id", grupo.curso_id).maybeSingle();
+  return !!acceso;
+}
+
+// Dar acceso a un curso: además de abrirle las clases, lo mete a su grupo.
+// Esto es lo que hay que llamar cuando alguien compre.
+export async function darAccesoCurso(
+  userId: string, moduloId: string, origen = "checkout"
+): Promise<{ ok: true } | { error: string }> {
+  const admin = createAdminClient();
+
+  const { error } = await admin.from("curso_accesos")
+    .upsert({ user_id: userId, modulo_id: moduloId, origen }, { onConflict: "user_id,modulo_id" });
+  if (error) return { error: "No se pudo dar el acceso." };
+
+  const { data: grupo } = await admin
+    .from("grupos").select("id, nombre").eq("curso_id", moduloId).maybeSingle();
+  if (grupo) {
+    await admin.from("grupo_miembros")
+      .upsert({ grupo_id: grupo.id, user_id: userId, rol: "miembro" }, { onConflict: "grupo_id,user_id" });
+
+    const { notificar } = await import("@/lib/notificaciones-actions");
+    await notificar(userId, "general", "¡Ya eres parte de Boost Your Web! 🚀",
+      `Tienes el curso completo y entraste al grupo «${grupo.nombre}». Preséntate cuando quieras.`,
+      `/app/comunidad/grupo/${grupo.id}`);
+  }
+  return { ok: true };
+}
