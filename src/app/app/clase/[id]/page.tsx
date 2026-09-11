@@ -21,10 +21,11 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
   if (!perfil.onboarding_completo) redirect("/onboarding");
 
   const cursos = await getCursos(true);
-  const modulo = cursos.find((m) => m.clases.some((c) => c.id === id)) ?? cursos[0];
-  const clase = modulo.clases.find((c) => c.id === id) ?? modulo.clases[0];
-  // Una clase "Próximamente" todavía no existe para el alumno: no se abre.
-  if (clase?.proximamente) redirect("/app/ruta");
+  // Una clase sin video (o "Próximamente") todavía no existe para el alumno:
+  // no está en la lista y no se abre.
+  const modulo = cursos.find((m) => m.clases.some((c) => c.id === id));
+  const clase = modulo?.clases.find((c) => c.id === id);
+  if (!modulo || !clase || clase.proximamente) redirect("/app/ruta");
   // Un curso especial se abre solo si se compró (o si es del equipo).
   if (!(await puedeVerClase(clase.id))) redirect("/app/especiales");
 

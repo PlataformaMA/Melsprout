@@ -13,6 +13,8 @@ function portadaDe(portada: unknown, videoUrl: unknown): string | null {
 
 // Lee los cursos de la BD con la MISMA forma que ETAPA_1 (ModuloCurso[]).
 // Si aún no hay módulos en BD, usa el demo (fallback) para no romper nada.
+// Solo salen las clases que ya tienen video: las pendientes de grabar no se
+// ven, y un módulo sin ninguna clase grabada tampoco.
 export async function getCursos(incluirEspeciales = false): Promise<ModuloCurso[]> {
   try {
     const admin = createAdminClient();
@@ -34,16 +36,20 @@ export async function getCursos(incluirEspeciales = false): Promise<ModuloCurso[
       .or(`publicar_at.is.null,publicar_at.lte.${new Date().toISOString()}`)
       .order("orden", { ascending: true });
 
-    return mods.map((m, i) => ({
+    const modulos = mods.map((m) => ({
+      m,
+      clases: (clases || []).filter((c) => c.modulo_id === m.id && !!c.video_url && !c.proximamente),
+    })).filter((x) => x.clases.length > 0);
+    if (modulos.length === 0) return ETAPA_1;
+
+    return modulos.map(({ m, clases }, i) => ({
       id: i + 1,
       nombre: m.nombre as string,
       nivel: (m.nivel as string) || null,
       descripcion: (m.descripcion as string) || "",
       color: ((m.color as string) || "accent") as ModuloCurso["color"],
       especialId: m.especial ? (m.id as string) : null,
-      clases: (clases || [])
-        .filter((c) => c.modulo_id === m.id)
-        .map((c): Clase => ({
+      clases: clases.map((c): Clase => ({
           id: c.id as string,
           titulo: c.titulo as string,
           instructor: (c.instructor as string) || "Melissa",
