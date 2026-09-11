@@ -46,7 +46,8 @@ function plantilla(nombre: string): string {
           Empezar mi ruta
         </a>
 
-        <p style="margin:20px 0 0;font-size:13px;color:#8A8794">¿Dudas? Responde este correo y te ayudamos.</p>
+        <p style="margin:20px 0 0;font-size:13px;color:#8A8794">¿Dudas?
+          <a href="${SOPORTE}" style="color:#7C3AED;font-weight:700;text-decoration:none">Contacta a nuestro equipo de soporte</a>.</p>
       </div>
     </div>
     <p style="text-align:center;color:#9AA0AD;font-size:12px;margin:16px 0 0">Melsprout · Marketing con Melissa</p>
