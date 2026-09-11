@@ -413,7 +413,8 @@ function AvanceFila({ a, onCambio }: { a: Avance; onCambio: () => void }) {
             <img src={a.archivoUrl!} alt="envío" className="max-h-64 rounded-xl border border-border" />
           )}
           {esVideo && (
-            <video src={a.archivoUrl!} controls className="max-h-72 rounded-xl border border-border w-full" />
+            <video src={a.archivoUrl!} controls controlsList="nodownload" onContextMenu={(e) => e.preventDefault()}
+              className="max-h-72 rounded-xl border border-border w-full" />
           )}
           {a.archivoUrl && !esImagen && !esVideo && (
             <a href={a.archivoUrl} target="_blank" rel="noreferrer" className="text-accent text-[13px] font-semibold underline">Ver archivo enviado</a>

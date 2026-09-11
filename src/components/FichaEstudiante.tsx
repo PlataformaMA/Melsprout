@@ -249,7 +249,8 @@ function RevisarReto({ avance, onCerrar, onListo }: {
           {avance.archivoUrl && (
             /\.(mp4|mov|webm|m4v)(\?|$)/i.test(avance.archivoUrl) ? (
               // eslint-disable-next-line jsx-a11y/media-has-caption
-              <video src={avance.archivoUrl} controls className="w-full rounded-2xl" />
+              <video src={avance.archivoUrl} controls className="w-full rounded-2xl"
+                controlsList="nodownload" onContextMenu={(e) => e.preventDefault()} />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={avance.archivoUrl} alt="Entrega" className="w-full rounded-2xl border border-border" />

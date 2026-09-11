@@ -225,6 +225,7 @@ function VideoDeClase({ claseId }: { claseId: string }) {
     <iframe src={`https://www.youtube.com/embed/${yt[1]}`} title="Clase" allowFullScreen className="w-full h-full" />
   ) : (
     // eslint-disable-next-line jsx-a11y/media-has-caption
-    <video src={url} controls preload="metadata" className="w-full h-full" />
+    <video src={url} controls preload="metadata" className="w-full h-full"
+      controlsList="nodownload" onContextMenu={(e) => e.preventDefault()} />
   );
 }
