@@ -10,6 +10,9 @@ const SITIO = (() => {
   return "https://melsprout.boostacademy.io";
 })();
 
+// A dónde va quien tiene un problema: el flujo de soporte del equipo.
+const SOPORTE = "https://boostacademy-n8n.n6e5xe.easypanel.host/webhook/83e6b04f-98b3-423e-94e4-2b64ceb8dbe4";
+
 // Correo de bienvenida: distinto al de verificación. Este orienta a quien
 // entra por primera vez. Se manda con Resend si hay llave; si no, la persona
 // igual recibe la bienvenida dentro de la plataforma.
@@ -134,7 +137,8 @@ export async function enviarBienvenidaCompra(
         <p style="margin:18px 0 0">Dentro te espera tu curso completo y el grupo de la comunidad,
         donde puedes compartir tu avance y resolver dudas.</p>
 
-        <p style="margin:18px 0 0;font-size:13px;color:#8A8794">¿Algún problema? Responde este correo.</p>
+        <p style="margin:18px 0 0;font-size:13px;color:#8A8794">¿Algún problema?
+          <a href="${SOPORTE}" style="color:#7C3AED;font-weight:700;text-decoration:none">Contacta a nuestro equipo de soporte</a>.</p>
       </div>
     </div>
     <p style="text-align:center;color:#9AA0AD;font-size:12px;margin:16px 0 0">Melsprout · Marketing con Melissa</p>
