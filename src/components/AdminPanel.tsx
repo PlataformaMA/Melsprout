@@ -22,6 +22,7 @@ import {
 import { crearClaseVivo, actualizarClaseVivo, borrarClaseVivo, type ClaseVivo, type ClaseVivoInput } from "@/lib/vivo-actions";
 import { SuperadminResumen } from "@/components/SuperadminResumen";
 import { CrearUsuarioModal } from "@/components/CrearUsuarioModal";
+import { ImportarContactosModal } from "@/components/ImportarContactosModal";
 import { MensajesTab, ReportesTab, ConfigTab } from "@/components/SuperadminExtras";
 import { EstudiantesTab } from "@/components/EstudiantesTab";
 import { ClasesRecursosTab } from "@/components/ClasesRecursosTab";
@@ -852,6 +853,7 @@ function ComentarioFila({ c, onCambio }: { c: ComentarioAdmin; onCambio: () => v
 // ————— Usuarios —————
 function UsuariosTab({ usuarios, onCreado }: { usuarios: UsuarioAdmin[]; onCreado: () => void }) {
   const [modal, setModal] = useState(false);
+  const [importar, setImportar] = useState(false);
   const [busca, setBusca] = useState("");
 
   const q = busca.trim().toLowerCase();
@@ -866,6 +868,10 @@ function UsuariosTab({ usuarios, onCreado }: { usuarios: UsuarioAdmin[]; onCread
         <input value={busca} onChange={(e) => setBusca(e.target.value)}
           placeholder="Buscar por nombre o correo…"
           className="flex-1 min-w-[220px] bg-surface border border-border rounded-xl px-4 py-2.5 text-[14px] outline-none focus:border-accent" />
+        <button onClick={() => setImportar(true)}
+          className="rounded-xl border border-border bg-surface px-4 py-2.5 text-[13.5px] font-bold text-sub hover:bg-bg transition shrink-0">
+          Importar CSV
+        </button>
         <button onClick={() => setModal(true)}
           className="bg-accent text-white rounded-xl px-4 py-2.5 text-[13.5px] font-bold hover:brightness-110 transition shrink-0">
           + Crear usuario
@@ -884,6 +890,7 @@ function UsuariosTab({ usuarios, onCreado }: { usuarios: UsuarioAdmin[]; onCread
       </div>
 
       {modal && <CrearUsuarioModal onCerrar={() => setModal(false)} onCreado={onCreado} />}
+      {importar && <ImportarContactosModal onCerrar={() => setImportar(false)} onImportado={onCreado} />}
     </div>
   );
 }

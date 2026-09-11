@@ -98,8 +98,10 @@ export async function darBienvenida(userId: string, email: string | null, nombre
 // Correo de quien acaba de comprar un curso: trae el enlace para poner su
 // contraseña. Devuelve si se pudo mandar; si no, la cuenta ya existe igual
 // y siempre le queda "olvidé mi contraseña" en la pantalla de entrada.
+// Si no viene curso (alta desde el panel sin curso), el correo solo dice
+// que su cuenta ya está lista.
 export async function enviarBienvenidaCompra(
-  email: string, nombre: string, curso: string
+  email: string, nombre: string, curso?: string | null
 ): Promise<boolean> {
   const llave = process.env.RESEND_API_KEY;
   const remitente = process.env.CORREO_REMITENTE;
@@ -121,10 +123,10 @@ export async function enviarBienvenidaCompra(
     <div style="background:#fff;border:1px solid #EDE9F7;border-radius:24px;overflow:hidden">
       <div style="background:linear-gradient(120deg,#F3F0FF,#FBFAFF);padding:28px 26px;text-align:center">
         <img src="${SITIO}/octi.png" alt="" width="88" style="display:block;margin:0 auto 10px">
-        <h1 style="margin:0;font-size:21px;color:#7C3AED">${hola} Ya tienes ${curso} 🚀</h1>
+        <h1 style="margin:0;font-size:21px;color:#7C3AED">${hola} ${curso ? `Ya tienes ${curso} 🚀` : "Tu cuenta en Melsprout está lista 💜"}</h1>
       </div>
       <div style="padding:24px 26px;color:#3F3D46;font-size:15px;line-height:1.6">
-        <p style="margin:0 0 16px">Tu compra quedó lista y tu cuenta ya está creada. Solo falta que
+        <p style="margin:0 0 16px">${curso ? "Tu compra quedó lista y tu cuenta ya está creada." : "Ya te creamos tu cuenta."} Solo falta que
         elijas tu contraseña para entrar.</p>
 
         <a href="${enlace}" style="display:block;background:#7C3AED;color:#fff;text-decoration:none;
@@ -135,8 +137,9 @@ export async function enviarBienvenidaCompra(
         <p style="margin:18px 0 0;font-size:13px;color:#8A8794">Si el botón no abre, copia este enlace:<br>
         <span style="word-break:break-all;color:#7C3AED">${enlace}</span></p>
 
-        <p style="margin:18px 0 0">Dentro te espera tu curso completo y el grupo de la comunidad,
-        donde puedes compartir tu avance y resolver dudas.</p>
+        <p style="margin:18px 0 0">${curso
+          ? "Dentro te espera tu curso completo y el grupo de la comunidad, donde puedes compartir tu avance y resolver dudas."
+          : "Dentro te esperan las clases, los retos y una comunidad de creadoras como tú."}</p>
 
         <p style="margin:18px 0 0;font-size:13px;color:#8A8794">¿Algún problema?
           <a href="${SOPORTE}" style="color:#7C3AED;font-weight:700;text-decoration:none">Contacta a nuestro equipo de soporte</a>.</p>
@@ -150,7 +153,11 @@ export async function enviarBienvenidaCompra(
     const r = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${llave}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: remitente, to: email, subject: `Ya tienes ${curso} 🚀`, html }),
+      body: JSON.stringify({
+        from: remitente, to: email,
+        subject: curso ? `Ya tienes ${curso} 🚀` : "Tu cuenta en Melsprout está lista 💜",
+        html,
+      }),
     });
     return r.ok;
   } catch {

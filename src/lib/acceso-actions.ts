@@ -104,7 +104,7 @@ export async function darAccesoCurso(
       .upsert({ grupo_id: grupo.id, user_id: userId, rol: "miembro" }, { onConflict: "grupo_id,user_id" });
 
     const { notificar } = await import("@/lib/notificaciones-actions");
-    await notificar(userId, "general", "¡Ya eres parte de Boost Your Web! 🚀",
+    await notificar(userId, "general", `¡Ya eres parte de ${grupo.nombre}! 🚀`,
       `Tienes el curso completo y entraste al grupo «${grupo.nombre}». Preséntate cuando quieras.`,
       `/app/comunidad/grupo/${grupo.id}`);
   }

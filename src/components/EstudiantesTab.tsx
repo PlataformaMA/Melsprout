@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { listarEstudiantes, type Estudiante, type EstadoAlumna } from "@/lib/estudiantes-actions";
 import { CrearUsuarioModal } from "@/components/CrearUsuarioModal";
+import { ImportarContactosModal } from "@/components/ImportarContactosModal";
 import { FichaEstudiante } from "@/components/FichaEstudiante";
 import { IconoExperiencia } from "@/components/IconoExperiencia";
 
@@ -37,6 +38,7 @@ export function EstudiantesTab() {
   const [orden, setOrden] = useState<Orden>("xp");
   const [vista, setVista] = useState<"lista" | "tarjetas">("lista");
   const [crear, setCrear] = useState(false);
+  const [importar, setImportar] = useState(false);
   const [abierta, setAbierta] = useState<Estudiante | null>(null);
 
   const cargar = () => fetch(`/api/admin/datos?que=estudiantes`, { cache: "no-store" }).then((r) => r.json())
@@ -77,10 +79,16 @@ export function EstudiantesTab() {
           <p className="text-sub text-[13px] mt-0.5">Ver y manejar estudiantes.</p>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <button onClick={() => setCrear(true)}
-            className="bg-accent text-white rounded-xl px-4 py-2.5 text-[13.5px] font-bold hover:brightness-110 transition">
-            + Añadir usuario
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => setImportar(true)}
+              className="rounded-xl border border-border bg-surface px-4 py-2.5 text-[13.5px] font-bold text-sub hover:bg-bg transition">
+              Importar CSV
+            </button>
+            <button onClick={() => setCrear(true)}
+              className="bg-accent text-white rounded-xl px-4 py-2.5 text-[13.5px] font-bold hover:brightness-110 transition">
+              + Añadir usuario
+            </button>
+          </div>
           <div className="flex bg-bg border border-border rounded-xl p-0.5">
             {([["lista", "Lista"], ["tarjetas", "Tarjetas"]] as const).map(([id, txt]) => (
               <button key={id} onClick={() => setVista(id)}
@@ -213,6 +221,7 @@ export function EstudiantesTab() {
       )}
 
       {crear && <CrearUsuarioModal onCerrar={() => setCrear(false)} onCreado={cargar} />}
+      {importar && <ImportarContactosModal onCerrar={() => setImportar(false)} onImportado={cargar} />}
       {abierta && (
         <FichaEstudiante
           estudiante={abierta}
