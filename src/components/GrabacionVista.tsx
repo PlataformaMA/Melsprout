@@ -61,7 +61,8 @@ export function GrabacionVista({
               />
             ) : url ? (
               // eslint-disable-next-line jsx-a11y/media-has-caption
-              <video src={url} controls playsInline preload="metadata" className="w-full h-full" />
+              <video src={url} controls playsInline preload="metadata" className="w-full h-full"
+                controlsList="nodownload" onContextMenu={(e) => e.preventDefault()} />
             ) : (
               <div className="w-full h-full grid place-items-center text-white/70 text-[14px]">
                 Esta grabación todavía no está disponible.

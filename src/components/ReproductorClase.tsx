@@ -198,6 +198,8 @@ export function ReproductorClase({
                       className="w-full aspect-video rounded-2xl bg-black shadow-lg" title={clase.titulo} />
                   ) : (
                     <video ref={videoRef} src={videoUrl} controls playsInline
+                      // Sin botón de descarga ni «guardar video como…» con clic derecho.
+                      controlsList="nodownload" onContextMenu={(e) => e.preventDefault()}
                       onTimeUpdate={onTimeUpdate}
                       onSeeking={() => { saltandoRef.current = true; }}
                       onSeeked={(e) => {
