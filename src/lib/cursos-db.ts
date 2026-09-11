@@ -106,6 +106,7 @@ export type CursoEspecial = {
   precio: number | null;
   moneda: string;
   checkoutUrl: string | null;
+  lanzamiento: string | null;   // «YYYY-MM-DD» si todavía no está a la venta
   aprenderas: string[];
   habilidades: string[];
   herramientas: string[];
@@ -166,6 +167,7 @@ async function armarEspeciales(filtroId?: string): Promise<CursoEspecial[]> {
       precio: m.precio != null ? Number(m.precio) : null,
       moneda: (m.moneda as string) || "MXN",
       checkoutUrl: (m.checkout_url as string) || null,
+      lanzamiento: (m.lanzamiento as string) || null,
       aprenderas: lista(m.aprenderas),
       habilidades: lista(m.habilidades),
       herramientas: lista(m.herramientas),

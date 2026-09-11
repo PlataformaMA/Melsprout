@@ -19,6 +19,14 @@ function precioTexto(precio: number | null, moneda: string): string | null {
 }
 const num = (n: number) => n.toLocaleString("es-MX");
 
+// «14 de septiembre» a partir de «2026-09-14» (sin líos de zona horaria).
+function fechaLanzamiento(iso: string | null): string | null {
+  if (!iso) return null;
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("es-MX", { day: "numeric", month: "long", timeZone: "UTC" });
+}
+
 // Landing de venta: lo que ve quien todavía NO compró el curso especial.
 export function VentaCursoVista({
   yo, curso, testimonios,
@@ -230,7 +238,9 @@ export function VentaCursoVista({
               <p className="text-[11.5px] text-hint text-center leading-snug">
                 {puedeComprar
                   ? "Al comprar se te desbloquean todas las clases del curso."
-                  : "Estamos terminando de habilitar la compra. Vuelve pronto 💜"}
+                  : fechaLanzamiento(curso.lanzamiento)
+                    ? `Disponible a partir del ${fechaLanzamiento(curso.lanzamiento)} 💜`
+                    : "Estamos terminando de habilitar la compra. Vuelve pronto 💜"}
               </p>
             </aside>
           </div>
@@ -245,11 +255,12 @@ function BotonComprar({ curso, chico }: { curso: CursoEspecial; chico?: boolean 
     ? "inline-flex items-center gap-2 bg-accent text-white rounded-full px-4 py-2 text-[13px] font-bold shrink-0"
     : "flex items-center justify-center gap-2 w-full bg-accent text-white rounded-2xl py-3 text-[14px] font-bold shadow-sm shadow-accent/30";
   if (!curso.checkoutUrl) {
+    const fecha = fechaLanzamiento(curso.lanzamiento);
     return (
       <div className={chico
         ? "inline-flex items-center gap-2 bg-bg border border-border text-sub rounded-full px-4 py-2 text-[13px] font-bold shrink-0"
         : "flex items-center justify-center w-full bg-bg border border-border text-sub rounded-2xl py-3 text-[13.5px] font-bold"}>
-        Próximamente
+        {fecha ? `Próximamente · ${fecha}` : "Próximamente"}
       </div>
     );
   }
