@@ -9,9 +9,13 @@ import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import { UserMenu } from "@/components/UserMenu";
 import { AvatarInstructor } from "@/components/Instructor";
 
+// «$69 USD» / «$1,950 MXN»: el símbolo y la moneda por separado, que se
+// entiende en toda Latinoamérica (Intl daría «USD 69.00»).
 function precioTexto(precio: number | null, moneda: string): string | null {
   if (precio == null) return null;
-  return new Intl.NumberFormat("es-MX", { style: "currency", currency: moneda || "MXN" }).format(precio);
+  const entero = Number.isInteger(precio);
+  const n = new Intl.NumberFormat("es-MX", { minimumFractionDigits: entero ? 0 : 2, maximumFractionDigits: 2 }).format(precio);
+  return `$${n} ${(moneda || "MXN").toUpperCase()}`;
 }
 const num = (n: number) => n.toLocaleString("es-MX");
 

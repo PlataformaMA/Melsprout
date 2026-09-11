@@ -520,7 +520,7 @@ export function RutaAprendizaje({
 
 // ————— Modal de Mundos (cada módulo = una isla temática) —————
 type MundoEstado = "completado" | "actual" | "bloqueado";
-// Temas por mundo (de abajo hacia arriba: empiezas en el mar y avanzas al espacio).
+// Temas por mundo (de arriba hacia abajo: empiezas en el mar y avanzas al espacio).
 // Cada mundo tiene su ilustración (en /public/mundos). Si falta el archivo,
 // se muestra el emoji como respaldo, así el modal nunca se rompe.
 const TEMAS = [
@@ -603,9 +603,9 @@ function MundosModal({ mundos, onClose }: { mundos: { nombre: string; estado: Mu
           <button onClick={onClose} className="w-8 h-8 grid place-items-center rounded-full hover:bg-bg text-hint" aria-label="Cerrar">✕</button>
         </div>
 
-        {/* Serpentina vertical de islas: el Mundo 1 abajo (inicio) subiendo hacia los bloqueados. */}
+        {/* Serpentina vertical de islas: el Mundo 1 arriba (inicio) bajando hacia los bloqueados. */}
         <div className="flex flex-col items-stretch gap-1">
-          {mundos.map((m, idx) => ({ m, num: idx + 1 })).reverse().map(({ m, num }, pos, arr) => {
+          {mundos.map((m, idx) => ({ m, num: idx + 1 })).map(({ m, num }, pos, arr) => {
             const tema = TEMAS[(num - 1) % TEMAS.length];
             const izq = num % 2 === 0; // alterna el lado según el número de mundo
             return (
