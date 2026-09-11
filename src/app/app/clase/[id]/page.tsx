@@ -52,8 +52,14 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
     .maybeSingle();
   const retoEnviado = !!sub && (sub.estado === "publicado" || sub.revision === "aprobado");
 
-  // Siguiente clase GLOBAL (a través de todos los módulos); null si es la última.
-  const orden = cursos.flatMap((m) => m.clases.map((c) => c.id));
+  // A dónde regresa: la Ruta, o la página del curso si es un curso especial.
+  const volverHref = modulo.especialId ? `/app/especiales/${modulo.especialId}` : "/app/ruta";
+
+  // Siguiente clase GLOBAL (a través de todos los módulos de la Ruta); null si
+  // es la última. Un curso especial se recorre solo dentro de sí mismo.
+  const orden = modulo.especialId
+    ? modulo.clases.map((c) => c.id)
+    : cursos.filter((m) => !m.especialId).flatMap((m) => m.clases.map((c) => c.id));
   const pos = orden.indexOf(clase.id);
   const siguienteHref = pos >= 0 && pos < orden.length - 1 ? `/app/clase/${orden[pos + 1]}` : null;
 
@@ -70,6 +76,7 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
       completadasIds={completadasIds}
       videoUrl={videoUrl}
       siguienteHref={siguienteHref}
+      volverHref={volverHref}
       retoEnviado={retoEnviado}
       recursos={recursos}
     />

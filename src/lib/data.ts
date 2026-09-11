@@ -25,6 +25,8 @@ export type ModuloCurso = {
   descripcion: string;
   color: "green" | "accent" | "amber";
   clases: Clase[];
+  // Solo los cursos especiales: su id real, para volver a su página.
+  especialId?: string | null;
 };
 
 // Etapa 1 · Starter "Crea" — 3 módulos, 10 clases (Módulo 04 del briefing)

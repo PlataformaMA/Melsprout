@@ -46,9 +46,9 @@ function fmtTiempo(seg: number): string {
 }
 
 export function ReproductorClase({
-  clase, modulo, avatarUrl, nombre, gemas, racha, yaCompletada = false, vistoInicial = 0, completadasIds = [], videoUrl = null, siguienteHref = null, retoEnviado = false, recursos = [],
+  clase, modulo, avatarUrl, nombre, gemas, racha, yaCompletada = false, vistoInicial = 0, completadasIds = [], videoUrl = null, siguienteHref = null, volverHref = "/app/ruta", retoEnviado = false, recursos = [],
 }: {
-  clase: Clase; modulo: ModuloCurso; avatarUrl: string | null; nombre: string; gemas: number; racha: number; yaCompletada?: boolean; vistoInicial?: number; completadasIds?: string[]; videoUrl?: string | null; siguienteHref?: string | null; retoEnviado?: boolean; recursos?: Recurso[];
+  clase: Clase; modulo: ModuloCurso; avatarUrl: string | null; nombre: string; gemas: number; racha: number; yaCompletada?: boolean; vistoInicial?: number; completadasIds?: string[]; videoUrl?: string | null; siguienteHref?: string | null; volverHref?: string; retoEnviado?: boolean; recursos?: Recurso[];
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const vistoRef = useRef(vistoInicial);   // segundos REALMENTE vistos (arranca de lo ya guardado)
@@ -162,7 +162,7 @@ export function ReproductorClase({
         <PopupClaseCompletada
           completadas={posicion}
           total={total}
-          onContinuar={() => { setPopup(false); router.push(siguienteHref ?? "/app/ruta"); }}
+          onContinuar={() => { setPopup(false); router.push(siguienteHref ?? volverHref); }}
           onClose={() => setPopup(false)}
         />
       )}
@@ -181,7 +181,7 @@ export function ReproductorClase({
           </header>
 
           <div className="flex items-center gap-3 mb-4">
-            <BotonVolver href="/app/ruta" />
+            <BotonVolver href={volverHref} />
             <h1 className="font-display text-2xl font-extrabold">{titleCase(clase.titulo)}</h1>
           </div>
 
@@ -281,8 +281,8 @@ export function ReproductorClase({
                     <p className="text-sub text-[14px] mt-2 max-w-md mx-auto leading-snug">
                       Esta clase todavía no tiene su video. En cuanto se publique la vas a ver aquí.
                     </p>
-                    <Link href="/app/ruta" className="inline-block mt-4 bg-accent text-white rounded-xl px-4 py-2.5 text-[13.5px] font-bold hover:brightness-110 transition">
-                      Volver a la ruta
+                    <Link href={volverHref} className="inline-block mt-4 bg-accent text-white rounded-xl px-4 py-2.5 text-[13.5px] font-bold hover:brightness-110 transition">
+                      {volverHref === "/app/ruta" ? "Volver a la ruta" : "Volver al curso"}
                     </Link>
                   </div>
                 </div>

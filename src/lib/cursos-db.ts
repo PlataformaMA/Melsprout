@@ -40,6 +40,7 @@ export async function getCursos(incluirEspeciales = false): Promise<ModuloCurso[
       nivel: (m.nivel as string) || null,
       descripcion: (m.descripcion as string) || "",
       color: ((m.color as string) || "accent") as ModuloCurso["color"],
+      especialId: m.especial ? (m.id as string) : null,
       clases: (clases || [])
         .filter((c) => c.modulo_id === m.id)
         .map((c): Clase => ({
