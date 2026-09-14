@@ -74,6 +74,20 @@ export function PerfilVista({ perfil, creadoEn, insightiq, avance, social, amigo
     window.history.replaceState({}, "", window.location.pathname);
   }, []);
 
+  // Editar el nombre con el lápiz junto al título.
+  const [editNombre, setEditNombre] = useState(false);
+  const [nombreGuardado, setNombreGuardado] = useState(perfil.full_name ?? "");
+  const [nombreEdit, setNombreEdit] = useState("");
+  const [errorNombre, setErrorNombre] = useState("");
+  const [guardandoNombre, startNombre] = useTransition();
+  const guardarNombre = () => startNombre(async () => {
+    const r = await guardarCampos({ full_name: nombreEdit });
+    if ("error" in r) { setErrorNombre(r.error); return; }
+    setErrorNombre("");
+    setNombreGuardado(nombreEdit.trim().replace(/\s+/g, " "));
+    setEditNombre(false);
+  });
+
   // Editar "Sobre mí" con el lápiz.
   const [editBio, setEditBio] = useState(false);
   const [bioGuardada, setBioGuardada] = useState(perfil.bio ?? "");
@@ -137,8 +151,30 @@ export function PerfilVista({ perfil, creadoEn, insightiq, avance, social, amigo
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <h1 className="font-display text-2xl font-extrabold leading-tight truncate">{perfil.full_name ?? "Creador"}</h1>
-                        <p className="text-sub text-sm">{handleDe(perfil.username, perfil.full_name)}</p>
+                        {editNombre ? (
+                          <div>
+                            <input value={nombreEdit} onChange={(e) => setNombreEdit(e.target.value)} maxLength={80} autoFocus
+                              onKeyDown={(e) => { if (e.key === "Enter") guardarNombre(); if (e.key === "Escape") setEditNombre(false); }}
+                              placeholder="Tu nombre y apellido"
+                              className="w-full rounded-xl border border-border bg-surface px-3 py-2 font-display text-lg font-extrabold outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 transition" />
+                            {errorNombre && <p className="text-pink text-[12px] mt-1">{errorNombre}</p>}
+                            <div className="flex items-center gap-2 mt-2">
+                              <button onClick={guardarNombre} disabled={guardandoNombre || nombreEdit.trim().length < 2}
+                                className="bg-accent text-white rounded-lg px-3.5 py-1.5 text-[13px] font-bold hover:brightness-110 disabled:opacity-60 transition">
+                                {guardandoNombre ? "Guardando…" : "Guardar"}
+                              </button>
+                              <button onClick={() => setEditNombre(false)} disabled={guardandoNombre}
+                                className="rounded-lg px-3 py-1.5 text-[13px] font-semibold text-sub hover:bg-bg transition">Cancelar</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 min-w-0">
+                            <h1 className="font-display text-2xl font-extrabold leading-tight truncate">{nombreGuardado || "Creador"}</h1>
+                            <button onClick={() => { setNombreEdit(nombreGuardado); setErrorNombre(""); setEditNombre(true); }} aria-label="Editar nombre"
+                              className="text-hint hover:text-accent transition shrink-0"><LapizIcon /></button>
+                          </div>
+                        )}
+                        <p className="text-sub text-sm">{handleDe(perfil.username, nombreGuardado || null)}</p>
                         {edad
                           ? <p className="text-sub text-sm mt-0.5">{edad} Años</p>
                           : <Link href="/app/perfil/completar" className="text-accent text-sm mt-0.5 font-medium hover:underline inline-block">+ Agrega tu edad</Link>}
