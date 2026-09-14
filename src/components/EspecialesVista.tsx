@@ -81,7 +81,8 @@ function TarjetaCurso({ c }: { c: CursoEspecial }) {
           <CandadoBlanco />
         </span>
 
-        {c.patrocinador && (
+        {/* La cajita «Patrocinado por» solo va si la portada no la trae ya. */}
+        {c.patrocinador && !c.portada && (
           <span className="absolute top-2.5 right-2.5 flex items-center gap-1.5 bg-white/95 rounded-full pl-2.5 pr-2 py-1 shadow-sm">
             <span className="text-[10px] font-bold text-sub">Patrocinado por</span>
             {c.patrocinadorLogo ? (
