@@ -54,9 +54,10 @@ export function CursoCompradoVista({
             className="w-10 h-10 rounded-full bg-surface border border-border grid place-items-center text-lg hover:border-accent/40 transition mb-4"
             aria-label="Volver">←</Link>
 
-          {/* Banner con el patrocinador a un lado */}
+          {/* Banner. Si el curso tiene su propio banner, ese ya trae al
+              patrocinador; si no, se le pone la cajita a un lado. */}
           <div className="rounded-3xl overflow-hidden bg-surface border border-border shadow-sm flex flex-col sm:flex-row items-stretch">
-            {curso.patrocinador && (
+            {curso.patrocinador && !curso.banner && (
               <div className="bg-accent-soft px-5 py-4 sm:py-0 grid place-items-center shrink-0 sm:w-[190px]">
                 <div className="text-center">
                   <div className="text-[11.5px] font-bold text-accent/80">Patrocinado por:</div>
