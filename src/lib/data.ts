@@ -27,6 +27,8 @@ export type ModuloCurso = {
   clases: Clase[];
   // Solo los cursos especiales: su id real, para volver a su página.
   especialId?: string | null;
+  // Enlace destacado del curso (p. ej. el plan de Hostinger con descuento).
+  enlace?: { texto: string; url: string } | null;
 };
 
 // Etapa 1 · Starter "Crea" — 3 módulos, 10 clases (Módulo 04 del briefing)

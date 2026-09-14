@@ -49,6 +49,7 @@ export async function getCursos(incluirEspeciales = false): Promise<ModuloCurso[
       descripcion: (m.descripcion as string) || "",
       color: ((m.color as string) || "accent") as ModuloCurso["color"],
       especialId: m.especial ? (m.id as string) : null,
+      enlace: m.enlace_url ? { texto: (m.enlace_texto as string) || "Ver enlace", url: m.enlace_url as string } : null,
       clases: clases.map((c): Clase => ({
           id: c.id as string,
           titulo: c.titulo as string,

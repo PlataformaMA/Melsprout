@@ -321,6 +321,17 @@ export function ReproductorClase({
                 </div>
               </div>
 
+              {/* Enlace destacado del curso (patrocinador, descuento…) */}
+              {modulo.enlace && (
+                <a href={modulo.enlace.url} target="_blank" rel="noreferrer"
+                  className="mt-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-accent-soft border border-accent/20 rounded-2xl px-4 py-3.5 hover:border-accent/50 transition">
+                  <span className="text-[14px] font-bold text-text leading-snug">{modulo.enlace.texto} 👉</span>
+                  <span className="shrink-0 inline-flex items-center justify-center bg-accent text-white rounded-xl px-4 py-2 text-[13px] font-bold">
+                    {/hostinger/i.test(modulo.enlace.url) ? "Ir a Hostinger" : "Abrir enlace"}
+                  </span>
+                </a>
+              )}
+
               {/* Calificación y comentarios de la clase */}
               <div className="mt-6">
                 <ClaseSocial claseId={clase.id} puedeCalificar={yaCompletada || terminado} />
