@@ -59,48 +59,16 @@ export function EspecialesVista({
   );
 }
 
-// Banner de la sección. El texto va en HTML (no dentro de la imagen) para que
-// se vea nítido en cualquier pantalla; la foto y los iconos vienen del diseño.
-// Los tamaños van en cqw: se escalan con el ancho del banner, como en Figma.
+// Banner de la sección, tal cual viene del diseño.
 function BannerEspeciales() {
   return (
-    <div
-      className="relative w-full overflow-hidden rounded-3xl select-none aspect-[2.3] sm:aspect-[4848/1040]"
-      style={{
-        containerType: "inline-size",
-        background: "linear-gradient(90deg, #F0E6FA 0%, #EBDFFA 45%, #D6BFFA 100%)",
-      }}
-    >
-      {/* Lado derecho: Melissa y los iconos, tal cual vienen del diseño. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/especiales/banner-derecha.jpg"
-        alt=""
-        draggable={false}
-        className="absolute inset-y-0 right-0 h-full w-auto max-w-[52%] object-cover object-[70%_50%] sm:object-left"
-        style={{ maskImage: "linear-gradient(90deg, transparent 0%, #000 12%)", WebkitMaskImage: "linear-gradient(90deg, transparent 0%, #000 12%)" }}
-      />
-
-      <div className="absolute inset-y-0 left-0 flex flex-col justify-center" style={{ paddingLeft: "4.4cqw", width: "60%" }}>
-        <h2
-          className="font-display font-extrabold text-[#151433] leading-[1.06] tracking-[-0.01em]"
-          style={{ fontSize: "clamp(17px, 3.7cqw, 46px)" }}
-        >
-          Dale un <span className="text-[#5B2BE0]">boost</span>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/especiales/banner-cohete.png" alt="" draggable={false}
-            className="inline-block align-[-0.12em] ml-[0.25em]" style={{ height: "1.05em" }} />
-          <br />
-          a tu contenido y carrera
-        </h2>
-        <p
-          className="text-[#4B4760] leading-snug mt-[1.4cqw]"
-          style={{ fontSize: "clamp(10px, 1.32cqw, 17px)", maxWidth: "36em" }}
-        >
-          Cursos prácticos y exclusivos para que sigas<br className="hidden sm:inline" /> creciendo, destacando y alcanzando tus metas.
-        </p>
-      </div>
-    </div>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/especiales/banner-4.jpg"
+      alt="Dale un boost a tu contenido y carrera"
+      className="w-full rounded-3xl select-none"
+      draggable={false}
+    />
   );
 }
 
