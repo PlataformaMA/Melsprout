@@ -14,7 +14,7 @@ type Step = (typeof STEPS)[number];
 
 const MENSAJES: Record<Step, string> = {
   foto: "¡Ponle cara a tu perfil! 📸 Una buena foto genera confianza.",
-  usuario: "Elige tu nombre de usuario. Así te verán en Melsprout. ✨",
+  usuario: "Tu nombre y tu usuario. Así te verán en Melsprout. ✨",
   edad: "¿Cuándo naciste? Nos ayuda a personalizar tu experiencia. 🎂",
   headline: "Tu headline dice quién eres en una frase. ✍️",
   bio: "Cuéntale al mundo tu historia. Las marcas leen esto. 💜",
@@ -51,9 +51,11 @@ export function CompletarPerfil({
 }) {
   const router = useRouter();
   const [pendiente, startTransition] = useTransition();
+  const [errorNombre, setErrorNombre] = useState("");
   const inicial = pasoInicial ? STEPS.indexOf(pasoInicial as Step) : 0;
   const [idx, setIdx] = useState(inicial >= 0 ? inicial : 0);
 
+  const [nombre, setNombre] = useState(perfil.full_name ?? "");
   const [username, setUsername] = useState(perfil.username ?? "");
   const [fechaNac, setFechaNac] = useState(perfil.fecha_nacimiento?.slice(0, 10) ?? "");
   // Solo mayores de edad: el calendario no deja elegir una fecha más nueva.
@@ -82,7 +84,11 @@ export function CompletarPerfil({
   }
   function continuar() {
     startTransition(async () => {
-      if (step === "usuario") await guardarCampos({ username });
+      if (step === "usuario") {
+        const r = await guardarCampos({ full_name: nombre, username });
+        if ("error" in r) { setErrorNombre(r.error); return; }
+        setErrorNombre("");
+      }
       else if (step === "edad") await guardarCampos({ fecha_nacimiento: fechaNac });
       else if (step === "headline") await guardarCampos({ headline });
       else if (step === "bio") await guardarCampos({ bio });
@@ -143,7 +149,13 @@ export function CompletarPerfil({
             )}
 
             {step === "usuario" && (
-              <Bloque titulo="Elige tu nombre de usuario">
+              <Bloque titulo="¿Cómo te llamas?">
+                <label className="text-[12px] font-semibold text-sub mb-1 block">Nombre completo</label>
+                <input value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={80}
+                  placeholder="Tu nombre y apellido"
+                  className="w-full rounded-xl border-2 border-border bg-white px-3.5 py-3 text-sm outline-none focus:border-accent transition" />
+                {errorNombre && <p className="text-[12px] text-pink mt-1">{errorNombre}</p>}
+                <label className="text-[12px] font-semibold text-sub mb-1 mt-4 block">Nombre de usuario</label>
                 <div className="flex items-center gap-1 rounded-xl border-2 border-border bg-white px-3.5 focus-within:border-accent transition">
                   <span className="text-sub text-lg font-bold">@</span>
                   <input value={username} onChange={(e) => setUsername(e.target.value.replace(/\s/g, ""))} maxLength={30}
@@ -305,7 +317,7 @@ export function CompletarPerfil({
           <button onClick={avanzar} disabled={pendiente || menorDeEdad} className="text-sm font-semibold text-sub hover:text-text px-5 py-3.5 disabled:opacity-40">Saltar</button>
           <button
             onClick={step === "foto" || step === "conectar" ? avanzar : continuar}
-            disabled={pendiente || menorDeEdad}
+            disabled={pendiente || menorDeEdad || (step === "usuario" && nombre.trim().length < 2)}
             className="flex-1 bg-accent text-white font-bold text-sm rounded-2xl py-3.5 shadow-lg shadow-accent/25 hover:brightness-110 active:scale-95 disabled:opacity-60 transition">
             {pendiente ? "Guardando…" : idx === STEPS.length - 1 ? "Terminar 🎉" : "Continuar"}
           </button>

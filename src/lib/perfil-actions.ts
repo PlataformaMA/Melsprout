@@ -365,6 +365,7 @@ function limpiarUsuario(v?: string): string {
 // Guardado incremental para el flujo de completar perfil.
 // Solo actualiza los campos enviados (uno o varios por paso).
 export async function guardarCampos(campos: {
+  full_name?: string;
   username?: string;
   fecha_nacimiento?: string;
   headline?: string;
@@ -381,6 +382,11 @@ export async function guardarCampos(campos: {
   if (!user) return { error: "Inicia sesión de nuevo." };
 
   const update: Record<string, unknown> = {};
+  if (campos.full_name !== undefined) {
+    const nombre = campos.full_name.trim().replace(/\s+/g, " ").slice(0, 80);
+    if (nombre.length < 2) return { error: "Escribe tu nombre." };
+    update.full_name = nombre;
+  }
   if (campos.username !== undefined)
     update.username = limpiarUsuario(campos.username) || null;
   if (campos.fecha_nacimiento !== undefined) {
