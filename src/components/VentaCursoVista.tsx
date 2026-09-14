@@ -74,14 +74,7 @@ export function VentaCursoVista({
               {/* Portada + qué aprenderás */}
               <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,335px)_1fr] gap-6 sm:gap-10 mt-6">
                 <div>
-                  <div className="rounded-2xl overflow-hidden bg-[#0B0B12] aspect-[335/235]">
-                    {curso.portada ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={curso.portada} alt={curso.nombre} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="w-full h-full grid place-items-center font-display font-extrabold text-white/80 text-lg px-3 text-center">{curso.nombre}</span>
-                    )}
-                  </div>
+                  <PortadaCurso curso={curso} />
                   {curso.patrocinador && (
                     <div className="mt-5">
                       <div className="text-[14px] font-bold mb-2">Patrocinador:</div>
@@ -154,7 +147,7 @@ export function VentaCursoVista({
 
               <div className="bg-accent-soft rounded-2xl px-4 py-4 mt-5">
                 <div className="flex items-center gap-2.5 text-[14px] font-bold">
-                  <IcoCheck /> Garantía de 21 días
+                  <IcoCheck /> Garantía de 7 días
                 </div>
                 <p className="text-[13px] text-sub leading-relaxed mt-2.5">
                   Al comprar el producto, las instrucciones de acceso se enviarán a tu correo electrónico.
@@ -173,6 +166,25 @@ export function VentaCursoVista({
         </div>
       </main>
     </div>
+  );
+}
+
+// La portada. Si el curso tiene enlace destacado (el plan del patrocinador),
+// la foto lleva ahí.
+function PortadaCurso({ curso }: { curso: CursoEspecial }) {
+  const caja = "block rounded-2xl overflow-hidden bg-[#0B0B12] aspect-[335/235]";
+  const contenido = curso.portada ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={curso.portada} alt={curso.nombre} className="w-full h-full object-cover" />
+  ) : (
+    <span className="w-full h-full grid place-items-center font-display font-extrabold text-white/80 text-lg px-3 text-center">{curso.nombre}</span>
+  );
+  if (!curso.enlace) return <div className={caja}>{contenido}</div>;
+  return (
+    <a href={curso.enlace.url} target="_blank" rel="noreferrer" title={curso.enlace.texto}
+      className={`${caja} hover:opacity-90 transition`}>
+      {contenido}
+    </a>
   );
 }
 
@@ -206,8 +218,11 @@ function FichaInstructor({ i }: { i: InstructorCurso }) {
   const [abierto, setAbierto] = useState(false);
   const bio = i.bio || "";
   const parrafos = bio.split(/\n{2,}/).filter(Boolean);
-  const largo = parrafos.length > 2 || bio.length > 600;
-  const visibles = abierto || !largo ? parrafos : parrafos.slice(0, 2);
+  // Cerrado se ve solo el primer párrafo; «Mostrar más» despliega el resto.
+  const largo = parrafos.length > 1 || bio.length > 400;
+  const visibles = abierto || !largo
+    ? parrafos
+    : [parrafos[0].length > 400 ? `${parrafos[0].slice(0, 400).trimEnd()}…` : parrafos[0]];
   const redes = [
     ["facebook", i.redes.facebook, <IcoFacebook key="f" />],
     ["youtube", i.redes.youtube, <IcoYoutube key="y" />],
