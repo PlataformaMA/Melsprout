@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import IconoGrupo from "./IconoGrupo";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -127,7 +128,7 @@ function TarjetaPropuesta({ grupo, onCambio }: { grupo: Grupo; onCambio: () => v
   return (
     <article className="bg-surface border border-border rounded-2xl p-4 shadow-sm flex flex-col">
       <div className="flex items-start gap-3">
-        <span className="w-11 h-11 rounded-xl bg-accent-soft grid place-items-center text-xl shrink-0">{grupo.emoji}</span>
+        <IconoGrupo emoji={grupo.emoji} className="w-11 h-11 rounded-xl bg-accent-soft text-xl shrink-0" />
         <div className="min-w-0">
           <h3 className="font-display font-extrabold text-[14.5px] leading-tight">{grupo.nombre}</h3>
           <p className="text-[12.5px] text-sub leading-snug mt-1 line-clamp-2">{grupo.descripcion}</p>
@@ -206,7 +207,7 @@ function TarjetaGrupo({ grupo }: { grupo: Grupo; conBotonUnirse?: boolean }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={grupo.portada} alt="" className="absolute inset-0 w-full h-full object-cover" />
         ) : (
-          <span className="text-4xl opacity-80">{grupo.emoji}</span>
+          <IconoGrupo emoji={grupo.emoji} className="w-16 h-16 rounded-2xl text-4xl opacity-90" />
         )}
       </div>
       <div className="p-4">

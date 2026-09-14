@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import IconoGrupo from "./IconoGrupo";
 import Link from "next/link";
 import {
   getComunidadAdmin, alternarVisible, activarGrupo, borrarGrupoAdmin,
@@ -156,7 +157,7 @@ function Grupos({ lista, busca, onCambio }: { lista: GrupoAdmin[]; busca: string
       {filtrada.map((g) => (
         <article key={g.id} className="bg-surface border border-border rounded-2xl p-4 shadow-sm">
           <div className="flex items-start gap-3">
-            <span className="w-10 h-10 rounded-xl bg-accent-soft grid place-items-center text-lg shrink-0">{g.emoji}</span>
+            <IconoGrupo emoji={g.emoji} className="w-10 h-10 rounded-xl bg-accent-soft text-lg shrink-0" />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <h3 className="font-display font-extrabold text-[14.5px] truncate">{g.nombre}</h3>

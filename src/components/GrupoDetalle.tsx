@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import IconoGrupo from "./IconoGrupo";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -100,7 +101,7 @@ export function GrupoDetalle({
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent" />
             <div className="relative w-full p-4 sm:p-5 flex flex-wrap items-end gap-3">
-              <span className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/90 grid place-items-center text-2xl shrink-0">{grupo.emoji}</span>
+              <IconoGrupo emoji={grupo.emoji} className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/90 text-2xl shrink-0" />
               <div className="min-w-0 flex-1">
                 <h1 className="font-display text-xl sm:text-2xl font-extrabold text-white leading-tight truncate">{grupo.nombre}</h1>
                 <p className="text-white/85 text-[13px] mt-0.5">
