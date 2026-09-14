@@ -27,6 +27,25 @@ export function AvatarInstructor({
 }) {
   const foto = fotoInstructor(nombre);
   const estilo = { width: size, height: size };
+
+  // «Melissa y Cristian»: si conocemos a los dos, van sus dos fotos encimadas.
+  const partes = nombre.split(/\s+y\s+|\s*&\s*/i).map((p) => p.trim()).filter(Boolean);
+  if (!foto && partes.length === 2) {
+    const fotos = partes.map(fotoInstructor);
+    if (fotos.every(Boolean)) {
+      const chico = Math.round(size * 0.78);
+      return (
+        <span className={`inline-flex shrink-0 ${className}`} style={{ width: size + Math.round(chico * 0.55), height: size }}>
+          {fotos.map((f, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={i} src={f!} alt={partes[i]}
+              style={{ width: size, height: size, marginLeft: i ? -Math.round(size * 0.45) : 0 }}
+              className="rounded-full object-cover border-2 border-surface" />
+          ))}
+        </span>
+      );
+    }
+  }
   if (foto) {
     return (
       // eslint-disable-next-line @next/next/no-img-element

@@ -107,7 +107,8 @@ function BannerEspeciales() {
 function TarjetaCurso({ c }: { c: CursoEspecial }) {
   return (
     <article className="bg-surface border border-border rounded-3xl p-3 shadow-sm flex flex-col">
-      <div className="relative rounded-2xl overflow-hidden aspect-[16/10] bg-[#0B0B12] grid place-items-center">
+      {/* La portada lleva al enlace del patrocinador si el curso tiene uno. */}
+      <Portada enlace={c.enlace} className="relative block rounded-2xl overflow-hidden aspect-[16/10] bg-[#0B0B12] grid place-items-center">
         {c.portada ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={c.portada} alt={c.nombre} className="w-full h-full object-cover" />
@@ -131,7 +132,7 @@ function TarjetaCurso({ c }: { c: CursoEspecial }) {
             )}
           </span>
         )}
-      </div>
+      </Portada>
 
       <h2 className="font-display text-lg font-extrabold leading-tight mt-3">{c.nombre}</h2>
 
@@ -151,6 +152,18 @@ function TarjetaCurso({ c }: { c: CursoEspecial }) {
         Ver más
       </Link>
     </article>
+  );
+}
+
+function Portada({ enlace, className, children }: {
+  enlace: { texto: string; url: string } | null; className: string; children: React.ReactNode;
+}) {
+  if (!enlace) return <div className={className}>{children}</div>;
+  return (
+    <a href={enlace.url} target="_blank" rel="noreferrer" title={enlace.texto}
+      className={`${className} hover:opacity-90 transition`}>
+      {children}
+    </a>
   );
 }
 
