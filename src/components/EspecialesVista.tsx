@@ -64,7 +64,7 @@ function BannerEspeciales() {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src="/especiales/banner-4.jpg"
+      src="/especiales/banner-5.jpg"
       alt="Dale un boost a tu contenido y carrera"
       className="w-full rounded-3xl select-none"
       draggable={false}
