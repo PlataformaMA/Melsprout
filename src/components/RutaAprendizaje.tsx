@@ -370,7 +370,7 @@ export function RutaAprendizaje({
               </div>
 
               {vista === "bloques" ? (
-                <BloquesVista cursos={cursos} completadas={completadas} hechas={hechas} retoEstados={retoEstados} inicios={inicioDeModulo} filtro={mundoFiltro} TODO_DESBLOQUEADO={TODO_DESBLOQUEADO} />
+                <BloquesVista cursos={cursos} completadas={completadas} hechas={hechas} retoEstados={retoEstados} inicios={inicioDeModulo} filtro={mundoFiltro} hastaModulo={modIdx} TODO_DESBLOQUEADO={TODO_DESBLOQUEADO} />
               ) : (
               /* Camino */
               <div className="relative mx-auto w-full overflow-x-hidden" style={{ maxWidth: 640, height: altura }}>
@@ -1043,9 +1043,10 @@ function OjoIcon() {
 }
 
 function BloquesVista({
-  cursos, completadas, hechas, retoEstados, inicios, filtro, TODO_DESBLOQUEADO,
+  cursos, completadas, hechas, retoEstados, inicios, filtro, hastaModulo, TODO_DESBLOQUEADO,
 }: {
   TODO_DESBLOQUEADO: boolean;
+  hastaModulo: number;     // módulo actual: los que vienen después no se muestran
   cursos: ModuloCurso[];
   completadas: number;
   hechas: Set<string>;
@@ -1072,6 +1073,9 @@ function BloquesVista({
     <div className="space-y-8">
       {cursos.map((m, mi) => {
         if (filtro !== null && filtro !== mi) return null;
+        // Igual que en el Camino: solo se ven los módulos a los que ya se llegó.
+        // Los siguientes aparecen cuando se cruza la puerta (o desde la brújula).
+        if (filtro === null && mi > hastaModulo) return null;
         const base = inicios[mi] ?? 0;
         const moduloAbierto = base <= completadas || TODO_DESBLOQUEADO;
         return (
