@@ -90,6 +90,15 @@ export async function getCursosAdmin(): Promise<{ modulos: ModuloRow[]; clases: 
 }
 
 // ————— Cursos Especiales (patrocinados) —————
+// Quien da un curso especial, con lo que sale en la landing de venta.
+export type InstructorCurso = {
+  nombre: string;
+  foto: string | null;
+  rol: string | null;    // «Empresaria / CEO»
+  bio: string | null;
+  redes: { facebook: string | null; youtube: string | null; instagram: string | null; twitter: string | null };
+};
+
 export type CursoEspecial = {
   id: string;
   nombre: string;
@@ -116,7 +125,7 @@ export type CursoEspecial = {
   rating: number | null;
   resenas: number | null;
   series: number | null;
-  instructores: { nombre: string; foto: string | null }[];
+  instructores: InstructorCurso[];
   horasSemana: number | null;
   inscritos: number | null;   // si viene vacío, se usa el conteo real
 };
@@ -178,9 +187,20 @@ async function armarEspeciales(filtroId?: string): Promise<CursoEspecial[]> {
       resenas: (m.resenas as number) ?? null,
       series: (m.series as number) ?? null,
       instructores: Array.isArray(m.instructores)
-        ? (m.instructores as { nombre?: string; foto?: string | null }[])
+        ? (m.instructores as Partial<InstructorCurso>[])
             .filter((i) => typeof i?.nombre === "string" && i.nombre.trim())
-            .map((i) => ({ nombre: i.nombre as string, foto: i.foto || null }))
+            .map((i) => ({
+              nombre: i.nombre as string,
+              foto: i.foto || null,
+              rol: i.rol || null,
+              bio: i.bio || null,
+              redes: {
+                facebook: i.redes?.facebook || null,
+                youtube: i.redes?.youtube || null,
+                instagram: i.redes?.instagram || null,
+                twitter: i.redes?.twitter || null,
+              },
+            }))
         : [],
       horasSemana: (m.horas_semana as number) ?? null,
       inscritos: (m.inscritos as number) ?? null,
