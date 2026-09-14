@@ -32,7 +32,7 @@ export function EspecialesVista({
           {/* Banner de la sección */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/especiales/banner-2.jpg"
+            src="/especiales/banner-3.jpg"
             alt="Dale un boost a tu contenido y carrera"
             className="w-full rounded-3xl select-none"
             draggable={false}
