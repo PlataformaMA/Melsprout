@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Estudiante } from "@/lib/estudiantes-actions";
-import { guardarNotas, setRenovacion } from "@/lib/estudiantes-actions";
+import { guardarNotas, setRenovacion, editarDatosEstudiante } from "@/lib/estudiantes-actions";
 import { listarAvances, revisarReto, type Avance } from "@/lib/admin-actions";
 import { ExperienciaConTexto } from "@/components/IconoExperiencia";
 
@@ -93,7 +93,6 @@ function Resumen({ e, onCambio }: { e: Estudiante; onCambio: () => void }) {
 
   const datos: [string, React.ReactNode][] = [
     ["Experiencia", <ExperienciaConTexto key="exp" texto={e.experiencia} />],
-    ["Edad", e.edad ? `${e.edad} años` : "—"],
     ["País", e.pais || "—"],
     ["Nivel actual", e.nivel],
     ["Mundo actual", e.mundo || "—"],
@@ -107,6 +106,8 @@ function Resumen({ e, onCambio }: { e: Estudiante; onCambio: () => void }) {
 
   return (
     <div className="space-y-5">
+      <DatosCuenta e={e} onCambio={onCambio} />
+
       <dl className="divide-y divide-border">
         {datos.map(([k, v]) => (
           <div key={k} className="flex items-center justify-between gap-4 py-2.5">
@@ -145,6 +146,62 @@ function Resumen({ e, onCambio }: { e: Estudiante; onCambio: () => void }) {
       </div>
     </div>
   );
+}
+
+// Nombre, correo y fecha de nacimiento: lo que el equipo puede corregir.
+function DatosCuenta({ e, onCambio }: { e: Estudiante; onCambio: () => void }) {
+  const [nombre, setNombre] = useState(e.nombre || "");
+  const [email, setEmail] = useState(e.email || "");
+  const [nac, setNac] = useState(e.fechaNacimiento || "");
+  const [estado, setEstado] = useState("");
+  const [guardando, setGuardando] = useState(false);
+  const cambio = nombre !== (e.nombre || "") || email !== (e.email || "") || nac !== (e.fechaNacimiento || "");
+  const edad = edadDe(nac);
+
+  async function guardar() {
+    setGuardando(true); setEstado("Guardando…");
+    const r = await editarDatosEstudiante(e.id, { nombre, email, fechaNacimiento: nac });
+    setGuardando(false);
+    if ("error" in r) { setEstado(r.error); return; }
+    setEstado("Guardado ✓");
+    setTimeout(onCambio, 700);
+  }
+
+  const campo = "w-full mt-1 bg-bg border border-border rounded-xl px-3.5 py-2 text-[13.5px] outline-none focus:border-accent";
+  return (
+    <div className="bg-bg/60 border border-border rounded-2xl p-4">
+      <div className="text-[12.5px] font-bold text-sub mb-2">Datos de la cuenta</div>
+      <div className="grid sm:grid-cols-2 gap-3">
+        <label className="text-[12px] text-sub sm:col-span-2">Nombre
+          <input value={nombre} onChange={(ev) => setNombre(ev.target.value)} maxLength={80} className={campo} />
+        </label>
+        <label className="text-[12px] text-sub">Correo
+          <input type="email" value={email} onChange={(ev) => setEmail(ev.target.value)} className={campo} />
+        </label>
+        <label className="text-[12px] text-sub">Fecha de nacimiento {edad ? <span className="text-hint">· {edad} años</span> : null}
+          <input type="date" value={nac} onChange={(ev) => setNac(ev.target.value)} className={campo} />
+        </label>
+      </div>
+      <div className="flex items-center gap-3 mt-3">
+        <button onClick={guardar} disabled={!cambio || guardando}
+          className="bg-accent text-white rounded-xl px-4 py-2 text-[13px] font-bold hover:brightness-110 disabled:opacity-50 transition">
+          Guardar datos
+        </button>
+        {estado && <span className="text-[12.5px] font-semibold text-sub">{estado}</span>}
+      </div>
+      <p className="text-[11.5px] text-hint mt-2">Si cambias el correo, la alumna entra con el nuevo desde ya (no se le pide confirmar).</p>
+    </div>
+  );
+}
+
+function edadDe(fecha: string): number | null {
+  if (!fecha) return null;
+  const [y, m, d] = fecha.slice(0, 10).split("-").map(Number);
+  if (!y || !m || !d) return null;
+  const hoy = new Date();
+  let a = hoy.getFullYear() - y;
+  if (hoy.getMonth() + 1 < m || (hoy.getMonth() + 1 === m && hoy.getDate() < d)) a--;
+  return a > 0 && a < 120 ? a : null;
 }
 
 function RetosDeLaRuta({ pendientes, revisados, onRevisado }: {

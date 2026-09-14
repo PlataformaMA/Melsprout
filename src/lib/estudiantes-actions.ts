@@ -27,6 +27,7 @@ export type Estudiante = {
   notas: string | null;
   pais: string | null;
   edad: number | null;
+  fechaNacimiento: string | null;  // YYYY-MM-DD
   miembroDesde: string;
   certificado: boolean;
   experiencia: string | null;   // lo que contestó en el onboarding
@@ -137,6 +138,7 @@ export async function listarEstudiantes(): Promise<Estudiante[]> {
       notas: (p.notas_equipo as string) || null,
       pais: (p.pais as string) || null,
       edad: edadDe(p.fecha_nacimiento),
+      fechaNacimiento: typeof p.fecha_nacimiento === "string" ? p.fecha_nacimiento.slice(0, 10) : null,
       miembroDesde: p.created_at as string,
       certificado,
       experiencia: (p.experiencia as string) || null,
@@ -158,5 +160,34 @@ export async function setRenovacion(userId: string, valor: boolean | null): Prom
   const admin = createAdminClient();
   const { error } = await admin.from("profiles").update({ renovacion: valor }).eq("id", userId);
   if (error) return { error: "No se pudo guardar." };
+  return { ok: true };
+}
+
+// Editar los datos básicos de la cuenta de una alumna (nombre, correo, nacimiento).
+export async function editarDatosEstudiante(
+  userId: string,
+  datos: { nombre: string; email: string; fechaNacimiento: string },
+): Promise<{ ok: true } | { error: string }> {
+  if (!(await soyAdmin())) return { error: "No autorizado." };
+  const admin = createAdminClient();
+
+  const nombre = datos.nombre.trim().replace(/\s+/g, " ").slice(0, 80);
+  if (nombre.length < 2) return { error: "Escribe el nombre." };
+  const email = datos.email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "El correo no es válido." };
+  const nac = datos.fechaNacimiento.trim();
+  if (nac && (!/^\d{4}-\d{2}-\d{2}$/.test(nac) || Number.isNaN(new Date(nac).getTime())))
+    return { error: "La fecha de nacimiento no es válida." };
+
+  // El correo vive en auth; el nombre y la fecha en el perfil.
+  const { data: actual } = await admin.auth.admin.getUserById(userId);
+  if (!actual?.user) return { error: "No encontramos la cuenta." };
+  if ((actual.user.email ?? "").toLowerCase() !== email) {
+    const { error } = await admin.auth.admin.updateUserById(userId, { email, email_confirm: true });
+    if (error) return { error: /already|exists|registered/i.test(error.message) ? "Ese correo ya lo usa otra cuenta." : "No se pudo cambiar el correo." };
+  }
+  const { error } = await admin.from("profiles")
+    .update({ full_name: nombre, fecha_nacimiento: nac || null }).eq("id", userId);
+  if (error) return { error: "No se pudieron guardar los datos." };
   return { ok: true };
 }
