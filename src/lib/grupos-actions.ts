@@ -126,7 +126,8 @@ export async function getGrupo(id: string): Promise<Grupo | null> {
   return mapGrupo(
     g, (ap || []).length, !!me && (ap || []).some((a) => a.user_id === me),
     (mi || []).length, !!me && (mi || []).some((m) => m.user_id === me),
-    p ? {
+    // Los grupos de un curso son del equipo: no llevan «Creado por».
+    p && !g.curso_id ? {
       id: p.id as string,
       nombre: (p.full_name as string) || "Creador",
       avatar: (p.avatar_url as string) || null,
