@@ -1,16 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { emailValido } from "@/lib/validacion";
 import { AuthShell } from "@/components/AuthShell";
 import { TextField, SubmitButton, Aviso } from "@/components/fields";
 
-export default function RecuperarPage() {
+function Recuperar() {
   const [pendiente, setPendiente] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [error, setError] = useState("");
+  // Si llega con ?e=correo (desde el correo de compra), lo dejamos puesto.
+  const correoInicial = useSearchParams().get("e") ?? "";
 
   async function enviarEnlace(correo: string) {
     setError("");
@@ -74,6 +77,7 @@ export default function RecuperarPage() {
           name="email"
           type="email"
           placeholder="tucorreo@ejemplo.com"
+          defaultValue={correoInicial}
           autoComplete="email"
         />
         <Aviso error={error} />
@@ -81,6 +85,10 @@ export default function RecuperarPage() {
       </form>
     </AuthShell>
   );
+}
+
+export default function RecuperarPage() {
+  return <Suspense fallback={null}><Recuperar /></Suspense>;
 }
 
 function SobreIcon({ grande = false }: { grande?: boolean }) {

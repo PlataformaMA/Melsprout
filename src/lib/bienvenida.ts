@@ -113,8 +113,13 @@ export async function enviarBienvenidaCompra(
     email,
     options: { redirectTo: `${SITIO}/restablecer` },
   });
-  const enlace = data?.properties?.action_link;
-  if (error || !enlace) return false;
+  // Usamos el token_hash en un enlace nuestro (/activar): el action_link de
+  // Supabase regresa la sesión en el "#" de la URL y la pantalla de contraseña
+  // no lo lee, así que siempre parecía expirado. /activar además no gasta el
+  // token hasta que la persona toca el botón.
+  const th = data?.properties?.hashed_token;
+  if (error || !th) return false;
+  const enlace = `${SITIO}/activar?th=${encodeURIComponent(th)}&e=${encodeURIComponent(email)}${curso ? `&c=${encodeURIComponent(curso)}` : ""}`;
 
   const hola = nombre ? `¡Hola, ${nombre.split(" ")[0]}!` : "¡Hola!";
   const html = `<!doctype html>

@@ -14,7 +14,7 @@ export default function EnlaceExpiradoPage() {
         <p className="text-sub text-sm mt-3">El enlace de verificación no es válido o ha expirado.</p>
         <p className="text-sub text-sm mt-2">Solicita un nuevo enlace para continuar.</p>
 
-        <Link href="/login"
+        <Link href="/recuperar"
           className="mt-7 w-full rounded-xl bg-accent text-white font-bold py-3 text-sm hover:brightness-110 transition">
           Solicitar nuevo enlace
         </Link>
