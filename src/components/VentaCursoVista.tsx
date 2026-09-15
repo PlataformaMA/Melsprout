@@ -179,9 +179,11 @@ function PortadaCurso({ curso }: { curso: CursoEspecial }) {
   ) : (
     <span className="w-full h-full grid place-items-center font-display font-extrabold text-white/80 text-lg px-3 text-center">{curso.nombre}</span>
   );
-  if (!curso.enlace) return <div className={caja}>{contenido}</div>;
+  // La foto lleva a comprar; si el curso aún no tiene checkout, al enlace del patrocinador.
+  const href = curso.checkoutUrl || curso.enlace?.url;
+  if (!href) return <div className={caja}>{contenido}</div>;
   return (
-    <a href={curso.enlace.url} target="_blank" rel="noreferrer" title={curso.enlace.texto}
+    <a href={href} target="_blank" rel="noreferrer" title={curso.checkoutUrl ? "Comprar" : curso.enlace?.texto}
       className={`${caja} hover:opacity-90 transition`}>
       {contenido}
     </a>
