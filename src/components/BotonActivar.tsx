@@ -10,7 +10,7 @@ export function BotonActivar({ k, pedirNuevo }: { k: string; pedirNuevo: string 
   return (
     <div className="space-y-3">
       <button
-        onClick={() => start(async () => { const r = await activarCuenta(k); if (r && "error" in r) setError(r.error); })}
+        onClick={() => start(async () => { const r = await activarCuenta(k); if ("error" in r) setError(r.error); else window.location.href = r.url; })}
         disabled={pendiente}
         className="block w-full text-center rounded-xl bg-accent text-white font-bold py-3 text-sm hover:brightness-110 disabled:opacity-60 transition">
         {pendiente ? "Preparando tu acceso…" : "Crear mi contraseña"}

@@ -1,12 +1,13 @@
 "use server";
 
 import { createHash } from "crypto";
-import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // Canjea el token del correo de compra por un enlace fresco de Supabase para
 // crear la contraseña. Se llama al tocar el botón en /activar.
-export async function activarCuenta(k: string): Promise<{ error: string } | never> {
+// Devuelve la URL a la que el navegador debe ir con navegación completa (no por
+// el router de Next): así la cookie de sesión que pone /auth/callback sí queda.
+export async function activarCuenta(k: string): Promise<{ error: string } | { url: string }> {
   if (!/^[a-f0-9]{48}$/.test(k)) return { error: "El enlace no es válido." };
   const admin = createAdminClient();
   const hash = createHash("sha256").update(k).digest("hex");
@@ -25,5 +26,5 @@ export async function activarCuenta(k: string): Promise<{ error: string } | neve
   if (error || !th) return { error: "No se pudo generar el acceso. Intenta de nuevo." };
 
   await admin.from("activaciones").update({ usado_at: new Date().toISOString() }).eq("token_hash", hash);
-  redirect(`/auth/callback?token_hash=${encodeURIComponent(th)}&type=recovery&next=/restablecer`);
+  return { url: `/auth/callback?token_hash=${encodeURIComponent(th)}&type=recovery&next=/restablecer` };
 }
