@@ -1,15 +1,16 @@
 import Link from "next/link";
 import { AuthShell } from "@/components/AuthShell";
+import { BotonActivar } from "@/components/BotonActivar";
 
-// Pantalla intermedia del correo de compra. El enlace del correo llega aquí y
-// NO gasta el token hasta que la persona toca el botón: así los escáneres de
-// correo (Gmail, Outlook) que abren los enlaces por adelantado no lo invalidan.
+// Pantalla intermedia del correo de compra. El enlace trae un token nuestro (k)
+// que no caduca; al tocar el botón se genera el de Supabase y se pasa a crear
+// la contraseña. (th = formato anterior, con el token de Supabase directo.)
 export default async function ActivarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ th?: string; e?: string; c?: string }>;
+  searchParams: Promise<{ th?: string; k?: string; e?: string; c?: string }>;
 }) {
-  const { th, e, c } = await searchParams;
+  const { th, k, e, c } = await searchParams;
   const correo = e ?? "";
   const continuar = th
     ? `/auth/callback?token_hash=${encodeURIComponent(th)}&type=recovery&next=/restablecer`
@@ -30,7 +31,9 @@ export default async function ActivarPage({
         {correo && (
           <p className="text-sub text-sm text-center">Cuenta: <b className="text-text">{correo}</b></p>
         )}
-        {continuar ? (
+        {k ? (
+          <BotonActivar k={k} pedirNuevo={pedirNuevo} />
+        ) : continuar ? (
           <a href={continuar}
             className="block w-full text-center rounded-xl bg-accent text-white font-bold py-3 text-sm hover:brightness-110 transition">
             Crear mi contraseña

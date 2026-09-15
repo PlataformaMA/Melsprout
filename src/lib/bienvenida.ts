@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createHash, randomBytes } from "crypto";
 
 // En producción la variable puede venir apuntando a localhost (queda de las
 // pruebas locales). Si es así se ignora: los enlaces del correo tienen que
@@ -108,18 +109,17 @@ export async function enviarBienvenidaCompra(
   if (!llave || !remitente) return false;
 
   const admin = createAdminClient();
-  const { data, error } = await admin.auth.admin.generateLink({
-    type: "recovery",
-    email,
-    options: { redirectTo: `${SITIO}/restablecer` },
-  });
-  // Usamos el token_hash en un enlace nuestro (/activar): el action_link de
-  // Supabase regresa la sesión en el "#" de la URL y la pantalla de contraseña
-  // no lo lee, así que siempre parecía expirado. /activar además no gasta el
-  // token hasta que la persona toca el botón.
-  const th = data?.properties?.hashed_token;
-  if (error || !th) return false;
-  const enlace = `${SITIO}/activar?th=${encodeURIComponent(th)}&e=${encodeURIComponent(email)}${curso ? `&c=${encodeURIComponent(curso)}` : ""}`;
+  // El enlace del correo es nuestro y no caduca: guarda un token propio y, cuando
+  // la persona toca el botón en /activar, ahí se genera el token de Supabase
+  // (que sí dura poco). Antes se generaba al mandar el correo y expiraba en 1 h.
+  const { data: link, error } = await admin.auth.admin.generateLink({ type: "recovery", email });
+  const userId = link?.user?.id;
+  if (error || !userId) return false;
+  const token = randomBytes(24).toString("hex");
+  const { error: eTok } = await admin.from("activaciones")
+    .insert({ token_hash: createHash("sha256").update(token).digest("hex"), user_id: userId });
+  if (eTok) return false;
+  const enlace = `${SITIO}/activar?k=${token}&e=${encodeURIComponent(email)}${curso ? `&c=${encodeURIComponent(curso)}` : ""}`;
 
   const hola = nombre ? `¡Hola, ${nombre.split(" ")[0]}!` : "¡Hola!";
   const html = `<!doctype html>
