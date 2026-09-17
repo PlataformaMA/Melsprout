@@ -80,21 +80,22 @@ export async function getRetoDB(id: string): Promise<RetoDef | null> {
 async function getRetoDeClase(id: string): Promise<RetoDef | null> {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
   const admin = createAdminClient();
-  const { data } = await admin.from("cursos_clases").select("titulo, reto_texto, reto_instrucciones").eq("id", id).maybeSingle();
+  const { data } = await admin.from("cursos_clases").select("titulo, reto_texto, reto_instrucciones, reto_pasos, reto_revisa, reto_descripcion").eq("id", id).maybeSingle();
   if (!data) return null;
   const reto = (data.reto_texto as string) || `Aplica lo aprendido en «${data.titulo}» y compártelo.`;
+  const pasos = Array.isArray(data.reto_pasos) && data.reto_pasos.length ? (data.reto_pasos as PasoReto[]) : null;
   return {
     claseId: id,
     modulo: data.titulo as string,
     titulo: reto,
     emoji: "🎯",
-    descripcion: "Pon en práctica lo de la clase y compártelo con la comunidad.",
+    descripcion: (data.reto_descripcion as string) || "Pon en práctica lo de la clase y compártelo con la comunidad.",
     intro: "Completa este reto para afianzar lo aprendido y ganar XP.",
     instrucciones: (data.reto_instrucciones as string) || "",
     accion: "compartirlo",
-    revisa: "equipo",
+    revisa: data.reto_revisa === "sola" ? "sola" : "equipo",
     xp: 50,
-    pasos: [{ id: "respuesta", titulo: "Tu respuesta al reto", subtitulo: reto, tipo: "textarea", placeholder: "Escribe aquí tu respuesta...", max: 500 }],
+    pasos: pasos || [{ id: "respuesta", titulo: "Tu respuesta al reto", subtitulo: reto, tipo: "textarea", placeholder: "Escribe aquí tu respuesta...", max: 500 }],
     tips: { titulo: "Tips:", items: ["Sé claro", "Aplica lo de la clase", "Comparte con la comunidad"] },
     sobre: SOBRE_DEFAULT,
     ejemplo: EJEMPLO_DEFAULT,

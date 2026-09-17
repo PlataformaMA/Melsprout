@@ -2,7 +2,7 @@
 // y define sus pasos (texto/textarea/archivo), tips, ejemplo y consejo.
 import { ETAPA_1 } from "@/lib/data";
 
-export type PasoTipo = "texto" | "textarea" | "archivo";
+export type PasoTipo = "texto" | "textarea" | "archivo" | "opciones" | "checklist";
 export type PasoReto = {
   id: string;
   titulo: string;
@@ -10,6 +10,9 @@ export type PasoReto = {
   tipo: PasoTipo;
   placeholder?: string;
   max?: number;
+  opciones?: string[];      // opciones / checklist: las alternativas
+  correcta?: number;        // opciones: índice de la respuesta correcta (quiz); sin esto, cualquiera vale
+  todas?: boolean;          // checklist: hay que marcar todas para publicar
   acepta?: string;
   ayudaArchivo?: string;
   archivoImagen?: boolean; // true = imagen (se sube), false/undefined = video (por ahora solo nombre)

@@ -119,6 +119,20 @@ export function RetoVista({
         setError(`Completa todos los pasos antes de publicar (te falta: “${faltan[0].titulo}”).`);
         return;
       }
+      // Quiz: la respuesta tiene que ser la correcta. Checklist "todas": todo marcado.
+      for (const p of reto.pasos) {
+        const idxP = reto.pasos.indexOf(p);
+        if (p.tipo === "opciones" && p.correcta !== undefined && resp[p.id] !== p.opciones?.[p.correcta]) {
+          setPaso(idxP);
+          setError("Esa no es la respuesta correcta. Revisa la clase e inténtalo de nuevo. 💜");
+          return;
+        }
+        if (p.tipo === "checklist" && p.todas && (p.opciones || []).some((o) => !leerMarcadas(resp[p.id]).includes(o))) {
+          setPaso(idxP);
+          setError("Marca todos los puntos del checklist para continuar.");
+          return;
+        }
+      }
     }
     setGuardando(estado);
     const revisa = reto.revisa ?? "equipo";
@@ -234,6 +248,40 @@ export function RetoVista({
                 <div className={pasoActual.subtitulo ? "" : "mt-4"}>
                   {pasoActual.tipo === "archivo" ? (
                     <FileField paso={pasoActual} archivoUrl={archivoUrl} videoNombre={videoNombre} subiendo={subiendo} onFile={(f) => subirArchivo(pasoActual, f)} />
+                  ) : pasoActual.tipo === "opciones" ? (
+                    <div className="space-y-2">
+                      {(pasoActual.opciones || []).map((o) => {
+                        const activa = resp[pasoActual.id] === o;
+                        return (
+                          <button key={o} type="button" onClick={() => set(pasoActual.id, o)}
+                            className={`w-full flex items-center gap-3 text-left rounded-xl border px-4 py-3 text-[14px] transition ${
+                              activa ? "border-accent bg-accent-soft text-text font-semibold" : "border-border bg-bg hover:border-accent/40"}`}>
+                            <span className={`w-5 h-5 rounded-full border-2 grid place-items-center shrink-0 ${activa ? "border-accent" : "border-border"}`}>
+                              {activa && <span className="w-2.5 h-2.5 rounded-full bg-accent" />}
+                            </span>
+                            {o}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : pasoActual.tipo === "checklist" ? (
+                    <div className="space-y-2">
+                      {(pasoActual.opciones || []).map((o) => {
+                        const marcadas = leerMarcadas(resp[pasoActual.id]);
+                        const activa = marcadas.includes(o);
+                        return (
+                          <button key={o} type="button"
+                            onClick={() => set(pasoActual.id, (activa ? marcadas.filter((m) => m !== o) : [...marcadas, o]).join(" · "))}
+                            className={`w-full flex items-center gap-3 text-left rounded-xl border px-4 py-3 text-[14px] transition ${
+                              activa ? "border-accent bg-accent-soft text-text font-semibold" : "border-border bg-bg hover:border-accent/40"}`}>
+                            <span className={`w-5 h-5 rounded-md border-2 grid place-items-center text-[12px] shrink-0 ${activa ? "border-accent bg-accent text-white" : "border-border"}`}>
+                              {activa && "✓"}
+                            </span>
+                            {o}
+                          </button>
+                        );
+                      })}
+                    </div>
                   ) : pasoActual.tipo === "texto" ? (
                     <div>
                       <input
@@ -604,3 +652,8 @@ function GemIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill
 function BookmarkIcon() { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3h12v18l-6-4-6 4z" /></svg>; }
 function UploadIcon() { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 16V4M7 9l5-5 5 5M5 20h14" /></svg>; }
 function MapMini() { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z" /><path d="M9 4v14M15 6v14" /></svg>; }
+
+// Checklist: las opciones marcadas se guardan como texto separado por " · ".
+function leerMarcadas(v: string | undefined): string[] {
+  return (v || "").split(" · ").map((x) => x.trim()).filter(Boolean);
+}
