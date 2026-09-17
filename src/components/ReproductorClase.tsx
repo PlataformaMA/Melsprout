@@ -75,7 +75,9 @@ export function ReproductorClase({
       maxVistoRef.current = v.currentTime;
     }
     if (v.duration > 0 && Number.isFinite(v.duration)) {
-      setProgreso(Math.min(100, (vistoRef.current / v.duration) * 100));
+      // Los eventos de tiempo no suman exacto la duración: al 98.5% ya se vio todo.
+      const pct = (vistoRef.current / v.duration) * 100;
+      setProgreso(pct >= 98.5 ? 100 : Math.min(100, pct));
     }
   }
   const router = useRouter();
@@ -136,6 +138,9 @@ export function ReproductorClase({
 
   // Puede avanzar cuando el video llegó al final (o ya estaba completada).
   const claseLista = progreso >= 100 || completadas.has(clase.id);
+  // Solo se exige el reto si la clase tiene uno (los cursos especiales no traen).
+  const tieneReto = !!clase.reto?.trim();
+  const puedeAvanzar = claseLista && (retoEnviado || !tieneReto);
 
 
   return (
@@ -212,7 +217,8 @@ export function ReproductorClase({
                         }
                         lastTimeRef.current = v.currentTime;
                       }}
-                      onEnded={() => setTerminado(true)}
+                      // Llegó al final de verdad (no se puede adelantar): completada.
+                      onEnded={() => { setTerminado(true); setProgreso(100); }}
                       onLoadedMetadata={(e) => {
                         const v = e.currentTarget;
                         if (v.duration > 0 && vistoInicial > 0) {
@@ -300,11 +306,13 @@ export function ReproductorClase({
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Link href={`/app/reto/${clase.id}`} className="flex items-center gap-2 bg-accent text-white font-bold text-sm rounded-xl px-5 py-2.5 hover:brightness-110 transition shadow-sm shadow-accent/30">
-                    <SparkleMini /> Continuar al reto
-                  </Link>
+                  {tieneReto && (
+                    <Link href={`/app/reto/${clase.id}`} className="flex items-center gap-2 bg-accent text-white font-bold text-sm rounded-xl px-5 py-2.5 hover:brightness-110 transition shadow-sm shadow-accent/30">
+                      <SparkleMini /> Continuar al reto
+                    </Link>
+                  )}
                   {siguienteHref && (
-                    claseLista && retoEnviado ? (
+                    puedeAvanzar ? (
                       <button
                         onClick={() => { if (xpGanadoRef.current) { xpGanadoRef.current = false; setPopup(true); } else router.push(siguienteHref); }}
                         className="flex items-center gap-2 bg-green text-white border border-green rounded-xl px-4 py-2.5 font-bold text-sm hover:brightness-110 transition shadow-sm">
@@ -392,11 +400,13 @@ export function ReproductorClase({
                 )}
               </div>
 
-              {/* Reto de esta clase */}
-              <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm mt-5">
-                <h3 className="font-display font-extrabold mb-1.5">🎯 Reto de la clase</h3>
-                <p className="text-sub text-sm">{clase.reto}</p>
-              </section>
+              {/* Reto de esta clase (si tiene) */}
+              {tieneReto && (
+                <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm mt-5">
+                  <h3 className="font-display font-extrabold mb-1.5">🎯 Reto de la clase</h3>
+                  <p className="text-sub text-sm">{clase.reto}</p>
+                </section>
+              )}
 
             </div>
 
