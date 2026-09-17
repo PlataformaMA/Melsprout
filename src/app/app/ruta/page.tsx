@@ -101,8 +101,11 @@ export default async function RutaPage() {
   orden.forEach((id, i) => { if (completadasSet.has(id)) ultima = i; });
   const completadas = ultima + 1;
 
-  // Recursos: se desbloquean con la clase a la que pertenecen.
-  const recursos = await getRecursos(orden.slice(0, completadas + 1));
+  // Recursos: se desbloquean con la clase a la que pertenecen. Los de cursos
+  // especiales (BYW…) viven en sus propias clases, no en la Ruta.
+  const rutaIds = new Set(orden);
+  const recursos = (await getRecursos(orden.slice(0, completadas + 1)))
+    .filter((r) => !r.claseId || rutaIds.has(r.claseId));
 
   // ——— Estado de los retos (de reto_submissions) ———
   const { data: subs } = await supabase
