@@ -52,12 +52,12 @@ export function EstudiantesTab() {
   );
 
   const filtrada = useMemo(() => {
-    const q = busca.trim().toLowerCase();
+    const q = sinAcentos(busca);
     let out = (lista || []).filter((e) => {
       if (estado !== "todos" && e.estado !== estado) return false;
       if (nivel !== "todos" && e.nivel !== nivel) return false;
       if (!q) return true;
-      return e.nombre.toLowerCase().includes(q) || (e.email || "").toLowerCase().includes(q);
+      return sinAcentos(e.nombre).includes(q) || sinAcentos(e.email || "").includes(q);
     });
     out = [...out].sort((a, b) => {
       if (orden === "nombre") return a.nombre.localeCompare(b.nombre);
@@ -278,4 +278,9 @@ function Tarjeta({ e, onAbrir }: { e: Estudiante; onAbrir: () => void }) {
       <div className="text-[11.5px] text-hint mt-1.5">{hace(e.ultimaActividad)}</div>
     </button>
   );
+}
+
+// Para buscar: minúsculas y sin acentos ("Sofia" encuentra "Sofía").
+function sinAcentos(t: string): string {
+  return t.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }

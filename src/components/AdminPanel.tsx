@@ -857,10 +857,11 @@ function UsuariosTab({ usuarios, onCreado }: { usuarios: UsuarioAdmin[]; onCread
   const [importar, setImportar] = useState(false);
   const [busca, setBusca] = useState("");
 
-  const q = busca.trim().toLowerCase();
+  // Sin acentos: "Sofia" encuentra "Sofía".
+  const norm = (t: string) => t.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const q = norm(busca);
   const lista = q
-    ? usuarios.filter((u) =>
-        (u.nombre || "").toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q))
+    ? usuarios.filter((u) => norm(u.nombre || "").includes(q) || norm(u.email || "").includes(q))
     : usuarios;
 
   return (
