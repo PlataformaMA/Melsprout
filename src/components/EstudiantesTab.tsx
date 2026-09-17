@@ -35,6 +35,7 @@ export function EstudiantesTab() {
   const [busca, setBusca] = useState("");
   const [estado, setEstado] = useState<EstadoAlumna | "todos">("todos");
   const [nivel, setNivel] = useState("todos");
+  const [curso, setCurso] = useState("todos");
   const [orden, setOrden] = useState<Orden>("xp");
   const [vista, setVista] = useState<"lista" | "tarjetas">("lista");
   const [crear, setCrear] = useState(false);
@@ -50,12 +51,17 @@ export function EstudiantesTab() {
     () => [...new Set((lista || []).map((e) => e.nivel))],
     [lista]
   );
+  const cursos = useMemo(
+    () => [...new Set((lista || []).flatMap((e) => e.cursos))].sort(),
+    [lista]
+  );
 
   const filtrada = useMemo(() => {
     const q = sinAcentos(busca);
     let out = (lista || []).filter((e) => {
       if (estado !== "todos" && e.estado !== estado) return false;
       if (nivel !== "todos" && e.nivel !== nivel) return false;
+      if (curso === "ninguno" ? e.cursos.length > 0 : curso !== "todos" && !e.cursos.includes(curso)) return false;
       if (!q) return true;
       return sinAcentos(e.nombre).includes(q) || sinAcentos(e.email || "").includes(q);
     });
@@ -68,7 +74,7 @@ export function EstudiantesTab() {
       return b.xp - a.xp;
     });
     return out;
-  }, [lista, busca, estado, nivel, orden]);
+  }, [lista, busca, estado, nivel, curso, orden]);
 
   return (
     <div>
@@ -127,6 +133,13 @@ export function EstudiantesTab() {
           {niveles.map((n) => <option key={n} value={n}>{n}</option>)}
         </select>
 
+        <select value={curso} onChange={(e) => setCurso(e.target.value)}
+          className="bg-surface border border-border rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-accent">
+          <option value="todos">Curso: todos</option>
+          {cursos.map((c) => <option key={c} value={c}>{c}</option>)}
+          <option value="ninguno">Sin curso especial</option>
+        </select>
+
         <select value={orden} onChange={(e) => setOrden(e.target.value as Orden)}
           className="bg-surface border border-border rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-accent">
           <option value="xp">Ordenar: XP</option>
@@ -151,7 +164,7 @@ export function EstudiantesTab() {
             <table className="w-full text-[13px]">
               <thead className="bg-bg text-sub">
                 <tr>
-                  {["Estudiante", "Nivel", "Retos", "Estado", "Mundo actual", "Progreso", "XP", "Experiencia", "Racha", "Última actividad", "Renovación", "Comentarios", ""].map((h) => (
+                  {["Estudiante", "Cursos", "Nivel", "Retos", "Estado", "Mundo actual", "Progreso", "XP", "Experiencia", "Racha", "Última actividad", "Renovación", "Comentarios", ""].map((h) => (
                     <th key={h} className="text-left font-bold px-3 py-2.5 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -168,6 +181,7 @@ export function EstudiantesTab() {
                         </span>
                       </button>
                     </td>
+                    <td className="px-3 py-2.5"><Cursos e={e} /></td>
                     <td className="px-3 py-2.5 whitespace-nowrap">
                       <span className="text-[11.5px] font-bold text-accent bg-accent-soft rounded-full px-2.5 py-1">{e.nivel}</span>
                     </td>
@@ -261,6 +275,8 @@ function Tarjeta({ e, onAbrir }: { e: Estudiante; onAbrir: () => void }) {
         </span>
       </div>
 
+      <div className="mt-2.5"><Cursos e={e} /></div>
+
       <div className="flex items-center gap-2 mt-3">
         <div className="flex-1 h-2 rounded-full bg-border/60 overflow-hidden">
           <div className="h-full rounded-full bg-accent" style={{ width: `${e.progreso}%` }} />
@@ -283,4 +299,19 @@ function Tarjeta({ e, onAbrir }: { e: Estudiante; onAbrir: () => void }) {
 // Para buscar: minúsculas y sin acentos ("Sofia" encuentra "Sofía").
 function sinAcentos(t: string): string {
   return t.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+// Chips de los cursos especiales que tiene, y aviso si compró pero no ha entrado.
+function Cursos({ e }: { e: Estudiante }) {
+  if (e.cursos.length === 0 && e.onboarding) return <span className="text-hint text-[12px]">—</span>;
+  return (
+    <span className="flex flex-wrap gap-1">
+      {e.cursos.map((c) => (
+        <span key={c} className="text-[11px] font-bold text-[#5B21B6] bg-[#EDE9FE] rounded-full px-2 py-0.5 whitespace-nowrap">{c}</span>
+      ))}
+      {!e.onboarding && (
+        <span className="text-[11px] font-bold text-amber-700 bg-amber-100 rounded-full px-2 py-0.5 whitespace-nowrap" title="Tiene el curso pero todavía no ha entrado a la app">No ha entrado</span>
+      )}
+    </span>
+  );
 }

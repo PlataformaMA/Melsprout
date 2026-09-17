@@ -42,8 +42,14 @@ export function FichaEstudiante({
             <div className="min-w-0">
               <h2 className="font-display font-extrabold text-lg leading-tight truncate">{estudiante.nombre}</h2>
               <div className="text-[12.5px] text-sub truncate">{estudiante.email || "—"}</div>
-              <span className="inline-block mt-1 text-[11.5px] font-bold text-accent bg-accent-soft rounded-full px-2.5 py-0.5">
-                {estudiante.nivel}
+              <span className="flex flex-wrap items-center gap-1 mt-1">
+                <span className="text-[11.5px] font-bold text-accent bg-accent-soft rounded-full px-2.5 py-0.5">{estudiante.nivel}</span>
+                {estudiante.cursos.map((c) => (
+                  <span key={c} className="text-[11.5px] font-bold text-[#5B21B6] bg-[#EDE9FE] rounded-full px-2.5 py-0.5">{c}</span>
+                ))}
+                {!estudiante.onboarding && (
+                  <span className="text-[11.5px] font-bold text-amber-700 bg-amber-100 rounded-full px-2.5 py-0.5">No ha entrado a la app</span>
+                )}
               </span>
             </div>
           </div>

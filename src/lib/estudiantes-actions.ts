@@ -31,6 +31,8 @@ export type Estudiante = {
   miembroDesde: string;
   certificado: boolean;
   experiencia: string | null;   // lo que contestó en el onboarding
+  cursos: string[];             // cursos especiales a los que tiene acceso (comprados o dados)
+  onboarding: boolean;          // false = compró pero aún no entra a la app
 };
 
 const DIA = 864e5;
@@ -58,17 +60,30 @@ export async function listarEstudiantes(): Promise<Estudiante[]> {
   if (!(await soyAdmin())) return [];
   const admin = createAdminClient();
 
-  const [{ data: perfiles }, { data: progreso }, { data: subs }, { data: clases }, { data: modulos }] =
+  const [{ data: perfilesTodos }, { data: progreso }, { data: subs }, { data: clases }, { data: modulos }, { data: accesos }] =
     await Promise.all([
       admin.from("profiles")
-        .select("id, full_name, avatar_url, xp, racha, pais, fecha_nacimiento, created_at, ultima_actividad, notas_equipo, renovacion, experiencia")
-        .eq("onboarding_completo", true)
+        .select("id, full_name, avatar_url, xp, racha, pais, fecha_nacimiento, created_at, ultima_actividad, notas_equipo, renovacion, experiencia, onboarding_completo")
         .order("xp", { ascending: false }),
       admin.from("clase_progreso").select("user_id, clase_id, completada"),
       admin.from("reto_submissions").select("user_id, estado, revision"),
       admin.from("cursos_clases").select("id, modulo_id, orden").eq("activo", true).order("orden"),
-      admin.from("cursos_modulos").select("id, nombre, orden").eq("activo", true).order("orden"),
+      admin.from("cursos_modulos").select("id, nombre, orden, especial").eq("activo", true).order("orden"),
+      admin.from("curso_accesos").select("user_id, modulo_id"),
     ]);
+
+  // Cursos especiales de cada quien (por nombre). Quien compró un curso aparece
+  // en la lista aunque todavía no haya terminado el onboarding.
+  const nombreEspecial = new Map((modulos || []).filter((m) => m.especial).map((m) => [m.id as string, m.nombre as string]));
+  const cursosPorUsuario = new Map<string, string[]>();
+  for (const a of accesos || []) {
+    const n = nombreEspecial.get(a.modulo_id as string);
+    if (!n) continue;
+    const u = a.user_id as string;
+    if (!cursosPorUsuario.has(u)) cursosPorUsuario.set(u, []);
+    cursosPorUsuario.get(u)!.push(n);
+  }
+  const perfiles = (perfilesTodos || []).filter((p) => p.onboarding_completo || cursosPorUsuario.has(p.id as string));
 
   // Correos: viven en auth, no en el perfil.
   const { data: auth } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
@@ -142,6 +157,8 @@ export async function listarEstudiantes(): Promise<Estudiante[]> {
       miembroDesde: p.created_at as string,
       certificado,
       experiencia: (p.experiencia as string) || null,
+      cursos: cursosPorUsuario.get(id) || [],
+      onboarding: !!p.onboarding_completo,
     };
   });
 }
