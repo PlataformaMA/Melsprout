@@ -4,8 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { esAdminUsuario } from "@/lib/admin";
 
 // Los admins entran directo a su panel; los usuarios, a su Ruta de Aprendizaje.
-// Quien acaba de recibir un curso (compra o alta desde el panel) va primero
-// al curso, una sola vez; después entra a la Ruta como todo el mundo.
+// Quien compró Boost Your Web entra SIEMPRE a su curso (pedido de Sveidy,
+// 17-sep-2026); cualquier otro curso especial solo la primera vez.
 export default async function AppHome() {
   const supabase = await createClient();
   const {
@@ -14,10 +14,28 @@ export default async function AppHome() {
   if (user && (await esAdminUsuario(user.id, user.email))) redirect("/app/admin");
 
   if (user) {
-    const destino = await cursoRecienRecibido(user.id);
+    const destino = (await cursoRecienRecibido(user.id)) ?? (await cursoDeEntrada(user.id));
     if (destino) redirect(destino);
   }
   redirect("/app/ruta");
+}
+
+// Cursos cuyos compradores entran directo al curso cada vez que abren la app.
+const CURSOS_ENTRADA_DIRECTA = ["22501bd0-4bda-44cf-9d7a-0faacdbc9840"]; // Boost Your Web
+
+async function cursoDeEntrada(userId: string): Promise<string | null> {
+  const admin = createAdminClient();
+  const { data: perfil } = await admin
+    .from("profiles").select("onboarding_completo").eq("id", userId).maybeSingle();
+  if (!perfil?.onboarding_completo) return null;
+  const { data: acceso } = await admin
+    .from("curso_accesos")
+    .select("modulo_id")
+    .eq("user_id", userId)
+    .in("modulo_id", CURSOS_ENTRADA_DIRECTA)
+    .limit(1)
+    .maybeSingle();
+  return acceso ? `/app/especiales/${acceso.modulo_id as string}` : null;
 }
 
 // El curso más reciente al que todavía no ha entrado. Solo cuenta cuando ya
