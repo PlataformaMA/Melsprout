@@ -5,6 +5,7 @@ import { getCursos, getVideoClaseDB } from "@/lib/cursos-db";
 import { getClasesCompletadas } from "@/lib/progreso-actions";
 import { getRecursos } from "@/lib/recursos-actions";
 import { puedeVerClase } from "@/lib/acceso-actions";
+import { todoDesbloqueado } from "@/lib/ajustes";
 import { ReproductorClase } from "@/components/ReproductorClase";
 
 export default async function ClasePage({ params }: { params: Promise<{ id: string }> }) {
@@ -52,6 +53,8 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
     .eq("reto_id", clase.id)
     .maybeSingle();
   const retoEnviado = !!sub && (sub.estado === "publicado" || sub.revision === "aprobado");
+  // Con "todo desbloqueado" (ajuste del panel) el reto no detiene el avance.
+  const abierto = await todoDesbloqueado();
 
   // A dónde regresa: la Ruta, o la página del curso si es un curso especial.
   const volverHref = modulo.especialId ? `/app/especiales/${modulo.especialId}` : "/app/ruta";
@@ -78,7 +81,7 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
       videoUrl={videoUrl}
       siguienteHref={siguienteHref}
       volverHref={volverHref}
-      retoEnviado={retoEnviado}
+      retoEnviado={retoEnviado || abierto}
       recursos={recursos}
     />
   );
