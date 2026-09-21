@@ -53,8 +53,9 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
     .eq("reto_id", clase.id)
     .maybeSingle();
   const retoEnviado = !!sub && (sub.estado === "publicado" || sub.revision === "aprobado");
-  // Con "todo desbloqueado" (ajuste del panel) el reto no detiene el avance.
-  const abierto = await todoDesbloqueado();
+  // Con "todo desbloqueado" (ajuste del panel) el reto no detiene el avance en
+  // la Ruta. En los cursos especiales (BYW) los retos sí se piden.
+  const abierto = !modulo.especialId && (await todoDesbloqueado());
 
   // A dónde regresa: la Ruta, o la página del curso si es un curso especial.
   const volverHref = modulo.especialId ? `/app/especiales/${modulo.especialId}` : "/app/ruta";
