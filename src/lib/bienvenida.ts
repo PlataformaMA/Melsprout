@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { remitenteCorreo } from "@/lib/remitente";
 import { createHash, randomBytes } from "crypto";
 
 // En producción la variable puede venir apuntando a localhost (queda de las
@@ -77,7 +78,7 @@ export async function darBienvenida(userId: string, email: string | null, nombre
 
   // El correo solo sale si hay proveedor configurado.
   const llave = process.env.RESEND_API_KEY;
-  const remitente = process.env.CORREO_REMITENTE;
+  const remitente = remitenteCorreo();
   if (!llave || !remitente || !email) return;
 
   try {
@@ -105,7 +106,7 @@ export async function enviarBienvenidaCompra(
   email: string, nombre: string, curso?: string | null
 ): Promise<boolean> {
   const llave = process.env.RESEND_API_KEY;
-  const remitente = process.env.CORREO_REMITENTE;
+  const remitente = remitenteCorreo();
   if (!llave || !remitente) return false;
 
   const admin = createAdminClient();

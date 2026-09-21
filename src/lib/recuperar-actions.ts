@@ -2,6 +2,7 @@
 
 import { createHash, randomBytes } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { remitenteCorreo } from "@/lib/remitente";
 import { emailValido } from "@/lib/validacion";
 
 const SITIO = (() => {
@@ -20,7 +21,7 @@ export async function pedirEnlaceRecuperacion(emailCrudo: string): Promise<{ ok:
   if (!emailValido(email)) return { error: "Escribe un correo válido." };
 
   const llave = process.env.RESEND_API_KEY;
-  const remitente = process.env.CORREO_REMITENTE;
+  const remitente = remitenteCorreo();
   if (!llave || !remitente) return { error: "El correo no está configurado. Escríbenos a soporte." };
 
   const admin = createAdminClient();
