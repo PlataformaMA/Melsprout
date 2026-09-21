@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { activarCuenta } from "@/lib/activar-actions";
 
-export function BotonActivar({ k, pedirNuevo }: { k: string; pedirNuevo: string }) {
+export function BotonActivar({ k, pedirNuevo, texto = "Crear mi contraseña" }: { k: string; pedirNuevo: string; texto?: string }) {
   const [pendiente, start] = useTransition();
   const [error, setError] = useState("");
   return (
@@ -13,7 +13,7 @@ export function BotonActivar({ k, pedirNuevo }: { k: string; pedirNuevo: string 
         onClick={() => start(async () => { const r = await activarCuenta(k); if ("error" in r) setError(r.error); else window.location.href = r.url; })}
         disabled={pendiente}
         className="block w-full text-center rounded-xl bg-accent text-white font-bold py-3 text-sm hover:brightness-110 disabled:opacity-60 transition">
-        {pendiente ? "Preparando tu acceso…" : "Crear mi contraseña"}
+        {pendiente ? "Preparando tu acceso…" : texto}
       </button>
       {error && (
         <p className="text-pink text-[13px] text-center">

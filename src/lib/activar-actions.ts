@@ -13,9 +13,12 @@ export async function activarCuenta(k: string): Promise<{ error: string } | { ur
   const hash = createHash("sha256").update(k).digest("hex");
 
   const { data: act } = await admin.from("activaciones")
-    .select("user_id, usado_at").eq("token_hash", hash).maybeSingle();
+    .select("user_id, usado_at, tipo, created_at").eq("token_hash", hash).maybeSingle();
   if (!act) return { error: "El enlace no es válido." };
   if (act.usado_at) return { error: "Este enlace ya se usó. Pide uno nuevo abajo." };
+  // Los de "olvidé mi contraseña" valen 24 h; los de compra no caducan.
+  if (act.tipo === "recuperacion" && Date.now() - new Date(act.created_at as string).getTime() > 24 * 3600 * 1000)
+    return { error: "Este enlace ya caducó. Pide uno nuevo abajo." };
 
   const { data: u } = await admin.auth.admin.getUserById(act.user_id as string);
   const email = u?.user?.email;

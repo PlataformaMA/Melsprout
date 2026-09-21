@@ -8,9 +8,10 @@ import { BotonActivar } from "@/components/BotonActivar";
 export default async function ActivarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ th?: string; k?: string; e?: string; c?: string }>;
+  searchParams: Promise<{ th?: string; k?: string; e?: string; c?: string; r?: string }>;
 }) {
-  const { th, k, e, c } = await searchParams;
+  const { th, k, e, c, r } = await searchParams;
+  const recuperacion = r === "1";
   const correo = e ?? "";
   const continuar = th
     ? `/auth/callback?token_hash=${encodeURIComponent(th)}&type=recovery&next=/restablecer`
@@ -19,8 +20,8 @@ export default async function ActivarPage({
 
   return (
     <AuthShell
-      titulo={c ? `Ya tienes ${c} 🚀` : "Tu cuenta está lista 💜"}
-      subtitulo="Crea tu contraseña para entrar a Melsprout."
+      titulo={recuperacion ? "Restablece tu contraseña 🔑" : c ? `Ya tienes ${c} 🚀` : "Tu cuenta está lista 💜"}
+      subtitulo={recuperacion ? "Toca el botón y elige tu nueva contraseña." : "Crea tu contraseña para entrar a Melsprout."}
       pie={
         <p className="text-center text-[13px] text-sub">
           ¿Ya tienes contraseña? <Link href="/login" className="text-accent font-semibold">Inicia sesión</Link>
@@ -32,7 +33,7 @@ export default async function ActivarPage({
           <p className="text-sub text-sm text-center">Cuenta: <b className="text-text">{correo}</b></p>
         )}
         {k ? (
-          <BotonActivar k={k} pedirNuevo={pedirNuevo} />
+          <BotonActivar k={k} pedirNuevo={pedirNuevo} texto={recuperacion ? "Crear nueva contraseña" : "Crear mi contraseña"} />
         ) : continuar ? (
           <a href={continuar}
             className="block w-full text-center rounded-xl bg-accent text-white font-bold py-3 text-sm hover:brightness-110 transition">

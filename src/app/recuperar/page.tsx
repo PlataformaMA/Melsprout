@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { pedirEnlaceRecuperacion } from "@/lib/recuperar-actions";
 import { emailValido } from "@/lib/validacion";
 import { AuthShell } from "@/components/AuthShell";
 import { TextField, SubmitButton, Aviso } from "@/components/fields";
@@ -19,13 +19,11 @@ function Recuperar() {
     setError("");
     if (!emailValido(correo)) { setError("Escribe un correo válido."); return; }
     setPendiente(true);
-    // Se dispara desde el NAVEGADOR: así el "verificador" de seguridad (PKCE)
-    // queda en este mismo navegador y el enlace del correo funciona al regresar.
-    const supabase = createClient();
-    await supabase.auth.resetPasswordForEmail(correo, {
-      redirectTo: `${window.location.origin}/restablecer`,
-    });
+    // El correo sale por Resend con un enlace nuestro (/activar): el remitente
+    // de Supabase está limitado a 2 correos por hora y no llegaba.
+    const r = await pedirEnlaceRecuperacion(correo);
     setPendiente(false);
+    if ("error" in r) { setError(r.error); return; }
     setEnviado(true);
   }
 

@@ -143,10 +143,9 @@ export async function pedirReset(
   const email = String(formData.get("email") ?? "").trim();
   if (!emailValido(email)) return { error: "Escribe un correo válido." };
 
-  const supabase = await createClient();
-  await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${await urlSitio()}/auth/callback?next=/restablecer`,
-  });
+  const { pedirEnlaceRecuperacion } = await import("@/lib/recuperar-actions");
+  const r = await pedirEnlaceRecuperacion(email);
+  if ("error" in r) return { error: r.error };
 
   // Siempre respondemos igual, exista o no la cuenta (evita filtrar qué
   // correos están registrados = protección contra enumeración de usuarios).
