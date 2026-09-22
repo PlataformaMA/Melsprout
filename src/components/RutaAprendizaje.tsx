@@ -11,7 +11,7 @@ import { AbrirCofre } from "@/components/AbrirCofre";
 import { RachaModal } from "@/components/RachaModal";
 import { RecursosModal } from "@/components/RecursosModal";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
-import type { Recurso } from "@/lib/recursos-actions";
+import type { Recurso, Recompensa } from "@/lib/recursos-actions";
 import { octiFrases, type Genero } from "@/lib/genero";
 import { VerificarBanner } from "@/components/VerificarBanner";
 import { nivelPorXP, type Clase, type ModuloCurso } from "@/lib/data";
@@ -86,10 +86,10 @@ function construirElementos(cursos: ModuloCurso[], completadas: number, retoEsta
 export type TopCreador = { id: string; nombre: string; avatarUrl: string | null; xp: number; esTu: boolean };
 
 export function RutaAprendizaje({
-  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [], completadas = 0, completadasIds = [], retoEstados = {}, cursos, recursos = [], genero = "neutro", notifSinLeer = 0, tuRanking, ranking = [], emailVerificado = true, xp = 0, rachaInfo, desbloqueado = true,
+  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [], completadas = 0, completadasIds = [], retoEstados = {}, cursos, recursos = [], recompensas = [], genero = "neutro", notifSinLeer = 0, tuRanking, ranking = [], emailVerificado = true, xp = 0, rachaInfo, desbloqueado = true,
 }: {
   nombre: string; avatarUrl: string | null; gemas: number; racha: number; perfilPct: number; topCreadores?: TopCreador[];
-  completadas?: number; completadasIds?: string[]; recursos?: Recurso[]; genero?: Genero; notifSinLeer?: number; retoEstados?: Record<string, EReto>; cursos: ModuloCurso[]; tuRanking?: { pos: number; xp: number };
+  completadas?: number; completadasIds?: string[]; recursos?: Recurso[]; recompensas?: Recompensa[]; genero?: Genero; notifSinLeer?: number; retoEstados?: Record<string, EReto>; cursos: ModuloCurso[]; tuRanking?: { pos: number; xp: number };
   ranking?: RankItem[]; emailVerificado?: boolean; xp?: number; rachaInfo?: RachaInfo;
   desbloqueado?: boolean;   // todas las clases abiertas (se cambia desde el panel)
 }) {
@@ -496,7 +496,7 @@ export function RutaAprendizaje({
       {abriendoCofre && (
         <AbrirCofre onListo={() => { setAbriendoCofre(false); setCofreAbierto(true); }} />
       )}
-      {cofreAbierto && <CofreModal xp={xp} onClose={() => setCofreAbierto(false)} />}
+      {cofreAbierto && <CofreModal xp={xp} recompensas={recompensas} onClose={() => setCofreAbierto(false)} />}
       {desafiosAbierto && (
         <div className="fixed inset-0 z-[80] bg-black/50 grid place-items-center p-4 lg:hidden" role="dialog" aria-modal="true">
           <div className="bg-surface rounded-3xl w-full max-w-[380px] p-5 shadow-2xl">

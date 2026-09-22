@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { descargarRecurso, type Recompensa } from "@/lib/recursos-actions";
 
 // Ícono del cofre con respaldo a emoji si aún no se sube la imagen.
 function CofreIcono() {
@@ -10,27 +11,57 @@ function CofreIcono() {
   return <img src="/cofre.png" alt="Cofre" onError={() => setErr(true)} className="w-11 h-11 object-contain" />;
 }
 
-// Niveles de recompensa del cofre (por XP acumulado). img = ilustración 3D real.
-const COFRES = [
-  { xp: 500, emoji: "🗓️", img: "/recompensas/r500.png", tipo: "Plantilla", titulo: "Calendario de contenido" },
-  { xp: 1800, emoji: "📘", img: "/recompensas/r1800.png", tipo: "Ebook", titulo: "Guía de contenido viral" },
-  { xp: 3500, emoji: "📗", img: "/recompensas/r3500.png", tipo: "Guía", titulo: "Estrategias de crecimiento en redes" },
-  { xp: 5000, emoji: "🧰", img: null, tipo: "Pack", titulo: "Pack de plantillas para Instagram" },
-  { xp: 7000, emoji: "📹", img: null, tipo: "Ebook", titulo: "Edición de videos para redes sociales" },
-  { xp: 10000, emoji: "🏆", img: "/recompensas/r10000.png", tipo: "Mega cofre", titulo: "¡Sorpresa especial!" },
-];
+// Ilustración 3D por nivel de XP (las que ya existen en /public/recompensas).
+const IMG: Record<number, string> = {
+  500: "/recompensas/r500.png",
+  1800: "/recompensas/r1800.png",
+  3500: "/recompensas/r3500.png",
+  10000: "/recompensas/r10000.png",
+};
 
-// Imagen 3D de la recompensa con respaldo a emoji si aún no hay archivo.
-function RecompensaImg({ img, emoji }: { img: string | null; emoji: string }) {
+function RecompensaImg({ xp, emoji }: { xp: number; emoji: string }) {
   const [err, setErr] = useState(false);
+  const img = IMG[xp];
   if (!img || err) return <span className="text-3xl">{emoji}</span>;
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={img} alt="" onError={() => setErr(true)} className="w-full h-full object-contain" draggable={false} />;
 }
 
-// Modal "El cofre de recompensas": muestra los niveles y cuáles desbloqueaste.
-export function CofreModal({ xp, onClose }: { xp: number; onClose: () => void }) {
-  const siguiente = COFRES.find((c) => c.xp > xp);
+// El navegador abre el PDF firmado en una pestaña nueva.
+function dispararDescarga(url: string) {
+  const a = document.createElement("a");
+  a.href = url;
+  a.target = "_blank";
+  a.rel = "noreferrer";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+// Modal "El cofre de recompensas": niveles por XP, con descarga de lo desbloqueado.
+export function CofreModal({ xp, recompensas = [], onClose }: {
+  xp: number; recompensas?: Recompensa[]; onClose: () => void;
+}) {
+  const [bajados, setBajados] = useState<Set<string>>(
+    () => new Set(recompensas.filter((r) => r.descargado).map((r) => r.id))
+  );
+  const [pendiente, setPendiente] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [, startTransition] = useTransition();
+
+  function bajar(r: Recompensa) {
+    setPendiente(r.id);
+    setError("");
+    startTransition(async () => {
+      const res = await descargarRecurso(r.id);
+      setPendiente(null);
+      if ("error" in res) { setError(res.error); return; }
+      setBajados((prev) => new Set(prev).add(r.id));
+      dispararDescarga(res.url);
+    });
+  }
+
+  const siguiente = recompensas.find((c) => c.xp > xp);
   const faltan = siguiente ? siguiente.xp - xp : 0;
   const pct = siguiente ? Math.min(100, Math.round((xp / siguiente.xp) * 100)) : 100;
 
@@ -64,36 +95,51 @@ export function CofreModal({ xp, onClose }: { xp: number; onClose: () => void })
             </p>
           </div>
 
+          {error && (
+            <div className="mb-4 rounded-2xl bg-pink-soft border border-pink/30 text-pink text-[13px] px-4 py-3">{error}</div>
+          )}
+
           {/* Serpentina de recompensas */}
           <div className="flex flex-col items-stretch gap-1">
-            {COFRES.map((c, i) => {
-              const desbloqueado = xp >= c.xp;
+            {recompensas.map((c, i) => {
               const izq = i % 2 === 0;
+              const bajado = bajados.has(c.id);
               return (
-                <div key={c.xp}>
+                <div key={c.id}>
                   <div className={`flex ${izq ? "justify-start" : "justify-end"}`}>
                     <div className={`flex items-center gap-3 w-[86%] sm:w-[70%] rounded-2xl border p-3 ${
-                      desbloqueado ? "border-green/40 bg-green/5" : "border-border bg-bg"
+                      c.desbloqueado ? "border-green/40 bg-green/5" : "border-border bg-bg"
                     }`}>
                       {/* Ícono con estado */}
                       <div className="relative shrink-0">
-                        <div className={`w-16 h-16 rounded-2xl grid place-items-center p-1.5 ${desbloqueado ? "bg-accent-soft" : "bg-surface grayscale opacity-70"}`}>
-                          <RecompensaImg img={c.img} emoji={c.emoji} />
+                        <div className={`w-16 h-16 rounded-2xl grid place-items-center p-1.5 ${c.desbloqueado ? "bg-accent-soft" : "bg-surface grayscale opacity-70"}`}>
+                          <RecompensaImg xp={c.xp} emoji={c.emoji} />
                         </div>
                         <span className={`absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full border-2 border-white grid place-items-center text-[11px] shadow ${
-                          desbloqueado ? "bg-green text-white" : "bg-[#B9BDC7] text-white"
-                        }`}>{desbloqueado ? "✓" : "🔒"}</span>
+                          c.desbloqueado ? "bg-green text-white" : "bg-[#B9BDC7] text-white"
+                        }`}>{c.desbloqueado ? "✓" : "🔒"}</span>
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="font-extrabold text-[14px]">{c.xp.toLocaleString()} XP</div>
-                        <div className="text-[12.5px] text-sub leading-tight">{c.tipo} · {c.titulo}</div>
-                        <span className={`inline-block mt-1 text-[10.5px] font-bold px-2 py-0.5 rounded-full ${
-                          desbloqueado ? "bg-green/15 text-green" : "bg-accent-soft text-accent"
-                        }`}>{desbloqueado ? "Desbloqueado" : "Bloqueado"}</span>
+                        <div className="text-[12.5px] text-sub leading-tight">{c.titulo}</div>
+                        {c.peso && <div className="text-[11px] text-hint mt-0.5">{c.peso}</div>}
+
+                        {c.desbloqueado && !c.pronto ? (
+                          <button onClick={() => bajar(c)} disabled={pendiente === c.id}
+                            className="mt-1.5 inline-flex items-center gap-1.5 bg-accent text-white rounded-lg px-3 py-1.5 text-[12px] font-bold hover:brightness-110 disabled:opacity-60 transition">
+                            {pendiente === c.id ? "Preparando…" : bajado ? "Descargar otra vez ↓" : "Descargar ↓"}
+                          </button>
+                        ) : (
+                          <span className={`inline-block mt-1 text-[10.5px] font-bold px-2 py-0.5 rounded-full ${
+                            c.pronto && c.desbloqueado ? "bg-amber-soft text-amber-700" : "bg-accent-soft text-accent"
+                          }`}>
+                            {c.pronto ? "Pronto" : `Te faltan ${(c.xp - xp).toLocaleString()} XP`}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
-                  {i < COFRES.length - 1 && (
+                  {i < recompensas.length - 1 && (
                     <div className={`h-5 flex ${izq ? "justify-start pl-[20%]" : "justify-end pr-[20%]"}`}>
                       <div className="w-0.5 h-full border-l-2 border-dashed border-accent/40" />
                     </div>

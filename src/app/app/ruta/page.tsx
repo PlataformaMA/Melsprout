@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getPerfil } from "@/lib/perfil-actions";
 import { getClasesCompletadas } from "@/lib/progreso-actions";
 import { getCursos } from "@/lib/cursos-db";
-import { getRecursos } from "@/lib/recursos-actions";
+import { getRecursos, getRecompensas } from "@/lib/recursos-actions";
 import { generoDe } from "@/lib/genero";
 import { getNotificaciones } from "@/lib/notificaciones-actions";
 import { recordarPerfilIncompleto } from "@/lib/recordatorios-actions";
@@ -122,6 +122,7 @@ export default async function RutaPage() {
   }
 
   const desbloqueado = await todoDesbloqueado();
+  const recompensas = await getRecompensas();
 
   return (
     <RutaAprendizaje
@@ -135,6 +136,7 @@ export default async function RutaPage() {
       completadas={completadas}
       completadasIds={[...completadasSet]}
       recursos={recursos}
+      recompensas={recompensas}
       genero={generoDe(perfil.genero)}
       notifSinLeer={sinLeer}
       retoEstados={retoEstados}
