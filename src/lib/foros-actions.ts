@@ -23,9 +23,11 @@ export type ForoPost = {
   respuestas: number;
   fecha: string;
   esNuevo: boolean;     // publicado en las últimas 24 h
+  esMio: boolean;       // lo escribió quien está viendo (puede editarlo o borrarlo)
+  editado: boolean;
 };
 
-export type ForoRespuesta = { id: string; autorId: string; autorNombre: string; autorAvatar: string | null; texto: string; fecha: string; likes: number; meGusta: boolean };
+export type ForoRespuesta = { id: string; autorId: string; autorNombre: string; autorAvatar: string | null; texto: string; fecha: string; likes: number; meGusta: boolean; esMio: boolean; editado: boolean };
 
 async function perfilMap(admin: ReturnType<typeof createAdminClient>, ids: string[]) {
   const { data } = await admin.from("profiles").select("id, full_name, avatar_url, xp").in("id", ids.length ? ids : ["_"]);
@@ -71,6 +73,8 @@ async function armarPosts(
       respuestas: respCount.get(p.id as string) || 0,
       fecha: p.created_at as string,
       esNuevo: Date.now() - new Date(p.created_at as string).getTime() < 864e5,
+      esMio: !!user && p.autor_id === user.id,
+      editado: !!p.editado_at,
     };
   });
 }
@@ -137,7 +141,7 @@ export async function getRespuestas(postId: string): Promise<ForoRespuesta[]> {
   const admin = createAdminClient();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const { data } = await admin.from("foros_respuestas").select("id, autor_id, texto, created_at").eq("post_id", postId).eq("oculto", false).order("created_at", { ascending: true });
+  const { data } = await admin.from("foros_respuestas").select("id, autor_id, texto, created_at, editado_at").eq("post_id", postId).eq("oculto", false).order("created_at", { ascending: true });
   if (!data || data.length === 0) return [];
   const pMap = await perfilMap(admin, [...new Set(data.map((r) => r.autor_id as string))]);
   const { data: likes } = await admin
@@ -163,6 +167,8 @@ export async function getRespuestas(postId: string): Promise<ForoRespuesta[]> {
       fecha: r.created_at as string,
       likes: conteo.get(id) || 0,
       meGusta: mios.has(id),
+      esMio: !!user && r.autor_id === user.id,
+      editado: !!r.editado_at,
     };
   });
 }
@@ -227,4 +233,58 @@ export async function toggleLikeRespuesta(
       `A ${(yo?.full_name as string) || "alguien"} le gustó tu respuesta`, "", "/app/comunidad");
   }
   return { meGusta: true };
+}
+
+// ===== Editar / borrar lo propio =====
+// Solo quien escribió la publicación o la respuesta puede tocarla. El dueño se
+// comprueba aquí, en el servidor: no basta con esconder el botón en pantalla.
+type Duenoo =
+  | { error: string }
+  | { admin: ReturnType<typeof createAdminClient>; userId: string };
+
+async function soyElAutor(tabla: "foros_posts" | "foros_respuestas", id: string): Promise<Duenoo> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Inicia sesión." };
+  const admin = createAdminClient();
+  const { data } = await admin.from(tabla).select("autor_id").eq("id", id).maybeSingle();
+  if (!data) return { error: "Eso ya no existe." };
+  if (data.autor_id !== user.id) return { error: "Solo puedes editar lo que tú escribiste." };
+  return { admin, userId: user.id };
+}
+
+export async function editarPost(postId: string, texto: string, titulo?: string): Promise<{ ok: true } | { error: string }> {
+  const t = texto.trim();
+  if (!t) return { error: "Escribe algo." };
+  const r = await soyElAutor("foros_posts", postId);
+  if ("error" in r) return { error: r.error };
+  const { error } = await r.admin.from("foros_posts")
+    .update({ texto: t.slice(0, 5000), titulo: titulo?.trim().slice(0, 120) || null, editado_at: new Date().toISOString() })
+    .eq("id", postId);
+  return error ? { error: "No se pudo guardar." } : { ok: true };
+}
+
+export async function borrarPost(postId: string): Promise<{ ok: true } | { error: string }> {
+  const r = await soyElAutor("foros_posts", postId);
+  if ("error" in r) return { error: r.error };
+  // Las respuestas y los likes se van con la publicación (cascada en la BD).
+  const { error } = await r.admin.from("foros_posts").delete().eq("id", postId);
+  return error ? { error: "No se pudo borrar." } : { ok: true };
+}
+
+export async function editarRespuesta(id: string, texto: string): Promise<{ ok: true } | { error: string }> {
+  const t = texto.trim();
+  if (!t) return { error: "Escribe algo." };
+  const r = await soyElAutor("foros_respuestas", id);
+  if ("error" in r) return { error: r.error };
+  const { error } = await r.admin.from("foros_respuestas")
+    .update({ texto: t.slice(0, 2000), editado_at: new Date().toISOString() }).eq("id", id);
+  return error ? { error: "No se pudo guardar." } : { ok: true };
+}
+
+export async function borrarRespuesta(id: string): Promise<{ ok: true } | { error: string }> {
+  const r = await soyElAutor("foros_respuestas", id);
+  if ("error" in r) return { error: r.error };
+  const { error } = await r.admin.from("foros_respuestas").delete().eq("id", id);
+  return error ? { error: "No se pudo borrar." } : { ok: true };
 }

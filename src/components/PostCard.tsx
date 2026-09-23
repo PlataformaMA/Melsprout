@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Icono } from "@/components/IconosApp";
 import {
   toggleLike, getRespuestas, crearRespuesta, toggleLikeRespuesta,
+  editarPost, borrarPost, editarRespuesta, borrarRespuesta,
   type ForoPost, type ForoRespuesta,
 } from "@/lib/foros-actions";
 
@@ -17,6 +18,15 @@ export function haceRato(iso: string): string {
 }
 
 export function PostCard({ post, compacto = false }: { post: ForoPost; compacto?: boolean }) {
+  // Editar / borrar lo propio (solo lo ve quien lo escribió).
+  const [textoPost, setTextoPost] = useState(post.texto);
+  const [tituloPost, setTituloPost] = useState(post.titulo);
+  const [editado, setEditado] = useState(post.editado);
+  const [editando, setEditando] = useState(false);
+  const [borrado, setBorrado] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+  const [borrador, setBorrador] = useState(post.texto);
+
   const [likes, setLikes] = useState(post.likes);
   const [meGusta, setMeGusta] = useState(post.meGusta);
   const [abierto, setAbierto] = useState(false);
@@ -41,12 +51,43 @@ export function PostCard({ post, compacto = false }: { post: ForoPost; compacto?
     const nuevo = !abierto; setAbierto(nuevo);
     if (nuevo && resp === null) setResp(await getRespuestas(post.id));
   }
+  async function guardarPost() {
+    if (!borrador.trim()) return;
+    setGuardando(true);
+    const r = await editarPost(post.id, borrador, tituloPost ?? undefined);
+    setGuardando(false);
+    if ("error" in r) { alert(r.error); return; }
+    setTextoPost(borrador.trim()); setEditado(true); setEditando(false);
+  }
+  async function borrarEstePost() {
+    if (!confirm("¿Borrar esta publicación? No se puede deshacer.")) return;
+    const r = await borrarPost(post.id);
+    if ("error" in r) { alert(r.error); return; }
+    setBorrado(true);
+  }
+  async function editarEstaRespuesta(id: string, actual: string) {
+    const nuevo = prompt("Edita tu respuesta:", actual);
+    if (nuevo === null || !nuevo.trim() || nuevo === actual) return;
+    const r = await editarRespuesta(id, nuevo);
+    if ("error" in r) { alert(r.error); return; }
+    setResp((rs) => rs?.map((x) => x.id === id ? { ...x, texto: nuevo.trim(), editado: true } : x) ?? rs);
+  }
+  async function borrarEstaRespuesta(id: string) {
+    if (!confirm("¿Borrar tu respuesta?")) return;
+    const r = await borrarRespuesta(id);
+    if ("error" in r) { alert(r.error); return; }
+    setResp((rs) => rs?.filter((x) => x.id !== id) ?? rs);
+    setNum((n) => Math.max(0, n - 1));
+  }
+
   async function responder() {
     if (!texto.trim()) return;
     const r = await crearRespuesta(post.id, texto);
     if ("error" in r) { alert(r.error); return; }
     setTexto(""); setResp(await getRespuestas(post.id)); setNum((n) => n + 1);
   }
+
+  if (borrado) return null;
 
   return (
     <article className={compacto ? "bg-bg border border-border rounded-2xl p-4" : "bg-surface border border-border rounded-2xl p-5 shadow-sm"}>
@@ -63,17 +104,43 @@ export function PostCard({ post, compacto = false }: { post: ForoPost; compacto?
             <span className="text-sub font-normal text-[12px]"> · Nivel {post.autorNivel}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[12px] text-hint">{haceRato(post.fecha)}</span>
+            <span className="text-[12px] text-hint">{haceRato(post.fecha)}{editado ? " · editado" : ""}</span>
             {post.esNuevo && (
               <span className="text-[10.5px] font-bold text-accent bg-accent-soft rounded-full px-2 py-0.5">Nuevo</span>
             )}
           </div>
         </div>
+        {post.esMio && !editando && (
+          <MenuAutor
+            onEditar={() => { setBorrador(textoPost); setEditando(true); }}
+            onBorrar={borrarEstePost}
+          />
+        )}
       </div>
-      {post.titulo && (
-        <h3 className="font-display font-extrabold text-[15.5px] leading-snug mb-1">{post.titulo}</h3>
+      {tituloPost && !editando && (
+        <h3 className="font-display font-extrabold text-[15.5px] leading-snug mb-1">{tituloPost}</h3>
       )}
-      {post.texto && <p className="text-[14px] text-text leading-relaxed whitespace-pre-wrap">{post.texto}</p>}
+      {editando ? (
+        <div>
+          {tituloPost !== null && (
+            <input value={tituloPost} onChange={(e) => setTituloPost(e.target.value)} maxLength={120}
+              placeholder="Título"
+              className="w-full mb-2 bg-bg border border-border rounded-xl px-3 py-2 text-[14px] font-bold outline-none focus:border-accent" />
+          )}
+          <textarea value={borrador} onChange={(e) => setBorrador(e.target.value)} rows={4} maxLength={5000} autoFocus
+            className="w-full bg-bg border border-border rounded-xl px-3 py-2 text-[14px] outline-none focus:border-accent resize-none" />
+          <div className="flex items-center gap-2 mt-2">
+            <button onClick={guardarPost} disabled={guardando || !borrador.trim()}
+              className="bg-accent text-white rounded-lg px-4 py-2 text-[13px] font-bold hover:brightness-110 disabled:opacity-60 transition">
+              {guardando ? "Guardando…" : "Guardar"}
+            </button>
+            <button onClick={() => setEditando(false)} disabled={guardando}
+              className="rounded-lg px-3 py-2 text-[13px] font-semibold text-sub hover:bg-bg transition">Cancelar</button>
+          </div>
+        </div>
+      ) : (
+        textoPost && <p className="text-[14px] text-text leading-relaxed whitespace-pre-wrap">{textoPost}</p>
+      )}
       {post.imagenUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={post.imagenUrl} alt="" className="mt-2 rounded-xl border border-border max-h-80 w-auto" />
@@ -111,6 +178,7 @@ export function PostCard({ post, compacto = false }: { post: ForoPost; compacto?
               <div className="flex-1 min-w-0">
                 <div className={compacto ? "bg-surface rounded-2xl px-3 py-2" : "bg-bg rounded-2xl px-3 py-2"}>
                   <Link href={`/app/creador/${c.autorId}`} className="font-bold text-[12.5px] hover:text-accent transition">{c.autorNombre}</Link>
+                  {c.editado && <span className="text-[11px] text-hint"> · editado</span>}
                   <p className="text-[13.5px] text-text whitespace-pre-wrap">{c.texto}</p>
                 </div>
                 <div className="flex items-center gap-4 mt-1 ml-1 text-[12px]">
@@ -120,6 +188,14 @@ export function PostCard({ post, compacto = false }: { post: ForoPost; compacto?
                   </button>
                   <button onClick={() => setTexto(`@${c.autorNombre.split(" ")[0]} `)}
                     className="font-semibold text-sub hover:text-accent transition">Responder</button>
+                  {c.esMio && (
+                    <>
+                      <button onClick={() => editarEstaRespuesta(c.id, c.texto)}
+                        className="font-semibold text-sub hover:text-accent transition">Editar</button>
+                      <button onClick={() => borrarEstaRespuesta(c.id)}
+                        className="font-semibold text-sub hover:text-pink transition">Eliminar</button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -132,5 +208,27 @@ export function PostCard({ post, compacto = false }: { post: ForoPost; compacto?
         </div>
       )}
     </article>
+  );
+}
+
+// Menú "⋯" de la autora de la publicación: editar o eliminar lo suyo.
+function MenuAutor({ onEditar, onBorrar }: { onEditar: () => void; onBorrar: () => void }) {
+  const [abierto, setAbierto] = useState(false);
+  return (
+    <div className="relative ml-auto shrink-0">
+      <button onClick={() => setAbierto((v) => !v)} aria-label="Opciones de mi publicación"
+        className="w-8 h-8 grid place-items-center rounded-full text-hint hover:bg-bg hover:text-text transition">⋯</button>
+      {abierto && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setAbierto(false)} />
+          <div className="absolute right-0 top-9 z-20 bg-surface border border-border rounded-xl shadow-lg py-1 w-40 text-[13px]">
+            <button onClick={() => { setAbierto(false); onEditar(); }}
+              className="w-full text-left px-3 py-2 hover:bg-bg transition font-semibold">✏️ Editar</button>
+            <button onClick={() => { setAbierto(false); onBorrar(); }}
+              className="w-full text-left px-3 py-2 hover:bg-bg transition font-semibold text-pink">🗑️ Eliminar</button>
+          </div>
+        </>
+      )}
+    </div>
   );
 }

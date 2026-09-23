@@ -8,7 +8,8 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import { createClient } from "@/lib/supabase/client";
-import { crearPost, getForoPosts, toggleLike, type ForoPost } from "@/lib/foros-actions";
+import { crearPost, getForoPosts, type ForoPost } from "@/lib/foros-actions";
+import { PostCard } from "@/components/PostCard";
 import { alternarMembresia, type Grupo } from "@/lib/grupos-actions";
 
 type Actividad = { id: string; userId: string; nombre: string; avatar: string | null; texto: string; xp?: number; hace: string };
@@ -170,7 +171,7 @@ export function GrupoDetalle({
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {posts.map((p) => <PostGrupo key={p.id} post={p} />)}
+                  {posts.map((p) => <PostCard key={p.id} post={p} />)}
                 </div>
               )}
             </div>
@@ -232,54 +233,3 @@ export function GrupoDetalle({
   );
 }
 
-function PostGrupo({ post }: { post: ForoPost }) {
-  const [likes, setLikes] = useState(post.likes);
-  const [meGusta, setMeGusta] = useState(post.meGusta);
-
-  async function like() {
-    setMeGusta((v) => !v); setLikes((n) => n + (meGusta ? -1 : 1));
-    const r = await toggleLike(post.id);
-    if ("error" in r) { setMeGusta(post.meGusta); setLikes(post.likes); }
-  }
-
-  return (
-    <article className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
-      <div className="flex items-center gap-3 mb-2">
-        <Link href={`/app/creador/${post.autorId}`} className="shrink-0">
-          {post.autorAvatar ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={post.autorAvatar} alt={post.autorNombre} className="w-10 h-10 rounded-full object-cover" />
-          ) : (
-            <span className="w-10 h-10 rounded-full bg-accent/15 text-accent grid place-items-center text-[13px] font-bold">
-              {post.autorNombre.slice(0, 2).toUpperCase()}
-            </span>
-          )}
-        </Link>
-        <div className="min-w-0">
-          <div className="font-bold text-[14px] leading-tight">
-            <Link href={`/app/creador/${post.autorId}`} className="hover:text-accent transition">{post.autorNombre}</Link>
-            <span className="text-sub font-normal text-[12px]"> · Nivel {post.autorNivel}</span>
-          </div>
-          {post.esNuevo && <span className="text-[10.5px] font-bold text-accent bg-accent-soft rounded-full px-2 py-0.5">Nuevo</span>}
-        </div>
-      </div>
-
-      {post.texto && <p className="text-[14px] leading-relaxed whitespace-pre-wrap">{post.texto}</p>}
-      {post.imagenUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={post.imagenUrl} alt="" className="mt-2 rounded-xl border border-border max-h-80 w-auto" />
-      )}
-      {post.enlaceUrl && (
-        <a href={post.enlaceUrl} target="_blank" rel="noreferrer" className="text-accent text-[13px] font-semibold underline break-all mt-1 inline-block">
-          {post.enlaceUrl}
-        </a>
-      )}
-
-      <div className="flex items-center gap-5 mt-3 text-[13px]">
-        <button onClick={like} className={`flex items-center gap-1.5 font-semibold transition ${meGusta ? "text-pink" : "text-sub hover:text-pink"}`}>
-          ♥ {likes}
-        </button>
-      </div>
-    </article>
-  );
-}
