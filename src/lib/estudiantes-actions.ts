@@ -33,6 +33,20 @@ export type Estudiante = {
   experiencia: string | null;   // lo que contestó en el onboarding
   cursos: string[];             // cursos especiales a los que tiene acceso (comprados o dados)
   onboarding: boolean;          // false = compró pero aún no entra a la app
+  avance: AvanceCurso[];        // en qué va dentro de cada curso especial
+};
+
+// Dónde va una alumna dentro de un curso: módulo interno y clase.
+export type AvanceCurso = {
+  cursoId: string;
+  curso: string;
+  hechas: number;
+  total: number;
+  pct: number;
+  bloque: string | null;        // módulo interno ("Módulo 2 · …")
+  clase: string | null;         // clase en la que va (la siguiente por ver)
+  numero: number;               // número de esa clase dentro del curso
+  terminado: boolean;
 };
 
 const DIA = 864e5;
@@ -67,7 +81,7 @@ export async function listarEstudiantes(): Promise<Estudiante[]> {
         .order("xp", { ascending: false }),
       admin.from("clase_progreso").select("user_id, clase_id, completada"),
       admin.from("reto_submissions").select("user_id, estado, revision"),
-      admin.from("cursos_clases").select("id, modulo_id, orden").eq("activo", true).order("orden"),
+      admin.from("cursos_clases").select("id, modulo_id, orden, titulo, bloque").eq("activo", true).order("orden"),
       admin.from("cursos_modulos").select("id, nombre, orden, especial").eq("activo", true).order("orden"),
       admin.from("curso_accesos").select("user_id, modulo_id"),
     ]);
@@ -84,6 +98,23 @@ export async function listarEstudiantes(): Promise<Estudiante[]> {
     cursosPorUsuario.get(u)!.push(n);
   }
   const perfiles = (perfilesTodos || []).filter((p) => p.onboarding_completo || cursosPorUsuario.has(p.id as string));
+
+  // Clases de cada curso especial, en orden, para saber en qué clase va cada quien.
+  const clasesDeCurso = new Map<string, { id: string; titulo: string; bloque: string | null }[]>();
+  for (const c of clases || []) {
+    const mid = c.modulo_id as string;
+    if (!nombreEspecial.has(mid)) continue;
+    if (!clasesDeCurso.has(mid)) clasesDeCurso.set(mid, []);
+    clasesDeCurso.get(mid)!.push({ id: c.id as string, titulo: c.titulo as string, bloque: (c.bloque as string) ?? null });
+  }
+  const cursosIdPorUsuario = new Map<string, string[]>();
+  for (const a of accesos || []) {
+    const mid = a.modulo_id as string;
+    if (!nombreEspecial.has(mid)) continue;
+    const u = a.user_id as string;
+    if (!cursosIdPorUsuario.has(u)) cursosIdPorUsuario.set(u, []);
+    cursosIdPorUsuario.get(u)!.push(mid);
+  }
 
   // Correos: viven en auth, no en el perfil.
   const { data: auth } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
@@ -159,6 +190,24 @@ export async function listarEstudiantes(): Promise<Estudiante[]> {
       experiencia: (p.experiencia as string) || null,
       cursos: cursosPorUsuario.get(id) || [],
       onboarding: !!p.onboarding_completo,
+      avance: (cursosIdPorUsuario.get(id) || []).map((mid) => {
+        const lista = clasesDeCurso.get(mid) || [];
+        const hechasCurso = lista.filter((c) => hechas.has(c.id)).length;
+        // Va en la primera clase que aún no completa (o terminó el curso).
+        const siguiente = lista.find((c) => !hechas.has(c.id)) ?? null;
+        const idx = siguiente ? lista.findIndex((c) => c.id === siguiente.id) : lista.length - 1;
+        return {
+          cursoId: mid,
+          curso: nombreEspecial.get(mid) as string,
+          hechas: hechasCurso,
+          total: lista.length,
+          pct: lista.length ? Math.round((hechasCurso / lista.length) * 100) : 0,
+          bloque: siguiente ? siguiente.bloque : lista[lista.length - 1]?.bloque ?? null,
+          clase: siguiente ? siguiente.titulo : null,
+          numero: idx + 1,
+          terminado: !siguiente && lista.length > 0,
+        };
+      }),
     };
   });
 }

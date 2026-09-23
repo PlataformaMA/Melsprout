@@ -156,7 +156,7 @@ export function EstudiantesTab() {
         <p className="text-[13.5px] text-hint py-8 text-center">Nadie coincide con esos filtros.</p>
       ) : vista === "tarjetas" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtrada.map((e) => <Tarjeta key={e.id} e={e} onAbrir={() => setAbierta(e)} />)}
+          {filtrada.map((e) => <Tarjeta key={e.id} e={e} curso={curso} onAbrir={() => setAbierta(e)} />)}
         </div>
       ) : (
         <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
@@ -164,7 +164,7 @@ export function EstudiantesTab() {
             <table className="w-full text-[13px]">
               <thead className="bg-bg text-sub">
                 <tr>
-                  {["Estudiante", "Cursos", "Nivel", "Retos", "Estado", "Mundo actual", "Progreso", "XP", "Experiencia", "Racha", "Última actividad", "Renovación", "Comentarios", ""].map((h) => (
+                  {["Estudiante", "Cursos", "Nivel", "Retos", "Estado", curso === "todos" || curso === "ninguno" ? "Mundo actual" : "Va en", "Progreso", "XP", "Experiencia", "Racha", "Última actividad", "Renovación", "Comentarios", ""].map((h) => (
                     <th key={h} className="text-left font-bold px-3 py-2.5 whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -199,14 +199,20 @@ export function EstudiantesTab() {
                         {ESTADOS[e.estado].texto}
                       </span>
                     </td>
-                    <td className="px-3 py-2.5 text-sub whitespace-nowrap max-w-[160px] truncate">{e.mundo || "—"}</td>
+                    <td className="px-3 py-2.5 text-sub max-w-[230px]"><VaEn e={e} curso={curso} /></td>
                     <td className="px-3 py-2.5">
-                      <div className="flex items-center gap-2 w-[120px]">
-                        <div className="flex-1 h-1.5 rounded-full bg-border/60 overflow-hidden">
-                          <div className="h-full rounded-full bg-accent" style={{ width: `${e.progreso}%` }} />
-                        </div>
-                        <b className="text-[11.5px] shrink-0">{e.progreso}%</b>
-                      </div>
+                      {(() => {
+                        const a = avanceDe(e, curso);
+                        const pct = a ? a.pct : e.progreso;
+                        return (
+                          <div className="flex items-center gap-2 w-[120px]">
+                            <div className="flex-1 h-1.5 rounded-full bg-border/60 overflow-hidden">
+                              <div className="h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
+                            </div>
+                            <b className="text-[11.5px] shrink-0">{pct}%</b>
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-3 py-2.5 font-bold whitespace-nowrap">{num(e.xp)}</td>
                     <td className="px-3 py-2.5"><IconoExperiencia texto={e.experiencia} /></td>
@@ -260,7 +266,8 @@ function Avatar({ e, size = 34 }: { e: Estudiante; size?: number }) {
   );
 }
 
-function Tarjeta({ e, onAbrir }: { e: Estudiante; onAbrir: () => void }) {
+function Tarjeta({ e, curso, onAbrir }: { e: Estudiante; curso: string; onAbrir: () => void }) {
+  const a = avanceDe(e, curso);
   return (
     <button onClick={onAbrir}
       className="bg-surface border border-border rounded-3xl p-4 shadow-sm text-left hover:border-accent/40 transition">
@@ -276,12 +283,13 @@ function Tarjeta({ e, onAbrir }: { e: Estudiante; onAbrir: () => void }) {
       </div>
 
       <div className="mt-2.5"><Cursos e={e} /></div>
+      {a && <div className="mt-2 text-[12px] text-sub leading-snug"><VaEn e={e} curso={curso} /></div>}
 
       <div className="flex items-center gap-2 mt-3">
         <div className="flex-1 h-2 rounded-full bg-border/60 overflow-hidden">
-          <div className="h-full rounded-full bg-accent" style={{ width: `${e.progreso}%` }} />
+          <div className="h-full rounded-full bg-accent" style={{ width: `${a ? a.pct : e.progreso}%` }} />
         </div>
-        <b className="text-[12px] shrink-0">{e.progreso}%</b>
+        <b className="text-[12px] shrink-0">{a ? a.pct : e.progreso}%</b>
       </div>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-sub mt-2.5">
@@ -312,6 +320,26 @@ function Cursos({ e }: { e: Estudiante }) {
       {!e.onboarding && (
         <span className="text-[11px] font-bold text-amber-700 bg-amber-100 rounded-full px-2 py-0.5 whitespace-nowrap" title="Tiene el curso pero todavía no ha entrado a la app">No ha entrado</span>
       )}
+    </span>
+  );
+}
+
+// El avance del curso filtrado (si se está filtrando por uno).
+function avanceDe(e: Estudiante, curso: string) {
+  if (curso === "todos" || curso === "ninguno") return null;
+  return e.avance.find((a) => a.curso === curso) ?? null;
+}
+
+// "Va en": módulo y clase dentro del curso filtrado; si no hay filtro, su mundo de la Ruta.
+function VaEn({ e, curso }: { e: Estudiante; curso: string }) {
+  const a = avanceDe(e, curso);
+  if (!a) return <span className="truncate block max-w-[160px]">{e.mundo || "—"}</span>;
+  if (a.hechas === 0) return <span className="text-hint">Todavía no empieza</span>;
+  if (a.terminado) return <span className="font-semibold text-green">Terminó el curso 🎉</span>;
+  return (
+    <span className="block leading-tight">
+      {a.bloque && <span className="block font-semibold text-text truncate">{a.bloque}</span>}
+      <span className="block text-[12px] truncate">Clase {a.numero} de {a.total}{a.clase ? ` · ${a.clase}` : ""}</span>
     </span>
   );
 }

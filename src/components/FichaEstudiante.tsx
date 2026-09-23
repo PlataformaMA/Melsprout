@@ -114,6 +114,30 @@ function Resumen({ e, onCambio }: { e: Estudiante; onCambio: () => void }) {
     <div className="space-y-5">
       <DatosCuenta e={e} onCambio={onCambio} />
 
+      {e.avance.length > 0 && (
+        <div className="bg-bg/60 border border-border rounded-2xl p-4">
+          <div className="text-[12.5px] font-bold text-sub mb-2">Avance por curso</div>
+          <div className="space-y-3">
+            {e.avance.map((a) => (
+              <div key={a.cursoId}>
+                <div className="flex items-center justify-between gap-3 text-[13px]">
+                  <span className="font-bold truncate">{a.curso}</span>
+                  <span className="text-sub shrink-0">{a.hechas} de {a.total} clases · {a.pct}%</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-border/60 overflow-hidden mt-1">
+                  <div className="h-full rounded-full bg-accent" style={{ width: `${a.pct}%` }} />
+                </div>
+                <div className="text-[12px] text-sub mt-1">
+                  {a.terminado ? "Terminó el curso 🎉"
+                    : a.hechas === 0 ? "Todavía no empieza"
+                    : `Va en ${a.bloque ? a.bloque + " · " : ""}clase ${a.numero} de ${a.total}${a.clase ? `: ${a.clase}` : ""}`}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <dl className="divide-y divide-border">
         {datos.map(([k, v]) => (
           <div key={k} className="flex items-center justify-between gap-4 py-2.5">
