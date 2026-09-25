@@ -75,8 +75,10 @@ export function ReproductorClase({
       maxVistoRef.current = v.currentTime;
     }
     if (v.duration > 0 && Number.isFinite(v.duration)) {
-      // Los eventos de tiempo no suman exacto la duración: al 98.5% ya se vio todo.
-      const pct = (vistoRef.current / v.duration) * 100;
+      // Lo que cuenta es hasta DÓNDE llegó, no cuántos segundos reprodujo: ver
+      // dos veces la primera mitad no es haber visto la clase. Adelantar sigue
+      // bloqueado, así que llegar al final equivale a haberla visto.
+      const pct = (maxVistoRef.current / v.duration) * 100;
       setProgreso(pct >= 98.5 ? 100 : Math.min(100, pct));
     }
   }
@@ -116,7 +118,7 @@ export function ReproductorClase({
 
   // Guarda el avance (segundos vistos) cada 15s y al salir, para que NO se pierda.
   useEffect(() => {
-    const guardar = () => { if (vistoRef.current > 0) guardarPosicion(clase.id, vistoRef.current); };
+    const guardar = () => { if (maxVistoRef.current > 0) guardarPosicion(clase.id, maxVistoRef.current); };
     const t = setInterval(guardar, 15000);
     return () => { clearInterval(t); guardar(); };
   }, [clase.id]);
