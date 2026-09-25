@@ -15,5 +15,8 @@ export async function GET(request: Request) {
 
   const admin = createAdminClient();
   const { data } = await admin.from("cursos_clases").select("video_url").eq("id", clase).maybeSingle();
-  return NextResponse.json({ url: (data?.video_url as string) || null });
+  const guardado = (data?.video_url as string) || null;
+  if (!guardado) return NextResponse.json({ url: null });
+  const { firmarVideo } = await import("@/lib/cursos-db");
+  return NextResponse.json({ url: await firmarVideo(guardado), ruta: guardado });
 }

@@ -78,10 +78,23 @@ export async function getVideoClaseDB(claseId: string): Promise<string | null> {
   try {
     const admin = createAdminClient();
     const { data } = await admin.from("cursos_clases").select("video_url").eq("id", claseId).maybeSingle();
-    return (data?.video_url as string) || null;
+    const url = (data?.video_url as string) || null;
+    if (!url) return null;
+    return firmarVideo(url);
   } catch {
     return null;
   }
+}
+
+// `videos://ruta/al/archivo.mp4` = está en el bucket privado. Se devuelve un
+// enlace firmado que caduca (4 h, de sobra para la clase más larga) y que solo
+// se genera en el servidor, después de comprobar el acceso al curso.
+export async function firmarVideo(url: string): Promise<string | null> {
+  if (!url.startsWith("videos://")) return url;      // YouTube/Vimeo u otra URL
+  const ruta = url.slice("videos://".length);
+  const admin = createAdminClient();
+  const { data, error } = await admin.storage.from("videos").createSignedUrl(ruta, 60 * 60 * 4);
+  return error ? null : data.signedUrl;
 }
 
 // Datos crudos para el panel admin (con ids reales para editar).

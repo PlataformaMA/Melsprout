@@ -712,9 +712,16 @@ function ClaseCursoFila({ clase, onCambio }: { clase: ClaseRow; onCambio: () => 
       const supabase = createClient();
       const ext = (file.name.split(".").pop() || "mp4").toLowerCase();
       const path = `clases/${clase.id}-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("retos").upload(path, file, { upsert: true });
+      // Bucket PRIVADO: el video no queda accesible por URL pública. La clase
+      // guarda la ruta y el servidor entrega un enlace firmado al reproducir.
+      const { error } = await supabase.storage.from("videos").upload(path, file, { upsert: true, contentType: file.type || "video/mp4" });
       if (error) setMsg("No se pudo subir.");
-      else { const { data } = supabase.storage.from("retos").getPublicUrl(path); setF((s) => ({ ...s, video: data.publicUrl })); await setVideoClaseDB(clase.id, data.publicUrl); setMsg("✅ Video subido"); onCambio(); }
+      else {
+        await setVideoClaseDB(clase.id, `videos://${path}`);
+        const r = await fetch(`/api/admin/video?clase=${encodeURIComponent(clase.id)}`).then((x) => x.json()).catch(() => ({}));
+        setF((s) => ({ ...s, video: r.url || "" }));
+        setMsg("✅ Video subido"); onCambio();
+      }
     } catch { setMsg("Error al subir."); }
     setSubiendo(false);
   }
