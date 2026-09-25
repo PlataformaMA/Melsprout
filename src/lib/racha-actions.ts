@@ -103,8 +103,15 @@ export async function getRachaInfo(): Promise<RachaInfo> {
   const hoyContado = (p?.racha_fecha as string) === hoyStr;
   if (hoyContado) semana[diaSemana] = true;
 
+  // Si la última actividad no fue hoy ni ayer, la racha YA se rompió: se muestra
+  // en 0 aunque en la base siga el número viejo (se reescribe en la siguiente
+  // actividad). Antes seguía anunciando "12 días" con la racha perdida.
+  const ayerStr2 = new Date(Date.now() - 86400000).toLocaleDateString("en-CA");
+  const ultimaFecha = (p?.racha_fecha as string) ?? null;
+  const vigente = !!p?.racha_congelada || ultimaFecha === hoyStr || ultimaFecha === ayerStr2;
+
   return {
-    racha: (p?.racha as number) || 0,
+    racha: vigente ? (p?.racha as number) || 0 : 0,
     hoyContado,
     congelada: !!p?.racha_congelada,
     semana,

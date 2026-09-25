@@ -22,6 +22,9 @@ export function FormClase({
   const [nivel, setNivel] = useState(clase?.nivel || "");
   const [duracion, setDuracion] = useState(String(clase?.duracionMin ?? ""));
   const [videoUrl, setVideoUrl] = useState("");
+  // Mientras no llegue la URL del video existente, NO se puede guardar: si se
+  // enviaba vacío, la clase se quedaba sin video sin que nadie lo notara.
+  const [videoCargando, setVideoCargando] = useState(!!clase?.tieneVideo);
   const [publicarAt, setPublicarAt] = useState(clase?.publicarAt ? clase.publicarAt.slice(0, 16) : "");
   const [portada, setPortada] = useState<string | null>(clase?.portada || null);
   const [portadaNueva, setPortadaNueva] = useState<string | null>(null);
@@ -41,7 +44,8 @@ export function FormClase({
       fetch(`/api/admin/video?clase=${encodeURIComponent(clase.id)}`)
         .then((r) => (r.ok ? r.json() : { url: "" }))
         .then((j) => setVideoUrl(j.url || ""))
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => setVideoCargando(false));
     }
   }, [clase]);
 
@@ -221,11 +225,11 @@ export function FormClase({
           {!nueva && (
             <button onClick={borrar} className="text-[13px] font-bold text-pink mr-auto">Borrar clase</button>
           )}
-          <button onClick={() => guardar(false)} disabled={guardando || !titulo.trim()}
+          <button onClick={() => guardar(false)} disabled={guardando || videoCargando || !titulo.trim()}
             className="rounded-xl border border-border px-4 py-2.5 text-[13.5px] font-bold text-sub hover:bg-bg transition disabled:opacity-50">
             Guardar borrador
           </button>
-          <button onClick={() => guardar(true)} disabled={guardando || !titulo.trim()}
+          <button onClick={() => guardar(true)} disabled={guardando || videoCargando || !titulo.trim()}
             className="rounded-xl bg-accent text-white px-5 py-2.5 text-[13.5px] font-bold hover:brightness-110 transition disabled:opacity-50">
             {guardando ? "Guardando…" : "Publicar clase"}
           </button>
