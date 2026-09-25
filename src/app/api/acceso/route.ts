@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { buscarUsuarioPorEmail } from "@/lib/usuarios-auth";
 import { darAccesoCurso, quitarAccesoCurso } from "@/lib/acceso-actions";
 import { notificar } from "@/lib/notificaciones-actions";
 import { enviarBienvenidaCompra } from "@/lib/bienvenida";
@@ -107,9 +108,9 @@ export async function POST(request: Request) {
     );
   }
 
-  // ¿Ya tiene cuenta?
-  const { data: lista } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-  let usuario = (lista?.users || []).find((u) => (u.email || "").toLowerCase() === email);
+  // ¿Ya tiene cuenta? (se busca en todas las páginas: con más de 1000 cuentas,
+  //  mirar solo la primera dejaba sin acceso a compradores con cuenta vieja.)
+  let usuario = await buscarUsuarioPorEmail(admin, email);
   let cuentaNueva = false;
   let correoEnviado = false;
 

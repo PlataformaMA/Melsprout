@@ -71,8 +71,8 @@ async function metodoDeCuenta(email: string): Promise<string | null> {
   try {
     const { createAdminClient } = await import("@/lib/supabase/admin");
     const admin = createAdminClient();
-    const { data } = await admin.auth.admin.listUsers();
-    const u = data?.users.find((x) => x.email?.toLowerCase() === email.toLowerCase());
+    const { buscarUsuarioPorEmail } = await import("@/lib/usuarios-auth");
+    const u = await buscarUsuarioPorEmail(admin, email);
     if (!u) return null;
     const provs = (u.identities ?? []).map((i) => i.provider);
     if (provs.includes("email")) return "email"; // tiene contraseña

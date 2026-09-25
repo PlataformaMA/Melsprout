@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { listarTodosLosUsuarios, buscarUsuarioPorEmail } from "@/lib/usuarios-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notificar } from "@/lib/notificaciones-actions";
 import { espejarRetoEnComunidad, ocultarRetoEnComunidad } from "@/lib/reto-publicacion";
@@ -108,10 +109,10 @@ export type UsuarioAdmin = { id: string; email: string | null; nombre: string | 
 export async function listarUsuariosAdmin(): Promise<UsuarioAdmin[]> {
   const admin = await comoAdmin();
   if (!admin) return [];
-  const { data } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+  const usuarios = await listarTodosLosUsuarios(admin);
   const { data: perfiles } = await admin.from("profiles").select("id, is_admin");
   const adminMap = new Map((perfiles || []).map((p) => [p.id as string, p.is_admin === true]));
-  return (data?.users || []).map((u) => {
+  return usuarios.map((u) => {
     const raiz = esAdmin(u.email); // admins por ADMIN_EMAILS (no se pueden quitar)
     return {
       id: u.id,
@@ -351,8 +352,7 @@ export async function altaUsuario(u: NuevoUsuario): Promise<{ ok: true; aviso?: 
     if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: "El correo no es válido." };
 
     // ¿Ya existe? Se avisa en vez de intentar crearla otra vez.
-    const { data: lista } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    if ((lista?.users || []).some((x) => (x.email || "").toLowerCase() === email)) {
+    if (await buscarUsuarioPorEmail(admin, email)) {
       return { error: "Ya existe una cuenta con ese correo." };
     }
 

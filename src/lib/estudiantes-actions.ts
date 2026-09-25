@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { listarTodosLosUsuarios } from "@/lib/usuarios-auth";
 import { createClient } from "@/lib/supabase/server";
 import { esAdminUsuario } from "@/lib/admin";
 import { nivelPorXP } from "@/lib/data";
@@ -117,8 +118,7 @@ export async function listarEstudiantes(): Promise<Estudiante[]> {
   }
 
   // Correos: viven en auth, no en el perfil.
-  const { data: auth } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-  const correo = new Map((auth?.users || []).map((u) => [u.id, u.email ?? null]));
+  const correo = new Map((await listarTodosLosUsuarios(admin)).map((u) => [u.id, u.email ?? null]));
 
   const clasesTotal = (clases || []).length;
   const moduloDe = new Map((clases || []).map((c) => [c.id as string, c.modulo_id as string]));

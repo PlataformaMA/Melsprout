@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { mapaPorEmail } from "@/lib/usuarios-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { esAdminUsuario } from "@/lib/admin";
 import { darAccesoCurso } from "@/lib/acceso-actions";
@@ -61,9 +62,8 @@ export async function importarContactos(args: {
   }
 
   // Una sola lectura de cuentas por tanda; así no se pregunta por cada fila.
-  const { data: lista } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
   const porEmail = new Map(
-    (lista?.users || []).map((u) => [(u.email || "").toLowerCase(), u.id]),
+    [...(await mapaPorEmail(admin))].map(([correo, u]) => [correo, u.id]),
   );
 
   const resultados: ResultadoFila[] = [];
