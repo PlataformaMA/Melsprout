@@ -12,7 +12,9 @@ import { guardarConexion } from "@/lib/social-store";
 // Lee el state: usuario | intento (f = completo, b = básico) | a dónde volver.
 function leerState(raw: string | null) {
   const [, intento = "f", volver = "%2Fapp%2Fperfil"] = (raw || "").split("|");
-  return { completo: intento === "f", volver: decodeURIComponent(volver) };
+  const destino = decodeURIComponent(volver);
+  // Solo rutas internas (evita el redirect abierto).
+  return { completo: intento === "f", volver: destino.startsWith("/") && !destino.startsWith("//") ? destino : "/app/perfil" };
 }
 
 export async function GET(request: Request) {

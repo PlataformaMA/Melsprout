@@ -90,7 +90,8 @@ export async function getConversacion(
     .from("chat_mensajes")
     .select("id, de_id, sticker, leido, created_at")
     .or(`and(de_id.eq.${user.id},para_id.eq.${otroId}),and(de_id.eq.${otroId},para_id.eq.${user.id})`)
-    .order("created_at", { ascending: true })
+    // Los ÚLTIMOS 200 (antes traía los 200 primeros y los nuevos no se veían).
+    .order("created_at", { ascending: false })
     .limit(200);
 
   await admin.from("chat_mensajes")
@@ -103,7 +104,7 @@ export async function getConversacion(
 
   const corte = Date.now() - MINUTOS_EN_LINEA * 60_000;
   return {
-    mensajes: (data || []).map((m) => ({
+    mensajes: (data || []).slice().reverse().map((m) => ({
       id: m.id as string,
       sticker: m.sticker as string,
       mio: m.de_id === user.id,

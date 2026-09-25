@@ -31,6 +31,15 @@ export async function actualizarModulo(id: string, nombre: string, descripcion: 
 export async function borrarModulo(id: string): Promise<{ ok: true } | { error: string }> {
   const admin = await comoAdmin();
   if (!admin) return { error: "No autorizado." };
+
+  // Borrar el módulo arrastra en cascada las COMPRAS del curso, sus testimonios
+  // y deja el grupo suelto. Si alguien ya lo compró, no se borra: se oculta.
+  const { count } = await admin.from("curso_accesos")
+    .select("user_id", { count: "exact", head: true }).eq("modulo_id", id);
+  if ((count ?? 0) > 0) {
+    return { error: `No se puede borrar: ${count} persona(s) tienen este curso. Desactívalo en su lugar (queda oculto y no se pierde nada).` };
+  }
+
   const { error } = await admin.from("cursos_modulos").delete().eq("id", id);
   if (error) return { error: "No se pudo borrar (¿tiene clases?)." };
   return { ok: true };

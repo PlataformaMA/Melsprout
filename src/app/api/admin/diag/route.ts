@@ -11,6 +11,11 @@ export async function GET() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Solo el equipo: antes cualquiera podía consultarlo sin sesión.
+  if (!user || !(await esAdminUsuario(user.id, user.email))) {
+    return NextResponse.json({ ok: false, error: "no_autorizado" }, { status: 404 });
+  }
+
   // ¿La llave de servicio existe y sirve? Solo devuelve sí/no, nunca su valor.
   let llaveServicio: string;
   try {

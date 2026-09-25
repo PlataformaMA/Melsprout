@@ -90,6 +90,19 @@ export async function notificar(
 ): Promise<boolean> {
   if (!userId) return false;
   const admin = createAdminClient();
+
+  // Anti-spam: los "me gusta" y las felicitaciones se avisaban en CADA toque
+  // (dar y quitar like llenaba la campana). Si ya hay un aviso igual sin leer
+  // de la última hora, no se repite.
+  if (tipo === "like" || tipo === "general") {
+    const { count } = await admin
+      .from("notificaciones")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId).eq("titulo", titulo).eq("leida", false)
+      .gte("created_at", new Date(Date.now() - 3600_000).toISOString());
+    if ((count ?? 0) > 0) return true;
+  }
+
   const { error } = await admin.from("notificaciones").insert({
     user_id: userId, tipo, titulo, cuerpo, href: href ?? null,
   });

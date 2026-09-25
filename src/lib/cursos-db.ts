@@ -25,16 +25,21 @@ export async function getCursos(incluirEspeciales = false): Promise<ModuloCurso[
     // Los cursos especiales viven en su propia seccion: no van en la Ruta ni
     // cuentan para el avance del curso.
     if (!incluirEspeciales) q = q.or("especial.is.null,especial.eq.false");
-    const { data: mods } = await q.order("orden", { ascending: true });
+    const { data: mods, error: eMods } = await q.order("orden", { ascending: true });
+    // Un error de lectura NO puede convertirse en "no hay cursos": antes se
+    // devolvía el curso de ejemplo y la alumna veía otro temario y su progreso
+    // calculado sobre 10 clases inventadas.
+    if (eMods) throw new Error(eMods.message);
     if (!mods || mods.length === 0) return ETAPA_1;
 
-    const { data: clases } = await admin
+    const { data: clases, error: eClases } = await admin
       .from("cursos_clases")
       .select("*")
       .eq("activo", true)
       // Las programadas para más adelante todavía no se muestran.
       .or(`publicar_at.is.null,publicar_at.lte.${new Date().toISOString()}`)
       .order("orden", { ascending: true });
+    if (eClases) throw new Error(eClases.message);
 
     const modulos = mods.map((m) => ({
       m,

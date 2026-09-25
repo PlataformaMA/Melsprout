@@ -12,7 +12,10 @@ export async function GET(request: Request) {
   const code = searchParams.get("code");
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
-  const next = searchParams.get("next") ?? "/app";
+  // Solo rutas internas: un `next` con http(s):// o //otro-sitio mandaría a la
+  // persona fuera de Melsprout desde un enlace que parece nuestro.
+  const pedido = searchParams.get("next") ?? "/app";
+  const next = pedido.startsWith("/") && !pedido.startsWith("//") ? pedido : "/app";
 
   const supabase = await createClient();
 

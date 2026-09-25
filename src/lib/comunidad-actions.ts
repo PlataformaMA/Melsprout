@@ -196,7 +196,7 @@ export async function crearComentario(
   retoId: string,
   texto: string
 ): Promise<{ ok: true } | { error: string }> {
-  const t = texto.trim();
+  const t = texto.trim().slice(0, 1000);
   if (!t) return { error: "Escribe un comentario." };
   if (t.length > 500) return { error: "Máximo 500 caracteres." };
   const supabase = await createClient();
