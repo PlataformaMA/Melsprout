@@ -86,11 +86,23 @@ export async function puedeVerGrupo(grupoId: string): Promise<boolean> {
   return !!acceso;
 }
 
+// Solo el equipo (o el webhook de compras, que corre en el servidor) puede
+// mover accesos. Sin esto, cualquiera podía llamarlas desde el navegador y
+// regalarse el curso: son funciones de un archivo "use server".
+async function puedeMoverAccesos(): Promise<boolean> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return true;   // sin sesión = llamada del servidor (webhook / CSV)
+  const { esAdminUsuario } = await import("@/lib/admin");
+  return esAdminUsuario(user.id, user.email);
+}
+
 // Dar acceso a un curso: además de abrirle las clases, lo mete a su grupo.
 // Esto es lo que hay que llamar cuando alguien compre.
 export async function darAccesoCurso(
   userId: string, moduloId: string, origen = "checkout"
 ): Promise<{ ok: true } | { error: string }> {
+  if (!(await puedeMoverAccesos())) return { error: "No autorizado." };
   const admin = createAdminClient();
 
   const { error } = await admin.from("curso_accesos")
@@ -116,6 +128,7 @@ export async function darAccesoCurso(
 export async function quitarAccesoCurso(
   userId: string, moduloId: string
 ): Promise<{ ok: true } | { error: string }> {
+  if (!(await puedeMoverAccesos())) return { error: "No autorizado." };
   const admin = createAdminClient();
 
   const { error } = await admin.from("curso_accesos")

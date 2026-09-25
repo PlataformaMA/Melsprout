@@ -14,6 +14,9 @@ export default function LoginPage() {
     {}
   );
   const [captchaToken, setCaptchaToken] = useState("");
+  // Cada error obliga a renovar el captcha: su token es de un solo uso, así que
+  // el reinicio se deriva del propio mensaje de error (sin estado extra).
+  const reiniciarCaptcha = estado.error ? estado.error.length : 0;
 
   return (
     <AuthShell
@@ -48,7 +51,7 @@ export default function LoginPage() {
         </div>
 
         {/* Filtro invisible anti-robots (solo aparece si está configurado) */}
-        <Turnstile onToken={setCaptchaToken} />
+        <Turnstile onToken={setCaptchaToken} reiniciar={reiniciarCaptcha} />
         <input type="hidden" name="captchaToken" value={captchaToken} />
 
         <Aviso error={estado.error} />
