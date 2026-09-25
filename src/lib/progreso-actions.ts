@@ -42,7 +42,7 @@ export async function completarClase(
     .maybeSingle();
   const yaTeniaXp = prev?.xp_dado === true;
 
-  const { error } = await supabase.from("clase_progreso").upsert({
+  const { error } = await createAdminClient().from("clase_progreso").upsert({
     user_id: user.id,
     clase_id: claseId,
     completada: true,
@@ -57,8 +57,8 @@ export async function completarClase(
     const admin = createAdminClient();
     const { data: p } = await admin.from("profiles").select("xp").eq("id", user.id).single();
     const antes = p?.xp ?? 0;
-    const despues = antes + 100;
-    await admin.from("profiles").update({ xp: despues }).eq("id", user.id);
+    const { data: total } = await admin.rpc("sumar_xp", { p_user: user.id, p_xp: 100 });
+    const despues = (total as number) ?? antes + 100;
 
     // ¿Cruzó un umbral de nivel con esos 100 XP?
     const nAntes = nivelPorXP(antes).actual.nivel;

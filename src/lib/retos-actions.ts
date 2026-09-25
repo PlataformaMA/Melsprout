@@ -55,8 +55,8 @@ export async function guardarReto(
   respuestas: Record<string, string>,
   estado: "borrador" | "publicado",
   archivoUrl: string | null,
-  xp: number,
-  revisa: "sola" | "equipo" = "equipo"
+  _xpCliente?: number,          // se ignora: el XP lo decide el servidor
+  _revisaCliente?: "sola" | "equipo",
 ): Promise<{ ok: true } | { error: string }> {
   const supabase = await createClient();
   const {
@@ -64,36 +64,44 @@ export async function guardarReto(
   } = await supabase.auth.getUser();
   if (!user) return { error: "Inicia sesión de nuevo." };
 
-  // ¿Ya estaba publicado antes? (para no duplicar XP)
-  const { data: prev } = await supabase
+  // El XP y quién revisa salen del reto guardado, NUNCA de lo que mande el
+  // navegador: antes se podían pedir un millón de XP auto-aprobados.
+  const { getRetoUnificado } = await import("@/lib/retos-db");
+  const def = await getRetoUnificado(retoId);
+  if (!def) return { error: "Ese reto ya no existe." };
+  const xp = Math.min(Math.max(def.xp ?? 0, 0), 500);
+  const revisa = def.revisa ?? "equipo";
+
+  const admin = createAdminClient();
+  // Lo ya pagado por este reto (rechazar y volver a publicar no vuelve a pagar).
+  const { data: prev } = await admin
     .from("reto_submissions")
-    .select("estado")
+    .select("estado, xp_otorgado")
     .eq("user_id", user.id)
     .eq("reto_id", retoId)
     .maybeSingle();
-  const yaPublicado = prev?.estado === "publicado";
+  const yaCobrado = ((prev?.xp_otorgado as number) ?? 0) > 0;
 
   // Al PUBLICAR: si es 'sola' se auto-aprueba (va directo a la comunidad);
   // si es 'equipo' queda 'pendiente' (revisión 48h). Borrador → pendiente.
   const revision = estado === "publicado" ? (revisa === "sola" ? "aprobado" : "pendiente") : "pendiente";
+  const pagaAhora = estado === "publicado" && !yaCobrado && xp > 0;
 
-  const { error } = await supabase.from("reto_submissions").upsert({
+  const { error } = await admin.from("reto_submissions").upsert({
     user_id: user.id,
     reto_id: retoId,
     respuestas,
     archivo_url: archivoUrl,
     estado,
     revision,
+    xp_otorgado: pagaAhora ? xp : ((prev?.xp_otorgado as number) ?? 0),
     updated_at: new Date().toISOString(),
   });
   if (error) return { error: "No se pudo guardar el reto." };
 
-  // Sumar XP al publicar por primera vez.
-  if (estado === "publicado" && !yaPublicado && xp > 0) {
-    const admin = createAdminClient();
-    const { data: p } = await admin.from("profiles").select("xp").eq("id", user.id).single();
-    const nuevaXp = (p?.xp ?? 0) + xp;
-    await admin.from("profiles").update({ xp: nuevaXp }).eq("id", user.id);
+  // Sumar XP la primera vez que se publica (suma atómica).
+  if (pagaAhora) {
+    await admin.rpc("sumar_xp", { p_user: user.id, p_xp: xp });
   }
   if (estado === "publicado") await registrarRacha(); // cuenta actividad de hoy
 

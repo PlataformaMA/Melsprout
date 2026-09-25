@@ -1,13 +1,13 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { subirArchivoUsuario } from "@/lib/subir-archivo";
 import IconoGrupo from "./IconoGrupo";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
-import { createClient } from "@/lib/supabase/client";
 import { crearPost, getForoPosts, type ForoPost } from "@/lib/foros-actions";
 import { PostCard } from "@/components/PostCard";
 import { alternarMembresia, type Grupo } from "@/lib/grupos-actions";
@@ -37,11 +37,8 @@ export function GrupoDetalle({
   async function subirImagen(file: File) {
     setSubiendo(true);
     try {
-      const supabase = createClient();
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      const ruta = `comunidad/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("retos").upload(ruta, file, { upsert: true });
-      if (!error) setImagenUrl(supabase.storage.from("retos").getPublicUrl(ruta).data.publicUrl);
+      const r = await subirArchivoUsuario(file, "comunidad");
+      if ("url" in r) setImagenUrl(r.url); else alert(r.error);
     } finally { setSubiendo(false); }
   }
 

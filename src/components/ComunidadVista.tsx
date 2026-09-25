@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { subirArchivoUsuario } from "@/lib/subir-archivo";
 import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { CATEGORIAS_FORO } from "@/lib/data";
 import {
   getForoPosts, crearPost,
@@ -48,11 +48,8 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
   async function subirImagen(file: File) {
     setSubiendoImg(true);
     try {
-      const supabase = createClient();
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      const path = `comunidad/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("retos").upload(path, file, { upsert: true });
-      if (!error) { const { data } = supabase.storage.from("retos").getPublicUrl(path); setImagenUrl(data.publicUrl); }
+      const r = await subirArchivoUsuario(file, "comunidad");
+      if ("url" in r) setImagenUrl(r.url); else alert(r.error);
     } finally { setSubiendoImg(false); }
   }
 

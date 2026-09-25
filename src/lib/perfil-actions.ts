@@ -163,7 +163,8 @@ export async function guardarOnboarding(
     xp: nuevoXP,
   };
 
-  const { error } = await supabase.from("profiles").update(campos).eq("id", user.id);
+  const admin = createAdminClient();
+  const { error } = await admin.from("profiles").update(campos).eq("id", user.id);
   if (error) {
     // Reintento seguro: quita 'nicho' (por un CHECK viejo) y las columnas nuevas
     // del onboarding por si aún no se corre la migración 24. Así nunca se traba;
@@ -176,7 +177,7 @@ export async function guardarOnboarding(
     delete seguro.como_conocio;
     delete seguro.headline;
     delete seguro.bio;
-    const { error: e2 } = await supabase.from("profiles").update(seguro).eq("id", user.id);
+    const { error: e2 } = await admin.from("profiles").update(seguro).eq("id", user.id);
     if (e2) return { error: "No se pudo guardar. Inténtalo de nuevo." };
   }
 

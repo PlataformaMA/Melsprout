@@ -54,7 +54,7 @@ export function ReproductorClase({
   const vistoRef = useRef(vistoInicial);   // segundos REALMENTE vistos (arranca de lo ya guardado)
   const lastTimeRef = useRef(0);
   const saltandoRef = useRef(false);   // true mientras se arrastra la barra
-  const maxVistoRef = useRef(0);       // hasta dónde llegó viendo de verdad
+  const maxVistoRef = useRef(vistoInicial); // hasta dónde llegó viendo de verdad (se conserva al volver)
 
   // Mide el 85% por tiempo reproducido real (adelantar la barrita no cuenta).
   // Cuenta SOLO lo reproducido, nunca lo que se adelanta con la barra. Antes se
@@ -473,6 +473,10 @@ export function ReproductorClase({
 
 // Reproductor de YouTube con medición de tiempo REALMENTE visto (adelantar no cuenta) → 85%.
 function YouTubePlayer({ videoId, vistoInicial = 0, onProgress }: { videoId: string; vistoInicial?: number; onProgress: (p: number, seg: number) => void }) {
+  // El callback cambia en cada render del padre; si entra en las dependencias
+  // del efecto, el reproductor se destruye y se recrea cada segundo.
+  const onProgressRef = useRef(onProgress);
+  useEffect(() => { onProgressRef.current = onProgress; }, [onProgress]);
   const ref = useRef<HTMLDivElement>(null);
   const vistoRef = useRef(vistoInicial);
   const lastRef = useRef(0);
@@ -500,7 +504,7 @@ function YouTubePlayer({ videoId, vistoInicial = 0, onProgress }: { videoId: str
                 if (delta > 0) vistoRef.current += Math.min(delta, 30); // reproducción real, con tope por si el navegador se durmió
               }
               lastRef.current = t;
-              if (d > 0) onProgress(Math.min(100, (vistoRef.current / d) * 100), vistoRef.current);
+              if (d > 0) onProgressRef.current(Math.min(100, (vistoRef.current / d) * 100), vistoRef.current);
             }, 1000);
           },
         },
@@ -525,7 +529,7 @@ function YouTubePlayer({ videoId, vistoInicial = 0, onProgress }: { videoId: str
       if (intervalo) clearInterval(intervalo);
       try { player?.destroy(); } catch { /* noop */ }
     };
-  }, [videoId, vistoInicial, onProgress]);
+  }, [videoId, vistoInicial]);
 
   return (
     <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-black shadow-lg">

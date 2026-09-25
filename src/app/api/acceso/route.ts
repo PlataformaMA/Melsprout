@@ -75,12 +75,15 @@ export async function POST(request: Request) {
 
   const admin = createAdminClient();
 
-  // ¿Ya procesamos este aviso? Se responde 200 para que Hotmart no reintente.
+  // ¿Ya procesamos este aviso CON ÉXITO? Solo entonces se corta. Antes se
+  // cortaba también cuando el intento anterior había fallado, así que el
+  // reintento de Hotmart recibía "ya está" y la compra se quedaba sin acceso.
   const { data: yaVisto } = await admin
     .from("accesos_eventos")
     .select("id, resultado, user_id")
     .eq("transaccion", transaccion)
     .eq("evento", evento)
+    .eq("resultado", "aplicado")
     .maybeSingle();
   if (yaVisto) {
     return NextResponse.json({

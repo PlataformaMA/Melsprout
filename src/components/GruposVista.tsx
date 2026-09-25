@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { subirArchivoUsuario } from "@/lib/subir-archivo";
 import IconoGrupo from "./IconoGrupo";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { proponerGrupo, apoyarGrupo, alternarMembresia, type Grupo } from "@/lib/grupos-actions";
 
 const META = 10;   // debe coincidir con META_APOYOS del servidor
@@ -260,12 +260,8 @@ function ModalProponer({ onCerrar, onCreado }: { onCerrar: () => void; onCreado:
     if (file.size > 5 * 1024 * 1024) { setError("La imagen no debe pasar de 5 MB."); return; }
     setSubiendo(true); setError("");
     try {
-      const supabase = createClient();
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-      const ruta = `grupos/${Date.now()}.${ext}`;
-      const { error: e } = await supabase.storage.from("retos").upload(ruta, file, { upsert: true });
-      if (e) setError("No se pudo subir la imagen.");
-      else setPortada(supabase.storage.from("retos").getPublicUrl(ruta).data.publicUrl);
+      const r = await subirArchivoUsuario(file, "grupos", { maxMB: 5 });
+      if ("url" in r) setPortada(r.url); else setError(r.error);
     } finally { setSubiendo(false); }
   }
 

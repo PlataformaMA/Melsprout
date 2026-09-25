@@ -1,12 +1,12 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { subirArchivoUsuario } from "@/lib/subir-archivo";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AppSidebar } from "@/components/AppSidebar";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import { UserMenu } from "@/components/UserMenu";
-import { createClient } from "@/lib/supabase/client";
 import type { RetoDef, PasoReto } from "@/lib/retos";
 import { guardarReto, subirImagenReto, type RetoGuardado } from "@/lib/retos-actions";
 import type { ForoPost } from "@/lib/foros-actions";
@@ -85,17 +85,13 @@ export function RetoVista({
       }
       setSubiendo(true);
       try {
-        const supabase = createClient();
-        const ext = (file.name.split(".").pop() || "mp4").toLowerCase();
-        const path = `${reto.claseId}/${paso.id}-${Date.now()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("retos").upload(path, file, { upsert: true });
-        if (upErr) {
-          setError("No se pudo subir el video. Intenta de nuevo.");
+        const r = await subirArchivoUsuario(file, "retos", { tipo: "video", maxMB: 50 });
+        if ("error" in r) {
+          setError(r.error);
         } else {
-          const { data } = supabase.storage.from("retos").getPublicUrl(path);
-          setArchivoUrl(data.publicUrl);
+          setArchivoUrl(r.url);
           setVideoNombre(`${file.name} · ${mb.toFixed(1)} MB ✓`);
-          set(paso.id, data.publicUrl);
+          set(paso.id, r.url);
         }
       } catch {
         setError("No se pudo subir el video.");

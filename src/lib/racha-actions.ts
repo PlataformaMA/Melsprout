@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { User } from "@supabase/supabase-js";
 
 // Zona horaria del usuario (guardada al entrar a la app). Fallback: México.
@@ -36,7 +37,7 @@ export async function registrarRacha(): Promise<void> {
   // Si estaba congelada y vuelve a haber actividad, se descongela y continua
   // desde donde se quedo — no se reinicia por los dias sin clases disponibles.
   if (p?.racha_congelada) {
-    await supabase
+    await createAdminClient()
       .from("profiles")
       .update({ racha_congelada: false, racha_fecha: hoyStr, ultima_actividad: new Date().toISOString() })
       .eq("id", user.id);
@@ -48,12 +49,12 @@ export async function registrarRacha(): Promise<void> {
   const ahora = new Date().toISOString();
   if (ultima === hoyStr) {
     // Ya contamos hoy, pero sigue siendo actividad: se anota la hora.
-    await supabase.from("profiles").update({ ultima_actividad: ahora }).eq("id", user.id);
+    await createAdminClient().from("profiles").update({ ultima_actividad: ahora }).eq("id", user.id);
     return;
   }
 
   const nuevaRacha = ultima === ayerStr ? ((p?.racha as number) || 0) + 1 : 1;
-  await supabase.from("profiles")
+  await createAdminClient().from("profiles")
     .update({ racha: nuevaRacha, racha_fecha: hoyStr, ultima_actividad: ahora })
     .eq("id", user.id);
 }
@@ -117,5 +118,5 @@ export async function congelarRacha(): Promise<void> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
-  await supabase.from("profiles").update({ racha_congelada: true }).eq("id", user.id);
+  await createAdminClient().from("profiles").update({ racha_congelada: true }).eq("id", user.id);
 }
