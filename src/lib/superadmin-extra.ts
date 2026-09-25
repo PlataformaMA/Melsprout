@@ -1,7 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { listarTodosLosUsuarios } from "@/lib/usuarios-auth";
+import { correosDeUsuarios } from "@/lib/usuarios-auth";
 import { createClient } from "@/lib/supabase/server";
 import { esAdminUsuario } from "@/lib/admin";
 
@@ -86,7 +86,7 @@ export async function generarReporte(tipo: Reporte): Promise<{ csv: string; nomb
       admin.from("cursos_modulos").select("id, nombre, orden, especial").eq("activo", true).order("orden"),
       admin.from("curso_accesos").select("user_id, modulo_id, created_at, entrada_at"),
     ]);
-    const correo = new Map((await listarTodosLosUsuarios(admin)).map((u) => [u.id, u.email ?? ""]));
+    const correo = await correosDeUsuarios(admin);
     const perfil = new Map((perfiles || []).map((p) => [p.id as string, p]));
 
     // Clases de cada curso, en orden.
@@ -177,7 +177,7 @@ export async function generarReporte(tipo: Reporte): Promise<{ csv: string; nomb
       admin.from("cursos_clases").select("id, modulo_id, titulo, bloque, orden").order("orden"),
       admin.from("cursos_modulos").select("id, nombre"),
     ]);
-    const correo = new Map((await listarTodosLosUsuarios(admin)).map((u) => [u.id, u.email ?? ""]));
+    const correo = await correosDeUsuarios(admin);
     const nombre = new Map((perfiles || []).map((p) => [p.id as string, (p.full_name as string) || ""]));
     const curso = new Map((modulos || []).map((m) => [m.id as string, (m.nombre as string) || ""]));
     const clase = new Map((clases || []).map((c) => [c.id as string, c]));
