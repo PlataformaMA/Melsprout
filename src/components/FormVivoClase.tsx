@@ -23,10 +23,19 @@ export function FormVivoClase({
   const [rol, setRol] = useState(clase?.instructorRol || "");
   const [nivel, setNivel] = useState(clase?.nivel || "");
   const [moduloId, setModuloId] = useState(clase?.moduloId || "");
-  const [fecha, setFecha] = useState(inicio ? inicio.toISOString().slice(0, 10) : "");
-  const [hora, setHora] = useState(inicio ? inicio.toTimeString().slice(0, 5) : "");
+  const zonaClase = clase?.zonaHoraria || "America/Mexico_City";
+  // Fecha y hora SIEMPRE en la zona de la clase: mezclar fecha UTC con hora
+  // local hacía que cada guardado corriera la clase unas horas.
+  const enZona = (d: Date | null, opciones: Intl.DateTimeFormatOptions) =>
+    d ? new Intl.DateTimeFormat("en-CA", { timeZone: zonaClase, ...opciones }).format(d) : "";
+  const [fecha, setFecha] = useState(
+    enZona(inicio, { year: "numeric", month: "2-digit", day: "2-digit" })
+  );
+  const [hora, setHora] = useState(
+    enZona(inicio, { hour: "2-digit", minute: "2-digit", hour12: false })
+  );
   const [duracion, setDuracion] = useState(String(clase?.duracionMin ?? 60));
-  const [zona, setZona] = useState(clase?.zonaHoraria || "America/Mexico_City");
+  const [zona, setZona] = useState(zonaClase);
   const [streamUrl, setStreamUrl] = useState(clase?.streamUrl || "");
   const [grabacionUrl, setGrabacionUrl] = useState(clase?.grabacionUrl || "");
   const [xp, setXp] = useState(String(clase?.xp ?? 50));

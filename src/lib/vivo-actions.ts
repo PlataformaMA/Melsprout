@@ -51,8 +51,15 @@ export async function asistirClaseVivo(id: string): Promise<{ ok: true; xpDado: 
   if (!user) return { error: "Inicia sesión." };
   const admin = createAdminClient();
 
-  const { data: clase } = await admin.from("clases_vivo").select("xp").eq("id", id).maybeSingle();
-  if (!clase) return { error: "Clase no encontrada." };
+  const { data: clase } = await admin.from("clases_vivo")
+    .select("xp, inicia_at, duracion_min, activo").eq("id", id).maybeSingle();
+  if (!clase || clase.activo === false) return { error: "Clase no encontrada." };
+
+  // El XP es por ASISTIR: se paga cuando la clase ya empezó, no al apuntarse.
+  const empieza = new Date(clase.inicia_at as string).getTime();
+  const termina = empieza + (((clase.duracion_min as number) || 60) + 120) * 60000;
+  const ahora = Date.now();
+  const enCurso = ahora >= empieza - 10 * 60000 && ahora <= termina;
 
   const { data: prev } = await admin
     .from("asistencias_vivo")
@@ -63,8 +70,9 @@ export async function asistirClaseVivo(id: string): Promise<{ ok: true; xpDado: 
   if (prev) return { ok: true, xpDado: false };
 
   await admin.from("asistencias_vivo").insert({ user_id: user.id, clase_vivo_id: id });
-  const { data: p } = await admin.from("profiles").select("xp").eq("id", user.id).single();
-  await admin.from("profiles").update({ xp: (p?.xp ?? 0) + ((clase.xp as number) || 50) }).eq("id", user.id);
+  if (!enCurso) return { ok: true, xpDado: false };   // apuntada, pero sin XP todavía
+
+  await admin.rpc("sumar_xp", { p_user: user.id, p_xp: Math.min(Math.max((clase.xp as number) || 50, 0), 200) });
   return { ok: true, xpDado: true };
 }
 

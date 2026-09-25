@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { traerTodo } from "@/lib/traer-todo";
 import { createClient } from "@/lib/supabase/server";
 import { esAdminUsuario } from "@/lib/admin";
 
@@ -49,7 +50,7 @@ export async function listarClasesAdmin(): Promise<{ clases: ClaseAdmin[]; mundo
     admin.from("cursos_clases").select("*").order("orden"),
     admin.from("cursos_modulos").select("id, nombre, orden").order("orden"),
     admin.from("recursos").select("clase_id").eq("activo", true),
-    admin.from("clase_progreso").select("clase_id, segundos_vistos, completada"),
+    traerTodo((d, h) => admin.from("clase_progreso").select("clase_id, segundos_vistos, completada").range(d, h)).then((data) => ({ data })),
     admin.from("clase_calificaciones").select("clase_id, estrellas"),
     admin.from("clase_comentarios").select("clase_id").eq("oculto", false),
   ]);

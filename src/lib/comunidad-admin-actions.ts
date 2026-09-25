@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { traerTodo } from "@/lib/traer-todo";
 import { createClient } from "@/lib/supabase/server";
 import { esAdminUsuario } from "@/lib/admin";
 
@@ -70,10 +71,10 @@ export async function getComunidadAdmin(): Promise<{
     { data: coments }, { data: retosCom },
   ] = await Promise.all([
     admin.from("foros_posts").select("*").order("created_at", { ascending: false }).limit(300),
-    admin.from("foros_likes").select("post_id"),
+    traerTodo((d, h) => admin.from("foros_likes").select("post_id").range(d, h)).then((data) => ({ data })),
     admin.from("foros_respuestas").select("post_id, id"),
     admin.from("grupos").select("*").order("created_at", { ascending: false }),
-    admin.from("grupo_miembros").select("grupo_id"),
+    traerTodo((d, h) => admin.from("grupo_miembros").select("grupo_id").range(d, h)).then((data) => ({ data })),
     admin.from("grupo_apoyos").select("grupo_id"),
     admin.from("comentarios").select("id, autor_id, texto, oculto, created_at")
       .order("created_at", { ascending: false }).limit(200),

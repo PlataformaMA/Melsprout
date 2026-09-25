@@ -4,6 +4,23 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { esAdminUsuario } from "@/lib/admin";
 
+// La hora se escribe en la zona de quien programa (CDMX por defecto). Antes se
+// interpretaba en la zona del servidor (UTC), así que una clase de las 19:00
+// les aparecía a las 13:00 a las alumnas.
+function aUTC(fecha: string, hora: string, zona: string): string {
+  const [a, m, d] = fecha.split("-").map(Number);
+  const [hh, mm] = hora.split(":").map(Number);
+  const tentativa = Date.UTC(a, (m || 1) - 1, d || 1, hh || 0, mm || 0);
+  const f = new Intl.DateTimeFormat("en-US", {
+    timeZone: zona, hour12: false,
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+  }).formatToParts(new Date(tentativa));
+  const v = (t: string) => Number(f.find((p) => p.type === t)?.value);
+  const comoZona = Date.UTC(v("year"), v("month") - 1, v("day"), v("hour"), v("minute"), v("second"));
+  return new Date(tentativa - (comoZona - tentativa)).toISOString();
+}
+
 export type EstadoVivo = "programada" | "en_vivo" | "terminada" | "borrador";
 
 export type ClaseVivoAdmin = {
@@ -135,7 +152,7 @@ export async function guardarVivo(f: VivoForm): Promise<{ ok: true; id: string }
     instructor_rol: f.instructorRol.trim() || null,
     nivel: f.nivel.trim() || null,
     modulo_id: f.moduloId || null,
-    inicia_at: new Date(`${f.fecha}T${f.hora}`).toISOString(),
+    inicia_at: aUTC(f.fecha, f.hora, f.zonaHoraria || "America/Mexico_City"),
     duracion_min: Number(f.duracionMin) || 60,
     zona_horaria: f.zonaHoraria || "America/Mexico_City",
     stream_url: f.streamUrl.trim() || null,

@@ -6,6 +6,7 @@ function urlSegura(v?: string | null): string | null {
 }
 
 import { createClient } from "@/lib/supabase/server";
+import { traerTodo } from "@/lib/traer-todo";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { registrarRacha } from "@/lib/racha-actions";
 import { NIVELES_XP as NIVELES } from "@/lib/data";
@@ -61,8 +62,8 @@ export async function listarRetosComunidad(): Promise<RetoComunidad[]> {
   const me = await miId();
   const [{ data: retos }, { data: ins }, { data: posts }] = await Promise.all([
     admin.from("comunidad_retos").select("*").eq("activo", true).order("orden", { ascending: true }),
-    admin.from("comunidad_reto_inscritos").select("reto_id, user_id"),
-    admin.from("comunidad_reto_posts").select("reto_id, user_id, dia").eq("oculto", false),
+    traerTodo((d, h) => admin.from("comunidad_reto_inscritos").select("reto_id, user_id").range(d, h)).then((data) => ({ data })),
+    traerTodo((d, h) => admin.from("comunidad_reto_posts").select("reto_id, user_id, dia").eq("oculto", false).range(d, h)).then((data) => ({ data })),
   ]);
   return (retos || []).map((r) => {
     const insR = (ins || []).filter((i) => i.reto_id === r.id);

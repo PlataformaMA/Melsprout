@@ -121,6 +121,16 @@ export async function crearCuenta(
     return { error: traducirError(error.message) };
   }
 
+  // Supabase NO avisa cuando el correo ya tiene cuenta (para no filtrar quién
+  // está registrado): devuelve éxito con `identities: []`. Sin esto, quien ya
+  // compró y le dio a "Crear cuenta" veía "¡Cuenta creada! revisa tu correo" y
+  // se quedaba esperando un correo que nunca llegaba.
+  if (data.user && (data.user.identities?.length ?? 0) === 0) {
+    return {
+      error: "Ya existe una cuenta con ese correo. Entra con tu contraseña, o usa «¿Olvidaste tu contraseña?» para crear una nueva.",
+    };
+  }
+
   // Verificación OBLIGATORIA: Supabase envía su propio correo de confirmación
   // (plantilla de marca). No mandamos otro para no duplicar.
   // Si por config ya hubiera sesión (Confirm email apagado), entra directo.

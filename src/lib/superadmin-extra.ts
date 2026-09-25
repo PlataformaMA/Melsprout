@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { traerTodo } from "@/lib/traer-todo";
 import { correosDeUsuarios } from "@/lib/usuarios-auth";
 import { createClient } from "@/lib/supabase/server";
 import { esAdminUsuario } from "@/lib/admin";
@@ -23,7 +24,7 @@ export async function enviarAviso(
 
   const admin = createAdminClient();
   const { data: gente } = await admin
-    .from("profiles").select("id, ultima_actividad").eq("onboarding_completo", true);
+    .from("profiles").select("id, ultima_actividad").eq("onboarding_completo", true).range(0, 9999);
 
   const DIA = 864e5;
   const destinatarios = (gente || []).filter((p) => {
@@ -80,11 +81,11 @@ export async function generarReporte(tipo: Reporte): Promise<{ csv: string; nomb
   // Avance por alumna y curso: una fila por curso en el que está inscrita.
   if (tipo === "progreso") {
     const [{ data: prog }, { data: perfiles }, { data: clases }, { data: modulos }, { data: accesos }] = await Promise.all([
-      admin.from("clase_progreso").select("user_id, clase_id, completada, updated_at, completada_at"),
+      traerTodo((d, h) => admin.from("clase_progreso").select("user_id, clase_id, completada, updated_at, completada_at").range(d, h)).then((data) => ({ data })),
       admin.from("profiles").select("id, full_name, ultima_actividad"),
       admin.from("cursos_clases").select("id, modulo_id, orden, titulo, bloque").eq("activo", true).order("orden"),
       admin.from("cursos_modulos").select("id, nombre, orden, especial").eq("activo", true).order("orden"),
-      admin.from("curso_accesos").select("user_id, modulo_id, created_at, entrada_at"),
+      traerTodo((d, h) => admin.from("curso_accesos").select("user_id, modulo_id, created_at, entrada_at").range(d, h)).then((data) => ({ data })),
     ]);
     const correo = await correosDeUsuarios(admin);
     const perfil = new Map((perfiles || []).map((p) => [p.id as string, p]));
@@ -172,7 +173,7 @@ export async function generarReporte(tipo: Reporte): Promise<{ csv: string; nomb
   // Detalle clase por clase (lo que traía antes el reporte de progreso, con curso y módulo).
   if (tipo === "clases") {
     const [{ data: prog }, { data: perfiles }, { data: clases }, { data: modulos }] = await Promise.all([
-      admin.from("clase_progreso").select("user_id, clase_id, completada, updated_at, completada_at"),
+      traerTodo((d, h) => admin.from("clase_progreso").select("user_id, clase_id, completada, updated_at, completada_at").range(d, h)).then((data) => ({ data })),
       admin.from("profiles").select("id, full_name"),
       admin.from("cursos_clases").select("id, modulo_id, titulo, bloque, orden").order("orden"),
       admin.from("cursos_modulos").select("id, nombre"),

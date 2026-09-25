@@ -1,6 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { traerTodo } from "@/lib/traer-todo";
 import { correosDeUsuarios } from "@/lib/usuarios-auth";
 import { createClient } from "@/lib/supabase/server";
 import { esAdminUsuario } from "@/lib/admin";
@@ -79,12 +80,12 @@ export async function listarEstudiantes(): Promise<Estudiante[]> {
     await Promise.all([
       admin.from("profiles")
         .select("id, full_name, avatar_url, xp, racha, pais, fecha_nacimiento, created_at, ultima_actividad, notas_equipo, renovacion, experiencia, onboarding_completo")
-        .order("xp", { ascending: false }),
-      admin.from("clase_progreso").select("user_id, clase_id, completada"),
-      admin.from("reto_submissions").select("user_id, estado, revision"),
+        .order("xp", { ascending: false }).range(0, 9999),
+      traerTodo((d, h) => admin.from("clase_progreso").select("user_id, clase_id, completada").range(d, h)).then((data) => ({ data })),
+      traerTodo((d, h) => admin.from("reto_submissions").select("user_id, estado, revision").range(d, h)).then((data) => ({ data })),
       admin.from("cursos_clases").select("id, modulo_id, orden, titulo, bloque").eq("activo", true).order("orden"),
       admin.from("cursos_modulos").select("id, nombre, orden, especial").eq("activo", true).order("orden"),
-      admin.from("curso_accesos").select("user_id, modulo_id"),
+      traerTodo((d, h) => admin.from("curso_accesos").select("user_id, modulo_id").range(d, h)).then((data) => ({ data })),
     ]);
 
   // Cursos especiales de cada quien (por nombre). Quien compró un curso aparece

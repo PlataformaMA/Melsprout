@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { traerTodo } from "@/lib/traer-todo";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notificar } from "@/lib/notificaciones-actions";
 import { nivelPorXP } from "@/lib/data";
@@ -65,8 +66,8 @@ export async function listarGrupos(): Promise<{
 
   const [{ data: todosGrupos }, { data: apoyos }, { data: miembros }] = await Promise.all([
     admin.from("grupos").select("*").order("created_at", { ascending: false }),
-    admin.from("grupo_apoyos").select("grupo_id, user_id"),
-    admin.from("grupo_miembros").select("grupo_id, user_id"),
+    traerTodo((d, h) => admin.from("grupo_apoyos").select("grupo_id, user_id").range(d, h)).then((data) => ({ data })),
+    traerTodo((d, h) => admin.from("grupo_miembros").select("grupo_id, user_id").range(d, h)).then((data) => ({ data })),
   ]);
   if (!todosGrupos?.length) return { propuestas: [], mios: [], otros: [] };
 

@@ -45,7 +45,7 @@ export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const esProtegida = RUTAS_PROTEGIDAS.some((r) => path.startsWith(r));
   const esAuth = RUTAS_AUTH.some((r) => path.startsWith(r));
-  const esVerificacion = path.startsWith("/verificar");
+  const esVerificacion = path === "/verificar";   // exacto: /verificar-correo es otra pantalla
 
   const irA = (destino: string) => {
     const url = request.nextUrl.clone();

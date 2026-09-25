@@ -123,5 +123,8 @@ export async function usarCodigo(
   await admin.from("backup_codes").delete().eq("user_id", user.id);
 
   revalidatePath("/", "layout");
+  // Sin refrescar la sesión, la cookie sigue trayendo el factor que se acaba de
+  // borrar y el proxy deja al usuario dando vueltas en /verificar.
+  await supabase.auth.refreshSession();
   return { ok: true };
 }
