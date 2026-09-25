@@ -22,7 +22,12 @@ function estadoDe(c: ClaseVivo): "en_vivo" | "proxima" | "terminada" {
 }
 function fechaCorta(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleString("es-MX", { weekday: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  // Con zona fija: sin esto el servidor pinta una hora (UTC) y el navegador
+  // otra, y React avisa de "hydration mismatch".
+  return d.toLocaleString("es-MX", {
+    weekday: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+    timeZone: "America/Mexico_City",
+  });
 }
 function dur(min: number): string {
   if (min < 60) return `${min}m`;

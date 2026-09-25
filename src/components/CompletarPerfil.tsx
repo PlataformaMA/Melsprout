@@ -287,7 +287,7 @@ export function CompletarPerfil({
                           {metric?.username ? (
                             <div className="text-[12px] text-sub truncate">
                               @{metric.username}
-                              {typeof metric.followers === "number" && ` · ${metric.followers.toLocaleString()} seguidores`}
+                              {typeof metric.followers === "number" && ` · ${metric.followers.toLocaleString("es-MX")} seguidores`}
                             </div>
                           ) : err ? (
                             <div className="text-[12px] text-pink">No se pudo conectar. Reintenta.</div>

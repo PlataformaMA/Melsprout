@@ -661,7 +661,7 @@ function TabResumen({ perfil, nivel, avance }: { perfil: Perfil; nivel: ReturnTy
       {/* Estadísticas */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <MiniStat top={<StatBars />} valor={`Nivel ${nivel.actual.nivel}`} label="Nivel actual" />
-        <MiniStat top={<span className="text-amber text-lg">⭐</span>} valor={perfil.xp.toLocaleString()} label="Puntos" />
+        <MiniStat top={<span className="text-amber text-lg">⭐</span>} valor={perfil.xp.toLocaleString("es-MX")} label="Puntos" />
         <MiniStat top={<span className="text-pink text-lg">📖</span>} valor={`${avance.clases} / ${avance.totalClases}`} label="Clases completadas" />
         <MiniStat top={<span className="text-accent text-lg">💥</span>} valor={`${avance.retos} / ${avance.totalRetos}`} label="Retos completados" />
         <MiniStat top={<span className="text-lg">🔥</span>} valor={`${perfil.racha}`} label="Días de racha" />

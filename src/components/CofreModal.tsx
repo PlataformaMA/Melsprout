@@ -84,14 +84,14 @@ export function CofreModal({ xp, recompensas = [], onClose }: {
           {/* Barra de progreso hacia el próximo cofre */}
           <div className="rounded-2xl bg-bg border border-border p-4 mb-6">
             <div className="flex items-center justify-between gap-3 text-[12.5px] mb-2">
-              <div><span className="text-sub">Tu XP actual</span> <span className="font-extrabold text-accent">★ {xp.toLocaleString()} XP</span></div>
-              {siguiente && <div className="text-right"><span className="text-sub">Próximo cofre</span> <span className="font-bold text-text">★ {siguiente.xp.toLocaleString()} XP</span></div>}
+              <div><span className="text-sub">Tu XP actual</span> <span className="font-extrabold text-accent">★ {xp.toLocaleString("es-MX")} XP</span></div>
+              {siguiente && <div className="text-right"><span className="text-sub">Próximo cofre</span> <span className="font-bold text-text">★ {siguiente.xp.toLocaleString("es-MX")} XP</span></div>}
             </div>
             <div className="h-2.5 rounded-full bg-border overflow-hidden">
               <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} />
             </div>
             <p className="text-[12px] text-sub mt-1.5 text-right">
-              {siguiente ? `${faltan.toLocaleString()} XP para el siguiente cofre` : "¡Desbloqueaste todos los cofres! 🎉"}
+              {siguiente ? `${faltan.toLocaleString("es-MX")} XP para el siguiente cofre` : "¡Desbloqueaste todos los cofres! 🎉"}
             </p>
           </div>
 
@@ -120,7 +120,7 @@ export function CofreModal({ xp, recompensas = [], onClose }: {
                         }`}>{c.desbloqueado ? "✓" : "🔒"}</span>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="font-extrabold text-[14px]">{c.xp.toLocaleString()} XP</div>
+                        <div className="font-extrabold text-[14px]">{c.xp.toLocaleString("es-MX")} XP</div>
                         <div className="text-[12.5px] text-sub leading-tight">{c.titulo}</div>
                         {c.peso && <div className="text-[11px] text-hint mt-0.5">{c.peso}</div>}
 
@@ -133,7 +133,7 @@ export function CofreModal({ xp, recompensas = [], onClose }: {
                           <span className={`inline-block mt-1 text-[10.5px] font-bold px-2 py-0.5 rounded-full ${
                             c.pronto && c.desbloqueado ? "bg-amber-soft text-amber-700" : "bg-accent-soft text-accent"
                           }`}>
-                            {c.pronto ? "Pronto" : `Te faltan ${(c.xp - xp).toLocaleString()} XP`}
+                            {c.pronto ? "Pronto" : `Te faltan ${(c.xp - xp).toLocaleString("es-MX")} XP`}
                           </span>
                         )}
                       </div>

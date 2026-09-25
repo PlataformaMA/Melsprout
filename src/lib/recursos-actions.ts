@@ -94,7 +94,7 @@ export async function descargarRecurso(
   if (typeof r.xp === "number") {
     const { data: perfil } = await admin.from("profiles").select("xp").eq("id", user.id).maybeSingle();
     if (((perfil?.xp as number) || 0) < (r.xp as number))
-      return { error: `Necesitas ${(r.xp as number).toLocaleString()} XP para desbloquear esta recompensa.` };
+      return { error: `Necesitas ${(r.xp as number).toLocaleString("es-MX")} XP para desbloquear esta recompensa.` };
   }
 
   // Recurso externo (Canva, link): no hay archivo que firmar.

@@ -152,7 +152,7 @@ export function PerfilEditor({
                 </div>
                 {m?.username && typeof m.followers === "number" ? (
                   <div className="text-right shrink-0">
-                    <div className="font-display text-lg font-extrabold text-accent">{m.followers.toLocaleString()}</div>
+                    <div className="font-display text-lg font-extrabold text-accent">{m.followers.toLocaleString("es-MX")}</div>
                     <div className="text-[10px] text-sub">seguidores</div>
                   </div>
                 ) : m?.username ? (

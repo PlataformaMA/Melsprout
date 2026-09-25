@@ -20,6 +20,6 @@ export async function procesarReferido(referidorId: string): Promise<{ ok: true 
   if (!ref) return { ok: true };
 
   await admin.from("referidos").insert({ referido_id: user.id, referidor_id: referidorId });
-  await admin.from("profiles").update({ xp: (ref.xp ?? 0) + 100 }).eq("id", referidorId);
+  await admin.rpc("sumar_xp", { p_user: referidorId, p_xp: 100 });
   return { ok: true };
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { procesarReferido } from "@/lib/referidos-actions";
 import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
@@ -143,6 +144,14 @@ export function RutaAprendizaje({
     try {
       const hoy = hoyStr();
       // Primer login en este navegador: solo lo marcamos, no mostramos nada.
+      // Quien llegó con un enlace de invitación: se le paga el XP a quien
+      // invitó (una sola vez). Antes esto vivía en una pantalla que ya no existe.
+      const ref = localStorage.getItem("melsprout_ref");
+      if (ref) {
+        localStorage.removeItem("melsprout_ref");
+        procesarReferido(ref).catch(() => {});
+      }
+
       if (!localStorage.getItem("melsprout_visto")) {
         localStorage.setItem("melsprout_visto", hoy);
         return;
@@ -445,7 +454,7 @@ export function RutaAprendizaje({
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="text-[13px] font-semibold truncate leading-tight">{c.nombre}{c.esTu && <span className="text-accent"> · Tú</span>}</div>
-                          <div className="text-[11px] text-sub leading-tight">{c.xp.toLocaleString()} XP</div>
+                          <div className="text-[11px] text-sub leading-tight">{c.xp.toLocaleString("es-MX")} XP</div>
                         </div>
                         {i < 3 && <span className={`shrink-0 text-[15px] ${i === 0 ? "text-amber-500" : i === 1 ? "text-slate-400" : "text-amber-700"}`}>👑</span>}
                       </div>
@@ -467,7 +476,7 @@ export function RutaAprendizaje({
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="text-[13px] font-semibold truncate leading-tight">{nombre} <span className="text-accent">· Tú</span></div>
-                          <div className="text-[11px] text-sub leading-tight">{tuRanking.xp.toLocaleString()} XP</div>
+                          <div className="text-[11px] text-sub leading-tight">{tuRanking.xp.toLocaleString("es-MX")} XP</div>
                         </div>
                       </div>
                     </div>

@@ -51,7 +51,7 @@ export function RankingModal({ ranking, onClose }: { ranking: RankItem[]; onClos
                       }`}>{p.pos}</span>
                     </div>
                     <div className="text-[13px] font-bold mt-2 text-center truncate max-w-full leading-tight">{p.nombre}{p.esTu && <span className="text-accent"> · Tú</span>}</div>
-                    <div className="text-[11.5px] text-accent font-semibold">★ {p.xp.toLocaleString()} XP</div>
+                    <div className="text-[11.5px] text-accent font-semibold">★ {p.xp.toLocaleString("es-MX")} XP</div>
                     <div className={`mt-2 rounded-t-xl grid place-items-center text-white font-display font-extrabold ${
                       primero ? "bg-accent h-16 text-2xl" : "bg-accent/60 h-10 text-lg"
                     }`} style={{ width: "100%" }}>{p.pos}</div>
@@ -72,7 +72,7 @@ export function RankingModal({ ranking, onClose }: { ranking: RankItem[]; onClos
                     <Avatar nombre={d.nombre} url={d.avatarUrl} size={30} />
                     <div className="min-w-0">
                       <div className="text-[12px] font-semibold truncate leading-tight">{d.nombre}{d.esTu && <span className="text-accent"> · Tú</span>}</div>
-                      <div className="text-[10.5px] text-sub leading-tight">★ {d.xp.toLocaleString()} XP</div>
+                      <div className="text-[10.5px] text-sub leading-tight">★ {d.xp.toLocaleString("es-MX")} XP</div>
                     </div>
                   </div>
                 ))}
@@ -96,7 +96,7 @@ export function RankingModal({ ranking, onClose }: { ranking: RankItem[]; onClos
                         <Avatar nombre={r.nombre} url={r.avatarUrl} size={26} />
                         <span className="text-[12.5px] font-semibold truncate">{r.nombre}{r.esTu && <span className="text-accent"> · Tú</span>}</span>
                       </div>
-                      <span className="text-[12px] text-sub text-right whitespace-nowrap">{r.xp.toLocaleString()} XP</span>
+                      <span className="text-[12px] text-sub text-right whitespace-nowrap">{r.xp.toLocaleString("es-MX")} XP</span>
                       <span className="text-[11px] font-bold text-accent text-right pl-3 whitespace-nowrap">Nivel {r.nivelNum}</span>
                     </div>
                   ))}

@@ -165,9 +165,9 @@ export async function POST(request: Request) {
     if (telefono) perfil.whatsapp = telefono;
     await admin.from("profiles").upsert(perfil);
 
-    // Enlace para que ponga su contraseña. Si no se puede mandar el correo,
-    // la cuenta ya existe igual y siempre le queda "olvidé mi contraseña".
-    correoEnviado = await enviarBienvenidaCompra(email, nombre, curso.nombre as string);
+    // El correo se manda DESPUÉS de dar el acceso (más abajo): si se mandaba
+    // antes y el acceso fallaba, la persona recibía "ya tienes el curso" sin
+    // tenerlo.
   } else if (nombre || telefono) {
     // Ya existía: solo completamos lo que le falte, sin pisar lo que ya puso.
     const { data: p } = await admin
@@ -182,6 +182,16 @@ export async function POST(request: Request) {
   if ("error" in r) {
     await bitacora("error", r.error, usuario.id);
     return NextResponse.json({ ok: false, error: "no_se_pudo_dar_acceso" }, { status: 500 });
+  }
+
+  // Ya tiene el curso: ahora sí se le avisa. Si el correo falla se reintenta
+  // una vez (Resend limita a 2 por segundo y en una ráfaga de compras rebota).
+  if (cuentaNueva) {
+    correoEnviado = await enviarBienvenidaCompra(email, nombre, curso.nombre as string);
+    if (!correoEnviado) {
+      await new Promise((r) => setTimeout(r, 1500));
+      correoEnviado = await enviarBienvenidaCompra(email, nombre, curso.nombre as string);
+    }
   }
 
   await bitacora(
