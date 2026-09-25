@@ -271,7 +271,7 @@ export function ReproductorClase({
                         <>100% visto · ✅ completada</>
                       ) : (
                         <>
-                          {Math.round(progreso)}% visto · {Math.round(vistoRef.current / 60)} min de esta clase
+                          {Math.round(progreso)}% visto · {Math.round((progreso / 100) * clase.duracionMin)} de {clase.duracionMin} min
                           <span className="block text-[11.5px] text-hint mt-0.5">
                             Se marca sola al llegar al final. Adelantar el video no cuenta como visto.
                           </span>
