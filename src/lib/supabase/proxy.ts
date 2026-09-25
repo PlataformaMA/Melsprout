@@ -51,7 +51,11 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = destino;
     url.search = "";
-    return NextResponse.redirect(url);
+    const redir = NextResponse.redirect(url);
+    // Se llevan las cookies que Supabase acaba de refrescar: sin esto, el
+    // token rotado se pierde en el redirect y la sesión se cae sola.
+    for (const cookie of response.cookies.getAll()) redir.cookies.set(cookie);
+    return redir;
   };
 
   // Sin sesión: solo puede ver rutas públicas.
