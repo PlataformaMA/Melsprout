@@ -65,7 +65,8 @@ export function ReportesTab() {
   const [bajando, setBajando] = useState<Reporte | null>(null);
   const reportes: { id: Reporte; titulo: string; nota: string }[] = [
     { id: "estudiantes", titulo: "Estudiantes", nota: "Nombre, país, XP, racha, alta y última actividad." },
-    { id: "progreso", titulo: "Progreso por clase", nota: "Quién vio qué clase y si la terminó." },
+    { id: "progreso", titulo: "Avance por curso", nota: "Una fila por alumna y curso: % de avance, módulo y clase en la que va, fecha de inicio, último avance y última actividad." },
+    { id: "clases", titulo: "Progreso por clase", nota: "Detalle clase por clase: curso, módulo, si la terminó y cuándo." },
     { id: "retos", titulo: "Retos entregados", nota: "Cada entrega con su estado y su revisión." },
   ];
 
@@ -82,7 +83,7 @@ export function ReportesTab() {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       {reportes.map((r) => (
         <section key={r.id} className="bg-surface border border-border rounded-3xl p-5 shadow-sm flex flex-col">
           <h2 className="font-display font-extrabold text-[15px]">{r.titulo}</h2>

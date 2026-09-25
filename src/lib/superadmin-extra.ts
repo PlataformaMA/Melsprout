@@ -45,7 +45,7 @@ export async function enviarAviso(
 }
 
 // ————— Reportes: datos en CSV —————
-export type Reporte = "estudiantes" | "progreso" | "retos";
+export type Reporte = "estudiantes" | "progreso" | "clases" | "retos";
 
 function csv(filas: (string | number | null)[][]): string {
   const escapar = (v: string | number | null) => {
@@ -76,22 +76,125 @@ export async function generarReporte(tipo: Reporte): Promise<{ csv: string; nomb
     return { csv: csv(filas), nombre: `estudiantes-${hoy}.csv` };
   }
 
+  // Avance por alumna y curso: una fila por curso en el que está inscrita.
   if (tipo === "progreso") {
-    const [{ data: prog }, { data: perfiles }, { data: clases }] = await Promise.all([
-      admin.from("clase_progreso").select("user_id, clase_id, completada, updated_at"),
-      admin.from("profiles").select("id, full_name"),
-      admin.from("cursos_clases").select("id, titulo"),
+    const [{ data: prog }, { data: perfiles }, { data: clases }, { data: modulos }, { data: accesos }] = await Promise.all([
+      admin.from("clase_progreso").select("user_id, clase_id, completada, updated_at, completada_at"),
+      admin.from("profiles").select("id, full_name, ultima_actividad"),
+      admin.from("cursos_clases").select("id, modulo_id, orden, titulo, bloque").eq("activo", true).order("orden"),
+      admin.from("cursos_modulos").select("id, nombre, orden, especial").eq("activo", true).order("orden"),
+      admin.from("curso_accesos").select("user_id, modulo_id, created_at, entrada_at"),
     ]);
+    const { data: auth } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const correo = new Map((auth?.users || []).map((u) => [u.id, u.email ?? ""]));
+    const perfil = new Map((perfiles || []).map((p) => [p.id as string, p]));
+
+    // Clases de cada curso, en orden.
+    const porCurso = new Map<string, { id: string; titulo: string; bloque: string | null }[]>();
+    for (const c of clases || []) {
+      const mid = c.modulo_id as string;
+      if (!porCurso.has(mid)) porCurso.set(mid, []);
+      porCurso.get(mid)!.push({ id: c.id as string, titulo: c.titulo as string, bloque: (c.bloque as string) ?? null });
+    }
+    const esEspecial = new Map((modulos || []).map((m) => [m.id as string, !!m.especial]));
+    const nombreCurso = new Map((modulos || []).map((m) => [m.id as string, (m.nombre as string) || ""]));
+    const cursoDeClase = new Map((clases || []).map((c) => [c.id as string, c.modulo_id as string]));
+
+    // Avance de cada alumna, clase por clase.
+    type Paso = { completada: boolean; fecha: string; completadaAt: string | null };
+    const pasos = new Map<string, Map<string, Paso>>();   // user -> clase -> paso
+    for (const p of prog || []) {
+      const u = p.user_id as string;
+      if (!pasos.has(u)) pasos.set(u, new Map());
+      pasos.get(u)!.set(p.clase_id as string, {
+        completada: !!p.completada,
+        fecha: String(p.updated_at),
+        completadaAt: p.completada_at ? String(p.completada_at) : null,
+      });
+    }
+
+    // La Ruta cuenta como un "curso" más para quien no tiene curso especial.
+    const rutaIds = (modulos || []).filter((m) => !m.especial).map((m) => m.id as string);
+
+    const filas: (string | number | null)[][] = [[
+      "Estudiante", "Correo", "Curso", "Clases completadas", "Total de clases", "% de avance",
+      "Módulo en el que va", "Clase en la que va", "Fecha de inicio", "Fecha de último avance",
+      "Última actividad en la app", "Inscrita desde", "Primera entrada al curso",
+    ]];
+
+    const fecha = (v: unknown) => (v ? String(v).slice(0, 10) : "");
+
+    // 1) Cursos especiales: una fila por alumna inscrita.
+    for (const a of accesos || []) {
+      const mid = a.modulo_id as string;
+      if (!esEspecial.get(mid)) continue;
+      const uid = a.user_id as string;
+      const lista = porCurso.get(mid) || [];
+      const mios = pasos.get(uid) || new Map<string, Paso>();
+      const vistas = lista.filter((c) => mios.has(c.id));
+      const hechas = lista.filter((c) => mios.get(c.id)?.completada);
+      const siguiente = lista.find((c) => !mios.get(c.id)?.completada) ?? null;
+      const fechas = vistas.map((c) => mios.get(c.id)!.fecha).sort();
+      const inicios = vistas.map((c) => mios.get(c.id)!.completadaAt ?? mios.get(c.id)!.fecha).sort();
+      const per = perfil.get(uid);
+      filas.push([
+        (per?.full_name as string) || "", correo.get(uid) || "", nombreCurso.get(mid) || "",
+        hechas.length, lista.length, lista.length ? Math.round((hechas.length / lista.length) * 100) + "%" : "0%",
+        siguiente ? (siguiente.bloque || "") : "Terminado",
+        siguiente ? siguiente.titulo : "Terminó el curso",
+        fecha(inicios[0]), fecha(fechas[fechas.length - 1]),
+        fecha(per?.ultima_actividad), fecha(a.created_at), fecha(a.entrada_at),
+      ]);
+    }
+
+    // 2) La Ruta de aprendizaje: una fila por alumna con avance en ella.
+    const clasesRuta = rutaIds.flatMap((mid) => (porCurso.get(mid) || []).map((c) => ({ ...c, mid })));
+    for (const [uid, mios] of pasos) {
+      const vistas = clasesRuta.filter((c) => mios.has(c.id));
+      if (vistas.length === 0) continue;
+      const hechas = clasesRuta.filter((c) => mios.get(c.id)?.completada);
+      const siguiente = clasesRuta.find((c) => !mios.get(c.id)?.completada) ?? null;
+      const fechas = vistas.map((c) => mios.get(c.id)!.fecha).sort();
+      const inicios = vistas.map((c) => mios.get(c.id)!.completadaAt ?? mios.get(c.id)!.fecha).sort();
+      const per = perfil.get(uid);
+      filas.push([
+        (per?.full_name as string) || "", correo.get(uid) || "", "Ruta de aprendizaje",
+        hechas.length, clasesRuta.length, clasesRuta.length ? Math.round((hechas.length / clasesRuta.length) * 100) + "%" : "0%",
+        siguiente ? (nombreCurso.get(siguiente.mid) || "") : "Terminada",
+        siguiente ? siguiente.titulo : "Terminó la ruta",
+        fecha(inicios[0]), fecha(fechas[fechas.length - 1]),
+        fecha(per?.ultima_actividad), "", "",
+      ]);
+    }
+    return { csv: csv(filas), nombre: `avance-por-curso-${hoy}.csv` };
+  }
+
+  // Detalle clase por clase (lo que traía antes el reporte de progreso, con curso y módulo).
+  if (tipo === "clases") {
+    const [{ data: prog }, { data: perfiles }, { data: clases }, { data: modulos }] = await Promise.all([
+      admin.from("clase_progreso").select("user_id, clase_id, completada, updated_at, completada_at"),
+      admin.from("profiles").select("id, full_name"),
+      admin.from("cursos_clases").select("id, modulo_id, titulo, bloque, orden").order("orden"),
+      admin.from("cursos_modulos").select("id, nombre"),
+    ]);
+    const { data: auth } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const correo = new Map((auth?.users || []).map((u) => [u.id, u.email ?? ""]));
     const nombre = new Map((perfiles || []).map((p) => [p.id as string, (p.full_name as string) || ""]));
-    const clase = new Map((clases || []).map((c) => [c.id as string, (c.titulo as string) || ""]));
+    const curso = new Map((modulos || []).map((m) => [m.id as string, (m.nombre as string) || ""]));
+    const clase = new Map((clases || []).map((c) => [c.id as string, c]));
     const filas: (string | number | null)[][] = [
-      ["Estudiante", "Clase", "Completada", "Fecha"],
-      ...(prog || []).map((p) => [
-        nombre.get(p.user_id as string) || "", clase.get(p.clase_id as string) || "",
-        p.completada ? "sí" : "no", String(p.updated_at).slice(0, 10),
-      ]),
+      ["Estudiante", "Correo", "Curso", "Módulo", "Clase", "Completada", "Fecha en que la completó", "Último avance"],
+      ...(prog || []).map((p) => {
+        const c = clase.get(p.clase_id as string);
+        return [
+          nombre.get(p.user_id as string) || "", correo.get(p.user_id as string) || "",
+          c ? curso.get(c.modulo_id as string) || "" : "", c ? ((c.bloque as string) || "") : "",
+          c ? (c.titulo as string) : "", p.completada ? "sí" : "no",
+          p.completada_at ? String(p.completada_at).slice(0, 10) : "", String(p.updated_at).slice(0, 10),
+        ];
+      }),
     ];
-    return { csv: csv(filas), nombre: `progreso-${hoy}.csv` };
+    return { csv: csv(filas), nombre: `progreso-por-clase-${hoy}.csv` };
   }
 
   const [{ data: subs }, { data: perfiles }] = await Promise.all([
