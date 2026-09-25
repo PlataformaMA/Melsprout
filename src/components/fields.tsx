@@ -52,15 +52,20 @@ export function PasswordField({
   const [valor, setValor] = useState("");
   const [ver, setVer] = useState(false);
   const fuerza = evaluarPassword(valor);
+  const id = `pw-${name}`;
 
   const colores = ["#DC2626", "#DC2626", "#D97706", "#059669", "#059669"];
   const anchos = ["12%", "30%", "55%", "80%", "100%"];
 
+  // El bloque NO puede ser un <label> envolviendo todo: al tocar el botón en el
+  // celular, el navegador activa también la etiqueta y el evento llega dos
+  // veces, así que el ojito parecía no funcionar.
   return (
-    <label className="block">
-      <span className="text-[13px] font-medium text-text">{label}</span>
+    <div className="block">
+      <label htmlFor={id} className="text-[13px] font-medium text-text">{label}</label>
       <div className="mt-1.5 relative">
         <input
+          id={id}
           name={name}
           type={ver ? "text" : "password"}
           required
@@ -72,8 +77,10 @@ export function PasswordField({
         />
         <button
           type="button"
+          // Sin esto, el toque mueve el foco y en iOS se pierde el clic.
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => setVer((v) => !v)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-sub hover:text-text text-xs font-medium"
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-sub hover:text-text text-xs font-medium px-2 py-2 -my-2 rounded-lg touch-manipulation"
           aria-label={ver ? "Ocultar contraseña" : "Mostrar contraseña"}
         >
           {ver ? "Ocultar" : "Ver"}
@@ -102,7 +109,7 @@ export function PasswordField({
           </p>
         </div>
       )}
-    </label>
+    </div>
   );
 }
 

@@ -122,13 +122,25 @@ export async function crearCuenta(
   }
 
   // Supabase NO avisa cuando el correo ya tiene cuenta (para no filtrar quién
-  // está registrado): devuelve éxito con `identities: []`. Sin esto, quien ya
-  // compró y le dio a "Crear cuenta" veía "¡Cuenta creada! revisa tu correo" y
-  // se quedaba esperando un correo que nunca llegaba.
-  if (data.user && (data.user.identities?.length ?? 0) === 0) {
-    return {
-      error: "Ya existe una cuenta con ese correo. Entra con tu contraseña, o usa «¿Olvidaste tu contraseña?» para crear una nueva.",
-    };
+  // está registrado): responde como si todo hubiera ido bien. Sin esto, quien
+  // ya compró y le dio a "Crear cuenta" veía "¡Cuenta creada! revisa tu correo"
+  // y se quedaba esperando un correo que nunca llegaba.
+  // Se comprueba contra la BASE (no por `identities`, que no es fiable) y solo
+  // se avisa si la cuenta es ANTERIOR a este registro.
+  if (data.user) {
+    try {
+      const { createAdminClient } = await import("@/lib/supabase/admin");
+      const { buscarUsuarioPorEmail } = await import("@/lib/usuarios-auth");
+      const existente = await buscarUsuarioPorEmail(createAdminClient(), email);
+      const esVieja = existente
+        && Date.now() - new Date(existente.created_at).getTime() > 10_000
+        && existente.id !== data.user.id;
+      if (esVieja) {
+        return {
+          error: "Ya existe una cuenta con ese correo. Entra con tu contraseña, o usa «¿Olvidaste tu contraseña?» para crear una nueva.",
+        };
+      }
+    } catch { /* si la comprobación falla, seguimos el flujo normal */ }
   }
 
   // Verificación OBLIGATORIA: Supabase envía su propio correo de confirmación
