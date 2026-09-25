@@ -1,5 +1,10 @@
 "use server";
 
+// Solo se aceptan enlaces http(s): un `javascript:` se ejecutaría al tocarlo.
+function urlSegura(v?: string | null): string | null {
+  return v && /^https?:\/\//i.test(v.trim()) ? v.trim().slice(0, 500) : null;
+}
+
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { registrarRacha } from "@/lib/racha-actions";
@@ -57,7 +62,7 @@ export async function listarRetosComunidad(): Promise<RetoComunidad[]> {
   const [{ data: retos }, { data: ins }, { data: posts }] = await Promise.all([
     admin.from("comunidad_retos").select("*").eq("activo", true).order("orden", { ascending: true }),
     admin.from("comunidad_reto_inscritos").select("reto_id, user_id"),
-    admin.from("comunidad_reto_posts").select("reto_id, user_id, dia"),
+    admin.from("comunidad_reto_posts").select("reto_id, user_id, dia").eq("oculto", false),
   ]);
   return (retos || []).map((r) => {
     const insR = (ins || []).filter((i) => i.reto_id === r.id);
@@ -74,7 +79,7 @@ export async function getRetoComunidad(id: string): Promise<RetoComunidadDetalle
 
   const [{ data: ins }, { data: posts }, { data: likes }] = await Promise.all([
     admin.from("comunidad_reto_inscritos").select("user_id").eq("reto_id", id),
-    admin.from("comunidad_reto_posts").select("id, user_id, dia, texto, media_url, created_at").eq("reto_id", id).order("created_at", { ascending: false }),
+    admin.from("comunidad_reto_posts").select("id, user_id, dia, texto, media_url, created_at").eq("reto_id", id).eq("oculto", false).order("created_at", { ascending: false }),
     admin.from("comunidad_reto_likes").select("post_id, user_id"),
   ]);
 
@@ -153,12 +158,11 @@ export async function publicarDiaReto(
   if (hechos >= (reto.dias as number)) return { error: "¡Ya completaste todos los días de este reto! 🎉" };
   const dia = hechos + 1;
 
-  const { error } = await supabase.from("comunidad_reto_posts").insert({ reto_id: retoId, user_id: user.id, dia, texto, media_url: mediaUrl });
+  const { error } = await supabase.from("comunidad_reto_posts").insert({ reto_id: retoId, user_id: user.id, dia, texto: texto.slice(0, 2000), media_url: urlSegura(mediaUrl) });
   if (error) return { error: "No se pudo publicar (¿ya publicaste hoy?)." };
 
   // +XP del día
-  const { data: p } = await admin.from("profiles").select("xp").eq("id", user.id).single();
-  await admin.from("profiles").update({ xp: (p?.xp ?? 0) + (reto.xp_dia as number) }).eq("id", user.id);
+  await admin.rpc("sumar_xp", { p_user: user.id, p_xp: Math.min(Math.max((reto.xp_dia as number) || 0, 0), 200) });
   await registrarRacha();
   return { ok: true, dia };
 }

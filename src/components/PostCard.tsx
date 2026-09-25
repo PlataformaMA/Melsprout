@@ -10,6 +10,12 @@ import {
 } from "@/lib/foros-actions";
 
 // "hace 3 h", "hace 2 d"… en el idioma de la plataforma.
+// Un enlace guardado antes del filtro podría ser `javascript:…`; al pintarlo
+// se vuelve a comprobar que sea http(s).
+export function enlaceSeguro(v: string | null | undefined): string | null {
+  return v && /^https?:\/\//i.test(v.trim()) ? v.trim() : null;
+}
+
 export function haceRato(iso: string): string {
   const min = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
   if (min < 1) return "ahora"; if (min < 60) return `hace ${min} min`;
@@ -147,13 +153,15 @@ export function PostCard({ post, compacto = false }: { post: ForoPost; compacto?
       )}
       {post.videoUrl && (
         (() => {
-          const yt = post.videoUrl.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
+          const seguro = enlaceSeguro(post.videoUrl);
+          if (!seguro) return null;
+          const yt = seguro.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
           return yt
             ? <div className="mt-2 aspect-video rounded-xl overflow-hidden border border-border"><iframe src={`https://www.youtube.com/embed/${yt[1]}`} className="w-full h-full" allowFullScreen title="video" /></div>
-            : <a href={post.videoUrl} target="_blank" rel="noreferrer" className="text-accent text-[13px] font-semibold underline break-all mt-1 inline-block">🎬 Ver video</a>;
+            : <a href={seguro} target="_blank" rel="noreferrer" className="text-accent text-[13px] font-semibold underline break-all mt-1 inline-block">🎬 Ver video</a>;
         })()
       )}
-      {post.enlaceUrl && <a href={post.enlaceUrl} target="_blank" rel="noreferrer" className="text-accent text-[13px] font-semibold underline break-all mt-1 inline-block">{post.enlaceUrl}</a>}
+      {enlaceSeguro(post.enlaceUrl) && <a href={enlaceSeguro(post.enlaceUrl)!} target="_blank" rel="noreferrer" className="text-accent text-[13px] font-semibold underline break-all mt-1 inline-block">{post.enlaceUrl}</a>}
 
       <div className="flex items-center gap-5 mt-3 text-[13px]">
         <button onClick={like} className={`flex items-center gap-1.5 font-semibold transition ${meGusta ? "text-pink" : "text-sub hover:text-pink"}`}>

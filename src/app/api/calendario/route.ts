@@ -3,7 +3,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 // Feed .ics público y SUSCRIBIBLE (webcal) con las próximas clases en vivo.
 // Al suscribirse (Apple/Google), el calendario se actualiza solo cuando se
-// agregan nuevas clases. No expone datos sensibles (solo el horario público).
+// agregan nuevas clases. Solo lleva el horario: el enlace de Zoom/Meet se ve
+// dentro de la app, porque este feed lo puede leer cualquiera con la URL.
 export const dynamic = "force-dynamic";
 
 function fmt(d: Date): string {
@@ -17,7 +18,8 @@ export async function GET() {
   const admin = createAdminClient();
   const { data } = await admin
     .from("clases_vivo")
-    .select("id, titulo, inicia_at, duracion_min, instructor, stream_url")
+    .select("id, titulo, inicia_at, duracion_min, instructor, activo")
+    .eq("activo", true)
     .order("inicia_at", { ascending: true });
 
   const now = Date.now();
@@ -37,7 +39,9 @@ export async function GET() {
         `DTEND:${fmt(e)}`,
         `SUMMARY:${esc((c.titulo as string) || "Clase en vivo")}`,
         `DESCRIPTION:${esc("Clase en vivo de Melsprout" + (c.instructor ? " con " + c.instructor : ""))}`,
-        c.stream_url ? `URL:${esc(c.stream_url as string)}` : "",
+        // El enlace de la sesión NO va aquí: este feed es público y cualquiera
+        // con la URL podría entrar a la clase. Se ve dentro de la app.
+        `URL:${esc("https://melsprout.boostacademy.io/app/vivo")}`,
         "BEGIN:VALARM",
         "TRIGGER:-PT60M",
         "ACTION:DISPLAY",

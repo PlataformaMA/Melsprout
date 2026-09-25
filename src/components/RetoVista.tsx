@@ -10,7 +10,7 @@ import { UserMenu } from "@/components/UserMenu";
 import type { RetoDef, PasoReto } from "@/lib/retos";
 import { guardarReto, subirImagenReto, type RetoGuardado } from "@/lib/retos-actions";
 import type { ForoPost } from "@/lib/foros-actions";
-import { PostCard } from "@/components/PostCard";
+import { PostCard, enlaceSeguro } from "@/components/PostCard";
 
 type Perfil = { full_name: string | null; avatar_url: string | null; racha: number; gemas: number };
 
@@ -519,7 +519,7 @@ function EstadoReto({
             <div className="text-[13px] font-bold text-text">{p.titulo}</div>
             {p.tipo === "archivo" ? (
               archivoUrl ? (
-                <a href={archivoUrl} target="_blank" rel="noreferrer" className="text-[13px] text-accent font-semibold hover:underline">Ver archivo subido ↗</a>
+                <a href={enlaceSeguro(archivoUrl) ?? "#"} target="_blank" rel="noreferrer" className="text-[13px] text-accent font-semibold hover:underline">Ver archivo subido ↗</a>
               ) : (
                 <span className="text-[13px] text-hint">Sin archivo</span>
               )

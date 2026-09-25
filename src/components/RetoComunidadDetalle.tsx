@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { enlaceSeguro } from "@/components/PostCard";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -145,7 +146,7 @@ export function RetoComunidadDetalle({
                           <span className="text-[11px] font-bold text-accent bg-accent-soft rounded-full px-2.5 py-0.5 shrink-0">Día {p.dia} de {detalle.dias}</span>
                         </div>
                         {p.texto && <p className="text-[13.5px] text-text leading-relaxed whitespace-pre-wrap">{p.texto}</p>}
-                        {p.media_url && <a href={p.media_url} target="_blank" rel="noreferrer" className="inline-block mt-2 text-[13px] text-accent font-semibold hover:underline">Ver contenido ↗</a>}
+                        {enlaceSeguro(p.media_url) && <a href={enlaceSeguro(p.media_url)!} target="_blank" rel="noreferrer" className="inline-block mt-2 text-[13px] text-accent font-semibold hover:underline">Ver contenido ↗</a>}
                         <div className="flex items-center gap-4 mt-3 text-[13px] text-sub">
                           <button onClick={() => like(p.id)} className={`flex items-center gap-1.5 ${p.yoDiLike ? "text-pink" : "hover:text-pink"} transition`}>
                             {p.yoDiLike ? "❤️" : "🤍"} {p.likes}
@@ -169,7 +170,7 @@ export function RetoComunidadDetalle({
                     <h3 className="font-display font-extrabold text-[15px] mb-3">Recursos para este reto</h3>
                     <div className="space-y-1">
                       {detalle.recursos.map((r, i) => (
-                        <a key={i} href={r.url} target="_blank" rel="noreferrer"
+                        <a key={i} href={enlaceSeguro(r.url) ?? "#"} target="_blank" rel="noreferrer"
                           className="flex items-center gap-2.5 rounded-xl px-2 py-2 hover:bg-bg transition group">
                           <span className="w-7 h-7 rounded-lg bg-accent-soft grid place-items-center text-[13px] shrink-0">
                             {r.tipo === "video" ? "▶️" : r.tipo === "plantilla" ? "📗" : r.tipo === "guia" ? "📘" : "📄"}

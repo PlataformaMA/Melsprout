@@ -215,6 +215,8 @@ export async function apoyarGrupo(
 }
 
 // Entrar o salir de un grupo activo y público.
+// Unirse a un grupo de curso exige tener el curso (antes se podía desde la
+// acción directamente, saltándose la comprobación de la página).
 export async function alternarMembresia(
   grupoId: string
 ): Promise<{ ok: true; soyMiembro: boolean; miembros: number } | { error: string }> {
@@ -223,9 +225,13 @@ export async function alternarMembresia(
   if (!user) return { error: "Inicia sesión." };
 
   const admin = createAdminClient();
-  const { data: g } = await admin.from("grupos").select("id, estado, publico").eq("id", grupoId).maybeSingle();
+  const { data: g } = await admin.from("grupos").select("id, estado, publico, curso_id").eq("id", grupoId).maybeSingle();
   if (!g || g.estado !== "activo") return { error: "Ese grupo todavía no está activo." };
   if (!g.publico) return { error: "Este grupo es privado." };
+  if (g.curso_id) {
+    const { puedeVerGrupo } = await import("@/lib/acceso-actions");
+    if (!(await puedeVerGrupo(grupoId))) return { error: "Este grupo es del curso; se entra al comprarlo." };
+  }
 
   const { data: mio } = await admin.from("grupo_miembros")
     .select("user_id").eq("grupo_id", grupoId).eq("user_id", user.id).maybeSingle();

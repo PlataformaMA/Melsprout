@@ -82,6 +82,12 @@ async function armarPosts(
 export async function getForoPosts(categoria: string, grupoId?: string): Promise<ForoPost[]> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  // El grupo de un curso de pago solo lo ve quien lo compró: antes la revisión
+  // vivía únicamente en la página, y llamar a esta acción se la saltaba.
+  if (grupoId) {
+    const { puedeVerGrupo } = await import("@/lib/acceso-actions");
+    if (!(await puedeVerGrupo(grupoId))) return [];
+  }
   const admin = createAdminClient();
 
   let q = admin.from("foros_posts").select("*").eq("oculto", false).order("created_at", { ascending: false }).limit(50);
@@ -107,16 +113,23 @@ export async function getPublicacionesReto(retoId: string, limite = 6): Promise<
 }
 
 export async function crearPost(categoria: string, texto: string, extra?: { enlaceUrl?: string; imagenUrl?: string; videoUrl?: string; grupoId?: string; titulo?: string }): Promise<{ ok: true } | { error: string }> {
-  const t = texto.trim();
+  const t = texto.trim().slice(0, 5000);
   if (!t) return { error: "Escribe algo para publicar." };
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Inicia sesión." };
+  if (extra?.grupoId) {
+    const { puedeVerGrupo } = await import("@/lib/acceso-actions");
+    if (!(await puedeVerGrupo(extra.grupoId))) return { error: "Este grupo es de un curso que todavía no tienes." };
+  }
+  // Los enlaces solo pueden ser http(s): un `javascript:` en un enlace de post
+  // se ejecutaría al tocarlo (P1-21).
+  const urlSegura = (v?: string) => (v && /^https?:\/\//i.test(v.trim()) ? v.trim().slice(0, 500) : null);
   const admin = createAdminClient();
   const { error } = await admin.from("foros_posts").insert({
     autor_id: user.id, categoria: categoria || "General", texto: t, grupo_id: extra?.grupoId || null,
     titulo: extra?.titulo?.trim().slice(0, 120) || null,
-    enlace_url: extra?.enlaceUrl || null, imagen_url: extra?.imagenUrl || null, video_url: extra?.videoUrl || null,
+    enlace_url: urlSegura(extra?.enlaceUrl), imagen_url: urlSegura(extra?.imagenUrl), video_url: urlSegura(extra?.videoUrl),
   });
   if (error) return { error: "No se pudo publicar." };
   // +10 XP por publicar.
