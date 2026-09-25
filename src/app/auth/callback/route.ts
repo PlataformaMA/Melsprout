@@ -41,6 +41,14 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/verificado`);
   }
 
+  // Si el proveedor (Google/Facebook) devolvió un error —por ejemplo, la
+  // persona canceló— se dice eso, no "enlace expirado".
+  const errorProveedor = searchParams.get("error_description") || searchParams.get("error");
+  if (errorProveedor) {
+    const cancelado = /denied|cancel/i.test(errorProveedor);
+    return NextResponse.redirect(`${origin}/login?error=${cancelado ? "cancelado" : "social"}`);
+  }
+
   // 2) Login social u otros flujos con código (PKCE)
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);

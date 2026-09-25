@@ -154,9 +154,21 @@ export async function publicarDiaReto(
   // Asegura inscripción
   await supabase.from("comunidad_reto_inscritos").upsert({ reto_id: retoId, user_id: user.id });
 
-  const { data: mios } = await admin.from("comunidad_reto_posts").select("dia").eq("reto_id", retoId).eq("user_id", user.id);
+  const { data: mios } = await admin.from("comunidad_reto_posts")
+    .select("dia, created_at").eq("reto_id", retoId).eq("user_id", user.id)
+    .order("created_at", { ascending: false });
   const hechos = mios?.length ?? 0;
   if (hechos >= (reto.dias as number)) return { error: "¡Ya completaste todos los días de este reto! 🎉" };
+
+  // Un día por día: es un reto de constancia, no una lista para llenar de golpe.
+  const ultimo = mios?.[0]?.created_at as string | undefined;
+  if (ultimo) {
+    const hoy = new Date().toLocaleDateString("en-CA");
+    const dia_ultimo = new Date(ultimo).toLocaleDateString("en-CA");
+    if (dia_ultimo === hoy) {
+      return { error: "Ya publicaste el día de hoy. Vuelve mañana para el siguiente 💜" };
+    }
+  }
   const dia = hechos + 1;
 
   const { error } = await supabase.from("comunidad_reto_posts").insert({ reto_id: retoId, user_id: user.id, dia, texto: texto.slice(0, 2000), media_url: urlSegura(mediaUrl) });

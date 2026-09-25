@@ -91,20 +91,24 @@ export async function eliminarConexionPorExternalId(
   if (!externalId) return false;
   const admin = createAdminClient();
 
+  // Puede haber MÁS DE UNA cuenta vinculada a la misma red (antes se usaba
+  // maybeSingle() y con duplicados no se borraba nada, sin avisar).
   const { data } = await admin
     .from("social_connections")
     .select("user_id")
     .eq("provider", provider)
-    .eq("external_id", externalId)
-    .maybeSingle();
-  if (!data?.user_id) return false;
+    .eq("external_id", externalId);
+  const usuarios = [...new Set((data || []).map((d) => d.user_id as string))];
+  if (usuarios.length === 0) return false;
 
-  await admin
-    .from("social_connections")
-    .delete()
-    .eq("user_id", data.user_id)
-    .eq("provider", provider);
-  await eliminarRedDelPerfil(data.user_id as string, provider);
+  for (const userId of usuarios) {
+    await admin
+      .from("social_connections")
+      .delete()
+      .eq("user_id", userId)
+      .eq("provider", provider);
+    await eliminarRedDelPerfil(userId, provider);
+  }
   return true;
 }
 
