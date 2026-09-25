@@ -83,6 +83,7 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
       siguienteHref={siguienteHref}
       volverHref={volverHref}
       retoEnviado={retoEnviado || abierto}
+      desbloqueado={abierto}
       recursos={recursos}
     />
   );

@@ -6,7 +6,9 @@ import "server-only";
 
 const CLIENT_ID = process.env.INSIGHTIQ_CLIENT_ID || "";
 const CLIENT_SECRET = process.env.INSIGHTIQ_CLIENT_SECRET || "";
-const ENV = (process.env.INSIGHTIQ_ENV || "staging").toLowerCase();
+// En producción, producción: con "staging" por defecto se consultaban datos
+// de prueba sin que nadie lo notara.
+const ENV = (process.env.INSIGHTIQ_ENV || (process.env.NODE_ENV === "production" ? "production" : "staging")).toLowerCase();
 
 export const INSIGHTIQ_CONFIGURADO = !!CLIENT_ID && !!CLIENT_SECRET;
 

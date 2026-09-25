@@ -130,7 +130,9 @@ export function RutaAprendizaje({
   const [rankingAbierto, setRankingAbierto] = useState(false);
   const [rachaAbierto, setRachaAbierto] = useState(false);
 
-  const hoyStr = () => new Date().toISOString().slice(0, 10); // AAAA-MM-DD
+  // Fecha LOCAL (como la racha): con la UTC, a las 18:00 en México ya contaba
+  // como el día siguiente y el pop-up salía dos veces.
+  const hoyStr = () => new Date().toLocaleDateString("en-CA");
   const abrirRankingSiToca = () => {
     try {
       if (ranking.length > 0 && localStorage.getItem("melsprout_ranking_dia") !== hoyStr()) {

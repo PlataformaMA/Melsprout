@@ -244,7 +244,14 @@ export default function OnboardingPage() {
               className="w-11 h-11 rounded-full bg-white shadow-md grid place-items-center text-accent hover:scale-105 active:scale-95 transition">
               <ArrowLeft />
             </button>
-            <button onClick={() => guardar(false)} disabled={pendiente}
+            <button
+              onClick={() => {
+                // Sin fecha de nacimiento el servidor no puede guardar: se sale
+                // sin guardar en vez de quedarse trabado sin explicación.
+                if (!nacimiento) { router.replace("/app"); router.refresh(); return; }
+                guardar(false);
+              }}
+              disabled={pendiente}
               className="text-accent font-bold text-[15px] hover:underline disabled:opacity-60">
               Salir
             </button>

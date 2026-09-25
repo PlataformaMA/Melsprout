@@ -1,3 +1,8 @@
+-- ATENCIÓN: este archivo agrupa las migraciones 01–21. Las posteriores
+-- (22 en adelante) se aplican por separado, en orden numérico.
+-- Los buckets de almacenamiento (retos, avatars, recursos) se crean a mano
+-- desde el panel de Supabase: ninguna migración los crea.
+
 -- ================================================================
 -- MELSPROUT — Esquema completo (correr 1 vez en el proyecto NUEVO)
 -- Generado a partir de supabase/01..21 en orden.

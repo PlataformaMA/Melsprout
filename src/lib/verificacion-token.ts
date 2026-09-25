@@ -3,7 +3,12 @@ import { SUPABASE_SERVICE_ROLE_KEY } from "@/lib/supabase/env";
 
 // Secreto para firmar los enlaces de verificación. Usa VERIFICACION_SECRET si
 // existe; si no, la service key (siempre presente en el servidor).
-const SECRET = process.env.VERIFICACION_SECRET || SUPABASE_SERVICE_ROLE_KEY || "melsprout-dev-secret";
+const SECRET = process.env.VERIFICACION_SECRET || SUPABASE_SERVICE_ROLE_KEY;
+if (!SECRET) {
+  // Sin secreto no se firman enlaces: mejor fallar que usar uno público, que
+  // permitiría a cualquiera fabricar un enlace de verificación válido.
+  throw new Error("Falta VERIFICACION_SECRET (o SUPABASE_SERVICE_ROLE_KEY) para firmar los enlaces.");
+}
 
 // Crea un token firmado: base64url(userId.exp).firma  (válido `horas` horas).
 export function crearTokenVerificacion(userId: string, horas = 24): string {

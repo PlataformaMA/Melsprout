@@ -35,20 +35,24 @@ export function CoverUploader({ coverUrl }: { coverUrl: string | null }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState(coverUrl);
   const [subiendo, setSubiendo] = useState(false);
+  const [error, setError] = useState("");
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setError("");
     setSubiendo(true);
     try {
       const dataUrl = await procesar(file);
       const r = await subirCover(dataUrl);
-      if (!("error" in r)) {
+      if ("error" in r) {
+        setError(r.error);          // antes fallaba sin decir nada
+      } else {
         setPreview(r.url);
         router.refresh();
       }
     } catch {
-      /* ignore */
+      setError("No se pudo procesar la imagen. Prueba con otra.");
     } finally {
       setSubiendo(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -86,6 +90,11 @@ export function CoverUploader({ coverUrl }: { coverUrl: string | null }) {
         )}
         Portada
       </button>
+      {error && (
+        <p className="absolute bottom-2 left-3 right-3 text-[12px] font-semibold text-white bg-pink/90 rounded-lg px-2.5 py-1.5">
+          {error}
+        </p>
+      )}
       <input
         ref={inputRef}
         type="file"

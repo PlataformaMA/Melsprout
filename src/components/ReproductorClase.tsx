@@ -46,9 +46,9 @@ function fmtTiempo(seg: number): string {
 }
 
 export function ReproductorClase({
-  clase, modulo, avatarUrl, nombre, gemas, racha, yaCompletada = false, vistoInicial = 0, completadasIds = [], videoUrl = null, siguienteHref = null, volverHref = "/app/ruta", retoEnviado = false, recursos = [],
+  clase, modulo, avatarUrl, nombre, gemas, racha, yaCompletada = false, vistoInicial = 0, completadasIds = [], videoUrl = null, siguienteHref = null, volverHref = "/app/ruta", retoEnviado = false, recursos = [], desbloqueado = false,
 }: {
-  clase: Clase; modulo: ModuloCurso; avatarUrl: string | null; nombre: string; gemas: number; racha: number; yaCompletada?: boolean; vistoInicial?: number; completadasIds?: string[]; videoUrl?: string | null; siguienteHref?: string | null; volverHref?: string; retoEnviado?: boolean; recursos?: Recurso[];
+  clase: Clase; modulo: ModuloCurso; avatarUrl: string | null; nombre: string; gemas: number; racha: number; yaCompletada?: boolean; vistoInicial?: number; completadasIds?: string[]; videoUrl?: string | null; siguienteHref?: string | null; volverHref?: string; retoEnviado?: boolean; recursos?: Recurso[]; desbloqueado?: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const vistoRef = useRef(vistoInicial);   // segundos REALMENTE vistos (arranca de lo ya guardado)
@@ -105,6 +105,9 @@ export function ReproductorClase({
   function estadoClase(i: number): "completada" | "actual" | "bloqueada" {
     const c = modulo.clases[i];
     if (completadas.has(c.id)) return "completada";
+    // Con el candado general quitado, la Ruta las muestra todas abiertas: aquí
+    // no pueden salir con 🔒 o parece que la app se contradice.
+    if (desbloqueado) return "actual";
     if (i === 0 || completadas.has(modulo.clases[i - 1].id)) return "actual"; // desbloqueada (la que sigue)
     return "bloqueada";
   }

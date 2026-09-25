@@ -2,7 +2,9 @@
 -- Se pueden volver a correr sin duplicar (borra por título y reinserta).
 -- El tipo de revisión (Sola / Equipo 48h) se muestra en la sección "Sobre este reto".
 
-delete from public.retos where titulo in (
+-- OJO: este borrado arrastraba en cascada las entregas de las alumnas. Solo se
+-- ejecuta si NADIE ha entregado todavía (instalación nueva).
+delete from public.retos where not exists (select 1 from public.reto_submissions) and titulo in (
   'Tu propósito y tu meta de 90 días',
   'Optimiza tu perfil: bio, foto y nombre',
   'Graba un clip de 15-30s',
