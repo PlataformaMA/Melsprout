@@ -267,21 +267,23 @@ function BarraH({ b, max }: { b: Barra; max: number }) {
 function Dona({ segmentos, total }: { segmentos: Barra[]; total: number }) {
   const suma = segmentos.reduce((s, x) => s + x.valor, 0) || 1;
   const R = 54, C = 2 * Math.PI * R;
-  let acumulado = 0;
 
   return (
     <div className="flex items-center gap-4">
       <svg viewBox="0 0 140 140" className="w-[130px] h-[130px] shrink-0 -rotate-90">
         <circle cx="70" cy="70" r={R} fill="none" stroke="#EEE9F8" strokeWidth="18" />
-        {segmentos.map((s) => {
-          const largo = (s.valor / suma) * C;
-          const el = (
+        {/* Cada arco ya trae calculado dónde empieza: no se reasignan
+            variables mientras se dibuja (React puede repetir el render). */}
+        {segmentos
+          .reduce<{ s: (typeof segmentos)[number]; largo: number; desde: number }[]>((acc, s) => {
+            const largo = (s.valor / suma) * C;
+            const desde = acc.length ? acc[acc.length - 1].desde + acc[acc.length - 1].largo : 0;
+            return [...acc, { s, largo, desde }];
+          }, [])
+          .map(({ s, largo, desde }) => (
             <circle key={s.etiqueta} cx="70" cy="70" r={R} fill="none" stroke={s.color || "#7C3AED"}
-              strokeWidth="18" strokeDasharray={`${largo} ${C - largo}`} strokeDashoffset={-acumulado} />
-          );
-          acumulado += largo;
-          return el;
-        })}
+              strokeWidth="18" strokeDasharray={`${largo} ${C - largo}`} strokeDashoffset={-desde} />
+          ))}
       </svg>
       <div className="min-w-0 flex-1">
         <div className="font-display text-xl font-extrabold leading-none">{num(total)}</div>

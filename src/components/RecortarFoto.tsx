@@ -24,16 +24,20 @@ export function RecortarFoto({
   const arrastre = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
 
   // Lado del marco en píxeles (cuadrado, se adapta a la pantalla).
-  const [lado, setLado] = useState(280);
+  const medida = () =>
+    typeof window === "undefined" ? 280 : Math.min(300, Math.max(200, window.innerWidth - 96));
+  const [lado, setLado] = useState(medida);
   useEffect(() => {
-    const medir = () => setLado(Math.min(300, Math.max(200, window.innerWidth - 96)));
-    medir();
+    const medir = () => setLado(medida());
     window.addEventListener("resize", medir);
     return () => window.removeEventListener("resize", medir);
   }, []);
 
+  // Leer el archivo elegido es un sistema externo al render.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     const url = URL.createObjectURL(file);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSrc(url);
     const i = new Image();
     i.onload = () => setImg(i);
@@ -61,11 +65,12 @@ export function RecortarFoto({
     [anchoMostrado, altoMostrado, lado],
   );
 
-  useEffect(() => { setPos((p) => limitar(p)); }, [limitar]);
+  // La posición se limita AL USARLA, no guardando otra vez el estado.
+  const posLimitada = limitar(pos);
 
   function onPointerDown(e: React.PointerEvent) {
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    arrastre.current = { x: e.clientX, y: e.clientY, px: pos.x, py: pos.y };
+    arrastre.current = { x: e.clientX, y: e.clientY, px: posLimitada.x, py: posLimitada.y };
   }
   function onPointerMove(e: React.PointerEvent) {
     const a = arrastre.current;
@@ -83,8 +88,8 @@ export function RecortarFoto({
     if (!ctx) return setError("Tu navegador no pudo procesar la imagen.");
 
     // El marco, traducido a coordenadas de la imagen original.
-    const sx = (anchoMostrado / 2 - pos.x - lado / 2) / k;
-    const sy = (altoMostrado / 2 - pos.y - lado / 2) / k;
+    const sx = (anchoMostrado / 2 - posLimitada.x - lado / 2) / k;
+    const sy = (altoMostrado / 2 - posLimitada.y - lado / 2) / k;
     const s = lado / k;
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(img, sx, sy, s, s, 0, 0, salida, salida);
@@ -118,8 +123,8 @@ export function RecortarFoto({
               style={{
                 width: anchoMostrado,
                 height: altoMostrado,
-                left: lado / 2 + pos.x - anchoMostrado / 2,
-                top: lado / 2 + pos.y - altoMostrado / 2,
+                left: lado / 2 + posLimitada.x - anchoMostrado / 2,
+                top: lado / 2 + posLimitada.y - altoMostrado / 2,
               }}
             />
           )}

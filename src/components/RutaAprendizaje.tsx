@@ -161,6 +161,9 @@ export function RutaAprendizaje({
       // Racha: 1 vez al día. Al cerrarla, se muestra el ranking.
       if (rachaInfo && localStorage.getItem("melsprout_racha_dia") !== hoy) {
         localStorage.setItem("melsprout_racha_dia", hoy);
+        // Pop-up del día: depende de localStorage, que solo existe en el
+        // navegador; por eso se decide en un efecto.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setRachaAbierto(true);
         return;
       }

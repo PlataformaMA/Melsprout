@@ -38,7 +38,19 @@ export function ModeracionTab() {
       .then((d) => { setDatos(d.error ? { items: [], mundos: [] } : d); setAbierto(null); })
       .catch(() => { setDatos({ items: [], mundos: [] }); setAbierto(null); });
   };
-  useEffect(cargar, [ambito]);
+  // Cargar al abrir y al cambiar de ámbito: el estado se limpia primero para
+  // mostrar "cargando". Es el uso correcto de un efecto (dato externo).
+  useEffect(() => {
+    let vivo = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDatos(null);
+    setMarcados(new Set());
+    fetch(`/api/admin/datos?que=moderacion&ambito=${ambito}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => { if (vivo) { setDatos(d.error ? { items: [], mundos: [] } : d); setAbierto(null); } })
+      .catch(() => { if (vivo) { setDatos({ items: [], mundos: [] }); setAbierto(null); } });
+    return () => { vivo = false; };   // si se cambia de pestaña, no pisa lo nuevo
+  }, [ambito]);
 
   const lista = useMemo(() => {
     const q = busca.trim().toLowerCase();

@@ -61,6 +61,9 @@ export function PerfilVista({ perfil, creadoEn, insightiq, avance, social, amigo
 
   // Resultado de conectar una red: llega como ?r=… desde el callback.
   const [avisoRed, setAvisoRed] = useState<{ ok: boolean; texto: string } | null>(null);
+  // El aviso viene en la URL (regreso de conectar una red): solo existe en el
+  // navegador, por eso se lee en un efecto.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     const r = new URLSearchParams(window.location.search).get("r");
     if (!r) return;
@@ -69,6 +72,7 @@ export function PerfilVista({ perfil, creadoEn, insightiq, avance, social, amigo
       instagram_err: { ok: false, texto: "No pudimos conectar Instagram. Revisa que sea una cuenta profesional (empresa o creador) e inténtalo otra vez." },
       instagram_noconfig: { ok: false, texto: "La conexión con Instagram todavía no está habilitada." },
     };
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (textos[r]) setAvisoRed(textos[r]);
     // Limpiamos la URL para que el aviso no reaparezca al recargar.
     window.history.replaceState({}, "", window.location.pathname);
