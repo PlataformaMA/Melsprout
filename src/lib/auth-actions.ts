@@ -118,6 +118,15 @@ export async function crearCuenta(
 
   if (error) {
     console.error("[crearCuenta] signUp error:", error.message);
+    try {
+      const { createAdminClient } = await import("@/lib/supabase/admin");
+      await createAdminClient().from("accesos_eventos").insert({
+        transaccion: `registro-${Date.now()}`, evento: "registro_fallido",
+        curso_slug: "-", email, resultado: "error",
+        detalle: `${error.name ?? "error"}: ${error.message}`,
+        payload: { status: error.status ?? null, conCaptcha: !!captchaToken },
+      });
+    } catch { /* la bitácora no debe romper el registro */ }
     return { error: traducirError(error.message) };
   }
 
