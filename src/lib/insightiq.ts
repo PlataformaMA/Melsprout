@@ -77,6 +77,19 @@ export async function crearUsuario(
   externalId: string,
   name: string
 ): Promise<string | null> {
+  // Si ya lo buscamos antes, está guardado en el perfil: nos ahorra hasta 50
+  // llamadas seguidas a InsightIQ en CADA carga de /app/perfil.
+  const { createAdminClient } = await import("@/lib/supabase/admin");
+  const admin = createAdminClient();
+  const { data: guardado } = await admin
+    .from("profiles").select("insightiq_user_id").eq("id", externalId).maybeSingle();
+  if (guardado?.insightiq_user_id) return guardado.insightiq_user_id as string;
+
+  const recordar = async (id: string | null) => {
+    if (id) await admin.from("profiles").update({ insightiq_user_id: id }).eq("id", externalId);
+    return id;
+  };
+
   // Intentar crear. Si es nuevo, la API devuelve el usuario creado directamente.
   const creado = await api<IqUser>("/v1/users", {
     method: "POST",
@@ -84,7 +97,7 @@ export async function crearUsuario(
   });
   // Verificamos que el usuario devuelto sea REALMENTE el de este external_id
   // (defensa extra contra respuestas inesperadas de la API).
-  if (creado?.id && creado.external_id === externalId) return creado.id;
+  if (creado?.id && creado.external_id === externalId) return recordar(creado.id);
 
   // Si ya existía, hay que buscarlo. ⚠️ El filtro ?external_id= de InsightIQ NO es
   // confiable (devuelve TODOS los usuarios), así que paginamos y filtramos AQUÍ
@@ -95,7 +108,7 @@ export async function crearUsuario(
     const lista = await api<{ data: IqUser[] }>(`/v1/users?limit=${LIMIT}&offset=${offset}`);
     const data = lista?.data ?? [];
     const match = data.find((u) => u.external_id === externalId);
-    if (match?.id) return match.id;
+    if (match?.id) return recordar(match.id);
     if (data.length < LIMIT) break; // no hay más páginas
   }
   return null;
