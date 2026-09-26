@@ -97,7 +97,18 @@ export async function guardarReto(
     xp_otorgado: pagaAhora ? xp : ((prev?.xp_otorgado as number) ?? 0),
     updated_at: new Date().toISOString(),
   });
-  if (error) return { error: "No se pudo guardar el reto." };
+  if (error) {
+    // Se apunta el motivo real: si a alguien le falla, deja rastro.
+    try {
+      await admin.from("accesos_eventos").insert({
+        transaccion: `reto-${Date.now()}`, evento: "reto_fallido", curso_slug: "-",
+        email: user.email ?? "", user_id: user.id, resultado: "error",
+        detalle: `${error.code ?? ""} ${error.message}`.slice(0, 300),
+        payload: { retoId, estado },
+      });
+    } catch { /* la bitácora no debe romper el envío */ }
+    return { error: "No se pudo guardar el reto." };
+  }
 
   // Sumar XP la primera vez que se publica (suma atómica).
   if (pagaAhora) {
