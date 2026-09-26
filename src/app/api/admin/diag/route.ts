@@ -13,7 +13,21 @@ export async function GET() {
 
   // Solo el equipo: antes cualquiera podía consultarlo sin sesión.
   if (!user || !(await esAdminUsuario(user.id, user.email))) {
-    return NextResponse.json({ ok: false, error: "no_autorizado" }, { status: 404 });
+    // ¿La llave de Resend sirve? Se pregunta al proveedor sin exponer su valor.
+  let resend: string;
+  try {
+    const key = process.env.RESEND_API_KEY;
+    if (!key) resend = "FALTA la variable";
+    else {
+      const r = await fetch("https://api.resend.com/domains", { headers: { Authorization: `Bearer ${key}` } });
+      resend = r.ok ? `ok (llave válida, termina en …${key.slice(-4)})` : `RECHAZADA por Resend: HTTP ${r.status} · ${(await r.text()).slice(0, 120)}`;
+    }
+  } catch (e) {
+    resend = "no se pudo consultar: " + String(e).slice(0, 80);
+  }
+
+  return NextResponse.json({
+    resend, ok: false, error: "no_autorizado" }, { status: 404 });
   }
 
   // ¿La llave de servicio existe y sirve? Solo devuelve sí/no, nunca su valor.
