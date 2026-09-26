@@ -23,9 +23,10 @@ export async function GET() {
     if (!key) resend = "FALTA la variable";
     else {
       const r = await fetch("https://api.resend.com/domains", { headers: { Authorization: `Bearer ${key}` } });
-      resend = r.ok
-        ? `ok · llave válida (termina en …${key.slice(-4)})`
-        : `RECHAZADA por Resend: HTTP ${r.status} · ${(await r.text()).slice(0, 120)}`;
+      const cuerpo = r.ok ? "" : (await r.text()).slice(0, 160);
+      resend = r.ok || cuerpo.includes("restricted_api_key")
+        ? `ok · llave válida con permiso de envío (termina en …${key.slice(-4)})`
+        : `RECHAZADA por Resend: HTTP ${r.status} · ${cuerpo}`;
     }
   } catch (e) {
     resend = "no se pudo consultar: " + String(e).slice(0, 80);
