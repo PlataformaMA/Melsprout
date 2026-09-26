@@ -14,14 +14,17 @@ type Pestana = "contenido" | "certificado" | "detalles";
 
 // Lo que ve quien YA tiene el curso: sus módulos, el certificado y los detalles.
 export function CursoCompradoVista({
-  yo, curso, completadas,
+  yo, curso, completadas, abiertas = [],
 }: {
   yo: { nombre: string; avatar: string | null; racha: number; gemas: number };
   curso: CursoEspecial;
   completadas: string[];
+  abiertas?: string[];
 }) {
   const [tab, setTab] = useState<Pestana>("contenido");
   const hechas = new Set(completadas);
+  // Las clases que ya se pueden abrir (el resto se ve con candado).
+  const libres = new Set(abiertas);
   const listas = curso.clases.filter((c) => hechas.has(c.id)).length;
   const completo = curso.clases.length > 0 && listas === curso.clases.length;
 
@@ -94,7 +97,7 @@ export function CursoCompradoVista({
           {tab === "contenido" && (
             <div className="space-y-4">
               {modulos.map((m) => (
-                <ModuloBloque key={m.nombre} nombre={m.nombre} clases={m.clases} hechas={hechas} numero={numero} />
+                <ModuloBloque key={m.nombre} nombre={m.nombre} clases={m.clases} hechas={hechas} libres={libres} numero={numero} />
               ))}
             </div>
           )}
@@ -179,9 +182,9 @@ export function CursoCompradoVista({
 }
 
 function ModuloBloque({
-  nombre, clases, hechas, numero,
+  nombre, clases, hechas, libres, numero,
 }: {
-  nombre: string; clases: Clase[]; hechas: Set<string>; numero: Map<string, number>;
+  nombre: string; clases: Clase[]; hechas: Set<string>; libres: Set<string>; numero: Map<string, number>;
 }) {
   const [abierto, setAbierto] = useState(true);
   const listas = clases.filter((c) => hechas.has(c.id)).length;
@@ -214,7 +217,8 @@ function ModuloBloque({
       {abierto && (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mt-4">
           {clases.map((c) => (
-            <TarjetaClase key={c.id} c={c} n={numero.get(c.id) ?? 1} hecha={hechas.has(c.id)} />
+            <TarjetaClase key={c.id} c={c} n={numero.get(c.id) ?? 1} hecha={hechas.has(c.id)}
+              bloqueada={libres.size > 0 && !libres.has(c.id)} />
           ))}
         </div>
       )}
@@ -222,15 +226,18 @@ function ModuloBloque({
   );
 }
 
-function TarjetaClase({ c, n, hecha }: { c: Clase; n: number; hecha: boolean }) {
+function TarjetaClase({ c, n, hecha, bloqueada = false }: { c: Clase; n: number; hecha: boolean; bloqueada?: boolean }) {
   const pendiente = !c.grabada;
-  const Contenedor = pendiente ? "div" : Link;
+  // Bloqueada = todavía no termina la clase anterior de su módulo.
+  const cerrada = pendiente || bloqueada;
+  const Contenedor = cerrada ? "div" : Link;
 
   return (
     <Contenedor
       href={`/app/clase/${c.id}`}
+      title={bloqueada && !pendiente ? "Termina la clase anterior para abrir esta" : undefined}
       className={`bg-surface border border-border rounded-2xl p-2.5 flex flex-col transition ${
-        pendiente ? "opacity-75" : "hover:border-accent/40 hover:shadow-sm"
+        cerrada ? "opacity-75" : "hover:border-accent/40 hover:shadow-sm"
       }`}
     >
       <div className="relative rounded-xl overflow-hidden aspect-video bg-gradient-to-br from-[#3b0764] to-[#7c3aed] grid place-items-center">
@@ -241,9 +248,11 @@ function TarjetaClase({ c, n, hecha }: { c: Clase; n: number; hecha: boolean }) 
         <span className="absolute top-1.5 right-1.5 bg-black/65 text-white text-[10.5px] font-bold rounded px-1.5 py-0.5">
           {c.duracionMin} min
         </span>
-        {hecha && (
+        {hecha ? (
           <span className="absolute top-1.5 left-1.5 w-5 h-5 rounded-full bg-green text-white grid place-items-center text-[11px]">✓</span>
-        )}
+        ) : bloqueada && !pendiente ? (
+          <span className="absolute inset-0 bg-black/45 grid place-items-center text-white text-lg">🔒</span>
+        ) : null}
       </div>
 
       <div className="text-[11px] font-bold text-accent mt-2">Clase {n}</div>
@@ -261,6 +270,10 @@ function TarjetaClase({ c, n, hecha }: { c: Clase; n: number; hecha: boolean }) 
         {pendiente ? (
           <span className="inline-block text-[11px] font-bold text-sub bg-bg border border-border rounded-full px-2.5 py-1">
             Próximamente
+          </span>
+        ) : bloqueada ? (
+          <span className="inline-block text-[11px] font-bold text-sub bg-bg border border-border rounded-full px-2.5 py-1">
+            🔒 Termina la anterior
           </span>
         ) : hecha ? (
           <span className="inline-block text-[11px] font-bold text-green bg-green/10 rounded-full px-2.5 py-1">

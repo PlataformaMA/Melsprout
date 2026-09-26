@@ -6,6 +6,7 @@ import { getClasesCompletadas } from "@/lib/progreso-actions";
 import { getRecursos } from "@/lib/recursos-actions";
 import { puedeVerClase } from "@/lib/acceso-actions";
 import { todoDesbloqueado } from "@/lib/ajustes";
+import { abiertasDelCurso } from "@/lib/secuencia";
 import { ReproductorClase } from "@/components/ReproductorClase";
 
 export default async function ClasePage({ params }: { params: Promise<{ id: string }> }) {
@@ -53,11 +54,18 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
     .eq("reto_id", clase.id)
     .maybeSingle();
   const retoEnviado = !!sub && (sub.estado === "publicado" || sub.revision === "aprobado");
-  // Con "todo desbloqueado" (ajuste del panel) ninguna clase aparece con candado.
-  // El RETO sí se sigue pidiendo en los cursos especiales (BYW), que es donde
-  // los retos son parte del temario.
-  const sinCandado = await todoDesbloqueado();
-  const abierto = !modulo.especialId && sinCandado;
+  // La Ruta puede ir abierta de par en par (ajuste del panel); un curso
+  // especial (BYW) siempre se lleva en orden: la clase se abre cuando la
+  // anterior está terminada, y ahí el reto sí es parte del temario.
+  const abierto = !modulo.especialId && (await todoDesbloqueado());
+
+  // En un curso especial, entrar de frente por URL a una clase que todavía no
+  // toca regresa a la portada del curso (la lista ya las muestra con candado).
+  let abiertasIds: string[] = [];
+  if (modulo.especialId) {
+    abiertasIds = [...(await abiertasDelCurso(user.id, modulo.clases, completadasSet))];
+    if (!abiertasIds.includes(clase.id)) redirect(`/app/especiales/${modulo.especialId}`);
+  }
 
   // A dónde regresa: la Ruta, o la página del curso si es un curso especial.
   const volverHref = modulo.especialId ? `/app/especiales/${modulo.especialId}` : "/app/ruta";
@@ -85,7 +93,8 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
       siguienteHref={siguienteHref}
       volverHref={volverHref}
       retoEnviado={retoEnviado || abierto}
-      desbloqueado={sinCandado}
+      desbloqueado={abierto}
+      abiertasIds={abiertasIds}
       recursos={recursos}
     />
   );

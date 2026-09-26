@@ -46,9 +46,9 @@ function fmtTiempo(seg: number): string {
 }
 
 export function ReproductorClase({
-  clase, modulo, avatarUrl, nombre, gemas, racha, yaCompletada = false, vistoInicial = 0, completadasIds = [], videoUrl = null, siguienteHref = null, volverHref = "/app/ruta", retoEnviado = false, recursos = [], desbloqueado = false,
+  clase, modulo, avatarUrl, nombre, gemas, racha, yaCompletada = false, vistoInicial = 0, completadasIds = [], videoUrl = null, siguienteHref = null, volverHref = "/app/ruta", retoEnviado = false, recursos = [], desbloqueado = false, abiertasIds = [],
 }: {
-  clase: Clase; modulo: ModuloCurso; avatarUrl: string | null; nombre: string; gemas: number; racha: number; yaCompletada?: boolean; vistoInicial?: number; completadasIds?: string[]; videoUrl?: string | null; siguienteHref?: string | null; volverHref?: string; retoEnviado?: boolean; recursos?: Recurso[]; desbloqueado?: boolean;
+  clase: Clase; modulo: ModuloCurso; avatarUrl: string | null; nombre: string; gemas: number; racha: number; yaCompletada?: boolean; vistoInicial?: number; completadasIds?: string[]; videoUrl?: string | null; siguienteHref?: string | null; volverHref?: string; retoEnviado?: boolean; recursos?: Recurso[]; desbloqueado?: boolean; abiertasIds?: string[];
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const vistoRef = useRef(vistoInicial);   // segundos REALMENTE vistos (arranca de lo ya guardado)
@@ -103,13 +103,20 @@ export function ReproductorClase({
 
   // Completación REAL del módulo (para checks + desbloqueo en vivo).
   const [completadas, setCompletadas] = useState<Set<string>>(() => new Set(completadasIds));
+  // Las que el servidor ya dio por abiertas (incluye las clases con reto
+  // entregado y la primera de cada módulo de un curso especial).
+  const abiertas = new Set(abiertasIds);
   function estadoClase(i: number): "completada" | "actual" | "bloqueada" {
     const c = modulo.clases[i];
     if (completadas.has(c.id)) return "completada";
     // Con el candado general quitado, la Ruta las muestra todas abiertas: aquí
     // no pueden salir con 🔒 o parece que la app se contradice.
     if (desbloqueado) return "actual";
-    if (i === 0 || completadas.has(modulo.clases[i - 1].id)) return "actual"; // desbloqueada (la que sigue)
+    const previa = modulo.clases[i - 1];
+    // Se abre la primera del módulo y la que sigue a una clase ya terminada
+    // (así el paso al módulo siguiente nunca queda atorado).
+    if (!previa || previa.seccion !== c.seccion || completadas.has(previa.id)) return "actual";
+    if (abiertas.has(c.id)) return "actual";
     return "bloqueada";
   }
 

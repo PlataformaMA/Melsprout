@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getPerfil } from "@/lib/perfil-actions";
 import { getCursoEspecial } from "@/lib/cursos-db";
 import { getClasesCompletadas } from "@/lib/progreso-actions";
+import { abiertasDelCurso } from "@/lib/secuencia";
 import { tengoAcceso, getTestimonios } from "@/lib/acceso-actions";
 import { VentaCursoVista } from "@/components/VentaCursoVista";
 import { CursoCompradoVista } from "@/components/CursoCompradoVista";
@@ -33,5 +34,8 @@ export default async function CursoEspecialPage({ params }: { params: Promise<{ 
   }
 
   const completadas = await getClasesCompletadas();
-  return <CursoCompradoVista yo={yo} curso={curso} completadas={[...completadas]} />;
+  // El curso se lleva en orden: dentro de cada módulo la clase se abre cuando
+  // la anterior está terminada (video completo o reto entregado).
+  const abiertas = [...(await abiertasDelCurso(user.id, curso.clases, completadas))];
+  return <CursoCompradoVista yo={yo} curso={curso} completadas={[...completadas]} abiertas={abiertas} />;
 }
