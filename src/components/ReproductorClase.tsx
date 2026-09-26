@@ -78,6 +78,7 @@ export function ReproductorClase({
       // Lo que cuenta es hasta DÓNDE llegó, no cuántos segundos reprodujo: ver
       // dos veces la primera mitad no es haber visto la clase. Adelantar sigue
       // bloqueado, así que llegar al final equivale a haberla visto.
+      if (completadoRef.current) return;      // ya estaba completada: no se baja
       const pct = (maxVistoRef.current / v.duration) * 100;
       setProgreso(pct >= 98.5 ? 100 : Math.min(100, pct));
     }
@@ -228,7 +229,11 @@ export function ReproductorClase({
                         const v = e.currentTarget;
                         if (v.duration > 0 && vistoInicial > 0) {
                           if (vistoInicial < v.duration) { v.currentTime = vistoInicial; lastTimeRef.current = vistoInicial; }
-                          setProgreso(Math.min(100, (vistoInicial / v.duration) * 100)); // % con duración REAL
+                          // Si la clase ya estaba completada, se queda en 100:
+                          // retomarla para repasar no puede "descompletarla".
+                          if (!completadoRef.current) {
+                            setProgreso(Math.min(100, (vistoInicial / v.duration) * 100));
+                          }
                         }
                       }}
                       // crossOrigin: el .vtt vive en Storage (otro dominio) y sin esto
