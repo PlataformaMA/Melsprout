@@ -66,6 +66,9 @@ export async function getCursos(incluirEspeciales = false): Promise<ModuloCurso[
           portada: portadaDe(c.portada, c.video_url),
           subtitulos: (c.subtitulos_url as string) || null,
           proximamente: !!c.proximamente,
+          // El módulo interno del curso: de ahí sale el orden con candado.
+          seccion: (c.seccion as string) || null,
+          instructorRol: (c.instructor_rol as string) || null,
         })),
     }));
   } catch {

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import type { ElementType } from "react";
 import type { CursoEspecial } from "@/lib/cursos-db";
 import type { Clase } from "@/lib/data";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -230,11 +231,12 @@ function TarjetaClase({ c, n, hecha, bloqueada = false }: { c: Clase; n: number;
   const pendiente = !c.grabada;
   // Bloqueada = todavía no termina la clase anterior de su módulo.
   const cerrada = pendiente || bloqueada;
-  const Contenedor = cerrada ? "div" : Link;
+  const Contenedor: ElementType = cerrada ? "div" : Link;
+  const enlace = cerrada ? {} : { href: `/app/clase/${c.id}` };
 
   return (
     <Contenedor
-      href={`/app/clase/${c.id}`}
+      {...enlace}
       title={bloqueada && !pendiente ? "Termina la clase anterior para abrir esta" : undefined}
       className={`bg-surface border border-border rounded-2xl p-2.5 flex flex-col transition ${
         cerrada ? "opacity-75" : "hover:border-accent/40 hover:shadow-sm"
