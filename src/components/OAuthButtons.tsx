@@ -2,6 +2,12 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { GoogleEnNuestraPagina } from "@/components/GoogleEnNuestraPagina";
+
+// Si está configurado el ID público de Google, el botón se dibuja dentro de
+// nuestra página y la ventana de Google muestra melsprout.boostacademy.io.
+// Sin él, se usa el botón de siempre (que pasa por Supabase).
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
 type Proveedor = "google" | "facebook";
 
@@ -37,15 +43,19 @@ export function OAuthButtons() {
 
   return (
     <div className="space-y-2.5">
-      <button
-        type="button"
-        onClick={() => entrarCon("google")}
-        disabled={cargando !== null}
-        className="w-full bg-surface border border-border text-text font-semibold text-sm rounded-xl py-3 hover:bg-bg disabled:opacity-60 transition flex items-center justify-center gap-2.5"
-      >
-        <GoogleIcon />
-        {cargando === "google" ? "Conectando…" : "Continuar con Google"}
-      </button>
+      {GOOGLE_CLIENT_ID ? (
+        <GoogleEnNuestraPagina clientId={GOOGLE_CLIENT_ID} />
+      ) : (
+        <button
+          type="button"
+          onClick={() => entrarCon("google")}
+          disabled={cargando !== null}
+          className="w-full bg-surface border border-border text-text font-semibold text-sm rounded-xl py-3 hover:bg-bg disabled:opacity-60 transition flex items-center justify-center gap-2.5"
+        >
+          <GoogleIcon />
+          {cargando === "google" ? "Conectando…" : "Continuar con Google"}
+        </button>
+      )}
 
       <button
         type="button"
