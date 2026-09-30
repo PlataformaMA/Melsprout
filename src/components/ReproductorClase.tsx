@@ -120,6 +120,27 @@ export function ReproductorClase({
     return "bloqueada";
   }
 
+  // El control para avanzar. Se dibuja DOS veces: debajo del video y también
+  // arriba, junto al título, porque en pantallas de portátil el de abajo queda
+  // fuera de la vista y el alumno cree que la clase no lo deja continuar.
+  function botonAvanzar(compacto: boolean) {
+    if (!siguienteHref) return null;
+    const medida = compacto ? "px-3 py-2 text-[13px]" : "px-4 py-2.5 text-sm";
+    return puedeAvanzar ? (
+      <button
+        onClick={() => { if (xpGanadoRef.current) { xpGanadoRef.current = false; setPopup(true); } else router.push(siguienteHref); }}
+        className={`flex items-center gap-2 bg-green text-white border border-green rounded-xl font-bold hover:brightness-110 transition shadow-sm ${medida}`}>
+        {compacto ? "Siguiente" : "Siguiente clase"} <NextIcon small />
+      </button>
+    ) : (
+      // No se esconde: el alumno debe SABER qué le falta para avanzar.
+      <span className={`flex items-center gap-2 rounded-xl font-bold bg-surface border border-border text-sub cursor-not-allowed ${medida}`}
+        title={!claseLista ? "Termina el video completo" : "Envía tu reto para avanzar"}>
+        🔒 {!claseLista ? "Termina el video" : "Envía tu reto"}
+      </span>
+    );
+  }
+
   const totalSeg = clase.duracionMin * 60;
   const curSeg = (progreso / 100) * totalSeg;
   const video = videoUrl ? parseVideo(videoUrl) : null;
@@ -198,9 +219,10 @@ export function ReproductorClase({
             <UserMenu avatarUrl={avatarUrl} nombre={nombre} />
           </header>
 
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex flex-wrap items-center gap-3 mb-4">
             <BotonVolver href={volverHref} />
             <h1 className="font-display text-2xl font-extrabold">{titleCase(clase.titulo)}</h1>
+            <div className="ml-auto shrink-0">{botonAvanzar(true)}</div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start">
@@ -328,21 +350,7 @@ export function ReproductorClase({
                       <SparkleMini /> Continuar al reto
                     </Link>
                   )}
-                  {siguienteHref && (
-                    puedeAvanzar ? (
-                      <button
-                        onClick={() => { if (xpGanadoRef.current) { xpGanadoRef.current = false; setPopup(true); } else router.push(siguienteHref); }}
-                        className="flex items-center gap-2 bg-green text-white border border-green rounded-xl px-4 py-2.5 font-bold text-sm hover:brightness-110 transition shadow-sm">
-                        Siguiente clase <NextIcon small />
-                      </button>
-                    ) : (
-                      // No lo escondemos: el alumno debe SABER qué le falta para avanzar.
-                      <span className="flex items-center gap-2 rounded-xl px-4 py-2.5 font-bold text-sm bg-surface border border-border text-sub cursor-not-allowed"
-                        title={!claseLista ? "Termina el video completo" : "Envía tu reto para avanzar"}>
-                        🔒 {!claseLista ? "Termina el video" : "Envía tu reto"}
-                      </span>
-                    )
-                  )}
+                  {botonAvanzar(false)}
                 </div>
               </div>
 
