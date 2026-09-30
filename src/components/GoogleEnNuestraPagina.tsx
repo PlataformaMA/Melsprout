@@ -105,9 +105,10 @@ export function GoogleEnNuestraPagina({ clientId, siguiente = "/app" }: { client
         text: "continue_with",
         shape: "pill",
         locale: "es",
-        // Google acepta de 200 a 400 px y le suma su propio borde: se le pide
-        // un poco menos para que quede del mismo ancho que el de Facebook.
-        width: Math.min(Math.max((caja.current.offsetWidth || 320) - 20, 200), 400),
+        // Google solo acepta de 200 a 400 px. Se le pide lo más cercano al
+        // ancho real y el CSS de abajo estira su marco al 100% de la caja, para
+        // que quede exactamente igual de ancho que el botón de Facebook.
+        width: Math.min(Math.max(caja.current.offsetWidth || 320, 200), 400),
       });
     }
 
@@ -122,7 +123,7 @@ export function GoogleEnNuestraPagina({ clientId, siguiente = "/app" }: { client
 
   return (
     <div>
-      <div ref={caja} className="flex justify-center min-h-[44px] [color-scheme:light] [&_iframe]:!max-w-full" />
+      <div ref={caja} className="flex justify-center min-h-[44px] [color-scheme:light] [&_iframe]:!w-full [&_iframe]:!max-w-full" />
       {entrando && <p className="text-[12px] text-sub mt-2 text-center">Entrando…</p>}
       {error && <p className="text-[12px] text-pink bg-pink-soft rounded-lg px-3 py-2 mt-2">{error}</p>}
     </div>
