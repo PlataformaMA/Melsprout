@@ -1,6 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { remitenteCorreo } from "@/lib/remitente";
+import { generoDe, seg, type Genero } from "@/lib/genero";
 import { createHash, randomBytes } from "crypto";
 
 // En producción la variable puede venir apuntando a localhost (queda de las
@@ -18,15 +19,22 @@ const SOPORTE = "https://boostacademy-n8n.n6e5xe.easypanel.host/webhook/83e6b04f
 // Correo de bienvenida: distinto al de verificación. Este orienta a quien
 // entra por primera vez. Se manda con Resend si hay llave; si no, la persona
 // igual recibe la bienvenida dentro de la plataforma.
-function plantilla(nombre: string): string {
+function plantilla(nombre: string, g: Genero): string {
   const hola = nombre ? `¡Hola, ${nombre}!` : "¡Hola!";
+  // Quien eligió género en el onboarding recibe el saludo en su forma; quien no
+  // lo eligió (o eligió neutro) recibe una redacción sin marca de género.
+  const bienvenida = seg(g, "Bienvenida a Melsprout", "Bienvenido a Melsprout", "Te damos la bienvenida a Melsprout");
+  const comunidad = seg(g,
+    "Encontrarás a otras creadoras como tú.",
+    "Encontrarás a otros creadores como tú.",
+    "Encontrarás a más personas creando, como tú.");
   return `<!doctype html>
 <html lang="es"><body style="margin:0;background:#FAF9FE;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
   <div style="max-width:560px;margin:0 auto;padding:28px 20px">
     <div style="background:#fff;border:1px solid #EDE9F7;border-radius:24px;overflow:hidden">
       <div style="background:linear-gradient(120deg,#F3F0FF,#FBFAFF);padding:28px 26px;text-align:center">
         <img src="${SITIO}/octi.png" alt="" width="96" style="display:block;margin:0 auto 10px">
-        <h1 style="margin:0;font-size:22px;color:#7C3AED">${hola} Bienvenida a Melsprout 💜</h1>
+        <h1 style="margin:0;font-size:22px;color:#7C3AED">${hola} ${bienvenida} 💜</h1>
       </div>
       <div style="padding:24px 26px;color:#3F3D46;font-size:15px;line-height:1.6">
         <p style="margin:0 0 14px">Ya tienes tu lugar. Aquí vas a aprender a crear contenido que conecta, con clases,
@@ -37,7 +45,7 @@ function plantilla(nombre: string): string {
           <li style="margin-bottom:6px"><b>Completa tu perfil.</b> Foto, tu profesión y una descripción corta.</li>
           <li style="margin-bottom:6px"><b>Ve tu primera clase.</b> Al terminarla ganas tus primeros XP.</li>
           <li style="margin-bottom:6px"><b>Haz su reto.</b> Ahí es donde de verdad se aprende.</li>
-          <li><b>Preséntate en la comunidad.</b> Encontrarás a otras creadoras como tú.</li>
+          <li><b>Preséntate en la comunidad.</b> ${comunidad}</li>
         </ol>
 
         <p style="margin:0 0 20px">Entra todos los días y mantén tu racha 🔥 — se activa sola cada vez que
@@ -60,18 +68,26 @@ function plantilla(nombre: string): string {
 export async function darBienvenida(userId: string, email: string | null, nombre: string): Promise<void> {
   const admin = createAdminClient();
 
-  // Una sola vez por persona.
+  const { data: perfil } = await admin.from("profiles").select("genero").eq("id", userId).maybeSingle();
+  const g = generoDe(perfil?.genero);
+  const saludo = seg(g,
+    "¡Bienvenida a Melsprout! 💜",
+    "¡Bienvenido a Melsprout! 💜",
+    "¡Te damos la bienvenida a Melsprout! 💜");
+
+  // Una sola vez por persona. El patrón cubre las tres redacciones, para que a
+  // quien ya la recibió no le llegue otra vez al cambiar el texto.
   const { count } = await admin
     .from("notificaciones")
     .select("id", { count: "exact", head: true })
     .eq("user_id", userId)
-    .ilike("titulo", "%Bienvenida a Melsprout%");
+    .ilike("titulo", "%ienvenid%Melsprout%");
   if ((count ?? 0) > 0) return;
 
   await admin.from("notificaciones").insert({
     user_id: userId,
     tipo: "general",
-    titulo: "¡Bienvenida a Melsprout! 💜",
+    titulo: saludo,
     cuerpo: "Completa tu perfil, ve tu primera clase y preséntate en la comunidad. Aquí empieza tu ruta.",
     href: "/app/ruta",
   });
@@ -88,8 +104,8 @@ export async function darBienvenida(userId: string, email: string | null, nombre
       body: JSON.stringify({
         from: remitente,
         to: email,
-        subject: "¡Bienvenida a Melsprout! 💜",
-        html: plantilla(nombre),
+        subject: saludo,
+        html: plantilla(nombre, g),
       }),
     });
   } catch {
@@ -122,6 +138,8 @@ export async function enviarBienvenidaCompra(
   if (eTok) return false;
   const enlace = `${SITIO}/activar?k=${token}&e=${encodeURIComponent(email)}${curso ? `&c=${encodeURIComponent(curso)}` : ""}`;
 
+  const { data: perfilCompra } = await admin.from("profiles").select("genero").eq("id", userId).maybeSingle();
+  const g = generoDe(perfilCompra?.genero);
   const hola = nombre ? `¡Hola, ${nombre.split(" ")[0]}!` : "¡Hola!";
   const html = `<!doctype html>
 <html lang="es"><body style="margin:0;background:#FAF9FE;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
@@ -145,7 +163,10 @@ export async function enviarBienvenidaCompra(
 
         <p style="margin:18px 0 0">${curso
           ? "Dentro te espera tu curso completo y el grupo de la comunidad, donde puedes compartir tu avance y resolver dudas."
-          : "Dentro te esperan las clases, los retos y una comunidad de creadoras como tú."}</p>
+          : seg(g,
+              "Dentro te esperan las clases, los retos y una comunidad de creadoras como tú.",
+              "Dentro te esperan las clases, los retos y una comunidad de creadores como tú.",
+              "Dentro te esperan las clases, los retos y una comunidad que crea, como tú.")}</p>
 
         <p style="margin:18px 0 0;font-size:13px;color:#8A8794">¿Algún problema?
           <a href="${SOPORTE}" style="color:#7C3AED;font-weight:700;text-decoration:none">Contacta a nuestro equipo de soporte</a>.</p>
