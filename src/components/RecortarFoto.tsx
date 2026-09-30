@@ -23,9 +23,15 @@ export function RecortarFoto({
   const marcoRef = useRef<HTMLDivElement>(null);
   const arrastre = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
 
-  // Lado del marco en píxeles (cuadrado, se adapta a la pantalla).
-  const medida = () =>
-    typeof window === "undefined" ? 280 : Math.min(300, Math.max(200, window.innerWidth - 96));
+  // Lado del marco en píxeles (cuadrado, se adapta a la pantalla). También mira
+  // el ALTO: en una laptop con la ventana baja, un marco de 300 empujaba los
+  // botones fuera de la pantalla y no había manera de tocar "Usar foto".
+  const medida = () => {
+    if (typeof window === "undefined") return 280;
+    const porAncho = window.innerWidth - 96;
+    const porAlto = window.innerHeight - 270; // título, zoom y botones
+    return Math.max(170, Math.min(300, porAncho, porAlto));
+  };
   const [lado, setLado] = useState(medida);
   useEffect(() => {
     const medir = () => setLado(medida());
@@ -97,11 +103,14 @@ export function RecortarFoto({
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/60 grid place-items-center p-4" role="dialog" aria-modal="true">
-      <div className="bg-surface rounded-3xl w-full max-w-[380px] p-5 shadow-2xl">
+    <div className="fixed inset-0 z-[100] bg-black/60 grid place-items-center p-4 overflow-y-auto" role="dialog" aria-modal="true">
+      {/* Si aun así no cabe, la tarjeta se desplaza: los botones nunca quedan
+          fuera del alcance. */}
+      <div className="bg-surface rounded-3xl w-full max-w-[380px] p-5 shadow-2xl my-auto max-h-[96vh] overflow-y-auto">
         <h2 className="font-display font-extrabold text-[18px] text-center">Ajusta tu foto</h2>
         <p className="text-[12.5px] text-sub text-center mt-1 mb-4">
-          Arrastra para encuadrar y usa el zoom para acercar.
+          Arrastra para encuadrar y usa el zoom para acercar. Si así está bien,
+          toca «Usar foto».
         </p>
 
         <div
