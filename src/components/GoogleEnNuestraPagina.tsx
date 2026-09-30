@@ -98,7 +98,8 @@ export function GoogleEnNuestraPagina({ clientId, siguiente = "/app" }: { client
         },
       });
 
-      window.google.accounts.id.renderButton(caja.current, {
+      const dibujar = caja.current;
+      window.google.accounts.id.renderButton(dibujar, {
         type: "standard",
         theme: "outline",
         size: "large",
@@ -108,8 +109,21 @@ export function GoogleEnNuestraPagina({ clientId, siguiente = "/app" }: { client
         // Google solo acepta de 200 a 400 px. Se le pide lo más cercano al
         // ancho real y el CSS de abajo estira su marco al 100% de la caja, para
         // que quede exactamente igual de ancho que el botón de Facebook.
-        width: Math.min(Math.max(caja.current.offsetWidth || 320, 200), 400),
+        width: Math.min(Math.max(dibujar.offsetWidth || 320, 200), 400),
       });
+
+      // Google dibuja su botón dentro de un marco con ancho fijo. Se estira al
+      // 100% para que quede igual de ancho que el botón de Facebook; se intenta
+      // varias veces porque el marco aparece un instante después.
+      for (let i = 0; i < 10 && !cancelado; i++) {
+        const marco = dibujar.querySelector("iframe");
+        if (marco) {
+          marco.style.width = "100%";
+          marco.style.maxWidth = "100%";
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 200));
+      }
     }
 
     arrancar().catch(() => {
@@ -123,7 +137,7 @@ export function GoogleEnNuestraPagina({ clientId, siguiente = "/app" }: { client
 
   return (
     <div>
-      <div ref={caja} className="flex justify-center min-h-[44px] [color-scheme:light] [&_iframe]:!w-full [&_iframe]:!max-w-full" />
+      <div ref={caja} className="flex justify-center min-h-[44px] [color-scheme:light]" />
       {entrando && <p className="text-[12px] text-sub mt-2 text-center">Entrando…</p>}
       {error && <p className="text-[12px] text-pink bg-pink-soft rounded-lg px-3 py-2 mt-2">{error}</p>}
     </div>
