@@ -2,28 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { User } from "@supabase/supabase-js";
-
-// Zona horaria del usuario (guardada al entrar a la app). Fallback: México.
-function zonaDe(user: User): string {
-  return (user.user_metadata?.zona_horaria as string) || "America/Mexico_City";
-}
-
-// Fecha local (AAAA-MM-DD) de un instante, en la zona horaria del usuario.
-// Medianoche de HOY en la zona de la persona, en ISO: para contar "lo de hoy".
-export function inicioDeHoy(user: User): string {
-  const tz = zonaDe(user);
-  const hoy = ymdEnZona(tz);
-  // Se arma la medianoche local y se convierte a UTC restando su desfase.
-  const comoUtc = new Date(`${hoy}T00:00:00Z`);
-  const desfase = comoUtc.getTime() - new Date(comoUtc.toLocaleString("en-US", { timeZone: tz })).getTime();
-  return new Date(comoUtc.getTime() + desfase).toISOString();
-}
-
-function ymdEnZona(tz: string, base: Date = new Date()): string {
-  // en-CA formatea como YYYY-MM-DD
-  return new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(base);
-}
+import { zonaDe, ymdEnZona } from "@/lib/zona";
 
 // Registra actividad de HOY (en la hora local del usuario) y actualiza la racha:
 // - si ya contó hoy → no hace nada

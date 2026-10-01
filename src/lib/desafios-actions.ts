@@ -1,7 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { inicioDeHoy } from "@/lib/racha-actions";
+import { inicioDeHoy } from "@/lib/zona";
 
 // Lo que la alumna lleva HOY. Antes esta tarjeta estaba escrita en duro en 0/10
 // y nunca se movía: la gente completaba clases y creía que su XP no contaba.
