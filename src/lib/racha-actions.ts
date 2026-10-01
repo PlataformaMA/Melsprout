@@ -10,6 +10,16 @@ function zonaDe(user: User): string {
 }
 
 // Fecha local (AAAA-MM-DD) de un instante, en la zona horaria del usuario.
+// Medianoche de HOY en la zona de la persona, en ISO: para contar "lo de hoy".
+export function inicioDeHoy(user: User): string {
+  const tz = zonaDe(user);
+  const hoy = ymdEnZona(tz);
+  // Se arma la medianoche local y se convierte a UTC restando su desfase.
+  const comoUtc = new Date(`${hoy}T00:00:00Z`);
+  const desfase = comoUtc.getTime() - new Date(comoUtc.toLocaleString("en-US", { timeZone: tz })).getTime();
+  return new Date(comoUtc.getTime() + desfase).toISOString();
+}
+
 function ymdEnZona(tz: string, base: Date = new Date()): string {
   // en-CA formatea como YYYY-MM-DD
   return new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(base);

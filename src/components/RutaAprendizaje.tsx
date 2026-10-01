@@ -77,10 +77,10 @@ function construirElementos(cursos: ModuloCurso[], completadas: number, retoEsta
 export type TopCreador = { id: string; nombre: string; avatarUrl: string | null; xp: number; esTu: boolean };
 
 export function RutaAprendizaje({
-  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [], completadas = 0, completadasIds = [], retoEstados = {}, cursos, recursos = [], recompensas = [], genero = "neutro", notifSinLeer = 0, tuRanking, ranking = [], emailVerificado = true, xp = 0, rachaInfo, desbloqueado = true,
+  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [], completadas = 0, completadasIds = [], retoEstados = {}, cursos, recursos = [], recompensas = [], desafios = { xp: 0, clases: 0, retos: 0 }, genero = "neutro", notifSinLeer = 0, tuRanking, ranking = [], emailVerificado = true, xp = 0, rachaInfo, desbloqueado = true,
 }: {
   nombre: string; avatarUrl: string | null; gemas: number; racha: number; perfilPct: number; topCreadores?: TopCreador[];
-  completadas?: number; completadasIds?: string[]; recursos?: Recurso[]; recompensas?: Recompensa[]; genero?: Genero; notifSinLeer?: number; retoEstados?: Record<string, EReto>; cursos: ModuloCurso[]; tuRanking?: { pos: number; xp: number };
+  completadas?: number; completadasIds?: string[]; recursos?: Recurso[]; recompensas?: Recompensa[]; desafios?: { xp: number; clases: number; retos: number }; genero?: Genero; notifSinLeer?: number; retoEstados?: Record<string, EReto>; cursos: ModuloCurso[]; tuRanking?: { pos: number; xp: number };
   ranking?: RankItem[]; emailVerificado?: boolean; xp?: number; rachaInfo?: RachaInfo;
   desbloqueado?: boolean;   // todas las clases abiertas (se cambia desde el panel)
 }) {
@@ -422,8 +422,8 @@ export function RutaAprendizaje({
               {!emailVerificado && <VerificarBanner />}
 
               <Tarjeta titulo="Desafíos del día" claseExtra="hidden lg:block" extra={<span className="text-[12px] text-accent font-semibold cursor-default">Ver todos</span>}>
-                <Desafio iconSrc="/desafios/rayo.png" texto="Gana 10 EXP" progreso={0} total={10} />
-                <Desafio iconSrc="/desafios/diana.png" texto="Obtén un puntaje de 90% o más en 1 lección" progreso={0} total={1} />
+                <Desafio iconSrc="/desafios/rayo.png" texto="Gana 10 XP hoy" progreso={Math.min(desafios.xp, 10)} total={10} />
+                <Desafio iconSrc="/desafios/diana.png" texto="Termina una clase hoy" progreso={Math.min(desafios.clases, 1)} total={1} />
               </Tarjeta>
 
               {/* Top colaboradores + Tu ranking */}
@@ -515,8 +515,9 @@ export function RutaAprendizaje({
               <button onClick={() => setDesafiosAbierto(false)} aria-label="Cerrar"
                 className="text-sub hover:text-text text-xl leading-none">×</button>
             </div>
-            <Desafio iconSrc="/desafios/rayo.png" texto="Gana 10 EXP" progreso={0} total={10} />
-            <Desafio iconSrc="/desafios/diana.png" texto="Obtén un puntaje de 90% o más en 1 lección" progreso={0} total={1} />
+            <Desafio iconSrc="/desafios/rayo.png" texto="Gana 10 XP hoy" progreso={Math.min(desafios.xp, 10)} total={10} />
+            <Desafio iconSrc="/desafios/diana.png" texto="Termina una clase hoy" progreso={Math.min(desafios.clases, 1)} total={1} />
+            <Desafio iconSrc="/desafios/rayo.png" texto="Entrega un reto hoy" progreso={Math.min(desafios.retos, 1)} total={1} />
           </div>
         </div>
       )}

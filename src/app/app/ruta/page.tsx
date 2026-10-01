@@ -5,6 +5,7 @@ import { getPerfil } from "@/lib/perfil-actions";
 import { getClasesCompletadas } from "@/lib/progreso-actions";
 import { getCursos } from "@/lib/cursos-db";
 import { getRecursos, getRecompensas } from "@/lib/recursos-actions";
+import { getDesafiosHoy } from "@/lib/desafios-actions";
 import { generoDe } from "@/lib/genero";
 import { getNotificaciones } from "@/lib/notificaciones-actions";
 import { recordarPerfilIncompleto } from "@/lib/recordatorios-actions";
@@ -104,6 +105,7 @@ export default async function RutaPage() {
   // Recursos: se desbloquean con la clase a la que pertenecen. Los de cursos
   // especiales (BYW…) viven en sus propias clases, no en la Ruta.
   const rutaIds = new Set(orden);
+  const desafios = await getDesafiosHoy();
   const recursos = (await getRecursos(orden.slice(0, completadas + 1)))
     .filter((r) => !r.claseId || rutaIds.has(r.claseId));
 
@@ -136,6 +138,7 @@ export default async function RutaPage() {
       completadas={completadas}
       completadasIds={[...completadasSet]}
       recursos={recursos}
+      desafios={desafios}
       recompensas={recompensas}
       genero={generoDe(perfil.genero)}
       notifSinLeer={sinLeer}
