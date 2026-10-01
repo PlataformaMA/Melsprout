@@ -176,6 +176,12 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, gemas, racha }
                               {c.instructor && <AvatarInstructor nombre={c.instructor} size={18} />}
                               <span className="truncate">{c.instructor} · {dur(c.duracion_min)}</span>
                             </div>
+                            {/* De qué curso es. Con candado si solo la ve quien lo compró. */}
+                            {c.categoria && (
+                              <span className="inline-block mt-1 text-[11px] font-bold text-accent bg-accent-soft rounded-full px-2 py-0.5">
+                                {c.modulo_id ? `🔒 ${c.categoria}` : c.categoria}
+                              </span>
+                            )}
                           </div>
                           {c.grabacion_url
                             ? <span className="text-accent text-xl shrink-0">▶</span>
