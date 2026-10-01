@@ -54,6 +54,7 @@ export function ReproductorClase({
   const vistoRef = useRef(vistoInicial);   // segundos REALMENTE vistos (arranca de lo ya guardado)
   const lastTimeRef = useRef(0);
   const saltandoRef = useRef(false);   // true mientras se arrastra la barra
+  const bufferRef = useRef(0);        // cuándo fue la última pausa por carga
   const maxVistoRef = useRef(vistoInicial); // hasta dónde llegó viendo de verdad (se conserva al volver)
 
   // Mide el 85% por tiempo reproducido real (adelantar la barrita no cuenta).
@@ -241,19 +242,31 @@ export function ReproductorClase({
                       // Sin botón de descarga ni «guardar video como…» con clic derecho.
                       controlsList="nodownload" onContextMenu={(e) => e.preventDefault()}
                       onTimeUpdate={onTimeUpdate}
+                      // Cuando el video se queda cargando, el navegador reacomoda la
+                      // posición él solo. Eso no es "adelantar" y no se castiga:
+                      // pasaba mucho a 1.5x y 2x, que piden el doble de datos, y
+                      // regresaba a la alumna una y otra vez sin dejarla terminar.
+                      onWaiting={() => { bufferRef.current = Date.now(); }}
                       onSeeking={() => { saltandoRef.current = true; }}
                       onSeeked={(e) => {
                         const v = e.currentTarget;
                         saltandoRef.current = false;
+                        const porCarga = Date.now() - bufferRef.current < 3000;
                         // Se puede regresar, pero no adelantar: la clase se ve completa.
-                        if (v.currentTime > maxVistoRef.current + 1.5) {
+                        if (!porCarga && v.currentTime > maxVistoRef.current + 3) {
                           v.currentTime = maxVistoRef.current;
                           setAvisoSalto(true);
                         }
                         lastTimeRef.current = v.currentTime;
                       }}
-                      // Llegó al final de verdad (no se puede adelantar): completada.
-                      onEnded={() => { setTerminado(true); setProgreso(100); }}
+                      // Llegó al final. Solo cuenta como vista si de verdad recorrió
+                      // el video: así, aunque el navegador la deje llegar al final
+                      // tras un salto, no se marca una clase que no vio.
+                      onEnded={(e) => {
+                        const v = e.currentTarget;
+                        setTerminado(true);
+                        if (!(v.duration > 0) || maxVistoRef.current >= v.duration * 0.9) setProgreso(100);
+                      }}
                       onLoadedMetadata={(e) => {
                         const v = e.currentTarget;
                         if (v.duration > 0 && vistoInicial > 0) {
