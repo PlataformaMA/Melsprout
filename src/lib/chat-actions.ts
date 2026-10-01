@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { registrarRacha } from "@/lib/racha-actions";
 import { esStickerValido } from "@/lib/stickers";
 import { notificar } from "@/lib/notificaciones-actions";
 
@@ -145,6 +146,7 @@ export async function enviarSticker(
   await notificar(paraId, "general",
     `${(yo?.full_name as string) || "Alguien"} te mandó una felicitación`,
     "", `/app/amigos/${user.id}`);
+  await registrarRacha();   // escribirle a una compañera cuenta como actividad
   return { ok: true };
 }
 

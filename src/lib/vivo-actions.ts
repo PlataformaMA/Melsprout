@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { esAdminUsuario } from "@/lib/admin";
+import { registrarRacha } from "@/lib/racha-actions";
 
 export type ClaseVivo = {
   id: string;
@@ -102,6 +103,7 @@ export async function asistirClaseVivo(id: string): Promise<{ ok: true; xpDado: 
   if (prev) return { ok: true, xpDado: false };
 
   await admin.from("asistencias_vivo").insert({ user_id: user.id, clase_vivo_id: id });
+  await registrarRacha();                            // asistir también es actividad del día
   if (!enCurso) return { ok: true, xpDado: false };   // apuntada, pero sin XP todavía
 
   await admin.rpc("sumar_xp", { p_user: user.id, p_xp: Math.min(Math.max((clase.xp as number) || 50, 0), 200) });

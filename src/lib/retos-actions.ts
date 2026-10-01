@@ -114,7 +114,7 @@ export async function guardarReto(
   if (pagaAhora) {
     await admin.rpc("sumar_xp", { p_user: user.id, p_xp: xp });
   }
-  if (estado === "publicado") await registrarRacha(); // cuenta actividad de hoy
+  await registrarRacha(); // trabajar en un reto cuenta, aunque lo deje en borrador
 
   // Si se aprueba solo (revisión "sola"), ya puede verse en la comunidad y
   // recibir me gusta y comentarios. Lo que va a revisión se espeja al aprobarse.

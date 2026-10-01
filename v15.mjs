@@ -1,0 +1,38 @@
+import { createClient } from "@supabase/supabase-js";
+import { spawn } from "child_process";
+import fs from "fs";
+const env = Object.fromEntries(fs.readFileSync(".env.local","utf8").split("\n").filter(l=>l.includes("=")).map(l=>[l.slice(0,l.indexOf("=")), l.slice(l.indexOf("=")+1).trim()]));
+const sb = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+const { data: mods } = await sb.from("cursos_modulos").select("id, nombre").eq("activo", true).eq("especial", true);
+const byw = mods.find(m => /boost your web/i.test(m.nombre));
+const { data: clases } = await sb.from("cursos_clases").select("id, titulo, duracion_min").eq("modulo_id", byw.id).eq("activo", true).order("duracion_min");
+const corta = clases[0];
+const espera = (ms) => new Promise(r => setTimeout(r, ms));
+const correo = `prueba.v15.${Date.now()}@resend.dev`;
+const { data: creado } = await sb.auth.admin.createUser({ email: correo, email_confirm: true });
+const uid = creado.user.id;
+await sb.from("profiles").upsert({ id: uid, full_name: "P", onboarding_completo: true, xp: 0 });
+await sb.from("curso_accesos").insert({ user_id: uid, modulo_id: byw.id });
+const { data: link } = await sb.auth.admin.generateLink({ type: "magiclink", email: correo });
+const chrome = spawn("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", ["--headless=new","--remote-debugging-port=9380","--disable-gpu","--no-first-run","--autoplay-policy=no-user-gesture-required","--mute-audio","--user-data-dir=/tmp/chrome-v15"], { stdio: "ignore" });
+await espera(3000);
+const t = await (await fetch("http://localhost:9380/json/new?about:blank", { method: "PUT" })).json();
+const ws = new WebSocket(t.webSocketDebuggerUrl);
+let id = 0; const enviar = (m, p = {}) => ws.send(JSON.stringify({ id: ++id, method: m, params: p }));
+const ev = async (expr) => { const mio = ++id; const r = await new Promise(res => { const h = (e) => { const x = JSON.parse(e.data); if (x.id === mio) { ws.removeEventListener("message", h); res(x.result); } }; ws.addEventListener("message", h); ws.send(JSON.stringify({ id: mio, method: "Runtime.evaluate", params: { expression: expr, returnByValue: true } })); }); return r?.result?.value; };
+await new Promise(r => ws.addEventListener("open", r));
+enviar("Page.enable");
+enviar("Page.navigate", { url: `https://melsprout.boostacademy.io/auth/callback?token_hash=${link.properties.hashed_token}&type=magiclink` });
+await espera(6000);
+enviar("Page.navigate", { url: `https://melsprout.boostacademy.io/app/clase/${corta.id}` });
+for (let k = 0; k < 15; k++) { await espera(3000); if ((await ev(`!!document.querySelector('video') && document.querySelector('video').readyState >= 1`)) === true) break; }
+console.log("a 1.5x →", await ev(`(() => { const b=[...document.querySelectorAll('button')].find(x=>x.innerText.trim()==='1.5x'); if(b)b.click(); const v=document.querySelector('video'); v.muted=true; v.play(); return 'velocidad ' + v.playbackRate + ', duración ' + Math.round(v.duration) + ' s'; })()`));
+let res = "no se completó";
+for (let i = 1; i <= 12; i++) { await espera(10000); const { data: p } = await sb.from("clase_progreso").select("completada, xp_dado").eq("user_id", uid).eq("clase_id", corta.id).maybeSingle(); if (p?.completada) { res = `COMPLETADA, xp_dado: ${p.xp_dado}`; break; } }
+const { data: fin } = await sb.from("profiles").select("xp").eq("id", uid).maybeSingle();
+console.log("resultado a 1.5x:", res, "| XP de la cuenta:", fin?.xp);
+ws.close(); chrome.kill();
+await sb.from("clase_progreso").delete().eq("user_id", uid);
+await sb.from("curso_accesos").delete().eq("user_id", uid);
+await sb.auth.admin.deleteUser(uid);
+console.log("cuenta de prueba borrada");

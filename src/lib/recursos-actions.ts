@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { registrarRacha } from "@/lib/racha-actions";
 
 export type Recurso = {
   id: string;
@@ -135,6 +136,7 @@ export async function descargarRecurso(
   if (error || !firma?.signedUrl) return { error: "No se pudo preparar la descarga." };
 
   await anotar(user.id, recursoId);
+  await registrarRacha();   // bajar material también es actividad del día
   return { url: firma.signedUrl };
 }
 
