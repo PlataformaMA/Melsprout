@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { Icono } from "@/components/IconosApp";
 import {
@@ -85,6 +85,10 @@ export function PostCard({ post, compacto = false }: { post: ForoPost; compacto?
     setResp((rs) => rs?.filter((x) => x.id !== id) ?? rs);
     setNum((n) => Math.max(0, n - 1));
   }
+
+  // El campo donde se escribe la respuesta: hay que poder llevar a la persona
+  // hasta él cuando toca "Responder" en un comentario.
+  const campoRef = useRef<HTMLInputElement>(null);
 
   async function responder() {
     if (!texto.trim()) return;
@@ -194,7 +198,16 @@ export function PostCard({ post, compacto = false }: { post: ForoPost; compacto?
                     className={`flex items-center gap-1 font-semibold transition ${c.meGusta ? "text-pink" : "text-sub hover:text-pink"}`}>
                     <Icono nombre={c.meGusta ? "corazon-lleno" : "corazon"} size={14} /> {c.likes || ""}
                   </button>
-                  <button onClick={() => setTexto(`@${c.autorNombre.split(" ")[0]} `)}
+                  <button onClick={() => {
+                      setTexto(`@${c.autorNombre.split(" ")[0]} `);
+                      // Sin esto solo se rellenaba el campo de hasta abajo, que en
+                      // celular queda fuera de la pantalla: se tocaba "Responder" y
+                      // parecía que la app no hacía nada.
+                      requestAnimationFrame(() => {
+                        campoRef.current?.focus();
+                        campoRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+                      });
+                    }}
                     className="font-semibold text-sub hover:text-accent transition">Responder</button>
                   {c.esMio && (
                     <>
@@ -209,7 +222,7 @@ export function PostCard({ post, compacto = false }: { post: ForoPost; compacto?
             </div>
           ))}
           <div className="flex items-center gap-2 pt-1">
-            <input value={texto} onChange={(e) => setTexto(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") responder(); }} placeholder="Escribe una respuesta…" maxLength={500}
+            <input ref={campoRef} value={texto} onChange={(e) => setTexto(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") responder(); }} placeholder="Escribe una respuesta…" maxLength={500}
               className={`flex-1 ${compacto ? "bg-surface" : "bg-bg"} border border-border rounded-full px-4 py-2.5 text-[14px] outline-none focus:border-accent`} />
             <button onClick={responder} disabled={!texto.trim()} className="bg-accent text-white rounded-full px-4 py-2.5 text-[13px] font-bold disabled:opacity-50 hover:brightness-110 transition shrink-0">Enviar</button>
           </div>
