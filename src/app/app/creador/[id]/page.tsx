@@ -160,7 +160,7 @@ export default async function CreadorPage({ params }: { params: Promise<{ id: st
 
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-4">
                 <Stat icon="📊" valor={`Nivel ${nivel.actual.nivel}`} label="Nivel actual" />
-                <Stat icon="⭐" valor={((p.xp as number) || 0).toLocaleString("es-MX")} label="Puntos" />
+                <Stat icon="⭐" valor={((p.xp as number) || 0).toLocaleString("es-MX")} label="XP acumulado" />
                 <Stat icon="📖" valor={`${clases} / ${avance.totalClases}`} label="Clases completadas" />
                 <Stat icon="💥" valor={`${retos} / ${avance.totalRetos}`} label="Retos completados" />
                 <Stat icon="🔥" valor={`${(p.racha as number) || 0}`} label="Días de racha" />

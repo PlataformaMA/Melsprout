@@ -63,7 +63,7 @@ export function InicioVista({ perfil, stats, ranking, continuar, retosSugeridos,
 
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <StatCard icon="⭐" tono="#F59E0B" label="Puntos acumulados" valor={fmt(perfil.xp)} extra="XP total" />
+            <StatCard icon="⭐" tono="#F59E0B" label="XP acumulado" valor={fmt(perfil.xp)} extra="XP total" />
             <StatCard icon="🎓" tono="#7C3AED" label="Retos completados" valor={String(stats.publicados)} extra={`de ${stats.totalClases}`} />
             <StatCard icon="🔥" tono="#EF4444" label="Racha actual" valor={`${perfil.racha} días`} extra="¡Sigue así!" />
             <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm">
