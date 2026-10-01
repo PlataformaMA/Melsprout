@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   getCalificacion, calificarClase, getComentariosClase, comentarClase,
+  editarComentarioClase, borrarComentarioClase,
   type ComentarioClase,
 } from "@/lib/clase-social-actions";
 
@@ -38,6 +39,21 @@ export function ClaseSocial({ claseId, puedeCalificar = true }: {
     setCal((c) => (c ? { ...c, mia: n } : c));
     await calificarClase(claseId, n);
     setCal(await getCalificacion(claseId));
+  }
+
+  async function editar(id: string, texto: string) {
+    const r = await editarComentarioClase(id, texto);
+    if ("error" in r) return r.error;
+    setComents((cs) => cs?.map((c) => (c.id === id ? { ...c, texto: texto.trim() } : c)) ?? cs);
+    return null;
+  }
+
+  async function borrar(id: string) {
+    const r = await borrarComentarioClase(id);
+    if ("error" in r) return r.error;
+    // Se va él y, si era una pregunta, las respuestas que colgaban de él.
+    setComents((cs) => cs?.filter((c) => c.id !== id && c.respondeA !== id) ?? cs);
+    return null;
   }
 
   async function publicar() {
@@ -111,11 +127,13 @@ export function ClaseSocial({ claseId, puedeCalificar = true }: {
           <div className="space-y-4">
             {raiz.map((c) => (
               <div key={c.id}>
-                <Comentario c={c} onResponder={() => setResponde(c)} />
+                <Comentario c={c} onResponder={() => setResponde(c)}
+                  onEditar={(t) => editar(c.id, t)} onBorrar={() => borrar(c.id)} />
                 {respuestasDe(c.id).length > 0 && (
                   <div className="ml-11 mt-3 space-y-3 border-l border-border pl-3">
                     {respuestasDe(c.id).map((r) => (
-                      <Comentario key={r.id} c={r} onResponder={() => setResponde(c)} />
+                      <Comentario key={r.id} c={r} onResponder={() => setResponde(c)}
+                        onEditar={(t) => editar(r.id, t)} onBorrar={() => borrar(r.id)} />
                     ))}
                   </div>
                 )}
@@ -128,7 +146,32 @@ export function ClaseSocial({ claseId, puedeCalificar = true }: {
   );
 }
 
-function Comentario({ c, onResponder }: { c: ComentarioClase; onResponder: () => void }) {
+function Comentario({ c, onResponder, onEditar, onBorrar }: {
+  c: ComentarioClase; onResponder: () => void;
+  onEditar: (texto: string) => Promise<string | null>;
+  onBorrar: () => Promise<string | null>;
+}) {
+  const [editando, setEditando] = useState(false);
+  const [borrador, setBorrador] = useState(c.texto);
+  const [confirmando, setConfirmando] = useState(false);
+  const [error, setError] = useState("");
+  const [ocupado, setOcupado] = useState(false);
+
+  async function guardar() {
+    setOcupado(true);
+    const err = await onEditar(borrador);
+    setOcupado(false);
+    if (err) { setError(err); return; }
+    setEditando(false); setError("");
+  }
+
+  async function borrarYa() {
+    setOcupado(true);
+    const err = await onBorrar();
+    setOcupado(false);
+    if (err) { setError(err); setConfirmando(false); }
+  }
+
   return (
     <div className="flex items-start gap-2.5">
       <Link href={`/app/creador/${c.autorId}`} className="shrink-0">
@@ -146,12 +189,41 @@ function Comentario({ c, onResponder }: { c: ComentarioClase; onResponder: () =>
           <Link href={`/app/creador/${c.autorId}`} className="font-bold text-[13px] hover:text-accent transition">
             {c.autorNombre}
           </Link>
-          <p className="text-[13.5px] text-text whitespace-pre-wrap leading-relaxed mt-0.5">{c.texto}</p>
+          {editando ? (
+            <div className="mt-1.5">
+              <textarea value={borrador} onChange={(e) => setBorrador(e.target.value)} rows={3} maxLength={2000}
+                className="w-full bg-surface border border-border rounded-xl px-3 py-2 text-[13.5px] outline-none focus:border-accent" />
+              <div className="flex gap-2 mt-1.5">
+                <button onClick={guardar} disabled={ocupado || borrador.trim().length < 2}
+                  className="bg-accent text-white rounded-full px-3.5 py-1.5 text-[12px] font-bold disabled:opacity-50">Guardar</button>
+                <button onClick={() => { setEditando(false); setBorrador(c.texto); setError(""); }}
+                  className="text-sub rounded-full px-3 py-1.5 text-[12px] font-bold">Cancelar</button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-[13.5px] text-text whitespace-pre-wrap leading-relaxed mt-0.5">{c.texto}</p>
+          )}
         </div>
-        <div className="flex items-center gap-4 mt-1 ml-1 text-[12px]">
+        <div className="flex items-center gap-4 mt-1 ml-1 text-[12px] flex-wrap">
           <span className="text-hint">{hace(c.fecha)}</span>
           <button onClick={onResponder} className="font-semibold text-sub hover:text-accent transition">Responder</button>
+          {/* Editar y borrar lo propio. La confirmación va aquí mismo: las
+              ventanitas del navegador en celular a veces ni aparecen. */}
+          {c.esMio && !editando && !confirmando && (
+            <>
+              <button onClick={() => setEditando(true)} className="font-semibold text-sub hover:text-accent transition">Editar</button>
+              <button onClick={() => setConfirmando(true)} className="font-semibold text-sub hover:text-pink transition">Eliminar</button>
+            </>
+          )}
+          {confirmando && (
+            <span className="flex items-center gap-2">
+              <span className="text-sub">¿Borrar tu comentario?</span>
+              <button onClick={borrarYa} disabled={ocupado} className="font-bold text-pink hover:underline disabled:opacity-50">Sí, borrar</button>
+              <button onClick={() => setConfirmando(false)} className="font-semibold text-sub hover:underline">No</button>
+            </span>
+          )}
         </div>
+        {error && <p className="text-[12px] text-pink mt-1 ml-1">{error}</p>}
       </div>
     </div>
   );

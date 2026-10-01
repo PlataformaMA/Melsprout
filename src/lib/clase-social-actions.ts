@@ -14,6 +14,7 @@ export type ComentarioClase = {
   texto: string;
   fecha: string;
   respondeA: string | null;
+  esMio: boolean;      // para ofrecerle editar y borrar solo a quien lo escribió
 };
 
 // ————— Calificación de la clase —————
@@ -51,6 +52,8 @@ export async function calificarClase(claseId: string, estrellas: number): Promis
 
 export async function getComentariosClase(claseId: string): Promise<ComentarioClase[]> {
   const admin = createAdminClient();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
   const { data } = await admin.from("clase_comentarios")
     .select("id, autor_id, texto, created_at, responde_a")
     .eq("clase_id", claseId).eq("oculto", false)
@@ -71,6 +74,7 @@ export async function getComentariosClase(claseId: string): Promise<ComentarioCl
       texto: c.texto as string,
       fecha: c.created_at as string,
       respondeA: (c.responde_a as string) || null,
+      esMio: !!user && c.autor_id === user.id,
     };
   });
 }
@@ -107,6 +111,37 @@ export async function comentarClase(
 }
 
 // El equipo puede esconder un comentario que no va.
+// Editar el propio comentario. Solo quien lo escribió.
+export async function editarComentarioClase(id: string, texto: string): Promise<{ ok: true } | { error: string }> {
+  const t = texto.trim();
+  if (t.length < 2) return { error: "Escribe tu comentario." };
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Inicia sesión." };
+  const admin = createAdminClient();
+  const { data: c } = await admin.from("clase_comentarios").select("autor_id").eq("id", id).maybeSingle();
+  if (!c) return { error: "Ese comentario ya no existe." };
+  if (c.autor_id !== user.id) return { error: "Solo puedes editar lo que tú escribiste." };
+  const { error } = await admin.from("clase_comentarios").update({ texto: t.slice(0, 2000) }).eq("id", id);
+  return error ? { error: "No se pudo guardar." } : { ok: true };
+}
+
+// Borrar un comentario: quien lo escribió, o el equipo (para moderar).
+export async function borrarComentarioClase(id: string): Promise<{ ok: true } | { error: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Inicia sesión." };
+  const admin = createAdminClient();
+  const { data: c } = await admin.from("clase_comentarios").select("autor_id").eq("id", id).maybeSingle();
+  if (!c) return { ok: true };   // ya no estaba: para la persona es lo mismo
+  const mio = c.autor_id === user.id;
+  if (!mio && !(await esAdminUsuario(user.id, user.email))) return { error: "Solo puedes borrar lo que tú escribiste." };
+  // Se borran también las respuestas que colgaban de él.
+  await admin.from("clase_comentarios").delete().eq("responde_a", id);
+  const { error } = await admin.from("clase_comentarios").delete().eq("id", id);
+  return error ? { error: "No se pudo borrar." } : { ok: true };
+}
+
 export async function ocultarComentarioClase(id: string): Promise<{ ok: true } | { error: string }> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
