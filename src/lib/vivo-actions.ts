@@ -17,6 +17,7 @@ export type ClaseVivo = {
   grabacion_url: string | null;
   xp: number;
   activo?: boolean;
+  modulo_id?: string | null;   // si apunta a un curso especial, es solo para quien lo compró
 };
 
 async function comoAdmin() {
@@ -38,7 +39,38 @@ export async function listarClasesVivo(): Promise<ClaseVivo[]> {
     .order("inicia_at", { ascending: true });
   // Solo lo real: si no hay clases cargadas, la pantalla lo dice y ya.
   // Antes se mostraban ejemplos que no existían en el panel.
-  return (data || []) as ClaseVivo[];
+  const clases = (data || []) as ClaseVivo[];
+
+  // Una clase en vivo atada a un curso especial (Boost Your Web, por ejemplo)
+  // es parte de lo que se pagó: solo la ven quienes compraron ese curso. Las
+  // demás siguen abiertas para todos, como hasta ahora.
+  const deCurso = [...new Set(clases.map((c) => c.modulo_id).filter(Boolean) as string[])];
+  if (deCurso.length === 0) return clases;
+
+  const { data: especiales } = await admin
+    .from("cursos_modulos")
+    .select("id")
+    .in("id", deCurso)
+    .eq("especial", true);
+  const conLlave = new Set((especiales || []).map((m) => m.id as string));
+  if (conLlave.size === 0) return clases;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return clases.filter((c) => !c.modulo_id || !conLlave.has(c.modulo_id));
+
+  // El equipo las ve todas, para poder revisarlas.
+  if (await esAdminUsuario(user.id, user.email)) return clases;
+
+  const { data: accesos } = await admin
+    .from("curso_accesos")
+    .select("modulo_id")
+    .eq("user_id", user.id)
+    .in("modulo_id", [...conLlave]);
+  const mios = new Set((accesos || []).map((a) => a.modulo_id as string));
+  return clases.filter((c) => !c.modulo_id || !conLlave.has(c.modulo_id) || mios.has(c.modulo_id));
 }
 
 
