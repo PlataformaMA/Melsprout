@@ -32,16 +32,6 @@ const serpX = (i: number) => CX + AMP * Math.sin(i * FREQ + PHASE);
 const pctX = (x: number) => `${(x / W) * 100}%`;
 
 // Serpentina clásica: controles en el punto medio con la X de cada nodo → S limpia y simétrica.
-function construirPath(pts: { x: number; y: number }[]): string {
-  if (!pts.length) return "";
-  let d = `M ${pts[0].x} ${pts[0].y}`;
-  for (let i = 1; i < pts.length; i++) {
-    const p0 = pts[i - 1], p1 = pts[i];
-    const my = (p0.y + p1.y) / 2;
-    d += ` C ${p0.x} ${my}, ${p1.x} ${my}, ${p1.x} ${p1.y}`;
-  }
-  return d;
-}
 
 type EClase = "completada" | "actual" | "bloqueada";
 type EReto = "completada" | "en-revision" | "rechazada" | "pendiente" | "bloqueada";
@@ -196,6 +186,10 @@ export function RutaAprendizaje({
   const pts = elementos.map((_, i) => ({ x: serpX(i), y: TOP + i * SPACING }));
   const altura = TOP + elementos.length * SPACING + 40;
   const idxActual = elementos.findIndex((e) => e.tipo === "clase" && e.estado === "actual");
+  // La clase que de verdad le toca ahora: a ahí la manda el aviso de bloqueo.
+  // Si en este módulo ya no hay ninguna pendiente, se busca en todos.
+  const elActual = (idxActual >= 0 ? elementos[idxActual] : todos.find((e) => e.tipo === "clase" && e.estado === "actual"));
+  const claseActualHref = elActual && elActual.tipo === "clase" ? `/app/clase/${elActual.clase.id}` : null;
 
   // Octi ACOMPAÑA a la clase actual, a su misma altura. OJO: la serpentina pasa
   // por TRES carriles (16%, 48% y 81%), no dos — el central también lleva nodos.
@@ -226,6 +220,8 @@ export function RutaAprendizaje({
   const [abriendoCofre, setAbriendoCofre] = useState(false);
   const [desafiosAbierto, setDesafiosAbierto] = useState(false);
   const [recursosAbierto, setRecursosAbierto] = useState(false);
+  // Qué clase le toca de verdad: a donde manda el aviso cuando toca una cerrada.
+  const [avisoBloqueada, setAvisoBloqueada] = useState(false);
   const mundos = cursos.map((m, i) => {
     const start = cursos.slice(0, i).reduce((a, x) => a + x.clases.length, 0);
     const done = start + m.clases.length <= completadas;
@@ -388,9 +384,8 @@ export function RutaAprendizaje({
               ) : (
               /* Camino */
               <div className="relative mx-auto w-full overflow-x-hidden" style={{ maxWidth: 640, height: altura }}>
-                <svg viewBox={`0 0 ${W} ${altura}`} className="absolute inset-0 w-full h-full" fill="none" preserveAspectRatio="none">
-                  <path d={construirPath(pts)} stroke="#C7B8EF" strokeWidth="5.5" strokeLinecap="round" strokeDasharray="10 15" vectorEffect="non-scaling-stroke" />
-                </svg>
+                {/* El camino va sin línea: los nodos solos se leen más limpios
+                    y el fondo del mar queda despejado. */}
 
                 <DecorMar pts={pts} />
 
@@ -400,7 +395,8 @@ export function RutaAprendizaje({
                   // esos dos siempre van al centro.
                   <div key={i} className="absolute z-[5]"
                     style={{ left: pctX(el.tipo === "gate" || el.tipo === "hito" ? CX : pts[i].x), top: pts[i].y, transform: "translate(-50%,-50%)" }}>
-                    <NodoElemento el={el} onCruzar={() => irAModulo(modVisible + 1)} />
+                    <NodoElemento el={el} onCruzar={() => irAModulo(modVisible + 1)}
+                      onBloqueada={() => setAvisoBloqueada(true)} />
                   </div>
                 ))}
 
@@ -525,6 +521,33 @@ export function RutaAprendizaje({
         </div>
       )}
       {recursosAbierto && <RecursosModal recursos={recursos} onClose={() => setRecursosAbierto(false)} />}
+
+      {/* Toca una clase que todavía no le toca: en vez de no pasar nada, se le
+          dice por qué y se le ofrece ir a la que sí le toca. */}
+      {avisoBloqueada && (
+        <div className="fixed inset-0 z-[120] bg-black/55 grid place-items-center p-4"
+          role="dialog" aria-modal="true" onClick={() => setAvisoBloqueada(false)}>
+          <div className="bg-surface rounded-3xl w-full max-w-[330px] p-6 text-center shadow-2xl"
+            onClick={(e) => e.stopPropagation()}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/octi.png" alt="" width={118} className="mx-auto mb-3" />
+            <h2 className="font-display font-extrabold text-[18px] leading-snug">
+              Oh, oh, aún no completas<br />la clase anterior
+            </h2>
+            {claseActualHref ? (
+              <Link href={claseActualHref}
+                className="mt-5 flex items-center justify-center gap-2 bg-accent text-white font-bold text-[14px] rounded-full py-3 hover:brightness-110 transition">
+                Ir a la clase <span aria-hidden>→</span>
+              </Link>
+            ) : (
+              <button type="button" onClick={() => setAvisoBloqueada(false)}
+                className="mt-5 w-full bg-accent text-white font-bold text-[14px] rounded-full py-3 hover:brightness-110 transition">
+                Entendido
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       {rachaAbierto && rachaInfo && (
         <RachaModal info={rachaInfo} onClose={() => { setRachaAbierto(false); abrirRankingSiToca(); }} />
       )}
@@ -695,7 +718,7 @@ function TipReto({ texto, clase }: { texto: string; clase: string }) {
   );
 }
 
-function NodoElemento({ el, onCruzar }: { el: Elemento; onCruzar?: () => void }) {
+function NodoElemento({ el, onCruzar, onBloqueada }: { el: Elemento; onCruzar?: () => void; onBloqueada?: () => void }) {
   if (el.tipo === "clase") {
     // Sin video cargado no hay nada que ver: se marca Pendiente y no abre.
     if (!el.clase.grabada && el.estado !== "completada") {
@@ -734,15 +757,15 @@ function NodoElemento({ el, onCruzar }: { el: Elemento; onCruzar?: () => void })
           </Link>
         </div>
       );
-    // bloqueada
+    // bloqueada: se puede tocar, y explica por qué no abre.
     return (
-      <div className="group relative">
+      <button type="button" onClick={onBloqueada} className="group relative block" aria-label="Clase bloqueada">
         <div className="grid place-items-center rounded-full w-[80px] h-[80px] bg-[#B9BDC7] text-white border-[5px] border-white"
           style={{ boxShadow: "0 7px 0 #9AA0AD, 0 12px 14px rgba(0,0,0,.1)" }}>
           <PlayIcon />
         </div>
         <TipClase titulo={el.clase.titulo} bloqueada />
-      </div>
+      </button>
     );
   }
 
