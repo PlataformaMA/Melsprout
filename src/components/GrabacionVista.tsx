@@ -70,7 +70,18 @@ export function GrabacionVista({
             )}
           </div>
 
-          <h1 className="font-display text-xl sm:text-2xl font-extrabold mt-4">{clase.titulo}</h1>
+          {/* De qué curso es. Si la grabación está atada a un curso (modulo_id),
+              se dice que es exclusiva: así nadie la comparte creyendo que es
+              abierta. */}
+          {clase.categoria && (
+            <div className="mt-4">
+              <span className="inline-flex items-center gap-1.5 bg-accent-soft text-accent text-[12px] font-bold rounded-full px-3 py-1.5">
+                {clase.modulo_id ? `🔒 Exclusiva de ${clase.categoria}` : clase.categoria}
+              </span>
+            </div>
+          )}
+
+          <h1 className="font-display text-xl sm:text-2xl font-extrabold mt-2.5">{clase.titulo}</h1>
           {clase.descripcion && <p className="text-[14px] text-sub mt-1.5 leading-relaxed">{clase.descripcion}</p>}
 
           <div className="flex items-center gap-3 mt-4 pt-4 border-t border-border">

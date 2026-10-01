@@ -251,7 +251,7 @@ function ClaseCard({ c, n, asistio, onAsistir }: { c: ClaseVivo; n: number; asis
       <div className="flex-1 min-w-0 flex flex-col mt-2.5">
         <h3 className="font-display font-extrabold text-[14.5px] leading-tight">{c.titulo}</h3>
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-          {c.categoria && <span className="text-[11px] font-semibold text-accent bg-accent-soft rounded px-2 py-0.5">{c.categoria}</span>}
+          {c.categoria && <span className="text-[11px] font-semibold text-accent bg-accent-soft rounded px-2 py-0.5">{c.modulo_id ? `🔒 ${c.categoria}` : c.categoria}</span>}
           {c.instructor && (
             <span className="flex items-center gap-1.5 text-[12px] text-sub">
               <AvatarInstructor nombre={c.instructor} size={18} />{c.instructor}
@@ -366,7 +366,7 @@ function CalendarioModal({ clases, asist, onAsistir, onClose }: {
                   <div key={c.id} className="border border-border rounded-xl p-3">
                     <div className="text-[12px] font-bold text-accent">{new Date(c.inicia_at).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}</div>
                     <div className="font-bold text-[13.5px] leading-tight">{c.titulo}</div>
-                    {c.categoria && <div className="text-[11px] text-sub">{c.categoria}{c.instructor ? ` · ${c.instructor}` : ""}</div>}
+                    {c.categoria && <div className="text-[11px] text-sub">{c.modulo_id ? `🔒 ${c.categoria}` : c.categoria}{c.instructor ? ` · ${c.instructor}` : ""}</div>}
                     <div className="flex gap-2 mt-2">
                       <button onClick={() => onAsistir(c)} disabled={asist.includes(c.id)}
                         className={`text-[12px] font-bold rounded-lg px-3 py-1.5 border ${asist.includes(c.id) ? "bg-green/10 border-green/30 text-green" : "border-accent/30 text-accent hover:bg-accent-soft"}`}>
