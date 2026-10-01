@@ -52,7 +52,12 @@ export async function getRecursos(clasesDesbloqueadas: string[]): Promise<Recurs
   const yaBajados = new Set((mias || []).map((d) => d.recurso_id as string));
   const abiertas = new Set(clasesDesbloqueadas);
 
-  return (filas || []).map((r) => ({
+  // El material de un curso comprado (Boost Your Web) no se le enseña a quien
+  // no lo compró: antes salían los 161 archivos del curso con candado, y eso
+  // es ruido para ella y publicidad gratis del temario para cualquiera.
+  const deOtroCurso = await clasesAjenas(user.id, (filas || []).map((r) => r.clase_id as string | null));
+
+  return (filas || []).filter((r) => !r.clase_id || !deOtroCurso.has(r.clase_id as string)).map((r) => ({
     id: r.id as string,
     claseId: (r.clase_id as string) ?? null,
     titulo: r.titulo as string,
@@ -69,6 +74,26 @@ export async function getRecursos(clasesDesbloqueadas: string[]): Promise<Recurs
     bloqueado: (!!r.clase_id && !abiertas.has(r.clase_id as string))
       || (typeof r.xp === "number" && miXp < (r.xp as number)),
   }));
+}
+
+// Clases que pertenecen a un curso especial que esta persona NO compró.
+async function clasesAjenas(userId: string, claseIds: (string | null)[]): Promise<Set<string>> {
+  const ids = [...new Set(claseIds.filter(Boolean) as string[])];
+  if (ids.length === 0) return new Set();
+  const admin = createAdminClient();
+  const [{ data: clases }, { data: especiales }, { data: accesos }] = await Promise.all([
+    admin.from("cursos_clases").select("id, modulo_id").in("id", ids),
+    admin.from("cursos_modulos").select("id").eq("especial", true),
+    admin.from("curso_accesos").select("modulo_id").eq("user_id", userId),
+  ]);
+  const conLlave = new Set((especiales || []).map((m) => m.id as string));
+  const mios = new Set((accesos || []).map((a) => a.modulo_id as string));
+  const fuera = new Set<string>();
+  for (const c of clases || []) {
+    const m = c.modulo_id as string;
+    if (conLlave.has(m) && !mios.has(m)) fuera.add(c.id as string);
+  }
+  return fuera;
 }
 
 // Devuelve un enlace temporal para bajar el archivo y anota la descarga.
