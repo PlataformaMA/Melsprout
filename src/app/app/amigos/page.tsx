@@ -28,7 +28,7 @@ export default async function AmigosPage() {
         nombre: perfil.full_name ?? "Creador",
         avatar: perfil.avatar_url,
         racha: perfil.racha,
-        gemas: perfil.gemas,
+        xp: perfil.xp,
       }}
       amigos={amigos}
       solicitudes={solicitudes}

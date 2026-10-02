@@ -31,7 +31,7 @@ function fechaLanzamiento(iso: string | null): string | null {
 export function VentaCursoVista({
   yo, curso, testimonios,
 }: {
-  yo: { nombre: string; avatar: string | null; racha: number; gemas: number };
+  yo: { nombre: string; avatar: string | null; racha: number; xp: number };
   curso: CursoEspecial;
   testimonios: Testimonio[];
 }) {
@@ -50,7 +50,7 @@ export function VentaCursoVista({
         <div className="max-w-[1180px] mx-auto px-4 sm:px-8 py-5">
           <header className="flex items-center justify-end gap-3 sm:gap-4 mb-4 h-10">
             <span className="flex items-center gap-1.5 text-[14px] font-bold">🔥 {yo.racha}</span>
-            <span className="flex items-center gap-1.5 text-[14px] font-bold">💎 {yo.gemas}</span>
+            <span className="flex items-center gap-1.5 text-[14px] font-bold">💎 {yo.xp}</span>
             <CampanaNotificaciones />
             <UserMenu avatarUrl={yo.avatar} nombre={yo.nombre} />
           </header>

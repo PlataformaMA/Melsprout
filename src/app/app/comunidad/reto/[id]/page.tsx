@@ -22,7 +22,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
       detalle={detalle}
       nombre={perfil.full_name ?? "Creador"}
       avatarUrl={perfil.avatar_url}
-      gemas={perfil.gemas}
+      xp={perfil.xp}
       racha={perfil.racha}
     />
   );

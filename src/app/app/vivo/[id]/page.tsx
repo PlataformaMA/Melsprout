@@ -31,7 +31,7 @@ export default async function GrabacionPage({ params }: { params: Promise<{ id: 
       clase={{ ...clase, grabacion_url: grabacion }}
       nombre={perfil.full_name ?? "Creador"}
       avatarUrl={perfil.avatar_url}
-      gemas={perfil.gemas}
+      xp={perfil.xp}
       racha={perfil.racha}
     />
   );

@@ -45,7 +45,7 @@ export default async function RetoPage({ params }: { params: Promise<{ id: strin
         full_name: perfil.full_name,
         avatar_url: perfil.avatar_url,
         racha: perfil.racha,
-        gemas: perfil.gemas,
+        xp: perfil.xp,
       }}
       guardado={guardado}
       siguienteHref={siguienteHref}

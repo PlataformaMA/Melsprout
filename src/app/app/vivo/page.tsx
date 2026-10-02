@@ -29,7 +29,7 @@ export default async function VivoPage() {
       asistidas={asistidas}
       nombre={perfil.full_name ?? "Creador"}
       avatarUrl={perfil.avatar_url}
-      gemas={perfil.gemas}
+      xp={perfil.xp}
       racha={perfil.racha}
     />
   );

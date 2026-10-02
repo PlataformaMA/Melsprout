@@ -15,10 +15,10 @@ import { alternarMembresia, type Grupo } from "@/lib/grupos-actions";
 type Actividad = { id: string; userId: string; nombre: string; avatar: string | null; texto: string; xp?: number; hace: string };
 
 export function GrupoDetalle({
-  grupo, postsIniciales, actividad = [], nombre, avatarUrl, gemas, racha,
+  grupo, postsIniciales, actividad = [], nombre, avatarUrl, xp, racha,
 }: {
   grupo: Grupo; postsIniciales: ForoPost[]; actividad?: Actividad[];
-  nombre: string; avatarUrl: string | null; gemas: number; racha: number;
+  nombre: string; avatarUrl: string | null; xp: number; racha: number;
 }) {
   const router = useRouter();
   const [posts, setPosts] = useState(postsIniciales);
@@ -81,7 +81,7 @@ export function GrupoDetalle({
         <div className="max-w-[1180px] mx-auto px-4 sm:px-8 py-5">
           <header className="flex items-center justify-end gap-3 sm:gap-4 mb-4 h-10">
             <span className="flex items-center gap-1.5 text-[14px] font-bold">🔥 {racha}</span>
-            <span className="flex items-center gap-1.5 text-[14px] font-bold">💎 {gemas}</span>
+            <span className="flex items-center gap-1.5 text-[14px] font-bold">💎 {xp}</span>
             <CampanaNotificaciones />
             <UserMenu avatarUrl={avatarUrl} nombre={nombre} />
           </header>

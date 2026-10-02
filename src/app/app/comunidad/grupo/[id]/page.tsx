@@ -34,7 +34,7 @@ export default async function GrupoPage({ params }: { params: Promise<{ id: stri
       actividad={actividad}
       nombre={perfil.full_name ?? "Creador"}
       avatarUrl={perfil.avatar_url}
-      gemas={perfil.gemas}
+      xp={perfil.xp}
       racha={perfil.racha}
     />
   );

@@ -20,7 +20,7 @@ export default async function EspecialesPage() {
         nombre: perfil.full_name ?? "Creador",
         avatar: perfil.avatar_url,
         racha: perfil.racha,
-        gemas: perfil.gemas,
+        xp: perfil.xp,
       }}
       cursos={cursos}
     />

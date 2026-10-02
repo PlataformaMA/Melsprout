@@ -46,9 +46,9 @@ function fmtTiempo(seg: number): string {
 }
 
 export function ReproductorClase({
-  clase, modulo, avatarUrl, nombre, gemas, racha, yaCompletada = false, vistoInicial = 0, completadasIds = [], videoUrl = null, siguienteHref = null, volverHref = "/app/ruta", retoEnviado = false, recursos = [], desbloqueado = false, abiertasIds = [],
+  clase, modulo, avatarUrl, nombre, xp, racha, yaCompletada = false, vistoInicial = 0, completadasIds = [], videoUrl = null, siguienteHref = null, volverHref = "/app/ruta", retoEnviado = false, recursos = [], desbloqueado = false, abiertasIds = [],
 }: {
-  clase: Clase; modulo: ModuloCurso; avatarUrl: string | null; nombre: string; gemas: number; racha: number; yaCompletada?: boolean; vistoInicial?: number; completadasIds?: string[]; videoUrl?: string | null; siguienteHref?: string | null; volverHref?: string; retoEnviado?: boolean; recursos?: Recurso[]; desbloqueado?: boolean; abiertasIds?: string[];
+  clase: Clase; modulo: ModuloCurso; avatarUrl: string | null; nombre: string; xp: number; racha: number; yaCompletada?: boolean; vistoInicial?: number; completadasIds?: string[]; videoUrl?: string | null; siguienteHref?: string | null; volverHref?: string; retoEnviado?: boolean; recursos?: Recurso[]; desbloqueado?: boolean; abiertasIds?: string[];
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const vistoRef = useRef(vistoInicial);   // segundos REALMENTE vistos (arranca de lo ya guardado)
@@ -212,7 +212,7 @@ export function ReproductorClase({
         <div className="max-w-[1180px] mx-auto px-4 sm:px-8 py-5">
           <header className="flex items-center justify-end gap-4 mb-4 h-10">
             <Counter icon="🔥" valor={racha} />
-            <Counter icon="💎" valor={gemas} />
+            <Counter icon="💎" valor={xp} />
             <CampanaNotificaciones />
             <button className="hidden" aria-hidden>
               <BellIcon />

@@ -84,7 +84,7 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
       modulo={modulo}
       avatarUrl={perfil.avatar_url}
       nombre={perfil.full_name ?? "creador"}
-      gemas={perfil.gemas}
+      xp={perfil.xp}
       racha={perfil.racha}
       yaCompletada={prog?.completada === true}
       vistoInicial={(prog?.segundos_vistos as number) ?? 0}

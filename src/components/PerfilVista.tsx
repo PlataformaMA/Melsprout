@@ -132,7 +132,7 @@ export function PerfilVista({ perfil, creadoEn, insightiq, avance, social, amigo
           {/* ——— Barra superior ——— */}
           <header className="flex items-center justify-end gap-4 mb-5 h-10">
             <Counter icon="🔥" valor={perfil.racha} />
-            <Counter icon="💎" valor={perfil.gemas} />
+            <Counter icon="💎" valor={perfil.xp} />
             <CampanaNotificaciones />
             <UserMenu avatarUrl={perfil.avatar_url} nombre={perfil.full_name ?? "Creador"} />
           </header>

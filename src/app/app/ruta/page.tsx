@@ -131,7 +131,6 @@ export default async function RutaPage() {
       desbloqueado={desbloqueado}
       nombre={perfil.full_name ?? "creador"}
       avatarUrl={perfil.avatar_url}
-      gemas={perfil.gemas}
       racha={perfil.racha}
       perfilPct={perfilPct}
       topCreadores={topCreadores}

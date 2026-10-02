@@ -12,7 +12,7 @@ import { guardarReto, subirImagenReto, type RetoGuardado } from "@/lib/retos-act
 import type { ForoPost } from "@/lib/foros-actions";
 import { PostCard, enlaceSeguro } from "@/components/PostCard";
 
-type Perfil = { full_name: string | null; avatar_url: string | null; racha: number; gemas: number };
+type Perfil = { full_name: string | null; avatar_url: string | null; racha: number; xp: number };
 
 // Convierte un archivo de imagen a dataURL (sin recortar).
 function imagenADataUrl(file: File): Promise<string> {
@@ -160,7 +160,7 @@ export function RetoVista({
           {/* Barra superior */}
           <header className="flex items-center justify-end gap-4 mb-5 h-10">
             <Counter icon="🔥" valor={perfil.racha} />
-            <Counter icon="💎" valor={perfil.gemas} />
+            <Counter icon="💎" valor={perfil.xp} />
             <CampanaNotificaciones />
             <button className="hidden" aria-hidden>
               <BellIcon />

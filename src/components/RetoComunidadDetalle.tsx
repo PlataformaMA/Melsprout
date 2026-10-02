@@ -9,9 +9,9 @@ import { UserMenu } from "@/components/UserMenu";
 import { inscribirseReto, publicarDiaReto, toggleLikeReto, type RetoComunidadDetalle as Detalle, type PostReto } from "@/lib/comunidad-retos-actions";
 
 export function RetoComunidadDetalle({
-  detalle, nombre, avatarUrl, gemas, racha,
+  detalle, nombre, avatarUrl, xp, racha,
 }: {
-  detalle: Detalle; nombre: string; avatarUrl: string | null; gemas: number; racha: number;
+  detalle: Detalle; nombre: string; avatarUrl: string | null; xp: number; racha: number;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<"pub" | "part">("pub");
@@ -56,7 +56,7 @@ export function RetoComunidadDetalle({
         <div className="max-w-[900px] mx-auto px-4 sm:px-8 py-5">
           <header className="flex items-center justify-end gap-4 mb-4 h-10">
             <Link href="/app/racha" className="flex items-center gap-1.5 text-[14px] font-bold">🔥 {racha}</Link>
-            <span className="flex items-center gap-1.5 text-[14px] font-bold">💎 {gemas}</span>
+            <span className="flex items-center gap-1.5 text-[14px] font-bold">💎 {xp}</span>
             <UserMenu avatarUrl={avatarUrl} nombre={nombre} />
           </header>
 

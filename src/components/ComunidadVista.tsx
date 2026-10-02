@@ -23,11 +23,11 @@ type Props = {
   retosComunidad: RetoComunidad[];
   grupos?: { propuestas: Grupo[]; mios: Grupo[]; otros: Grupo[] };
   actividad?: Actividad[];
-  nombre: string; avatarUrl: string | null; gemas: number; racha: number;
+  nombre: string; avatarUrl: string | null; xp: number; racha: number;
 };
 
 
-export function ComunidadVista({ postsIniciales, topColaboradores, retosComunidad, grupos, actividad = [], nombre, avatarUrl, gemas, racha }: Props) {
+export function ComunidadVista({ postsIniciales, topColaboradores, retosComunidad, grupos, actividad = [], nombre, avatarUrl, xp, racha }: Props) {
   const router = useRouter();
   const [tab, setTab] = useState<"foros" | "grupos" | "retos">("foros");
   const [cat, setCat] = useState("General");
@@ -83,7 +83,7 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
         <div className="max-w-[1180px] mx-auto px-4 sm:px-8 py-5">
           <header className="flex items-center justify-end gap-4 mb-5 h-10">
             <span className="flex items-center gap-1.5 text-[14px] font-bold">🔥 {racha}</span>
-            <span className="flex items-center gap-1.5 text-[14px] font-bold">💎 {gemas}</span>
+            <span className="flex items-center gap-1.5 text-[14px] font-bold">💎 {xp}</span>
             <UserMenu avatarUrl={avatarUrl} nombre={nombre} />
           </header>
 

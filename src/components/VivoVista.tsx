@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { AvatarInstructor } from "@/components/Instructor";
 
 type Props = {
-  clases: ClaseVivo[]; asistidas: string[]; nombre: string; avatarUrl: string | null; gemas: number; racha: number;
+  clases: ClaseVivo[]; asistidas: string[]; nombre: string; avatarUrl: string | null; xp: number; racha: number;
 };
 
 function estadoDe(c: ClaseVivo): "en_vivo" | "proxima" | "terminada" {
@@ -72,7 +72,7 @@ function googleCalLink(c: ClaseVivo): string {
   return `https://calendar.google.com/calendar/render?${p.toString()}`;
 }
 
-export function VivoVista({ clases, asistidas, nombre, avatarUrl, gemas, racha }: Props) {
+export function VivoVista({ clases, asistidas, nombre, avatarUrl, xp, racha }: Props) {
   const router = useRouter();
   const [tab, setTab] = useState<"clases" | "grabaciones">("clases");
   const [popup, setPopup] = useState(false);
@@ -105,7 +105,7 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, gemas, racha }
         <div className="max-w-[1180px] mx-auto px-4 sm:px-8 py-5">
           <header className="flex items-center justify-end gap-4 mb-5 h-10">
             <span className="flex items-center gap-1.5 text-[14px] font-bold">🔥 {racha}</span>
-            <span className="flex items-center gap-1.5 text-[14px] font-bold">💎 {gemas}</span>
+            <span className="flex items-center gap-1.5 text-[14px] font-bold">💎 {xp}</span>
             <UserMenu avatarUrl={avatarUrl} nombre={nombre} />
           </header>
 

@@ -25,7 +25,7 @@ export default async function CursoEspecialPage({ params }: { params: Promise<{ 
     nombre: perfil.full_name ?? "Creador",
     avatar: perfil.avatar_url,
     racha: perfil.racha,
-    gemas: perfil.gemas,
+    xp: perfil.xp,
   };
 
   // Sin acceso se ve la landing de venta; con acceso, el curso completo.

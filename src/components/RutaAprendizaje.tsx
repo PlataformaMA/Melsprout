@@ -77,9 +77,9 @@ function construirElementos(cursos: ModuloCurso[], completadas: number, retoEsta
 export type TopCreador = { id: string; nombre: string; avatarUrl: string | null; xp: number; esTu: boolean };
 
 export function RutaAprendizaje({
-  nombre, avatarUrl, gemas, racha, perfilPct, topCreadores = [], completadas = 0, completadasIds = [], retoEstados = {}, cursos, recursos = [], recompensas = [], desafios = { xp: 0, clases: 0, retos: 0 }, genero = "neutro", notifSinLeer = 0, tuRanking, ranking = [], emailVerificado = true, xp = 0, rachaInfo, desbloqueado = true,
+  nombre, avatarUrl, racha, perfilPct, topCreadores = [], completadas = 0, completadasIds = [], retoEstados = {}, cursos, recursos = [], recompensas = [], desafios = { xp: 0, clases: 0, retos: 0 }, genero = "neutro", notifSinLeer = 0, tuRanking, ranking = [], emailVerificado = true, xp = 0, rachaInfo, desbloqueado = true,
 }: {
-  nombre: string; avatarUrl: string | null; gemas: number; racha: number; perfilPct: number; topCreadores?: TopCreador[];
+  nombre: string; avatarUrl: string | null; racha: number; perfilPct: number; topCreadores?: TopCreador[];
   completadas?: number; completadasIds?: string[]; recursos?: Recurso[]; recompensas?: Recompensa[]; desafios?: { xp: number; clases: number; retos: number }; genero?: Genero; notifSinLeer?: number; retoEstados?: Record<string, EReto>; cursos: ModuloCurso[]; tuRanking?: { pos: number; xp: number };
   ranking?: RankItem[]; emailVerificado?: boolean; xp?: number; rachaInfo?: RachaInfo;
   desbloqueado?: boolean;   // todas las clases abiertas (se cambia desde el panel)
@@ -238,7 +238,7 @@ export function RutaAprendizaje({
           {/* Barra superior */}
           <header className="flex items-center justify-end gap-4 mb-4 h-10">
             <Link href="/app/racha" title="Mi racha" className="hover:scale-105 transition"><Counter icon="🔥" valor={racha} /></Link>
-            <Counter icon="💎" valor={gemas} />
+            <Counter icon="💎" valor={xp} />
             <CampanaNotificaciones sinLeerInicial={notifSinLeer} />
             <button className="hidden" aria-hidden>
               <BellIcon />

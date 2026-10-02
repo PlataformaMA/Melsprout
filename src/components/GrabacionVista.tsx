@@ -23,13 +23,13 @@ export function GrabacionVista({
   clase,
   nombre,
   avatarUrl,
-  gemas,
+  xp,
   racha,
 }: {
   clase: ClaseVivo;
   nombre: string;
   avatarUrl: string | null;
-  gemas: number;
+  xp: number;
   racha: number;
 }) {
   const url = clase.grabacion_url || "";
@@ -42,7 +42,7 @@ export function GrabacionVista({
         <div className="max-w-[1000px] mx-auto px-4 sm:px-8 py-5">
           <header className="flex items-center justify-end gap-4 mb-5 h-10">
             <span className="flex items-center gap-1.5 text-[14px] font-bold">🔥 {racha}</span>
-            <span className="flex items-center gap-1.5 text-[14px] font-bold">💎 {gemas}</span>
+            <span className="flex items-center gap-1.5 text-[14px] font-bold">💎 {xp}</span>
             <UserMenu avatarUrl={avatarUrl} nombre={nombre} />
           </header>
 
