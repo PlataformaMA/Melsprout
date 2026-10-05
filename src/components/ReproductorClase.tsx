@@ -87,6 +87,9 @@ export function ReproductorClase({
   const router = useRouter();
   const [reproduciendo, setReproduciendo] = useState(false);
   const [avisoSalto, setAvisoSalto] = useState(false);
+  // El video no cargó (conexión lenta, archivo muy pesado). Sin esto la alumna
+  // solo veía un cuadro negro y creía que la plataforma no la dejaba avanzar.
+  const [errorVideo, setErrorVideo] = useState(false);
   // La barra se restaura con la duración REAL del video (al cargar), no con el
   // estimado (duracionMin), para no inflar el % y marcar "ya visto" de más.
   const [progreso, setProgreso] = useState(yaCompletada ? 100 : 0);
@@ -247,6 +250,8 @@ export function ReproductorClase({
                       // pasaba mucho a 1.5x y 2x, que piden el doble de datos, y
                       // regresaba a la alumna una y otra vez sin dejarla terminar.
                       onWaiting={() => { bufferRef.current = Date.now(); }}
+                      onError={() => setErrorVideo(true)}
+                      onLoadedData={() => setErrorVideo(false)}
                       onSeeking={() => { saltandoRef.current = true; }}
                       onSeeked={(e) => {
                         const v = e.currentTarget;
@@ -287,6 +292,20 @@ export function ReproductorClase({
                       )}
                     </video>
                   )}
+                  {errorVideo && (
+                    <div className="mt-3 bg-amber-soft border border-amber/30 rounded-2xl px-4 py-3">
+                      <p className="text-[13.5px] font-bold text-text">No se pudo cargar el video</p>
+                      <p className="text-[12.5px] text-sub mt-1 leading-snug">
+                        Suele ser la conexión. Prueba a recargar; si sigue igual, escríbenos por soporte
+                        y te ayudamos — no pierdes tu avance.
+                      </p>
+                      <button type="button" onClick={() => { setErrorVideo(false); const v = videoRef.current; if (v) { v.load(); } }}
+                        className="mt-2.5 bg-accent text-white rounded-full px-4 py-2 text-[12.5px] font-bold hover:brightness-110 transition">
+                        Reintentar
+                      </button>
+                    </div>
+                  )}
+
                   {/* La velocidad va debajo del video, nunca encima. */}
                   {video.tipo !== "youtube" && video.tipo !== "vimeo" && (
                     <div className="flex items-center gap-1.5 mt-2.5">
