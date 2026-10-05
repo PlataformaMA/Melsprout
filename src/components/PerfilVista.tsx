@@ -116,10 +116,21 @@ export function PerfilVista({ perfil, creadoEn, insightiq, avance, social, amigo
   const edad = calcularEdad(perfil.fecha_nacimiento);
 
   const tieneRedes = REDES.some((r) => perfil.redes?.[r.key]);
-  const items = [
-    !!perfil.avatar_url, !!perfil.headline, !!perfil.bio,
-    !!perfil.ciudad, tieneRedes, !!perfil.nicho, !!perfil.objetivo, !!perfil.plataforma_principal,
+  // Cada cosa que suma al perfil, con su nombre: así se puede decir QUÉ falta
+  // en vez del texto fijo de antes ("te falta conectar tus redes"), que seguía
+  // apareciendo aunque la persona ya estuviera al 100%.
+  const partes: { listo: boolean; que: string }[] = [
+    { listo: !!perfil.avatar_url, que: "tu foto" },
+    { listo: !!perfil.headline, que: "tu profesión" },
+    { listo: !!perfil.bio, que: "tu descripción" },
+    { listo: !!perfil.ciudad, que: "tu ciudad" },
+    { listo: tieneRedes, que: "conectar una red social" },
+    { listo: !!perfil.nicho, que: "tu nicho" },
+    { listo: !!perfil.objetivo, que: "tu objetivo" },
+    { listo: !!perfil.plataforma_principal, que: "tu plataforma principal" },
   ];
+  const items = partes.map((x) => x.listo);
+  const faltan = partes.filter((x) => !x.listo).map((x) => x.que);
   const pct = Math.round((items.filter(Boolean).length / items.length) * 100);
   const xpPct = nivel.siguiente ? Math.min(100, Math.max(6, Math.round((perfil.xp / nivel.siguiente.xp) * 100))) : 100;
 
@@ -308,14 +319,22 @@ export function PerfilVista({ perfil, creadoEn, insightiq, avance, social, amigo
               {/* Completa tu perfil (anillo) */}
               <section className="rounded-3xl p-6 shadow-sm border border-accent/10" style={{ background: "linear-gradient(160deg,#F3F0FF,#FBFAFF)" }}>
                 <Anillo pct={pct} />
-                <h3 className="font-display font-extrabold text-lg text-center mt-4">¡Completa tu perfil!</h3>
+                <h3 className="font-display font-extrabold text-lg text-center mt-4">
+                  {faltan.length === 0 ? "¡Tu perfil está completo!" : "¡Completa tu perfil!"}
+                </h3>
                 <p className="text-[13px] text-sub text-center mt-1.5 leading-relaxed">
-                  Te falta <span className="text-accent font-medium">conectar tus redes</span> para llegar al 100% <span className="text-accent font-medium">y obtener tu</span> insignia azul.
+                  {faltan.length === 0 ? (
+                    <>Ya tienes tu <span className="text-accent font-medium">insignia azul</span>. Así te conocen mejor en la comunidad.</>
+                  ) : (
+                    <>Te falta <span className="text-accent font-medium">{faltan.length === 1 ? faltan[0] : faltan.slice(0, -1).join(", ") + " y " + faltan[faltan.length - 1]}</span> para llegar al 100% y obtener tu insignia azul.</>
+                  )}
                 </p>
-                <Link href="/app/perfil/completar" className="flex items-center gap-3 bg-white/70 hover:bg-white rounded-2xl px-4 py-3 mt-4 transition">
-                  <span className="text-xl">💎</span>
-                  <span className="text-[13px] font-bold text-accent leading-tight">Premio: +15<br />gemas</span>
-                </Link>
+                {faltan.length > 0 && (
+                  <Link href="/app/perfil/completar" className="flex items-center gap-3 bg-white/70 hover:bg-white rounded-2xl px-4 py-3 mt-4 transition">
+                    <span className="text-xl">💎</span>
+                    <span className="text-[13px] font-bold text-accent leading-tight">Premio: +15<br />gemas</span>
+                  </Link>
+                )}
               </section>
 
               {/* Invita a un amigo */}
