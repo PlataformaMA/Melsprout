@@ -55,7 +55,9 @@ const REDES = [
 ] as const;
 
 // ————————————— Componente principal —————————————
-export function PerfilVista({ perfil, creadoEn, insightiq, avance, social, amigos = [] }: { perfil: Perfil; creadoEn: string | null; insightiq?: InsightIQProps | null; avance: Avance; social?: Social; amigos?: Amigo[] }) {
+export type Starter = { nombre: string; hechas: number; total: number };
+
+export function PerfilVista({ perfil, creadoEn, insightiq, avance, social, amigos = [], starter }: { perfil: Perfil; creadoEn: string | null; insightiq?: InsightIQProps | null; avance: Avance; social?: Social; amigos?: Amigo[]; starter?: Starter }) {
   const [tab, setTab] = useState<"Resumen" | "Métricas" | "Amigos">("Resumen");
   // Conexión de redes: "Próximamente" (aún no habilitada). Mantenemos el hook activo.
   useConectarInsightIQ(insightiq ?? null);
@@ -295,7 +297,7 @@ export function PerfilVista({ perfil, creadoEn, insightiq, avance, social, amigo
 
               {tab === "Métricas" ? <TabMetricas metricas={perfil.metricas} />
                 : tab === "Amigos" ? <TabAmigos amigos={amigos} />
-                : <TabResumen perfil={perfil} nivel={nivel} avance={avance} />}
+                : <TabResumen perfil={perfil} nivel={nivel} avance={avance} starter={starter} />}
             </div>
 
             {/* ═══════ Columna derecha ═══════ */}
@@ -656,7 +658,9 @@ function TabAmigos({ amigos }: { amigos: Amigo[] }) {
 }
 
 // ————————————— Tab Resumen —————————————
-function TabResumen({ perfil, nivel, avance }: { perfil: Perfil; nivel: ReturnType<typeof nivelPorXP>; avance: Avance }) {
+function TabResumen({ perfil, nivel, avance, starter }: { perfil: Perfil; nivel: ReturnType<typeof nivelPorXP>; avance: Avance; starter?: Starter }) {
+  const ganoStarter = !!starter && starter.total > 0 && starter.hechas >= starter.total;
+  const faltanStarter = starter ? Math.max(0, starter.total - starter.hechas) : 0;
   const badges = [
     { img: "/badges/fuego.png", nombre: "Racha encendida" },
     { img: "/badges/video.png", nombre: "Creador de video" },
@@ -710,7 +714,7 @@ function TabResumen({ perfil, nivel, avance }: { perfil: Perfil; nivel: ReturnTy
       {/* Certificaciones — el Starter se otorga al terminar el primer módulo. */}
       <div>
         <h3 className="font-display text-lg font-extrabold mb-3">Certificaciones</h3>
-        {avance.clases >= 8 ? (
+        {ganoStarter ? (
           <div className="w-[320px] max-w-full rounded-2xl p-5 pb-4 text-white shadow-md relative overflow-hidden"
             style={{ background: "linear-gradient(135deg,#7C3AED 0%,#9F67FF 55%,#C4A5FF 100%)" }}>
             {/* Octi vive en su propia columna: así el texto nunca se le encima
@@ -723,7 +727,7 @@ function TabResumen({ perfil, nivel, avance }: { perfil: Perfil; nivel: ReturnTy
                   Otorgado a<br /><b>{perfil.full_name || "Creador"}</b>
                 </p>
                 <p className="text-[10px] opacity-75 mt-3 leading-snug">
-                  Por completar el módulo Básicos del Marketing Digital.
+                  Por completar el módulo {starter?.nombre}.
                 </p>
               </div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -732,7 +736,9 @@ function TabResumen({ perfil, nivel, avance }: { perfil: Perfil; nivel: ReturnTy
           </div>
         ) : (
           <p className="text-[13px] text-hint">
-            Completa el primer módulo para ganar tu Certificado Starter.
+            {starter && starter.total > 0
+              ? <>Completa el módulo <b>{starter.nombre}</b> de tu ruta —te {faltanStarter === 1 ? "falta 1 clase" : `faltan ${faltanStarter} clases`}— para ganar tu Certificado Starter.</>
+              : "Completa el primer módulo de tu ruta para ganar tu Certificado Starter."}
           </p>
         )}
       </div>

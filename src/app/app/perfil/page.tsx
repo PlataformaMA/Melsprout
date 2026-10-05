@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getPerfil } from "@/lib/perfil-actions";
-import { getAvance } from "@/lib/progreso-actions";
+import { getAvance, getClasesCompletadas } from "@/lib/progreso-actions";
+import { getCursos } from "@/lib/cursos-db";
 import { getSocial } from "@/lib/seguidores-actions";
 import { getAmigos } from "@/lib/chat-actions";
 import { guardarMetricasInsightIQ, cuentaDeOtroUsuario } from "@/lib/social-store";
@@ -25,6 +26,16 @@ export default async function PerfilPage() {
 
   const perfil = await getPerfil();
   const avance = await getAvance();
+  // El Certificado Starter se gana al terminar el PRIMER módulo de la ruta.
+  // Antes se otorgaba con 8 clases sueltas, que no corresponden a ningún
+  // módulo: alguien podía terminar su curso comprado y seguir viendo el aviso.
+  const cursosRuta = await getCursos();
+  const primerModulo = cursosRuta.find((m) => m.clases.some((c) => !c.proximamente)) ?? null;
+  const idsPrimero = primerModulo ? primerModulo.clases.filter((c) => !c.proximamente).map((c) => c.id) : [];
+  const completadasSet = await getClasesCompletadas();
+  const starter = primerModulo
+    ? { nombre: primerModulo.nombre, hechas: idsPrimero.filter((id) => completadasSet.has(id)).length, total: idsPrimero.length }
+    : { nombre: "", hechas: 0, total: 0 };
   const social = await getSocial(user.id);
   const amigos = await getAmigos();
   if (!perfil) redirect("/onboarding");
@@ -92,6 +103,7 @@ export default async function PerfilPage() {
       perfil={perfil}
       creadoEn={user.created_at ?? null}
       avance={avance}
+      starter={starter}
       social={social}
       amigos={amigos}
       insightiq={insightiq}
