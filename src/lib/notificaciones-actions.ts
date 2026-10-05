@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { faltaDelPerfil, enLista } from "@/lib/perfil-completo";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type TipoNotif = "general" | "reto" | "comentario" | "like" | "racha" | "nivel" | "clase" | "solicitud";
@@ -121,16 +122,13 @@ export async function recordarPerfilIncompleto(): Promise<void> {
   const admin = createAdminClient();
   const { data: p } = await admin
     .from("profiles")
-    .select("avatar_url, headline, bio, fecha_nacimiento, pais, onboarding_completo")
+    .select("avatar_url, headline, bio, ciudad, nicho, objetivo, plataforma_principal, redes, onboarding_completo")
     .eq("id", user.id)
     .maybeSingle();
   if (!p || p.onboarding_completo !== true) return;
 
-  const falta: string[] = [];
-  if (!p.avatar_url) falta.push("tu foto");
-  if (!p.headline) falta.push("a qué te dedicas");
-  if (!p.bio) falta.push("tu descripción");
-  if (!p.pais) falta.push("tu país");
+  // Mismo cálculo que el anillo del perfil (ver lib/perfil-completo).
+  const falta = faltaDelPerfil(p);
   if (falta.length === 0) return;
 
   // ¿Ya se le recordó hace poco?
@@ -144,9 +142,7 @@ export async function recordarPerfilIncompleto(): Promise<void> {
     .gt("created_at", hace3dias);
   if ((count ?? 0) > 0) return;
 
-  const lista =
-    falta.length === 1 ? falta[0]
-      : `${falta.slice(0, -1).join(", ")} y ${falta[falta.length - 1]}`;
+  const lista = enLista(falta);
 
   await admin.from("notificaciones").insert({
     user_id: user.id,

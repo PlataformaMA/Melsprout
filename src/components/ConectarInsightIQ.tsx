@@ -57,7 +57,9 @@ export function useConectarInsightIQ(cfg: InsightIQConfig | null) {
         // Modo redirect: navega a la ventana de InsightIQ como página completa
         // (evita popups bloqueados / iframe invisible). Al terminar regresa aquí
         // y la página vuelve a sincronizar las métricas.
-        const redirectURL = `${window.location.origin}/app/perfil`;
+        // Vuelve con un aviso: antes regresaba en silencio y la persona no
+        // sabía si había quedado conectada o no.
+        const redirectURL = `${window.location.origin}/app/perfil?r=red_ok`;
         const instancia = Phyllo.initialize({
           clientDisplayName: "Melsprout",
           environment: cfg.environment,

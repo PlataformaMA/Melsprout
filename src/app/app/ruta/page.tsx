@@ -6,6 +6,7 @@ import { getClasesCompletadas } from "@/lib/progreso-actions";
 import { getCursos } from "@/lib/cursos-db";
 import { getRecursos, getRecompensas } from "@/lib/recursos-actions";
 import { getDesafiosHoy } from "@/lib/desafios-actions";
+import { pctPerfil } from "@/lib/perfil-completo";
 import { generoDe } from "@/lib/genero";
 import { getNotificaciones } from "@/lib/notificaciones-actions";
 import { recordarPerfilIncompleto } from "@/lib/recordatorios-actions";
@@ -85,12 +86,7 @@ export default async function RutaPage() {
     esTu: r.id === user.id,
   }));
 
-  const tieneRedes = ["instagram", "tiktok", "youtube"].some((k) => perfil.redes?.[k]);
-  const items = [
-    !!perfil.avatar_url, !!perfil.headline, !!perfil.bio,
-    !!perfil.ciudad, tieneRedes, !!perfil.nicho, !!perfil.objetivo, !!perfil.plataforma_principal,
-  ];
-  const perfilPct = Math.round((items.filter(Boolean).length / items.length) * 100);
+  const perfilPct = pctPerfil(perfil);
 
   // ——— Cursos (BD, con fallback) + progreso REAL ———
   const cursos = await getCursos();

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { type Perfil, guardarNicho, guardarCampos, guardarEspecialidades } from "@/lib/perfil-actions";
 import { NICHOS, banderaUrl } from "@/lib/catalogos";
 import { nivelPorXP } from "@/lib/data";
+import { partesDelPerfil, pctPerfil, enLista } from "@/lib/perfil-completo";
 import type { Social } from "@/lib/seguidores-actions";
 import type { Amigo } from "@/lib/chat-actions";
 
@@ -69,6 +70,7 @@ export function PerfilVista({ perfil, creadoEn, insightiq, avance, social, amigo
     if (!r) return;
     const textos: Record<string, { ok: boolean; texto: string }> = {
       instagram_ok: { ok: true, texto: "¡Instagram conectado! Tus métricas se actualizarán en un momento." },
+      red_ok: { ok: true, texto: "¡Listo! Tu red quedó conectada. Tus métricas se actualizarán en un momento." },
       instagram_err: { ok: false, texto: "No pudimos conectar Instagram. Revisa que sea una cuenta profesional (empresa o creador) e inténtalo otra vez." },
       instagram_noconfig: { ok: false, texto: "La conexión con Instagram todavía no está habilitada." },
     };
@@ -116,22 +118,9 @@ export function PerfilVista({ perfil, creadoEn, insightiq, avance, social, amigo
   const edad = calcularEdad(perfil.fecha_nacimiento);
 
   const tieneRedes = REDES.some((r) => perfil.redes?.[r.key]);
-  // Cada cosa que suma al perfil, con su nombre: así se puede decir QUÉ falta
-  // en vez del texto fijo de antes ("te falta conectar tus redes"), que seguía
-  // apareciendo aunque la persona ya estuviera al 100%.
-  const partes: { listo: boolean; que: string }[] = [
-    { listo: !!perfil.avatar_url, que: "tu foto" },
-    { listo: !!perfil.headline, que: "tu profesión" },
-    { listo: !!perfil.bio, que: "tu descripción" },
-    { listo: !!perfil.ciudad, que: "tu ciudad" },
-    { listo: tieneRedes, que: "conectar una red social" },
-    { listo: !!perfil.nicho, que: "tu nicho" },
-    { listo: !!perfil.objetivo, que: "tu objetivo" },
-    { listo: !!perfil.plataforma_principal, que: "tu plataforma principal" },
-  ];
-  const items = partes.map((x) => x.listo);
+  const partes = partesDelPerfil(perfil);
   const faltan = partes.filter((x) => !x.listo).map((x) => x.que);
-  const pct = Math.round((items.filter(Boolean).length / items.length) * 100);
+  const pct = pctPerfil(perfil);
   const xpPct = nivel.siguiente ? Math.min(100, Math.max(6, Math.round((perfil.xp / nivel.siguiente.xp) * 100))) : 100;
 
   return (
@@ -326,7 +315,7 @@ export function PerfilVista({ perfil, creadoEn, insightiq, avance, social, amigo
                   {faltan.length === 0 ? (
                     <>Ya tienes tu <span className="text-accent font-medium">insignia azul</span>. Así te conocen mejor en la comunidad.</>
                   ) : (
-                    <>Te falta <span className="text-accent font-medium">{faltan.length === 1 ? faltan[0] : faltan.slice(0, -1).join(", ") + " y " + faltan[faltan.length - 1]}</span> para llegar al 100% y obtener tu insignia azul.</>
+                    <>Te falta <span className="text-accent font-medium">{enLista(faltan)}</span> para llegar al 100% y obtener tu insignia azul.</>
                   )}
                 </p>
                 {faltan.length > 0 && (

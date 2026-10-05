@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { faltaDelPerfil, enLista } from "@/lib/perfil-completo";
 
 // Recuerda por notificación lo que falta del perfil. Como mucho una vez cada
 // tres días, para que no se vuelva ruido.
@@ -13,17 +14,14 @@ export async function recordarPerfilIncompleto(): Promise<void> {
   const admin = createAdminClient();
   const { data: p } = await admin
     .from("profiles")
-    .select("avatar_url, headline, bio, username, pais, fecha_nacimiento")
+    .select("avatar_url, headline, bio, ciudad, nicho, objetivo, plataforma_principal, redes")
     .eq("id", user.id)
     .maybeSingle();
   if (!p) return;
 
-  const falta: string[] = [];
-  if (!p.avatar_url) falta.push("tu foto");
-  if (!p.username) falta.push("tu nombre de usuario");
-  if (!p.headline) falta.push("tu profesión");
-  if (!p.bio) falta.push("tu descripción");
-  if (!p.pais) falta.push("tu país");
+  // Lo que falta sale del MISMO cálculo que el anillo del perfil: así nadie
+  // recibe "te falta X" con el perfil marcado al 100%.
+  const falta = faltaDelPerfil(p);
   if (falta.length === 0) return;
 
   // ¿Ya se lo recordamos hace poco?
@@ -37,9 +35,7 @@ export async function recordarPerfilIncompleto(): Promise<void> {
     .gt("created_at", hace3dias);
   if ((count ?? 0) > 0) return;
 
-  const lista = falta.length === 1
-    ? falta[0]
-    : `${falta.slice(0, -1).join(", ")} y ${falta[falta.length - 1]}`;
+  const lista = enLista(falta);
 
   await admin.from("notificaciones").insert({
     user_id: user.id,
