@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Icono } from "@/components/IconosApp";
 import {
@@ -23,7 +23,7 @@ export function haceRato(iso: string): string {
   return `hace ${Math.floor(h / 24)} d`;
 }
 
-export function PostCard({ post, compacto = false }: { post: ForoPost; compacto?: boolean }) {
+export function PostCard({ post, compacto = false, abrirAlCargar = false }: { post: ForoPost; compacto?: boolean; abrirAlCargar?: boolean }) {
   // Editar / borrar lo propio (solo lo ve quien lo escribió).
   const [textoPost, setTextoPost] = useState(post.texto);
   const [tituloPost, setTituloPost] = useState(post.titulo);
@@ -89,6 +89,19 @@ export function PostCard({ post, compacto = false }: { post: ForoPost; compacto?
   // El campo donde se escribe la respuesta: hay que poder llevar a la persona
   // hasta él cuando toca "Responder" en un comentario.
   const campoRef = useRef<HTMLInputElement>(null);
+  const cajaRef = useRef<HTMLElement>(null);
+
+  // Cuando se llega desde la notificación ("respondió tu publicación"), esta
+  // tarjeta se abre sola con sus respuestas y se acerca a la vista.
+  useEffect(() => {
+    if (!abrirAlCargar) return;
+    const t = setTimeout(async () => {
+      setAbierto(true);
+      setResp(await getRespuestas(post.id));
+      cajaRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 0);
+    return () => clearTimeout(t);
+  }, [abrirAlCargar, post.id]);
 
   async function responder() {
     if (!texto.trim()) return;
@@ -100,7 +113,7 @@ export function PostCard({ post, compacto = false }: { post: ForoPost; compacto?
   if (borrado) return null;
 
   return (
-    <article className={compacto ? "bg-bg border border-border rounded-2xl p-4" : "bg-surface border border-border rounded-2xl p-5 shadow-sm"}>
+    <article ref={cajaRef} className={compacto ? "bg-bg border border-border rounded-2xl p-4" : "bg-surface border border-border rounded-2xl p-5 shadow-sm"}>
       <div className="flex items-center gap-3 mb-2">
         <Link href={`/app/creador/${post.autorId}`} className="shrink-0">
           {post.autorAvatar ? (

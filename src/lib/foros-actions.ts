@@ -203,7 +203,9 @@ export async function crearRespuesta(postId: string, texto: string): Promise<{ o
     const { data: yo } = await admin.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
     await notificar(dueno, "comentario",
       `${(yo?.full_name as string) || "Alguien"} respondió tu publicación`,
-      t.length > 90 ? t.slice(0, 90) + "…" : t, "/app/comunidad");
+      // Hasta ahora mandaba a la comunidad en general y la persona no
+      // encontraba la respuesta: ahora abre justo esa publicación.
+      t.length > 90 ? t.slice(0, 90) + "…" : t, `/app/comunidad?post=${postId}`);
   }
   return { ok: true };
 }

@@ -34,6 +34,16 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
   const [posts, setPosts] = useState<ForoPost[]>(postsIniciales);
   const [titulo, setTitulo] = useState("");
   const [verTodas, setVerTodas] = useState(false);
+  // Publicación a la que apunta la notificación (?post=…): se despliega la
+  // lista completa para que esté a la vista aunque sea vieja.
+  const [postDestacado, setPostDestacado] = useState<string | null>(null);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const id = new URLSearchParams(window.location.search).get("post");
+      if (id) { setPostDestacado(id); setVerTodas(true); }
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
   const [cargando, setCargando] = useState(false);
   const [texto, setTexto] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
@@ -187,7 +197,9 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
                   ) : (
                     <>
                       <div className="space-y-3">
-                        {(verTodas ? posts : posts.slice(0, 8)).map((p) => <PostCard key={p.id} post={p} />)}
+                        {(verTodas ? posts : posts.slice(0, 8)).map((p) => (
+                          <PostCard key={p.id} post={p} abrirAlCargar={p.id === postDestacado} />
+                        ))}
                       </div>
                       {!verTodas && posts.length > 8 && (
                         <button onClick={() => setVerTodas(true)}
