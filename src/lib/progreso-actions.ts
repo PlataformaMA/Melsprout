@@ -74,13 +74,18 @@ export async function completarClase(
   // sin clases nuevas no puede mantenerla, y romperla sería castigarlo por ir
   // al corriente. Se descongela sola en cuanto haya contenido y vuelva.
   const cursos = await getCursos();
-  const todas = cursos.flatMap((m) => m.clases.map((c) => c.id));
-  const { count } = await supabase
+  const todas = new Set(cursos.flatMap((m) => m.clases.map((c) => c.id)));
+  // OJO: solo cuentan las clases DE LA RUTA. Antes se contaban todas las
+  // completadas —incluidas las de un curso comprado— contra el total de la
+  // ruta, así que a quien compraba un curso se le congelaba la racha diciéndole
+  // "ya terminaste todo" aunque le faltaran clases de la ruta.
+  const { data: hechas } = await supabase
     .from("clase_progreso")
-    .select("clase_id", { count: "exact", head: true })
+    .select("clase_id")
     .eq("user_id", user.id)
     .eq("completada", true);
-  if (todas.length > 0 && (count ?? 0) >= todas.length) await congelarRacha();
+  const deLaRuta = (hechas || []).filter((h) => todas.has(h.clase_id as string)).length;
+  if (todas.size > 0 && deLaRuta >= todas.size) await congelarRacha();
 
   return { ok: true, xpDado: !yaTeniaXp };
 }
