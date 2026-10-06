@@ -97,12 +97,17 @@ export async function guardarPosicion(claseId: string, segundos: number): Promis
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return;
-  await supabase.from("clase_progreso").upsert({
+  // Se escribe con la llave de servidor, como al completar la clase: la tabla
+  // tiene revocada la escritura directa desde el navegador, así que esto fallaba
+  // en silencio y NADIE guardaba su posición — al volver, el video empezaba
+  // desde cero. Solo se toca la fila de quien está en sesión.
+  const { error } = await createAdminClient().from("clase_progreso").upsert({
     user_id: user.id,
     clase_id: claseId,
     segundos_vistos: Math.round(segundos),
     updated_at: new Date().toISOString(),
   });
+  if (error) console.error("guardarPosicion:", error.message);
 }
 
 // Conteo real de avance para el perfil: clases completadas y retos aprobados.
