@@ -121,7 +121,7 @@ export function InicioVista({ perfil, stats, ranking, continuar, retosSugeridos,
                   </Link>
                 ))}
               </div>
-              <Link href="/app/retos" className="text-[13px] text-accent font-semibold mt-4 inline-block">Ver todos →</Link>
+              <Link href="/app/ruta" className="text-[13px] text-accent font-semibold mt-4 inline-block">Ver todos →</Link>
             </section>
 
             <section className="bg-surface border border-border rounded-3xl p-5 shadow-sm">

@@ -21,7 +21,7 @@ export default async function RetoPage({ params }: { params: Promise<{ id: strin
   if (!perfil.onboarding_completo) redirect("/onboarding");
 
   const reto = await getRetoUnificado(id);
-  if (!reto) redirect("/app/retos");
+  if (!reto) redirect("/app/ruta");
 
   const guardado = await getRetoSubmission(id);
   const publicaciones = await getPublicacionesReto(id);

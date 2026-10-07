@@ -209,7 +209,9 @@ export function ReproductorClase({
           onClose={() => setPopup(false)}
         />
       )}
-      <AppSidebar active="clases" />
+      {/* Una clase de un curso comprado vive en "Cursos Especiales": marcar la
+          Ruta confundía sobre dónde está parada la alumna. */}
+      <AppSidebar active={modulo.especialId ? "especiales" : "clases"} />
 
       <main className="flex-1 min-w-0">
         <div className="max-w-[1180px] mx-auto px-4 sm:px-8 py-5">

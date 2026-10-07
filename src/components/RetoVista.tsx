@@ -153,7 +153,7 @@ export function RetoVista({
         .octi-bob { animation: octiBob 3s ease-in-out infinite; }
         .octi-pop { animation: octiPop .45s cubic-bezier(.34,1.56,.64,1), octiBob 3s ease-in-out .45s infinite; }
       `}</style>
-      <AppSidebar active="retos" />
+      <AppSidebar active="clases" />
 
       <div className="flex-1 min-w-0">
         <div className="max-w-[1240px] mx-auto px-4 sm:px-8 py-5">
@@ -171,7 +171,7 @@ export function RetoVista({
 
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-[13px] mb-4">
-            <Link href="/app/retos" className="text-accent font-semibold hover:underline">{reto.modulo}</Link>
+            <span className="text-accent font-semibold">{reto.modulo}</span>
             <span className="text-hint">›</span>
             <span className="text-sub">Reto</span>
           </div>
