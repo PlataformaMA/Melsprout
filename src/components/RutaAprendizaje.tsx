@@ -11,6 +11,7 @@ import { CofreVector } from "@/components/CofreVector";
 import { AbrirCofre } from "@/components/AbrirCofre";
 import { RachaModal } from "@/components/RachaModal";
 import { RecursosModal } from "@/components/RecursosModal";
+import { XpModal } from "@/components/XpModal";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import type { Recurso, Recompensa } from "@/lib/recursos-actions";
 import { octiFrases, type Genero } from "@/lib/genero";
@@ -222,6 +223,9 @@ export function RutaAprendizaje({
   const [recursosAbierto, setRecursosAbierto] = useState(false);
   // Qué clase le toca de verdad: a donde manda el aviso cuando toca una cerrada.
   const [avisoBloqueada, setAvisoBloqueada] = useState(false);
+  // Al tocar el 💎 se explica qué es el XP y cómo se gana. Eso permitió quitar
+  // la barra de nivel de la tarjeta de progreso, que en celular comía espacio.
+  const [xpAbierto, setXpAbierto] = useState(false);
   const mundos = cursos.map((m, i) => {
     const start = cursos.slice(0, i).reduce((a, x) => a + x.clases.length, 0);
     const done = start + m.clases.length <= completadas;
@@ -238,7 +242,10 @@ export function RutaAprendizaje({
           {/* Barra superior */}
           <header className="flex items-center justify-end gap-4 mb-4 h-10">
             <Link href="/app/racha" title="Mi racha" className="hover:scale-105 transition"><Counter icon="🔥" valor={racha} /></Link>
-            <Counter icon="💎" valor={xp} />
+            <button type="button" onClick={() => setXpAbierto(true)} aria-label="Ver tus XP"
+              className="rounded-full hover:bg-bg px-1.5 py-0.5 -mx-1.5 transition">
+              <Counter icon="💎" valor={xp} />
+            </button>
             <CampanaNotificaciones sinLeerInicial={notifSinLeer} />
             <button className="hidden" aria-hidden>
               <BellIcon />
@@ -305,24 +312,8 @@ export function RutaAprendizaje({
                   </div>
                 </div>
 
-                {/* Nivel y cuánto falta para el siguiente */}
-                <div className="mt-4 pt-3.5 border-t border-accent/10">
-                  <div className="flex items-center justify-between gap-3 mb-1.5">
-                    <span className="text-[12.5px] font-extrabold text-accent truncate">
-                      ⭐ Nivel {nivel.actual.nivel} · {nivel.actual.nombre}
-                    </span>
-                    <span className="text-[12px] font-bold text-sub shrink-0">{xp.toLocaleString("es-MX")} XP</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-white/70 border border-accent/10 overflow-hidden">
-                    <div className="h-full rounded-full bg-gradient-to-r from-[#A78BFA] to-accent transition-all duration-700"
-                      style={{ width: `${Math.max(3, pctNivel)}%` }} />
-                  </div>
-                  <p className="text-[12px] text-sub mt-1.5 leading-snug">
-                    {nivel.siguiente
-                      ? <>Te faltan <b className="text-accent">{nivel.faltan.toLocaleString("es-MX")} XP</b> para llegar a <b className="text-text">{nivel.siguiente.nombre}</b>.</>
-                      : <>Llegaste al nivel más alto. ¡Increíble! 🎉</>}
-                  </p>
-                </div>
+                {/* La barra de nivel se movió al pop-up del 💎: aquí ocupaba
+                    media pantalla en celular y repetía lo que ya está arriba. */}
               </div>
 
               {/* Accesos rápidos. En móvil van los cuatro y más chicos, porque
@@ -522,6 +513,7 @@ export function RutaAprendizaje({
         </div>
       )}
       {recursosAbierto && <RecursosModal recursos={recursos} onClose={() => setRecursosAbierto(false)} />}
+      {xpAbierto && <XpModal xp={xp} onClose={() => setXpAbierto(false)} />}
 
       {/* Toca una clase que todavía no le toca: en vez de no pasar nada, se le
           dice por qué y se le ofrece ir a la que sí le toca. */}
