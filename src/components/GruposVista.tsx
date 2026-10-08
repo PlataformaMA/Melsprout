@@ -111,6 +111,8 @@ function TarjetaPropuesta({ grupo, onCambio }: { grupo: Grupo; onCambio: () => v
   const [apoyos, setApoyos] = useState(grupo.apoyos);
   const [yoApoye, setYoApoye] = useState(grupo.yoApoye);
   const [pendiente, startTransition] = useTransition();
+  // La tarjeta recorta el texto a dos lineas: el detalle completo se lee aqui.
+  const [abierta, setAbierta] = useState(false);
   const pct = Math.min(100, Math.round((apoyos / grupo.meta) * 100));
 
   function apoyar() {
@@ -127,13 +129,18 @@ function TarjetaPropuesta({ grupo, onCambio }: { grupo: Grupo; onCambio: () => v
 
   return (
     <article className="bg-surface border border-border rounded-2xl p-4 shadow-sm flex flex-col">
-      <div className="flex items-start gap-3">
+      {abierta && (
+        <PropuestaModal grupo={grupo} apoyos={apoyos} pct={pct} yoApoye={yoApoye}
+          pendiente={pendiente} onApoyar={apoyar} onCerrar={() => setAbierta(false)} />
+      )}
+      <button type="button" onClick={() => setAbierta(true)}
+        className="flex items-start gap-3 text-left w-full group" title="Ver la propuesta completa">
         <IconoGrupo emoji={grupo.emoji} className="w-11 h-11 rounded-xl bg-accent-soft text-xl shrink-0" />
         <div className="min-w-0">
-          <h3 className="font-display font-extrabold text-[14.5px] leading-tight">{grupo.nombre}</h3>
+          <h3 className="font-display font-extrabold text-[14.5px] leading-tight group-hover:text-accent transition">{grupo.nombre}</h3>
           <p className="text-[12.5px] text-sub leading-snug mt-1 line-clamp-2">{grupo.descripcion}</p>
         </div>
-      </div>
+      </button>
 
       {grupo.proponente && (
         <div className="flex items-center gap-2 mt-3">
@@ -165,8 +172,78 @@ function TarjetaPropuesta({ grupo, onCambio }: { grupo: Grupo; onCambio: () => v
           }`}>
           {yoApoye ? "✓ Ya lo apoyaste" : "👍 Apoyar"}
         </button>
+        <button type="button" onClick={() => setAbierta(true)}
+          className="w-full mt-1.5 text-[12px] font-bold text-accent hover:underline">
+          Ver propuesta
+        </button>
       </div>
     </article>
+  );
+}
+
+// ————— La propuesta completa —————
+// En la tarjeta la descripcion se corta a dos lineas y casi nunca cabe la idea.
+// Aqui se lee entera, con quien la propuso y los apoyos que lleva.
+function PropuestaModal({ grupo, apoyos, pct, yoApoye, pendiente, onApoyar, onCerrar }: {
+  grupo: Grupo; apoyos: number; pct: number; yoApoye: boolean; pendiente: boolean;
+  onApoyar: () => void; onCerrar: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[120] flex items-start sm:items-center justify-center p-3 sm:p-6 overflow-y-auto">
+      <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={onCerrar} />
+      <div className="relative w-full max-w-[420px] bg-surface rounded-3xl shadow-2xl my-4 onb-slide p-6">
+        <button type="button" onClick={onCerrar} aria-label="Cerrar"
+          className="absolute top-4 right-4 w-9 h-9 grid place-items-center rounded-full text-hint hover:bg-bg transition">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+
+        <div className="flex items-start gap-3.5 pr-8">
+          <IconoGrupo emoji={grupo.emoji} className="w-14 h-14 rounded-2xl bg-accent-soft text-2xl shrink-0" />
+          <div className="min-w-0">
+            <h3 className="font-display font-extrabold text-[19px] leading-tight">{grupo.nombre}</h3>
+            <p className="text-[13.5px] text-sub leading-relaxed mt-1.5 whitespace-pre-line">{grupo.descripcion}</p>
+          </div>
+        </div>
+
+        {grupo.proponente && (
+          <div className="flex items-center gap-2.5 mt-5 pt-4 border-t border-border">
+            {grupo.proponente.avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={grupo.proponente.avatar} alt="" className="w-9 h-9 rounded-full object-cover" />
+            ) : (
+              <span className="w-9 h-9 rounded-full bg-accent-soft text-accent grid place-items-center text-[11px] font-bold">
+                {grupo.proponente.nombre.slice(0, 2).toUpperCase()}
+              </span>
+            )}
+            <span className="text-[13px] text-sub">
+              Propuesto por <b className="text-text">{grupo.proponente.nombre}</b> · Nivel {grupo.proponente.nivel}
+            </span>
+          </div>
+        )}
+
+        <div className="mt-5">
+          <div className="flex items-center justify-between text-[13px] font-semibold text-sub mb-2">
+            <span>👥 {apoyos} / {grupo.meta} apoyos</span>
+            <span className="text-accent">{pct}%</span>
+          </div>
+          <div className="h-2.5 rounded-full bg-[#EEEBF6] overflow-hidden">
+            <div className="h-full rounded-full bg-accent transition-all duration-500" style={{ width: `${pct}%` }} />
+          </div>
+        </div>
+
+        <button onClick={onApoyar} disabled={pendiente}
+          className={`w-full mt-5 rounded-full py-3.5 text-[15px] font-bold transition disabled:opacity-60 ${
+            yoApoye ? "bg-accent-soft text-accent" : "bg-accent text-white hover:brightness-110 shadow-lg shadow-accent/25"
+          }`}>
+          {yoApoye ? "✓ Ya lo apoyaste" : "👍 Apoyar"}
+        </button>
+        <p className="text-[11.5px] text-hint text-center mt-2.5 leading-snug">
+          Al llegar a {grupo.meta} apoyos el grupo se crea y quienes lo apoyaron entran desde el primer día.
+        </p>
+      </div>
+    </div>
   );
 }
 
