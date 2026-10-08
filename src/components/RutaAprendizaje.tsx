@@ -10,6 +10,8 @@ import { CofreModal } from "@/components/CofreModal";
 import { CofreVector } from "@/components/CofreVector";
 import { AbrirCofre } from "@/components/AbrirCofre";
 import { RachaModal } from "@/components/RachaModal";
+import { RachaRotaModal } from "@/components/RachaRotaModal";
+import { ProModal } from "@/components/ProModal";
 import { RecursosModal } from "@/components/RecursosModal";
 import { XpModal } from "@/components/XpModal";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
@@ -26,6 +28,7 @@ const W = 640;
 const CX = 310;                 // centro
 const AMP = 208;                // clases en ~16% (izq) y ~81% (der), como el mockup
 const SPACING = 118;            // separación vertical (el diseño va más junto)
+const EXTRA_PUERTA = 56;        // aire de más entre el trofeo y la puerta
 const TOP = 94;
 const FREQ = Math.PI / 2;       // período de 4 nodos → S regular y limpia
 const PHASE = -Math.PI / 2;     // el primer nodo arranca a la izquierda (valle)
@@ -120,6 +123,16 @@ export function RutaAprendizaje({
   // sale el ranking (si toca hoy) — así no se encima uno con otro.
   const [rankingAbierto, setRankingAbierto] = useState(false);
   const [rachaAbierto, setRachaAbierto] = useState(false);
+  const [rachaRotaAbierto, setRachaRotaAbierto] = useState(false);
+  const [proAbierto, setProAbierto] = useState(false);
+
+  // Terminó TODAS las clases que tiene disponibles: ahí se le ofrece el
+  // siguiente nivel (una sola vez, no cada que entra).
+  const rutaTerminada = useMemo(() => {
+    const todas = cursosSeq.flatMap((m) => m.clases);
+    return todas.length > 0 && todas.every((c) => hechas.has(c.id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cursosSeq, completadasIds.join(",")]);
 
   // Fecha LOCAL (como la racha): con la UTC, a las 18:00 en México ya contaba
   // como el día siguiente y el pop-up salía dos veces.
@@ -149,6 +162,22 @@ export function RutaAprendizaje({
         localStorage.setItem("melsprout_visto", hoy);
         return;
       }
+      // Ya no le queda nada por ver: el aviso del siguiente nivel, una sola vez.
+      if (rutaTerminada && !localStorage.getItem("melsprout_pro_visto")) {
+        localStorage.setItem("melsprout_pro_visto", hoy);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setProAbierto(true);
+        return;
+      }
+      // Racha rota hace poco: la segunda oportunidad va antes que el check-in
+      // normal (y ocupa su lugar, para no encimar dos pop-ups de racha).
+      if (rachaInfo?.rescatable && localStorage.getItem("melsprout_racha_rota") !== hoy) {
+        localStorage.setItem("melsprout_racha_rota", hoy);
+        localStorage.setItem("melsprout_racha_dia", hoy);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setRachaRotaAbierto(true);
+        return;
+      }
       // Racha: 1 vez al día. Al cerrarla, se muestra el ranking.
       if (rachaInfo && localStorage.getItem("melsprout_racha_dia") !== hoy) {
         localStorage.setItem("melsprout_racha_dia", hoy);
@@ -162,7 +191,7 @@ export function RutaAprendizaje({
       abrirRankingSiToca();
     } catch {}
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ranking.length, rachaInfo]);
+  }, [ranking.length, rachaInfo, rutaTerminada]);
 
   // ——— Mundos (cada módulo = un mundo temático) + Cofre de recompensas ———
   const [mundosAbierto, setMundosAbierto] = useState(false);
@@ -184,8 +213,13 @@ export function RutaAprendizaje({
   const modVisible = mundoFiltro ?? modIdx;
   const elementos = todos.filter((e) => e.mIdx === modVisible);
   // Todos los nodos siguen la misma onda senoidal → serpentina continua y suave.
-  const pts = elementos.map((_, i) => ({ x: serpX(i), y: TOP + i * SPACING }));
-  const altura = TOP + elementos.length * SPACING + 40;
+  // La puerta baja un poco más: el trofeo es alto y los dos quedaban pegados.
+  const hayPuerta = elementos.some((e) => e.tipo === "gate");
+  const pts = elementos.map((el, i) => ({
+    x: serpX(i),
+    y: TOP + i * SPACING + (el.tipo === "gate" ? EXTRA_PUERTA : 0),
+  }));
+  const altura = TOP + elementos.length * SPACING + 40 + (hayPuerta ? EXTRA_PUERTA : 0);
   const idxActual = elementos.findIndex((e) => e.tipo === "clase" && e.estado === "actual");
   // La clase que de verdad le toca ahora: a ahí la manda el aviso de bloqueo.
   // Si en este módulo ya no hay ninguna pendiente, se busca en todos.
@@ -527,7 +561,7 @@ export function RutaAprendizaje({
           <div className="bg-surface rounded-3xl w-full max-w-[330px] p-6 text-center shadow-2xl"
             onClick={(e) => e.stopPropagation()}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/octi.png" alt="" width={118} className="mx-auto mb-3" />
+            <img src="/octi-candado.png" alt="" width={200} className="mx-auto mb-1" />
             <h2 className="font-display font-extrabold text-[18px] leading-snug">
               Oh, oh, aún no completas<br />la clase anterior
             </h2>
@@ -548,6 +582,11 @@ export function RutaAprendizaje({
       {rachaAbierto && rachaInfo && (
         <RachaModal info={rachaInfo} onClose={() => { setRachaAbierto(false); abrirRankingSiToca(); }} />
       )}
+      {rachaRotaAbierto && rachaInfo && (
+        <RachaRotaModal racha={rachaInfo.rescatable}
+          onClose={() => { setRachaRotaAbierto(false); abrirRankingSiToca(); }} />
+      )}
+      {proAbierto && <ProModal motivo="clases" onClose={() => setProAbierto(false)} />}
     </div>
   );
 }

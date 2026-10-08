@@ -55,13 +55,28 @@ export type RachaInfo = {
   congelada: boolean;
   // 7 posiciones (Lun..Dom): true si hubo actividad ese día de la semana actual
   semana: boolean[];
+  // Racha que todavía se puede rescatar (0 = no hay nada que rescatar). Ver
+  // rescatarRacha: la segunda oportunidad dura 3 días.
+  rescatable: number;
 };
+
+// Días completos entre dos fechas "YYYY-MM-DD". Se comparan a mediodía UTC para
+// que los cambios de horario no muevan el resultado.
+function diasEntre(desde: string, hasta: string): number {
+  return Math.round(
+    (Date.parse(`${hasta}T12:00:00Z`) - Date.parse(`${desde}T12:00:00Z`)) / 86400000
+  );
+}
+
+// Cuántos días sin entrar se perdonan: si la última actividad fue hace 2, 3 o 4
+// días (o sea, falló 1, 2 o 3 días), todavía se puede recuperar la racha.
+const RESCATE_MAX = 4;
 
 // Lee la racha + qué días de ESTA semana (Lun–Dom, en TU zona horaria) tuvieron actividad.
 export async function getRachaInfo(): Promise<RachaInfo> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { racha: 0, hoyContado: false, congelada: false, semana: Array(7).fill(false) };
+  if (!user) return { racha: 0, hoyContado: false, congelada: false, semana: Array(7).fill(false), rescatable: 0 };
 
   const { data: p } = await supabase.from("profiles").select("racha, racha_fecha, racha_congelada").eq("id", user.id).single();
 
@@ -95,16 +110,50 @@ export async function getRachaInfo(): Promise<RachaInfo> {
   // Si la última actividad no fue hoy ni ayer, la racha YA se rompió: se muestra
   // en 0 aunque en la base siga el número viejo (se reescribe en la siguiente
   // actividad). Antes seguía anunciando "12 días" con la racha perdida.
-  const ayerStr2 = new Date(Date.now() - 86400000).toLocaleDateString("en-CA");
   const ultimaFecha = (p?.racha_fecha as string) ?? null;
-  const vigente = !!p?.racha_congelada || ultimaFecha === hoyStr || ultimaFecha === ayerStr2;
+  const dias = ultimaFecha ? diasEntre(ultimaFecha, hoyStr) : Infinity;
+  const vigente = !!p?.racha_congelada || dias <= 1;
+  const guardada = (p?.racha as number) || 0;
+
+  // Rota hace poco y valía la pena (2 días o más): se le ofrece recuperarla.
+  const rescatable = !vigente && guardada >= 2 && dias <= RESCATE_MAX ? guardada : 0;
 
   return {
-    racha: vigente ? (p?.racha as number) || 0 : 0,
+    racha: vigente ? guardada : 0,
     hoyContado,
     congelada: !!p?.racha_congelada,
     semana,
+    rescatable,
   };
+}
+
+// Segunda oportunidad: devuelve la racha perdida en vez de ponerla en cero.
+//
+// No regala un día: deja la fecha en AYER, así que la cadena sigue viva pero
+// para que siga creciendo tiene que completar algo hoy. Si no hace nada, mañana
+// vuelve a estar rota.
+export async function rescatarRacha(): Promise<{ ok: boolean; racha: number }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, racha: 0 };
+
+  const { data: p } = await supabase
+    .from("profiles").select("racha, racha_fecha, racha_congelada").eq("id", user.id).single();
+
+  const tz = zonaDe(user);
+  const hoyStr = ymdEnZona(tz);
+  const ayerStr = ymdEnZona(tz, new Date(Date.now() - 86400000));
+  const ultimaFecha = (p?.racha_fecha as string) ?? null;
+  const guardada = (p?.racha as number) || 0;
+  const dias = ultimaFecha ? diasEntre(ultimaFecha, hoyStr) : Infinity;
+
+  // Se vuelve a comprobar aquí: el pop-up vive en el navegador y no se le cree.
+  if (p?.racha_congelada || guardada < 2 || dias <= 1 || dias > RESCATE_MAX) {
+    return { ok: false, racha: 0 };
+  }
+
+  await createAdminClient().from("profiles").update({ racha_fecha: ayerStr }).eq("id", user.id);
+  return { ok: true, racha: guardada };
 }
 
 // Congela la racha cuando ya no queda nada por hacer. Se llama al terminar la
