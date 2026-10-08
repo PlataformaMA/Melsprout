@@ -98,7 +98,6 @@ export function ReproductorClase({
   const [popup, setPopup] = useState(false);
   const [tabRep, setTabRep] = useState<"recursos" | "clases">("clases");
   const completadoRef = useRef(yaCompletada); // ya llegó al 100% (guarda anti-repetición)
-  const xpGanadoRef = useRef(false); // dio XP: el pop-up se muestra al pulsar "siguiente"
 
   const idx = modulo.clases.findIndex((c) => c.id === clase.id);
   const siguiente = idx >= 0 ? modulo.clases[idx + 1] : undefined;
@@ -132,7 +131,7 @@ export function ReproductorClase({
     const medida = compacto ? "px-3 py-2 text-[13px]" : "px-4 py-2.5 text-sm";
     return puedeAvanzar ? (
       <button
-        onClick={() => { if (xpGanadoRef.current) { xpGanadoRef.current = false; setPopup(true); } else router.push(siguienteHref); }}
+        onClick={() => router.push(siguienteHref)}
         className={`flex items-center gap-2 bg-green text-white border border-green rounded-xl font-bold hover:brightness-110 transition shadow-sm ${medida}`}>
         {compacto ? "Siguiente" : "Siguiente clase"} <NextIcon small />
       </button>
@@ -169,7 +168,10 @@ export function ReproductorClase({
       if (!("error" in r)) {
         // Marca la clase como completada (check) y desbloquea la siguiente en vivo.
         setCompletadas((prev) => new Set(prev).add(clase.id));
-        if (r.xpDado) { xpGanadoRef.current = true; router.refresh(); } // +100 XP solo la primera vez
+        // +100 XP solo la primera vez. La celebración sale AQUÍ, al terminar el
+        // video: antes esperaba a que pulsara "siguiente" y mucha gente cerraba
+        // la clase sin enterarse de que había ganado los puntos.
+        if (r.xpDado) { setPopup(true); router.refresh(); }
       }
     })();
   }, [progreso, clase.id, router]);
@@ -205,7 +207,13 @@ export function ReproductorClase({
         <PopupClaseCompletada
           completadas={posicion}
           total={total}
-          onContinuar={() => { setPopup(false); router.push(siguienteHref ?? volverHref); }}
+          // Si la clase trae reto y todavía no lo manda, "Continuar" solo cierra:
+          // lo que sigue es el reto, que está abajo, no la clase siguiente.
+          onContinuar={() => {
+            setPopup(false);
+            if (tieneReto && !retoEnviado) return;
+            router.push(siguienteHref ?? volverHref);
+          }}
           onClose={() => setPopup(false)}
         />
       )}

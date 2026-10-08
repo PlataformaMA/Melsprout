@@ -32,13 +32,17 @@ export function PopupCelebracion({ titulo, lineas, primaryLabel, primaryHref, on
 
         {/* Barra de progreso Octi → trofeo */}
         {progreso && (
-          <div className="mt-5 flex items-center gap-2">
+          <div className="mt-6 flex items-center gap-2.5">
             <span className="text-[12px] font-extrabold text-accent shrink-0">{progreso.actual}/{progreso.total}</span>
             <div className="relative flex-1 h-2.5 rounded-full bg-[#EEEBF6]">
-              <div className="absolute left-0 top-0 h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
-              <span className="absolute -top-2 -translate-x-1/2 text-[15px]" style={{ left: `${pct}%` }}>🐙</span>
+              <div className="absolute left-0 top-0 h-full rounded-full bg-accent transition-all duration-700" style={{ width: `${pct}%` }} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/octi.png" alt="" draggable={false}
+                className="octi-vivo absolute -top-5 w-9 -translate-x-1/2 drop-shadow transition-all duration-700"
+                style={{ left: `clamp(14px, ${pct}%, calc(100% - 14px))` }} />
             </div>
-            <span className="text-lg shrink-0">🏆</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/trofeo.png" alt="" width={40} height={40} className="shrink-0 select-none" draggable={false} />
           </div>
         )}
 
