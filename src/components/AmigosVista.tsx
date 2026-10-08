@@ -27,9 +27,13 @@ export function AmigosVista({
   const [verTodos, setVerTodos] = useState(false);
   const [tab, setTab] = useState<"Seguidores" | "Seguidos">("Seguidores");
   const lista = tab === "Seguidores" ? seguidores : seguidos;
-  // Sin Pro la pantalla se ve, pero encima queda el aviso del plan: cerrarlo
-  // lo vuelve a abrir, porque aquí no hay nada que hacer sin el plan.
+  // Sin Pro la pantalla se ve, pero el aviso del plan sale encima al entrar y
+  // vuelve cada vez que se toca algo que necesita el plan (abrir un chat,
+  // felicitar, invitar).
   const [proAbierto, setProAbierto] = useState(bloqueado);
+  const alPro = bloqueado
+    ? (e: React.MouseEvent) => { e.preventDefault(); setProAbierto(true); }
+    : undefined;
 
   return (
     <div className="min-h-screen bg-bg flex">
@@ -53,7 +57,7 @@ export function AmigosVista({
               {/* Fila de amigos + botón para verlos todos */}
               <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1">
                 {amigos.slice(0, 8).map((a) => (
-                  <Link key={a.id} href={`/app/amigos/${a.id}`} className="shrink-0 w-[74px] text-center group">
+                  <Link key={a.id} href={`/app/amigos/${a.id}`} onClick={alPro} className="shrink-0 w-[74px] text-center group">
                     <span className="relative block">
                       {a.avatar ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -119,7 +123,7 @@ export function AmigosVista({
                         <Link href={`/app/creador/${a.userId}`} className="font-display font-extrabold text-[15px] truncate hover:text-accent transition">
                           {a.nombre}
                         </Link>
-                        <Link href={`/app/amigos/${a.userId}`}
+                        <Link href={`/app/amigos/${a.userId}`} onClick={alPro}
                           className="ml-auto shrink-0 bg-accent text-white rounded-full px-4 py-1.5 text-[13px] font-bold hover:brightness-110 transition">
                           Felicitar
                         </Link>
@@ -200,7 +204,7 @@ export function AmigosVista({
             ) : (
               <div className="space-y-2">
                 {amigos.map((a) => (
-                  <Link key={a.id} href={`/app/amigos/${a.id}`}
+                  <Link key={a.id} href={`/app/amigos/${a.id}`} onClick={alPro}
                     className="flex items-center gap-3 rounded-2xl p-2 hover:bg-bg transition">
                     {a.avatar ? (
                       // eslint-disable-next-line @next/next/no-img-element
