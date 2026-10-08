@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getPerfil } from "@/lib/perfil-actions";
 import { listarClasesVivo } from "@/lib/vivo-actions";
 import { VivoVista } from "@/components/VivoVista";
+import { estadoPro } from "@/lib/pro";
+import { esAdminUsuario } from "@/lib/admin";
 
 export default async function VivoPage() {
   const supabase = await createClient();
@@ -16,6 +18,9 @@ export default async function VivoPage() {
   if (!perfil.onboarding_completo) redirect("/onboarding");
 
   const clases = await listarClasesVivo();
+  // Las clases en vivo son parte de Boost Pro. Mientras el plan no exista en la
+  // base, `activo` es false y nadie queda bloqueado.
+  const pro = await estadoPro(user.id, await esAdminUsuario(user.id, user.email));
   // Asistencias del usuario (para marcar "Asistí").
   const { data: asist } = await supabase
     .from("asistencias_vivo")
@@ -31,6 +36,7 @@ export default async function VivoPage() {
       avatarUrl={perfil.avatar_url}
       xp={perfil.xp}
       racha={perfil.racha}
+      bloqueado={pro.activo && !pro.pro}
     />
   );
 }

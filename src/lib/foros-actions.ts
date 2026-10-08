@@ -3,7 +3,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notificar } from "@/lib/notificaciones-actions";
-import { nivelPorXP } from "@/lib/data";
+import { nivelPorXP, CATEGORIA_GENERAL, CATEGORIAS_FORO, CATEGORIAS_SOLO_ADMIN, CATEGORIAS_AVISAN } from "@/lib/data";
+import { esAdminUsuario } from "@/lib/admin";
 import { registrarRacha } from "@/lib/racha-actions";
 
 export type ForoPost = {
@@ -93,9 +94,25 @@ export async function getForoPosts(categoria: string, grupoId?: string): Promise
   let q = admin.from("foros_posts").select("*").eq("oculto", false).order("created_at", { ascending: false }).limit(50);
   // El muro de un grupo trae solo lo suyo; el foro general excluye lo de grupos.
   q = grupoId ? q.eq("grupo_id", grupoId) : q.is("grupo_id", null);
-  if (!grupoId && categoria && categoria !== "General") q = q.eq("categoria", categoria);
+  // "Comunidad" es el muro general: trae todo MENOS lo que tiene etiqueta
+  // propia. Asi las respuestas de los retos solo salen en "Retos", y las
+  // publicaciones viejas de etiquetas que ya no existen siguen a la vista aqui.
+  const general = !grupoId && categoria === CATEGORIA_GENERAL;
+  if (!grupoId && categoria && !general) q = q.eq("categoria", categoria);
+  // El muro general pide de más porque abajo se le quitan las etiquetas que
+  // tienen pestaña propia: con 50 justos se quedaría corto cuando hay muchos
+  // retos seguidos.
+  if (general) q = q.limit(150);
+
   const { data: posts } = await q;
-  return armarPosts(posts, user?.id ?? null);
+  // "Comunidad" trae todo MENOS lo que tiene etiqueta propia: así las
+  // respuestas de los retos solo salen en "Retos", y las publicaciones viejas
+  // de etiquetas que ya no existen siguen a la vista aquí.
+  const aparte = CATEGORIAS_FORO.filter((c) => c !== CATEGORIA_GENERAL);
+  const visibles = general
+    ? (posts || []).filter((p) => !aparte.includes((p.categoria as string) ?? "")).slice(0, 50)
+    : posts;
+  return armarPosts(visibles, user?.id ?? null);
 }
 
 // Publicaciones de otras personas para un reto concreto ("Mira otras publicaciones").
@@ -125,9 +142,14 @@ export async function crearPost(categoria: string, texto: string, extra?: { enla
   // Los enlaces solo pueden ser http(s): un `javascript:` en un enlace de post
   // se ejecutaría al tocarlo (P1-21).
   const urlSegura = (v?: string) => (v && /^https?:\/\//i.test(v.trim()) ? v.trim().slice(0, 500) : null);
+  // "Anuncios" es tablon del equipo: nadie mas publica ahi.
+  const cat = categoria || CATEGORIA_GENERAL;
+  if (CATEGORIAS_SOLO_ADMIN.includes(cat) && !(await esAdminUsuario(user.id, user.email))) {
+    return { error: "Solo el equipo puede publicar en Anuncios." };
+  }
   const admin = createAdminClient();
   const { error } = await admin.from("foros_posts").insert({
-    autor_id: user.id, categoria: categoria || "General", texto: t, grupo_id: extra?.grupoId || null,
+    autor_id: user.id, categoria: cat, texto: t, grupo_id: extra?.grupoId || null,
     titulo: extra?.titulo?.trim().slice(0, 120) || null,
     enlace_url: urlSegura(extra?.enlaceUrl), imagen_url: urlSegura(extra?.imagenUrl), video_url: urlSegura(extra?.videoUrl),
   });
@@ -136,7 +158,49 @@ export async function crearPost(categoria: string, texto: string, extra?: { enla
   const { data: p } = await admin.from("profiles").select("xp").eq("id", user.id).single();
   await admin.from("profiles").update({ xp: (p?.xp ?? 0) + 10 }).eq("id", user.id);
   await registrarRacha(); // publicar es actividad: cuenta para la racha
+  // Aviso a la comunidad (no en los muros de grupo, que son privados).
+  if (!extra?.grupoId && CATEGORIAS_AVISAN.includes(cat)) {
+    await avisarDeNuevoPost(cat, user.id, t);
+  }
   return { ok: true };
+}
+
+// Le avisa a la comunidad que hay algo nuevo en una etiqueta.
+//
+// Un aviso por etiqueta: si alguien ya tiene uno sin leer de la misma etiqueta,
+// no se le manda otro. Si no, tres publicaciones seguidas dejarian la campana
+// con tres avisos que llevan al mismo lugar.
+async function avisarDeNuevoPost(categoria: string, autorId: string, texto: string): Promise<void> {
+  const admin = createAdminClient();
+  const titulo = `Nueva publicación en ${categoria}`;
+
+  const { data: quien } = await admin.from("profiles").select("full_name").eq("id", autorId).maybeSingle();
+  const nombre = (quien?.full_name as string) || "Alguien";
+  const resumen = texto.length > 90 ? texto.slice(0, 90) + "…" : texto;
+
+  const { data: gente } = await admin.from("profiles").select("id").neq("id", autorId).limit(5000);
+  if (!gente?.length) return;
+
+  // A quienes ya les espera un aviso igual sin leer, no se les repite.
+  const { data: yaTienen } = await admin
+    .from("notificaciones").select("user_id")
+    .eq("titulo", titulo).eq("leida", false);
+  const saltar = new Set((yaTienen || []).map((n) => n.user_id as string));
+
+  const filas = gente
+    .map((g) => g.id as string)
+    .filter((id) => !saltar.has(id))
+    .map((id) => ({
+      user_id: id, tipo: "general", titulo,
+      cuerpo: `${nombre}: ${resumen}`,
+      href: `/app/comunidad?cat=${encodeURIComponent(categoria)}`,
+    }));
+  if (filas.length === 0) return;
+
+  // De 500 en 500: un insert con miles de filas se cae por tamaño.
+  for (let i = 0; i < filas.length; i += 500) {
+    await admin.from("notificaciones").insert(filas.slice(i, i + 500));
+  }
 }
 
 export async function toggleLike(postId: string): Promise<{ ok: true; meGusta: boolean } | { error: string }> {

@@ -6,6 +6,8 @@ import { listarRetosComunidad } from "@/lib/comunidad-retos-actions";
 import { getActividadReciente } from "@/lib/comunidad-actions";
 import { listarGrupos } from "@/lib/grupos-actions";
 import { ComunidadVista } from "@/components/ComunidadVista";
+import { CATEGORIA_GENERAL } from "@/lib/data";
+import { esAdminUsuario } from "@/lib/admin";
 
 export default async function ComunidadPage() {
   const supabase = await createClient();
@@ -19,7 +21,7 @@ export default async function ComunidadPage() {
   if (!perfil.onboarding_completo) redirect("/onboarding");
 
   const [posts, top, retosComunidad, actividad, grupos] = await Promise.all([
-    getForoPosts("General"),
+    getForoPosts(CATEGORIA_GENERAL),
     getTopColaboradores(),
     listarRetosComunidad(),
     getActividadReciente(),
@@ -38,6 +40,7 @@ export default async function ComunidadPage() {
       avatarUrl={perfil.avatar_url}
       xp={perfil.xp}
       racha={perfil.racha}
+      esAdmin={await esAdminUsuario(user.id, user.email)}
     />
   );
 }

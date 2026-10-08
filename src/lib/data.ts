@@ -69,7 +69,15 @@ export const ETAPA_1: ModuloCurso[] = [
   },
 ];
 
-export const CATEGORIAS_FORO = ["General", "Retos", "Marketing de contenido", "Redes sociales", "Branding personal", "YouTube", "TikTok", "Foto y video"];
+// Etiquetas del foro. "Comunidad" es el muro de siempre (ahi caen tambien las
+// publicaciones viejas de las etiquetas que ya no existen); "Retos" solo trae
+// las respuestas de los retos; "Anuncios" solo lo escribe el equipo.
+export const CATEGORIA_GENERAL = "Comunidad";
+export const CATEGORIAS_FORO = [CATEGORIA_GENERAL, "Retos", "Anuncios", "Presentaciones", "Dudas"];
+// Solo el equipo publica aqui.
+export const CATEGORIAS_SOLO_ADMIN = ["Anuncios"];
+// Al publicar en estas se le avisa a la comunidad.
+export const CATEGORIAS_AVISAN = [CATEGORIA_GENERAL, "Presentaciones", "Dudas"];
 
 export const NICHOS = ["Moda", "Salud", "Belleza", "Tech", "Lifestyle"] as const;
 export const OBJETIVOS = ["Empezar desde cero", "Crecer mi audiencia", "Monetizar"] as const;

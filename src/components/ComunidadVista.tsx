@@ -6,7 +6,7 @@ import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { useRouter } from "next/navigation";
-import { CATEGORIAS_FORO } from "@/lib/data";
+import { CATEGORIAS_FORO, CATEGORIA_GENERAL, CATEGORIAS_SOLO_ADMIN } from "@/lib/data";
 import {
   getForoPosts, crearPost,
   type ForoPost,
@@ -24,13 +24,15 @@ type Props = {
   grupos?: { propuestas: Grupo[]; mios: Grupo[]; otros: Grupo[] };
   actividad?: Actividad[];
   nombre: string; avatarUrl: string | null; xp: number; racha: number;
+  // "Anuncios" solo lo escribe el equipo.
+  esAdmin?: boolean;
 };
 
 
-export function ComunidadVista({ postsIniciales, topColaboradores, retosComunidad, grupos, actividad = [], nombre, avatarUrl, xp, racha }: Props) {
+export function ComunidadVista({ postsIniciales, topColaboradores, retosComunidad, grupos, actividad = [], nombre, avatarUrl, xp, racha, esAdmin = false }: Props) {
   const router = useRouter();
   const [tab, setTab] = useState<"foros" | "grupos" | "retos">("foros");
-  const [cat, setCat] = useState("General");
+  const [cat, setCat] = useState(CATEGORIA_GENERAL);
   const [posts, setPosts] = useState<ForoPost[]>(postsIniciales);
   const [titulo, setTitulo] = useState("");
   const [verTodas, setVerTodas] = useState(false);
@@ -39,8 +41,12 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
   const [postDestacado, setPostDestacado] = useState<string | null>(null);
   useEffect(() => {
     const t = setTimeout(() => {
-      const id = new URLSearchParams(window.location.search).get("post");
+      const q = new URLSearchParams(window.location.search);
+      const id = q.get("post");
       if (id) { setPostDestacado(id); setVerTodas(true); }
+      // Las notificaciones traen ?cat=… para caer en la etiqueta del aviso.
+      const c = q.get("cat");
+      if (c && CATEGORIAS_FORO.includes(c) && c !== CATEGORIA_GENERAL) cambiarCat(c);
     }, 0);
     return () => clearTimeout(t);
   }, []);
@@ -152,13 +158,21 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
                     ))}
                   </div>
 
-                  {/* Composer */}
+                  {/* Composer. En "Anuncios" solo escribe el equipo. */}
+                  {CATEGORIAS_SOLO_ADMIN.includes(cat) && !esAdmin ? (
+                    <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm mb-5 flex items-center gap-3">
+                      <span className="w-9 h-9 rounded-full bg-accent-soft text-accent grid place-items-center shrink-0">📢</span>
+                      <p className="text-[13px] text-sub leading-snug">
+                        Aquí publica el equipo de Melsprout. Tú puedes comentar y reaccionar.
+                      </p>
+                    </div>
+                  ) : (
                   <div className="bg-surface border border-border rounded-2xl p-4 shadow-sm mb-5">
                     <input value={titulo} onChange={(e) => setTitulo(e.target.value)} maxLength={120}
                       placeholder="Ponle un título (opcional)"
                       className="w-full bg-bg border border-border rounded-xl px-4 py-2.5 text-[14px] font-bold outline-none focus:border-accent mb-2" />
                     <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={2}
-                      placeholder={`Escribe algo en ${cat === "General" ? "el foro general" : cat}…`}
+                      placeholder={`Escribe algo en ${cat === CATEGORIA_GENERAL ? "la comunidad" : cat}…`}
                       className="w-full bg-bg border border-border rounded-xl px-4 py-3 text-[14px] outline-none focus:border-accent resize-none" />
                     {mostrarVideo && (
                       <input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="Link de YouTube o video…" className="w-full mt-2 bg-bg border border-border rounded-xl px-4 py-2.5 text-[13px] outline-none focus:border-accent" />
@@ -184,6 +198,7 @@ export function ComunidadVista({ postsIniciales, topColaboradores, retosComunida
                       </button>
                     </div>
                   </div>
+                  )}
 
                   {/* Publicaciones */}
                   <div className="flex items-center justify-between mb-3">

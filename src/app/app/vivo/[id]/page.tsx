@@ -4,6 +4,8 @@ import { getPerfil } from "@/lib/perfil-actions";
 import { listarClasesVivo } from "@/lib/vivo-actions";
 import { firmarVideo } from "@/lib/cursos-db";
 import { GrabacionVista } from "@/components/GrabacionVista";
+import { estadoPro } from "@/lib/pro";
+import { esAdminUsuario } from "@/lib/admin";
 
 export default async function GrabacionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -17,6 +19,11 @@ export default async function GrabacionPage({ params }: { params: Promise<{ id: 
   const perfil = await getPerfil();
   if (!perfil) redirect("/onboarding");
   if (!perfil.onboarding_completo) redirect("/onboarding");
+
+  // Las grabaciones tambien son de Boost Pro: sin plan, de vuelta al listado
+  // (ahi se le ofrece con el pop-up, en vez de abrirle el video).
+  const pro = await estadoPro(user.id, await esAdminUsuario(user.id, user.email));
+  if (pro.activo && !pro.pro) redirect("/app/vivo");
 
   const clase = (await listarClasesVivo()).find((c) => c.id === id);
   if (!clase || !clase.grabacion_url) redirect("/app/vivo");

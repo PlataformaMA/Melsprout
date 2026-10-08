@@ -5,11 +5,15 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { asistirClaseVivo, type ClaseVivo } from "@/lib/vivo-actions";
 import Link from "next/link";
+import { ProVivoModal } from "@/components/ProVivoModal";
 import { useRouter } from "next/navigation";
 import { AvatarInstructor } from "@/components/Instructor";
 
 type Props = {
   clases: ClaseVivo[]; asistidas: string[]; nombre: string; avatarUrl: string | null; xp: number; racha: number;
+  // Las clases en vivo son parte de Boost Pro. `bloqueado` solo es true cuando
+  // el plan ya existe en la base y esta persona no lo tiene (ver lib/pro.ts).
+  bloqueado?: boolean;
 };
 
 function estadoDe(c: ClaseVivo): "en_vivo" | "proxima" | "terminada" {
@@ -72,12 +76,13 @@ function googleCalLink(c: ClaseVivo): string {
   return `https://calendar.google.com/calendar/render?${p.toString()}`;
 }
 
-export function VivoVista({ clases, asistidas, nombre, avatarUrl, xp, racha }: Props) {
+export function VivoVista({ clases, asistidas, nombre, avatarUrl, xp, racha, bloqueado = false }: Props) {
   const router = useRouter();
   const [tab, setTab] = useState<"clases" | "grabaciones">("clases");
   const [popup, setPopup] = useState(false);
   const [calAbierto, setCalAbierto] = useState(false);
   const [asist, setAsist] = useState<string[]>(asistidas);
+  const [proAbierto, setProAbierto] = useState(false);
 
   useEffect(() => {
     if (localStorage.getItem("melsprout_vivo_intro")) return;
@@ -90,6 +95,8 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, xp, racha }: P
   const grabaciones = clases.filter((c) => c.grabacion_url || estadoDe(c) === "terminada");
 
   async function asistir(c: ClaseVivo) {
+    // Sin Pro no se entra ni se apunta: se le ofrece el plan.
+    if (bloqueado) { setProAbierto(true); return; }
     const st = estadoDe(c);
     if (st === "en_vivo" && c.stream_url) window.open(c.stream_url, "_blank");
     const r = await asistirClaseVivo(c.id);
@@ -98,7 +105,8 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, xp, racha }: P
 
   return (
     <div className="min-h-screen bg-bg flex">
-      {popup && <ComoFuncionaPopup onClose={cerrarIntro} />}
+      {popup && !proAbierto && <ComoFuncionaPopup onClose={cerrarIntro} />}
+      {proAbierto && <ProVivoModal onClose={() => setProAbierto(false)} />}
       {calAbierto && <CalendarioModal clases={proximas} asist={asist} onAsistir={asistir} onClose={() => setCalAbierto(false)} />}
       <AppSidebar active="vivo" />
       <div className="flex-1 min-w-0">
@@ -161,9 +169,10 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, xp, racha }: P
                   ) : (
                     <div className="space-y-3">
                       {grabaciones.map((c) => {
-                        const Fila = c.grabacion_url ? Link : "div";
-                        return (
-                        <Fila key={c.id} href={`/app/vivo/${c.id}`} className={`flex items-center gap-4 bg-surface border border-border rounded-2xl p-3.5 shadow-sm transition group ${c.grabacion_url ? "hover:border-accent/30" : "opacity-70"}`}>
+                        // Sin Pro la fila no lleva a ningun lado: ofrece el plan.
+                        const pinta = `w-full text-left flex items-center gap-4 bg-surface border border-border rounded-2xl p-3.5 shadow-sm transition group ${c.grabacion_url || bloqueado ? "hover:border-accent/30" : "opacity-70"}`;
+                        const dentro = (
+                        <>
                           <span className="w-24 h-[54px] rounded-xl bg-gradient-to-br from-[#4c1d95] to-[#7c3aed] grid place-items-center text-white shrink-0 overflow-hidden">
                             {c.thumbnail_url ? (
                               // eslint-disable-next-line @next/next/no-img-element
@@ -186,8 +195,11 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, xp, racha }: P
                           {c.grabacion_url
                             ? <span className="text-accent text-xl shrink-0">▶</span>
                             : <span className="text-[11px] font-bold text-sub bg-bg border border-border rounded-full px-2.5 py-1 shrink-0">Próximamente</span>}
-                        </Fila>
+                        </>
                         );
+                        if (bloqueado) return <button key={c.id} type="button" onClick={() => setProAbierto(true)} className={pinta}>{dentro}</button>;
+                        if (c.grabacion_url) return <Link key={c.id} href={`/app/vivo/${c.id}`} className={pinta}>{dentro}</Link>;
+                        return <div key={c.id} className={pinta}>{dentro}</div>;
                       })}
                     </div>
                   )}
@@ -206,7 +218,9 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, xp, racha }: P
                   </div>
                   <div className="space-y-3">
                     {grabaciones.filter((c) => c.grabacion_url).slice(0, 3).map((c) => (
-                      <Link key={c.id} href={`/app/vivo/${c.id}`} className="flex items-center gap-2.5 group">
+                      <Link key={c.id} href={bloqueado ? "#" : `/app/vivo/${c.id}`}
+                        onClick={bloqueado ? (e) => { e.preventDefault(); setProAbierto(true); } : undefined}
+                        className="flex items-center gap-2.5 group">
                         <span className="w-16 h-9 rounded-lg bg-gradient-to-br from-[#4c1d95] to-[#7c3aed] grid place-items-center text-white text-[11px] shrink-0 overflow-hidden">
                           {c.thumbnail_url ? (
                             // eslint-disable-next-line @next/next/no-img-element
