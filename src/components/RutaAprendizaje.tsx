@@ -25,7 +25,7 @@ import { type RachaInfo } from "@/lib/racha-actions";
 const W = 640;
 const CX = 310;                 // centro
 const AMP = 208;                // clases en ~16% (izq) y ~81% (der), como el mockup
-const SPACING = 158;            // separación vertical
+const SPACING = 118;            // separación vertical (el diseño va más junto)
 const TOP = 94;
 const FREQ = Math.PI / 2;       // período de 4 nodos → S regular y limpia
 const PHASE = -Math.PI / 2;     // el primer nodo arranca a la izquierda (valle)
@@ -728,8 +728,10 @@ function NodoElemento({ el, onCruzar, onBloqueada }: { el: Elemento; onCruzar?: 
     if (el.estado === "completada")
       return (
         <Link href={`/app/clase/${el.clase.id}`} className="group relative block hover:scale-105 transition-transform">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/nodo-completado.png" alt="" className="w-[84px] h-[84px] select-none" draggable={false} />
+          <div className="grid place-items-center rounded-full w-[72px] h-[72px] bg-accent text-white border-[5px] border-white"
+            style={{ boxShadow: "0 6px 0 #5B21B6, 0 10px 14px rgba(0,0,0,.12)" }}>
+            <StarIcon />
+          </div>
           <TipClase titulo={el.clase.titulo} accion="Repasar" href={`/app/clase/${el.clase.id}`} />
         </Link>
       );
@@ -739,7 +741,7 @@ function NodoElemento({ el, onCruzar, onBloqueada }: { el: Elemento; onCruzar?: 
           {/* Indicador "toca aquí": deja claro dónde debe picar la persona */}
           <div className="absolute left-1/2 -translate-x-1/2 -top-9 z-10 pointer-events-none">
             <span className="ruta-toca inline-block whitespace-nowrap bg-accent text-white text-[10.5px] font-extrabold rounded-full px-2.5 py-1 shadow-lg">
-              👇 ¡Toca aquí!
+              Empieza
             </span>
           </div>
           <Link href={`/app/clase/${el.clase.id}`}
@@ -753,9 +755,9 @@ function NodoElemento({ el, onCruzar, onBloqueada }: { el: Elemento; onCruzar?: 
     // bloqueada: se puede tocar, y explica por qué no abre.
     return (
       <button type="button" onClick={onBloqueada} className="group relative block" aria-label="Clase bloqueada">
-        <div className="grid place-items-center rounded-full w-[80px] h-[80px] bg-[#B9BDC7] text-white border-[5px] border-white"
-          style={{ boxShadow: "0 7px 0 #9AA0AD, 0 12px 14px rgba(0,0,0,.1)" }}>
-          <PlayIcon />
+        <div className="grid place-items-center rounded-full w-[72px] h-[72px] bg-[#C9CDD6] text-white border-[5px] border-white"
+          style={{ boxShadow: "0 6px 0 #A9AEBA, 0 10px 14px rgba(0,0,0,.1)" }}>
+          <CandadoNodo />
         </div>
         <TipClase titulo={el.clase.titulo} bloqueada />
       </button>
@@ -793,7 +795,10 @@ function NodoElemento({ el, onCruzar, onBloqueada }: { el: Elemento; onCruzar?: 
     if (el.estado === "pendiente")
       return (
         <div className="group relative">
-          <div className={base} style={{ boxShadow: sombraGris }}><SparkleIcon color="#9AA0AD" /></div>
+          <div className="grid place-items-center rounded-full w-[60px] h-[60px] bg-accent text-white border-[5px] border-white"
+            style={{ boxShadow: "0 5px 0 #5B21B6, 0 8px 12px rgba(0,0,0,.1)" }}>
+            <DocIcon />
+          </div>
           <div className="absolute -top-16 -right-3"><Burbujas /></div>
           <TipReto texto="¡Completa este reto!" clase="bg-surface text-accent border border-border" />
         </div>
@@ -1053,6 +1058,13 @@ function PlayMini() { return <svg width="12" height="12" viewBox="0 0 24 24" fil
 function StarIcon() { return <svg width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.7-4.9 4.4 1.4 6.4L12 17.8 6 20l1.4-6.4L2.5 9.2l6.6-.7z" /></svg>; }
 function PlayIcon() { return <Icono nombre="play" size={30} />; }
 function SparkleIcon({ color }: { color: string }) { return <Icono nombre="estrella" size={28} color={color} />; }
+function CandadoNodo() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="5" y="11" width="14" height="9" rx="2.2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </svg>
+  );
+}
 function LockIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>; }
 function BellIcon() { return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#71717a" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" /></svg>; }
 function DocIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2h8l4 4v16H6z" /><path d="M14 2v4h4M9 13h6M9 17h6" /></svg>; }
