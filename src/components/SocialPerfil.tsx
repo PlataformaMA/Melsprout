@@ -2,18 +2,28 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toggleSeguir, type Social } from "@/lib/seguidores-actions";
+import { ProSeccionModal } from "@/components/ProSeccionModal";
 
 // Contadores + botón juntos en un solo componente: al seguir, el número de
 // seguidores cambia en el momento. Antes el botón era cliente y el contador
 // venía del servidor, así que quedaban desincronizados.
-export function SocialPerfil({ userId, inicial }: { userId: string; inicial: Social }) {
+export function SocialPerfil({ userId, inicial, bloqueado = false }: {
+  userId: string; inicial: Social;
+  // Seguir es parte de Boost Pro. `bloqueado` solo es true cuando el plan ya
+  // existe en la base y esta persona no lo tiene (ver lib/pro.ts).
+  bloqueado?: boolean;
+}) {
   const router = useRouter();
   const [s, setS] = useState(inicial);
   const [error, setError] = useState("");
   const [pendiente, startTransition] = useTransition();
+  const [proAbierto, setProAbierto] = useState(false);
 
   function alternar() {
+    // Sin Pro no se sigue a nadie: se le ofrece el plan.
+    if (bloqueado) { setProAbierto(true); return; }
     const previo = s;
     setError("");
     // Optimista: seguir manda SOLICITUD (no suma seguidor hasta que la acepten);
@@ -48,8 +58,19 @@ export function SocialPerfil({ userId, inicial }: { userId: string; inicial: Soc
           }`}>
           {s.loSigo ? "Siguiendo" : s.solicitada ? "Solicitud enviada" : "+ Seguir"}
         </button>
+        {/* El chat se abre cuando ya la sigues: antes de eso no hay con quién. */}
+        {s.loSigo && (
+          <Link href={`/app/amigos/${userId}`}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full px-5 py-2.5 sm:py-2 text-[13.5px] sm:text-[13px] font-bold bg-accent text-white hover:brightness-110 shadow-sm shadow-accent/30 transition">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M21 12a7.5 7.5 0 0 1-7.5 7.5H8l-4 2.5V12A7.5 7.5 0 0 1 11.5 4.5h2A7.5 7.5 0 0 1 21 12Z" />
+            </svg>
+            Enviar mensaje
+          </Link>
+        )}
       </div>
       {error && <p className="text-[12px] text-pink mt-2">{error}</p>}
+      {proAbierto && <ProSeccionModal onClose={() => setProAbierto(false)} />}
     </div>
   );
 }

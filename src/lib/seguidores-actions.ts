@@ -1,5 +1,7 @@
 "use server";
 
+import { estadoPro } from "@/lib/pro";
+import { esAdminUsuario } from "@/lib/admin";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notificar } from "@/lib/notificaciones-actions";
@@ -54,6 +56,9 @@ export async function toggleSeguir(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Inicia sesión." };
   if (user.id === seguidoId) return { error: "No puedes seguirte a ti." };
+  // Seguir es de Boost Pro. Se revisa aquí también: esconder el botón no basta.
+  const pro = await estadoPro(user.id, await esAdminUsuario(user.id, user.email));
+  if (pro.activo && !pro.pro) return { error: "Seguir a otras personas es parte de Boost Pro." };
 
   const admin = createAdminClient();
   const { data: ya } = await admin

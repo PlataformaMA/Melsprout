@@ -1,12 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { ProSeccionModal } from "@/components/ProSeccionModal";
 
 // Tarjeta "Invita a un amigo" — la usan el perfil y la pantalla de Amigos.
-export function InvitarCard({ userId }: { userId: string }) {
+export function InvitarCard({ userId, bloqueado = false }: {
+  userId: string;
+  // Invitar es parte de Boost Pro (ver lib/pro.ts).
+  bloqueado?: boolean;
+}) {
   const [copiado, setCopiado] = useState(false);
+  const [proAbierto, setProAbierto] = useState(false);
 
   function invitar() {
+    if (bloqueado) { setProAbierto(true); return; }
     const link = `${window.location.origin}/registro?ref=${userId}`;
     navigator.clipboard?.writeText(link).then(() => {
       setCopiado(true);
@@ -27,6 +34,7 @@ export function InvitarCard({ userId }: { userId: string }) {
         {copiado ? "¡Link copiado! ✓" : "Invitar ahora →"}
       </button>
       {copiado && <p className="text-[11px] text-sub text-center mt-2">Compártelo. Ganas +100 XP cuando se registren.</p>}
+      {proAbierto && <ProSeccionModal onClose={() => setProAbierto(false)} />}
     </section>
   );
 }

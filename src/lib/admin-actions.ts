@@ -104,14 +104,15 @@ export async function borrarReto(id: string): Promise<{ ok: true } | { error: st
 }
 
 // ————— Usuarios —————
-export type UsuarioAdmin = { id: string; email: string | null; nombre: string | null; creado: string; esAdmin: boolean; esRaiz: boolean };
+export type UsuarioAdmin = { id: string; email: string | null; nombre: string | null; creado: string; esAdmin: boolean; esRaiz: boolean; esPro: boolean };
 
 export async function listarUsuariosAdmin(): Promise<UsuarioAdmin[]> {
   const admin = await comoAdmin();
   if (!admin) return [];
   const usuarios = await listarTodosLosUsuarios(admin);
-  const { data: perfiles } = await admin.from("profiles").select("id, is_admin");
+  const { data: perfiles } = await admin.from("profiles").select("id, is_admin, pro");
   const adminMap = new Map((perfiles || []).map((p) => [p.id as string, p.is_admin === true]));
+  const proMap = new Map((perfiles || []).map((p) => [p.id as string, p.pro === true]));
   return usuarios.map((u) => {
     const raiz = esAdmin(u.email); // admins por ADMIN_EMAILS (no se pueden quitar)
     return {
@@ -121,6 +122,7 @@ export async function listarUsuariosAdmin(): Promise<UsuarioAdmin[]> {
       creado: u.created_at,
       esAdmin: raiz || adminMap.get(u.id) === true,
       esRaiz: raiz,
+      esPro: proMap.get(u.id) === true,
     };
   });
 }
@@ -131,6 +133,16 @@ export async function marcarAdmin(userId: string, valor: boolean): Promise<{ ok:
   if (!admin) return { error: "No autorizado." };
   const { error } = await admin.from("profiles").update({ is_admin: valor }).eq("id", userId);
   if (error) return { error: "No se pudo cambiar el rol." };
+  return { ok: true };
+}
+
+// Prende o apaga Boost Pro. Es lo que abre las clases en vivo y sus
+// grabaciones (ver lib/pro.ts): el equipo entra siempre, con Pro o sin él.
+export async function marcarPro(userId: string, valor: boolean): Promise<{ ok: true } | { error: string }> {
+  const admin = await comoAdmin();
+  if (!admin) return { error: "No autorizado." };
+  const { error } = await admin.from("profiles").update({ pro: valor }).eq("id", userId);
+  if (error) return { error: "No se pudo cambiar el plan." };
   return { ok: true };
 }
 

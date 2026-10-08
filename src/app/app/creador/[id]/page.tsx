@@ -8,6 +8,8 @@ import { banderaUrl } from "@/lib/catalogos";
 import { getSocial } from "@/lib/seguidores-actions";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SocialPerfil } from "@/components/SocialPerfil";
+import { estadoPro } from "@/lib/pro";
+import { esAdminUsuario } from "@/lib/admin";
 
 // Decorativos por ahora: nadie los gana todavía y son iguales para todos.
 const BADGES = [
@@ -58,7 +60,12 @@ export default async function CreadorPage({ params }: { params: Promise<{ id: st
     .maybeSingle();
   if (!p || !p.onboarding_completo) notFound();
 
-  const [avance, social] = await Promise.all([getAvanceDe(id), getSocial(id)]);
+  const [avance, social, pro] = await Promise.all([
+    getAvanceDe(id),
+    getSocial(id),
+    // Seguir y escribir son parte de Boost Pro (ver lib/pro.ts).
+    esAdminUsuario(user.id, user.email).then((a) => estadoPro(user.id, a)),
+  ]);
   const clases = avance.clases;
   const retos = avance.retos;
 
@@ -127,7 +134,7 @@ export default async function CreadorPage({ params }: { params: Promise<{ id: st
                     style={{ left: `clamp(16px, ${pct}%, calc(100% - 16px))` }} />
                 </div>
 
-                <SocialPerfil userId={id} inicial={social} />
+                <SocialPerfil userId={id} inicial={social} bloqueado={pro.activo && !pro.pro} />
               </section>
 
               {/* Sobre mí */}

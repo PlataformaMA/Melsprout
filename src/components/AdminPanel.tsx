@@ -11,6 +11,7 @@ import {
   actualizarReto,
   borrarReto,
   marcarAdmin,
+  marcarPro,
   revisarReto,
   moderarComentario,
   borrarComentario,
@@ -906,10 +907,19 @@ function UsuariosTab({ usuarios, onCreado }: { usuarios: UsuarioAdmin[]; onCread
 
 function UsuarioFila({ u, onCambio }: { u: UsuarioAdmin; onCambio: () => void }) {
   const [cargando, setCargando] = useState(false);
+  const [cargandoPro, setCargandoPro] = useState(false);
   async function toggle() {
     setCargando(true);
     const r = await marcarAdmin(u.id, !u.esAdmin);
     setCargando(false);
+    if ("error" in r) { alert(r.error); return; }
+    onCambio();
+  }
+  // Boost Pro: es lo que le abre las clases en vivo y sus grabaciones.
+  async function togglePro() {
+    setCargandoPro(true);
+    const r = await marcarPro(u.id, !u.esPro);
+    setCargandoPro(false);
     if ("error" in r) { alert(r.error); return; }
     onCambio();
   }
@@ -918,6 +928,11 @@ function UsuarioFila({ u, onCambio }: { u: UsuarioAdmin; onCambio: () => void })
       <span className="font-semibold truncate min-w-0 flex-1">{u.nombre || "—"}</span>
       <span className="text-sub truncate hidden sm:block flex-1 min-w-0">{u.email}</span>
       {u.esAdmin && <span className="text-[11px] font-bold text-accent bg-accent-soft rounded-full px-2 py-0.5 shrink-0">Admin{u.esRaiz ? " raíz" : ""}</span>}
+      <button onClick={togglePro} disabled={cargandoPro} title={u.esPro ? "Quitar Boost Pro" : "Dar Boost Pro"}
+        className={`text-[11px] font-bold rounded-full px-2.5 py-0.5 shrink-0 border transition disabled:opacity-50 ${
+          u.esPro ? "bg-accent text-white border-accent" : "bg-bg text-hint border-border hover:border-accent/40"}`}>
+        {cargandoPro ? "…" : "PRO"}
+      </button>
       {u.esRaiz ? (
         <span className="text-[12px] text-hint shrink-0 w-24 text-right">fijo</span>
       ) : (

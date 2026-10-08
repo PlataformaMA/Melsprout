@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Amigo } from "@/lib/chat-actions";
 import type { ActividadAmigo, PersonaLista } from "@/lib/amigos-actions";
 import type { Solicitud } from "@/lib/seguidores-actions";
+import { ProSeccionModal } from "@/components/ProSeccionModal";
 import { AppSidebar } from "@/components/AppSidebar";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import { UserMenu } from "@/components/UserMenu";
@@ -12,7 +13,7 @@ import { InvitarCard } from "@/components/InvitarCard";
 import { SolicitudesLista } from "@/components/SolicitudesLista";
 
 export function AmigosVista({
-  yo, amigos, solicitudes, actividad, seguidores, seguidos,
+  yo, amigos, solicitudes, actividad, seguidores, seguidos, bloqueado = false,
 }: {
   yo: { id: string; nombre: string; avatar: string | null; racha: number; xp: number };
   amigos: Amigo[];
@@ -20,13 +21,19 @@ export function AmigosVista({
   actividad: ActividadAmigo[];
   seguidores: PersonaLista[];
   seguidos: PersonaLista[];
+  // Lo social es parte de Boost Pro (ver lib/pro.ts).
+  bloqueado?: boolean;
 }) {
   const [verTodos, setVerTodos] = useState(false);
   const [tab, setTab] = useState<"Seguidores" | "Seguidos">("Seguidores");
   const lista = tab === "Seguidores" ? seguidores : seguidos;
+  // Sin Pro la pantalla se ve, pero encima queda el aviso del plan: cerrarlo
+  // lo vuelve a abrir, porque aquí no hay nada que hacer sin el plan.
+  const [proAbierto, setProAbierto] = useState(bloqueado);
 
   return (
     <div className="min-h-screen bg-bg flex">
+      {proAbierto && <ProSeccionModal onClose={() => setProAbierto(false)} />}
       <AppSidebar active="amigos" />
 
       <main className="flex-1 min-w-0">
@@ -169,7 +176,7 @@ export function AmigosVista({
                 )}
               </section>
 
-              <InvitarCard userId={yo.id} />
+              <InvitarCard userId={yo.id} bloqueado={bloqueado} />
             </aside>
           </div>
         </div>
