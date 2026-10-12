@@ -257,6 +257,8 @@ export function RutaAprendizaje({
   const [recursosAbierto, setRecursosAbierto] = useState(false);
   // Qué clase le toca de verdad: a donde manda el aviso cuando toca una cerrada.
   const [avisoBloqueada, setAvisoBloqueada] = useState(false);
+  // Tocó la puerta del siguiente mundo sin terminar el actual.
+  const [avisoMundo, setAvisoMundo] = useState(false);
   // Al tocar el 💎 se explica qué es el XP y cómo se gana. Eso permitió quitar
   // la barra de nivel de la tarjeta de progreso, que en celular comía espacio.
   const [xpAbierto, setXpAbierto] = useState(false);
@@ -425,7 +427,8 @@ export function RutaAprendizaje({
                   <div key={i} className="absolute z-[5]"
                     style={{ left: pctX(el.tipo === "gate" || el.tipo === "hito" ? CX : pts[i].x), top: pts[i].y, transform: "translate(-50%,-50%)" }}>
                     <NodoElemento el={el} onCruzar={() => irAModulo(modVisible + 1)}
-                      onBloqueada={() => setAvisoBloqueada(true)} />
+                      onBloqueada={() => setAvisoBloqueada(true)}
+                      onPuertaCerrada={() => setAvisoMundo(true)} />
                   </div>
                 ))}
 
@@ -587,6 +590,60 @@ export function RutaAprendizaje({
           onClose={() => { setRachaRotaAbierto(false); abrirRankingSiToca(); }} />
       )}
       {proAbierto && <ProModal motivo="clases" onClose={() => setProAbierto(false)} />}
+
+      {/* Tocó la puerta del siguiente mundo sin terminar este: se le dice
+          exactamente qué le falta, en vez de dejarla con una puerta muda. */}
+      {avisoMundo && (
+        <div className="fixed inset-0 z-[120] bg-black/55 grid place-items-center p-4"
+          role="dialog" aria-modal="true" onClick={() => setAvisoMundo(false)}>
+          <div className="bg-surface rounded-3xl w-full max-w-[360px] p-6 text-center shadow-2xl"
+            onClick={(e) => e.stopPropagation()}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/octi-candado.png" alt="" width={200} className="mx-auto mb-1" />
+            <h2 className="font-display font-extrabold text-[19px] leading-snug">
+              Todavía no abre<br />el siguiente mundo
+            </h2>
+            <p className="text-[13.5px] text-sub leading-snug mt-2">
+              Termina <b className="text-text">{mod?.nombre}</b> para cruzar la puerta.
+            </p>
+
+            <div className="mt-4 space-y-2 text-left">
+              <FaltaFila hecho={clasesMod} total={totalMod} que="clases" />
+              <FaltaFila hecho={retosMod} total={totalMod} que="retos" />
+            </div>
+
+            {claseActualHref ? (
+              <Link href={claseActualHref}
+                className="mt-5 flex items-center justify-center gap-2 bg-accent text-white font-bold text-[14px] rounded-full py-3 hover:brightness-110 transition">
+                Seguir donde me quedé <span aria-hidden>→</span>
+              </Link>
+            ) : (
+              <button type="button" onClick={() => setAvisoMundo(false)}
+                className="mt-5 w-full bg-accent text-white font-bold text-[14px] rounded-full py-3 hover:brightness-110 transition">
+                Entendido
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Una línea de "te faltan X de Y" dentro del aviso del mundo cerrado.
+function FaltaFila({ hecho, total, que }: { hecho: number; total: number; que: string }) {
+  const listo = hecho >= total;
+  return (
+    <div className="flex items-center gap-2.5 bg-bg rounded-2xl px-3.5 py-2.5">
+      <span className={`w-6 h-6 rounded-full grid place-items-center text-[12px] font-bold shrink-0 ${
+        listo ? "bg-green text-white" : "bg-border/70 text-hint"}`}>
+        {listo ? "✓" : total - hecho}
+      </span>
+      <span className="text-[13px] leading-snug">
+        {listo
+          ? <>Ya terminaste los {que} de este mundo</>
+          : <>Te faltan <b>{total - hecho}</b> {que} de {total}</>}
+      </span>
     </div>
   );
 }
@@ -754,7 +811,7 @@ function TipReto({ texto, clase }: { texto: string; clase: string }) {
   );
 }
 
-function NodoElemento({ el, onCruzar, onBloqueada }: { el: Elemento; onCruzar?: () => void; onBloqueada?: () => void }) {
+function NodoElemento({ el, onCruzar, onBloqueada, onPuertaCerrada }: { el: Elemento; onCruzar?: () => void; onBloqueada?: () => void; onPuertaCerrada?: () => void }) {
   if (el.tipo === "clase") {
     // Sin video cargado no hay nada que ver: se marca Pendiente y no abre.
     if (!el.clase.grabada && el.estado !== "completada") {
@@ -864,6 +921,7 @@ function NodoElemento({ el, onCruzar, onBloqueada }: { el: Elemento; onCruzar?: 
       siguiente={el.siguiente}
       bloqueada={el.estado === "bloqueada"}
       onCruzar={onCruzar}
+      onCerrada={onPuertaCerrada}
     />
   );
 }
@@ -919,21 +977,24 @@ function PuertaModulo({
   siguiente,
   bloqueada,
   onCruzar,
+  onCerrada,
 }: {
   siguiente: ModuloCurso | null;
   bloqueada?: boolean;
   onCruzar?: () => void;
+  // Cerrada tambien se toca: en vez de no pasar nada, explica que falta.
+  onCerrada?: () => void;
 }) {
-  const Envoltura = bloqueada || !onCruzar ? "div" : "button";
+  const Envoltura = (bloqueada ? !onCerrada : !onCruzar) ? "div" : "button";
   return (
     <div className="flex flex-col items-center w-[min(92vw,560px)]">
       <div className="flex items-end gap-3 w-full">
         <span className="flex-1 h-px bg-border mb-2.5" />
         <Envoltura
           type={Envoltura === "button" ? "button" : undefined}
-          onClick={bloqueada ? undefined : onCruzar}
-          aria-label={bloqueada ? "Siguiente módulo bloqueado" : `Entrar a ${siguiente?.nombre ?? "el siguiente módulo"}`}
-          className={`shrink-0 transition ${bloqueada ? "cursor-default" : "hover:-translate-y-1 active:translate-y-0 cursor-pointer"}`}
+          onClick={bloqueada ? onCerrada : onCruzar}
+          aria-label={bloqueada ? "Siguiente mundo bloqueado" : `Entrar a ${siguiente?.nombre ?? "el siguiente módulo"}`}
+          className={`shrink-0 transition cursor-pointer ${bloqueada ? "hover:-translate-y-0.5" : "hover:-translate-y-1 active:translate-y-0"}`}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -954,8 +1015,10 @@ function PuertaModulo({
           <span className="text-center">{siguiente.nombre}</span>
         </div>
       )}
-      {!bloqueada && siguiente && (
-        <span className="text-[11.5px] text-hint mt-0.5">Toca la puerta para entrar</span>
+      {siguiente && (
+        <span className="text-[11.5px] text-hint mt-0.5">
+          {bloqueada ? "Toca la puerta para ver qué te falta" : "Toca la puerta para entrar"}
+        </span>
       )}
     </div>
   );
