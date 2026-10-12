@@ -11,8 +11,8 @@ import { ProSeccionModal } from "@/components/ProSeccionModal";
 // venía del servidor, así que quedaban desincronizados.
 export function SocialPerfil({ userId, inicial, bloqueado = false }: {
   userId: string; inicial: Social;
-  // Seguir es parte de Boost Pro. `bloqueado` solo es true cuando el plan ya
-  // existe en la base y esta persona no lo tiene (ver lib/pro.ts).
+  // Seguir es libre; ESCRIBIR es lo que pide Boost Pro. `bloqueado` solo es
+  // true cuando el plan ya existe en la base y esta persona no lo tiene.
   bloqueado?: boolean;
 }) {
   const router = useRouter();
@@ -22,8 +22,6 @@ export function SocialPerfil({ userId, inicial, bloqueado = false }: {
   const [proAbierto, setProAbierto] = useState(false);
 
   function alternar() {
-    // Sin Pro no se sigue a nadie: se le ofrece el plan.
-    if (bloqueado) { setProAbierto(true); return; }
     const previo = s;
     setError("");
     // Optimista: seguir manda SOLICITUD (no suma seguidor hasta que la acepten);
@@ -60,12 +58,13 @@ export function SocialPerfil({ userId, inicial, bloqueado = false }: {
         </button>
         {/* El chat se abre cuando ya la sigues: antes de eso no hay con quién. */}
         {s.loSigo && (
-          <Link href={`/app/amigos/${userId}`}
+          <Link href={bloqueado ? "#" : `/app/amigos/${userId}`}
+            onClick={bloqueado ? (e) => { e.preventDefault(); setProAbierto(true); } : undefined}
             className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full px-5 py-2.5 sm:py-2 text-[13.5px] sm:text-[13px] font-bold bg-accent text-white hover:brightness-110 shadow-sm shadow-accent/30 transition">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M21 12a7.5 7.5 0 0 1-7.5 7.5H8l-4 2.5V12A7.5 7.5 0 0 1 11.5 4.5h2A7.5 7.5 0 0 1 21 12Z" />
             </svg>
-            Enviar mensaje
+            Enviar mensaje {bloqueado && <span className="text-[10px] font-extrabold bg-white/25 rounded-full px-1.5 py-0.5">PRO</span>}
           </Link>
         )}
       </div>
