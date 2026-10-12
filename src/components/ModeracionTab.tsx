@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  listarModeracion, moderar,
+  listarModeracion, moderar, responderModeracion,
   type Ambito, type ItemModeracion, type EstadoMod, type Accion,
 } from "@/lib/moderacion-actions";
 
@@ -29,6 +29,25 @@ export function ModeracionTab() {
   const [marcados, setMarcados] = useState<Set<string>>(new Set());
   const [abierto, setAbierto] = useState<ItemModeracion | null>(null);
   const [trabajando, setTrabajando] = useState(false);
+  // Responder desde aquí: antes había que entrar al curso o al foro.
+  const [respuesta, setRespuesta] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [aviso, setAviso] = useState("");
+  // Imagen que se está viendo en grande.
+  const [zoom, setZoom] = useState<string | null>(null);
+
+  async function responder() {
+    if (!abierto || !respuesta.trim()) return;
+    setEnviando(true);
+    const r = await responderModeracion({ id: abierto.id, origen: abierto.origen }, respuesta);
+    setEnviando(false);
+    if ("error" in r) { setAviso(r.error); return; }
+    setRespuesta("");
+    setAviso(abierto.origen === "reto"
+      ? "Le llegó tu mensaje como aviso (los retos de comunidad no llevan comentarios)."
+      : "Respuesta publicada.");
+    cargar();
+  }
 
   const cargar = () => {
     setDatos(null);
@@ -184,6 +203,17 @@ export function ModeracionTab() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <b className="text-[13.5px]">{i.autorNombre}</b>
+                        {i.esEquipo && <SelloEquipo />}
+                        {i.hilo.length > 0 && (
+                          <span className="text-[11px] font-bold text-sub bg-bg border border-border rounded-full px-2 py-0.5">
+                            💬 {i.hilo.length}
+                          </span>
+                        )}
+                        {i.imagen && (
+                          <span className="text-[11px] font-bold text-sub bg-bg border border-border rounded-full px-2 py-0.5">
+                            📷
+                          </span>
+                        )}
                         {i.grupo && (
                           <span className="text-[11px] font-bold text-accent bg-accent-soft rounded-full px-2 py-0.5">{i.grupo}</span>
                         )}
@@ -233,8 +263,69 @@ export function ModeracionTab() {
                   </div>
                 </div>
                 <p className="text-[13.5px] text-text leading-relaxed mt-3 whitespace-pre-wrap">{abierto.texto}</p>
+
+                {/* Lo que mandó adjunto. Se toca para verlo en grande. */}
+                {abierto.imagen && (
+                  <button type="button" onClick={() => setZoom(abierto.imagen)}
+                    className="block mt-3 rounded-xl overflow-hidden border border-border hover:border-accent/40 transition"
+                    title="Ver en grande">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={abierto.imagen} alt="Adjunto" className="max-h-56 w-auto" />
+                  </button>
+                )}
+                {abierto.video && (
+                  <video src={abierto.video} controls preload="metadata"
+                    className="mt-3 rounded-xl border border-border max-h-56 w-full bg-black" />
+                )}
+
                 <Link href={`/app/creador/${abierto.autorId}`} target="_blank"
                   className="inline-block text-[12px] font-bold text-accent mt-3">Ver su perfil →</Link>
+              </div>
+
+              {/* La conversación: las respuestas van debajo del original. */}
+              {abierto.hilo.length > 0 && (
+                <div className="px-5 pb-4 space-y-3 border-t border-border pt-4">
+                  <div className="text-[11.5px] font-bold text-hint uppercase tracking-wide">
+                    {abierto.hilo.length} {abierto.hilo.length === 1 ? "respuesta" : "respuestas"}
+                  </div>
+                  {abierto.hilo.map((r) => (
+                    <div key={r.id} className="flex items-start gap-2.5 pl-3 border-l-2 border-border">
+                      {r.autorAvatar ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={r.autorAvatar} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" />
+                      ) : (
+                        <span className="w-7 h-7 rounded-full bg-accent/15 text-accent grid place-items-center text-[10px] font-bold shrink-0">
+                          {r.autorNombre.slice(0, 2).toUpperCase()}
+                        </span>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <b className="text-[12.5px]">{r.autorNombre}</b>
+                          {r.esEquipo && <SelloEquipo />}
+                          <span className="text-[11px] text-hint">{fecha(r.fecha)}</span>
+                        </div>
+                        <p className="text-[12.5px] text-sub leading-snug mt-0.5 whitespace-pre-wrap">{r.texto}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Responder sin salir del panel. */}
+              <div className="px-5 pb-4 border-t border-border pt-4">
+                <textarea value={respuesta} onChange={(e) => { setRespuesta(e.target.value); setAviso(""); }}
+                  rows={2} placeholder="Responde como equipo…"
+                  className="w-full bg-bg border border-border rounded-xl px-3.5 py-2.5 text-[13px] outline-none focus:border-accent resize-none" />
+                <div className="flex items-center gap-2 mt-2">
+                  <button onClick={responder} disabled={enviando || !respuesta.trim()}
+                    className="bg-accent text-white rounded-full px-4 py-2 text-[12.5px] font-bold hover:brightness-110 disabled:opacity-50 transition">
+                    {enviando ? "Enviando…" : "Responder"}
+                  </button>
+                  <span className="text-[11.5px] text-hint leading-snug">
+                    Se publica ya aprobada, a nombre tuyo.
+                  </span>
+                </div>
+                {aviso && <p className="text-[11.5px] text-accent mt-2">{aviso}</p>}
               </div>
 
               <div className="flex bg-accent">
@@ -249,7 +340,30 @@ export function ModeracionTab() {
           )}
         </aside>
       </div>
+
+      {/* Adjunto en grande */}
+      {zoom && (
+        <div className="fixed inset-0 z-[140] bg-black/80 grid place-items-center p-4" onClick={() => setZoom(null)}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={zoom} alt="Adjunto" className="max-h-[92vh] max-w-full rounded-xl" />
+          <button type="button" onClick={() => setZoom(null)} aria-label="Cerrar"
+            className="absolute top-5 right-5 w-10 h-10 grid place-items-center rounded-full bg-white/15 text-white hover:bg-white/25 transition">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </div>
+      )}
     </div>
+  );
+}
+
+// Distingue a Melissa, Alexia, Nancy y al resto del equipo de una alumna.
+function SelloEquipo() {
+  return (
+    <span className="text-[10.5px] font-extrabold text-white bg-accent rounded-full px-2 py-0.5 tracking-wide">
+      EQUIPO
+    </span>
   );
 }
 

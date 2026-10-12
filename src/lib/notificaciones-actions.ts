@@ -152,3 +152,27 @@ export async function recordarPerfilIncompleto(): Promise<void> {
     href: "/app/perfil",
   });
 }
+
+// Avisa al equipo que quedó algo por revisar.
+//
+// Va a la campana de quienes son admin. Usa tipo "general", que ya trae el
+// anti-spam de notificar(): si a alguien le espera un aviso igual sin leer de
+// la última hora, no se le manda otro. Así una tanda de comentarios deja un
+// recordatorio, no veinte.
+export async function avisarPendienteAlEquipo(
+  deId: string,
+  que: string,
+  donde: string
+): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    const { data: equipo } = await admin.from("profiles").select("id").eq("is_admin", true);
+    const ids = (equipo || []).map((p) => p.id as string).filter((id) => id !== deId);
+    if (!ids.length) return;
+    await Promise.all(
+      ids.map((id) => notificar(id, "general", "Hay algo por revisar", `${que} en ${donde}`, "/app/admin"))
+    );
+  } catch {
+    // Un aviso que no sale no debe tumbar la publicación de la alumna.
+  }
+}

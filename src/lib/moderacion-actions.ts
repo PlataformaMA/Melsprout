@@ -3,6 +3,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { esAdminUsuario } from "@/lib/admin";
+import { notificar } from "@/lib/notificaciones-actions";
 
 export type Ambito = "ruta" | "especiales" | "comunidad";
 export type EstadoMod = "pendiente" | "aprobado" | "oculto" | "spam";
@@ -22,7 +23,29 @@ export type ItemModeracion = {
   donde: string;             // "Clase 2: …" o "Foro · Marketing"
   moduloId: string | null;
   mundo: string | null;
+  // Lo que mandó adjunto: hasta ahora el panel solo enseñaba el texto y por eso
+  // "las capturas no aparecían".
+  imagen: string | null;
+  video: string | null;
+  // Lo escribió alguien del equipo: se marca para no confundirlo con una alumna.
+  esEquipo: boolean;
+  // Respuestas colgando de este comentario, como una conversación.
+  hilo: Respuesta[];
 };
+
+export type Respuesta = {
+  id: string;
+  autorNombre: string;
+  autorAvatar: string | null;
+  esEquipo: boolean;
+  texto: string;
+  fecha: string;
+};
+
+// Lo que manda la alumna puede ser foto o video: se distingue por la extensión.
+function esVideo(url: string | null): boolean {
+  return !!url && /\.(mp4|mov|webm|m4v)(\?|$)/i.test(url);
+}
 
 async function soyAdmin(): Promise<boolean> {
   const s = await createClient();
@@ -39,12 +62,17 @@ export async function listarModeracion(ambito: Ambito): Promise<{
   if (!(await soyAdmin())) return { items: [], mundos: [] };
   const admin = createAdminClient();
 
-  const [{ data: modulos }, { data: clases }, { data: miembros }, { data: grupos }] = await Promise.all([
-    admin.from("cursos_modulos").select("id, nombre, orden, especial").order("orden"),
-    admin.from("cursos_clases").select("id, titulo, modulo_id, orden").order("orden"),
-    admin.from("grupo_miembros").select("user_id, grupo_id"),
-    admin.from("grupos").select("id, nombre"),
-  ]);
+  const [{ data: modulos }, { data: clases }, { data: miembros }, { data: grupos }, { data: equipo }] =
+    await Promise.all([
+      admin.from("cursos_modulos").select("id, nombre, orden, especial").order("orden"),
+      admin.from("cursos_clases").select("id, titulo, modulo_id, orden").order("orden"),
+      admin.from("grupo_miembros").select("user_id, grupo_id"),
+      admin.from("grupos").select("id, nombre"),
+      admin.from("profiles").select("id").eq("is_admin", true),
+    ]);
+
+  // Melissa, Alexia, Nancy y el resto del equipo: sus mensajes se marcan.
+  const delEquipo = new Set((equipo || []).map((p) => p.id as string));
 
   const nombreModulo = new Map((modulos || []).map((m) => [m.id as string, m.nombre as string]));
   const esEspecial = new Map((modulos || []).map((m) => [m.id as string, m.especial === true]));
@@ -73,11 +101,31 @@ export async function listarModeracion(ambito: Ambito): Promise<{
 
   if (ambito === "ruta" || ambito === "especiales") {
     const { data } = await admin.from("clase_comentarios")
-      .select("id, clase_id, autor_id, texto, created_at, estado")
-      .order("created_at", { ascending: false }).limit(300);
+      .select("id, clase_id, autor_id, texto, created_at, estado, responde_a")
+      .order("created_at", { ascending: false }).limit(400);
     const perfiles = await perfilesDe([...new Set((data || []).map((c) => c.autor_id as string))]);
 
+    // Las respuestas se cuelgan de su comentario en vez de ir sueltas: el equipo
+    // lee la conversación completa sin saltar de una fila a otra.
+    const hilos = new Map<string, Respuesta[]>();
+    for (const c of [...(data || [])].reverse()) {
+      const padre = c.responde_a as string | null;
+      if (!padre) continue;
+      const p = perfiles.get(c.autor_id as string);
+      const lista = hilos.get(padre) || [];
+      lista.push({
+        id: c.id as string,
+        autorNombre: (p?.full_name as string) || "Creador",
+        autorAvatar: (p?.avatar_url as string) || null,
+        esEquipo: delEquipo.has(c.autor_id as string),
+        texto: c.texto as string,
+        fecha: c.created_at as string,
+      });
+      hilos.set(padre, lista);
+    }
+
     for (const c of data || []) {
+      if (c.responde_a) continue;   // ya va dentro de su hilo
       const info = claseInfo.get(c.clase_id as string);
       if (!info) continue;
       const especial = esEspecial.get(info.moduloId) === true;
@@ -99,11 +147,14 @@ export async function listarModeracion(ambito: Ambito): Promise<{
         donde: `Clase ${info.numero}: ${info.titulo}`,
         moduloId: info.moduloId,
         mundo: nombreModulo.get(info.moduloId) || null,
+        imagen: null, video: null,
+        esEquipo: delEquipo.has(c.autor_id as string),
+        hilo: hilos.get(c.id as string) || [],
       });
     }
   } else {
     const [{ data: posts }, { data: resp }] = await Promise.all([
-      admin.from("foros_posts").select("id, autor_id, texto, categoria, created_at, estado")
+      admin.from("foros_posts").select("id, autor_id, texto, categoria, created_at, estado, imagen_url, video_url")
         .order("created_at", { ascending: false }).limit(200),
       admin.from("foros_respuestas").select("id, autor_id, texto, post_id, created_at, estado")
         .order("created_at", { ascending: false }).limit(200),
@@ -112,6 +163,22 @@ export async function listarModeracion(ambito: Ambito): Promise<{
       ...new Set([...(posts || []).map((p) => p.autor_id as string), ...(resp || []).map((r) => r.autor_id as string)]),
     ];
     const perfiles = await perfilesDe(ids);
+
+    // Las respuestas van debajo de su publicación, como conversación.
+    const hilos = new Map<string, Respuesta[]>();
+    for (const r of [...(resp || [])].reverse()) {
+      const per = perfiles.get(r.autor_id as string);
+      const lista = hilos.get(r.post_id as string) || [];
+      lista.push({
+        id: r.id as string,
+        autorNombre: (per?.full_name as string) || "Creador",
+        autorAvatar: (per?.avatar_url as string) || null,
+        esEquipo: delEquipo.has(r.autor_id as string),
+        texto: r.texto as string,
+        fecha: r.created_at as string,
+      });
+      hilos.set(r.post_id as string, lista);
+    }
 
     for (const p of posts || []) {
       const per = perfiles.get(p.autor_id as string);
@@ -127,9 +194,17 @@ export async function listarModeracion(ambito: Ambito): Promise<{
         dondeId: null,
         donde: `Foro · ${(p.categoria as string) || "General"}`,
         moduloId: null, mundo: null,
+        imagen: (p.imagen_url as string) || null,
+        video: (p.video_url as string) || null,
+        esEquipo: delEquipo.has(p.autor_id as string),
+        hilo: hilos.get(p.id as string) || [],
       });
     }
+    // Una respuesta cuya publicación no está en la lista (más vieja que el
+    // límite) se muestra suelta, para que no desaparezca del panel.
+    const conPadre = new Set((posts || []).map((p) => p.id as string));
     for (const r of resp || []) {
+      if (conPadre.has(r.post_id as string)) continue;
       const per = perfiles.get(r.autor_id as string);
       items.push({
         id: r.id as string, origen: "respuesta",
@@ -143,12 +218,15 @@ export async function listarModeracion(ambito: Ambito): Promise<{
         dondeId: null,
         donde: "Respuesta en el foro",
         moduloId: null, mundo: null,
+        imagen: null, video: null,
+        esEquipo: delEquipo.has(r.autor_id as string),
+        hilo: [],
       });
     }
     // Las publicaciones de los retos de comunidad también son de la comunidad.
     const { data: retoPosts } = await admin
       .from("comunidad_reto_posts")
-      .select("id, user_id, texto, dia, reto_id, created_at, estado")
+      .select("id, user_id, texto, dia, reto_id, created_at, estado, media_url")
       .order("created_at", { ascending: false }).limit(200);
 
     if (retoPosts?.length) {
@@ -169,6 +247,10 @@ export async function listarModeracion(ambito: Ambito): Promise<{
           dondeId: null,
           donde: `Reto · ${tituloReto.get(r.reto_id as string) || "de comunidad"} · día ${r.dia ?? "?"}`,
           moduloId: null, mundo: null,
+          imagen: esVideo(r.media_url as string) ? null : ((r.media_url as string) || null),
+          video: esVideo(r.media_url as string) ? (r.media_url as string) : null,
+          esEquipo: delEquipo.has(r.user_id as string),
+          hilo: [],
         });
       }
     }
@@ -208,4 +290,80 @@ export async function moderar(
     if (error) return { error: "No se pudo aplicar la acción." };
   }
   return { ok: true, n: items.length };
+}
+
+// Responder desde el panel, sin entrar al curso ni al foro.
+//
+// La respuesta del equipo entra ya aprobada: hacer que Melissa o Alexia esperen
+// a que alguien apruebe lo que ellas mismas escribieron no tiene sentido, y era
+// parte de lo que tenía el panel atascado.
+export async function responderModeracion(
+  item: { id: string; origen: ItemModeracion["origen"] },
+  texto: string
+): Promise<{ ok: true } | { error: string }> {
+  const s = await createClient();
+  const { data: { user } } = await s.auth.getUser();
+  if (!user || !(await esAdminUsuario(user.id, user.email))) return { error: "No autorizado." };
+
+  const t = texto.trim().slice(0, 2000);
+  if (!t) return { error: "Escribe la respuesta." };
+
+  const admin = createAdminClient();
+  const yaAprobado = { estado: "aprobado" as const, oculto: false };
+
+  if (item.origen === "clase") {
+    const { data: padre } = await admin.from("clase_comentarios")
+      .select("clase_id, autor_id, responde_a").eq("id", item.id).maybeSingle();
+    if (!padre) return { error: "Ya no existe ese comentario." };
+    // Si contestan a una respuesta, el hilo se mantiene plano bajo el original.
+    const raiz = (padre.responde_a as string) || item.id;
+    const { error } = await admin.from("clase_comentarios").insert({
+      clase_id: padre.clase_id, autor_id: user.id, texto: t, responde_a: raiz, ...yaAprobado,
+    });
+    if (error) return { error: "No se pudo responder." };
+    await avisar(admin, padre.autor_id as string, user.id, t, `/app/clase/${padre.clase_id as string}`);
+    return { ok: true };
+  }
+
+  if (item.origen === "post" || item.origen === "respuesta") {
+    let postId = item.id;
+    let dueno: string | null = null;
+    if (item.origen === "respuesta") {
+      const { data: r } = await admin.from("foros_respuestas")
+        .select("post_id, autor_id").eq("id", item.id).maybeSingle();
+      if (!r) return { error: "Ya no existe esa respuesta." };
+      postId = r.post_id as string;
+      dueno = r.autor_id as string;
+    } else {
+      const { data: p } = await admin.from("foros_posts").select("autor_id").eq("id", item.id).maybeSingle();
+      dueno = (p?.autor_id as string) ?? null;
+    }
+    const { error } = await admin.from("foros_respuestas").insert({
+      post_id: postId, autor_id: user.id, texto: t, ...yaAprobado,
+    });
+    if (error) return { error: "No se pudo responder." };
+    await avisar(admin, dueno, user.id, t, `/app/comunidad?post=${postId}`);
+    return { ok: true };
+  }
+
+  // Las publicaciones de los retos de comunidad no llevan comentarios: ahí solo
+  // se da "me gusta". Para no dejar al equipo sin respuesta, se le manda un
+  // aviso directo a la alumna con lo que le quieren decir.
+  const { data: rp } = await admin.from("comunidad_reto_posts")
+    .select("user_id, reto_id").eq("id", item.id).maybeSingle();
+  if (!rp) return { error: "Ya no existe esa publicación." };
+  await avisar(admin, rp.user_id as string, user.id, t, "/app/comunidad");
+  return { ok: true };
+}
+
+// Le avisa a la persona que el equipo le contestó.
+async function avisar(
+  admin: ReturnType<typeof createAdminClient>,
+  paraId: string | null, deId: string, texto: string, href: string
+): Promise<void> {
+  if (!paraId || paraId === deId) return;
+  const { data: yo } = await admin.from("profiles").select("full_name").eq("id", deId).maybeSingle();
+  await notificar(paraId, "comentario",
+    `${(yo?.full_name as string) || "El equipo"} te respondió`,
+    texto.length > 90 ? texto.slice(0, 90) + "…" : texto, href);
 }

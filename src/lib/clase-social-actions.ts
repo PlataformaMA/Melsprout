@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { esAdminUsuario } from "@/lib/admin";
-import { notificar } from "@/lib/notificaciones-actions";
+import { notificar, avisarPendienteAlEquipo } from "@/lib/notificaciones-actions";
 import { registrarRacha } from "@/lib/racha-actions";
 
 export type ComentarioClase = {
@@ -91,8 +91,14 @@ export async function comentarClase(
   if (!user) return { error: "Inicia sesión." };
 
   const admin = createAdminClient();
+  // Lo que escribe el equipo no pasa por moderación: sería pedirle a Melissa
+  // que espere a que alguien apruebe su propia respuesta.
+  const esDelEquipo = await esAdminUsuario(user.id, user.email);
   const { error } = await admin.from("clase_comentarios")
-    .insert({ clase_id: claseId, autor_id: user.id, texto: t, responde_a: respondeA || null });
+    .insert({
+      clase_id: claseId, autor_id: user.id, texto: t, responde_a: respondeA || null,
+      ...(esDelEquipo ? { estado: "aprobado", oculto: false } : {}),
+    });
   if (error) return { error: "No se pudo publicar tu comentario." };
   await registrarRacha(); // comentar una clase es actividad
 
@@ -107,6 +113,8 @@ export async function comentarClase(
         t.length > 90 ? t.slice(0, 90) + "…" : t, `/app/clase/${claseId}`);
     }
   }
+  // Queda pendiente de revisar: se le avisa al equipo.
+  if (!esDelEquipo) await avisarPendienteAlEquipo(user.id, "Un comentario nuevo", "una clase");
   return { ok: true };
 }
 

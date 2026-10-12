@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { notificar } from "@/lib/notificaciones-actions";
+import { notificar, avisarPendienteAlEquipo } from "@/lib/notificaciones-actions";
 import { nivelPorXP, CATEGORIA_GENERAL, CATEGORIAS_FORO, CATEGORIAS_SOLO_ADMIN, CATEGORIAS_AVISAN } from "@/lib/data";
 import { esAdminUsuario } from "@/lib/admin";
 import { registrarRacha } from "@/lib/racha-actions";
@@ -148,8 +148,10 @@ export async function crearPost(categoria: string, texto: string, extra?: { enla
     return { error: "Solo el equipo puede publicar en Anuncios." };
   }
   const admin = createAdminClient();
+  const esDelEquipo = await esAdminUsuario(user.id, user.email);
   const { error } = await admin.from("foros_posts").insert({
     autor_id: user.id, categoria: cat, texto: t, grupo_id: extra?.grupoId || null,
+    ...(esDelEquipo ? { estado: "aprobado", oculto: false } : {}),
     titulo: extra?.titulo?.trim().slice(0, 120) || null,
     enlace_url: urlSegura(extra?.enlaceUrl), imagen_url: urlSegura(extra?.imagenUrl), video_url: urlSegura(extra?.videoUrl),
   });
@@ -158,6 +160,8 @@ export async function crearPost(categoria: string, texto: string, extra?: { enla
   const { data: p } = await admin.from("profiles").select("xp").eq("id", user.id).single();
   await admin.from("profiles").update({ xp: (p?.xp ?? 0) + 10 }).eq("id", user.id);
   await registrarRacha(); // publicar es actividad: cuenta para la racha
+  // Queda pendiente de revisar: se le avisa al equipo.
+  if (!esDelEquipo) await avisarPendienteAlEquipo(user.id, "Una publicación nueva", `el foro · ${cat}`);
   // Aviso a la comunidad (no en los muros de grupo, que son privados).
   if (!extra?.grupoId && CATEGORIAS_AVISAN.includes(cat)) {
     await avisarDeNuevoPost(cat, user.id, t);
@@ -257,9 +261,16 @@ export async function crearRespuesta(postId: string, texto: string): Promise<{ o
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Inicia sesión." };
   const admin = createAdminClient();
-  const { error } = await admin.from("foros_respuestas").insert({ post_id: postId, autor_id: user.id, texto: t });
+  const { error } = await admin.from("foros_respuestas").insert({
+    post_id: postId, autor_id: user.id, texto: t,
+    // Igual que en las clases: lo del equipo entra ya aprobado.
+    ...(await esAdminUsuario(user.id, user.email) ? { estado: "aprobado", oculto: false } : {}),
+  });
   if (error) return { error: "No se pudo responder." };
   await registrarRacha(); // responder también es actividad
+  if (!(await esAdminUsuario(user.id, user.email))) {
+    await avisarPendienteAlEquipo(user.id, "Una respuesta nueva", "el foro");
+  }
 
   const { data: post } = await admin.from("foros_posts").select("autor_id").eq("id", postId).maybeSingle();
   const dueno = post?.autor_id as string | undefined;
