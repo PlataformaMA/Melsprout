@@ -73,12 +73,20 @@ export async function puedeVerGrupo(grupoId: string): Promise<boolean> {
 
   const admin = createAdminClient();
   const { data: grupo } = await admin
-    .from("grupos").select("curso_id").eq("id", grupoId).maybeSingle();
+    .from("grupos").select("curso_id, publico").eq("id", grupoId).maybeSingle();
   if (!grupo) return false;
-  if (!grupo.curso_id) return true;             // grupo normal de la comunidad
 
   const { esAdminUsuario } = await import("@/lib/admin");
   if (await esAdminUsuario(user.id, user.email)) return true;
+
+  // VIP (como Guardianes): sin curso detrás, pero cerrado. Solo sus miembros.
+  if (!grupo.curso_id) {
+    if (grupo.publico !== false) return true;   // grupo normal de la comunidad
+    const { data: dentro } = await admin
+      .from("grupo_miembros").select("user_id")
+      .eq("user_id", user.id).eq("grupo_id", grupoId).maybeSingle();
+    return !!dentro;
+  }
 
   const { data: acceso } = await admin
     .from("curso_accesos").select("user_id")

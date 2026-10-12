@@ -34,6 +34,10 @@ export type GrupoAdmin = {
   publicaciones: number;
   creador: string;
   fecha: string;
+  // Cerrado a invitación del equipo (como Guardianes).
+  vip: boolean;
+  // Si cuelga de un curso, su acceso ya lo decide la compra.
+  deCurso: boolean;
 };
 
 export type ComentarioReto = {
@@ -137,6 +141,8 @@ export async function getComunidadAdmin(): Promise<{
       publicaciones: postsPorGrupo.get(g.id as string) || 0,
       creador: nombre(g.creador_id as string),
       fecha: g.created_at as string,
+      vip: g.publico === false && !g.curso_id,
+      deCurso: !!g.curso_id,
     })),
     comentariosReto: (coments || []).map((c) => ({
       id: c.id as string,
@@ -244,4 +250,48 @@ export async function marcarSugerencia(id: string, atendida: boolean): Promise<{
   const { error } = await admin.from("sugerencias_cursos").update({ atendida }).eq("id", id);
   if (error) return { error: "No se pudo guardar." };
   return { ok: true };
+}
+
+// ————— Grupos VIP —————
+// Un grupo VIP (como Guardianes) no aparece en la lista de nadie: solo existe
+// para quienes el equipo mete dentro. Por debajo es `publico = false` sin curso
+// detrás; las reglas viven en grupos-actions y acceso-actions.
+export async function marcarGrupoVip(id: string, vip: boolean): Promise<{ ok: true } | { error: string }> {
+  if (!(await soyAdmin())) return { error: "No autorizado." };
+  const admin = createAdminClient();
+  const { data: g } = await admin.from("grupos").select("curso_id").eq("id", id).maybeSingle();
+  if (!g) return { error: "Ese grupo ya no existe." };
+  if (g.curso_id) return { error: "Este grupo ya es de un curso: su acceso depende de la compra." };
+  const { error } = await admin.from("grupos").update({ publico: !vip }).eq("id", id);
+  if (error) return { error: "No se pudo cambiar el grupo." };
+  return { ok: true };
+}
+
+// Mete o saca a alguien de un grupo, por correo.
+export async function miembroDeGrupo(
+  grupoId: string, correo: string, dentro: boolean
+): Promise<{ ok: true; nombre: string } | { error: string }> {
+  if (!(await soyAdmin())) return { error: "No autorizado." };
+  const admin = createAdminClient();
+
+  const email = correo.trim().toLowerCase();
+  if (!email) return { error: "Escribe el correo." };
+
+  const { buscarUsuarioPorEmail } = await import("@/lib/usuarios-auth");
+  const usuario = await buscarUsuarioPorEmail(admin, email);
+  if (!usuario) return { error: `No hay ninguna cuenta con ${email}.` };
+
+  const { data: p } = await admin.from("profiles").select("full_name").eq("id", usuario.id).maybeSingle();
+  const nombre = (p?.full_name as string) || email;
+
+  if (dentro) {
+    const { error } = await admin.from("grupo_miembros")
+      .upsert({ grupo_id: grupoId, user_id: usuario.id }, { onConflict: "grupo_id,user_id" });
+    if (error) return { error: "No se pudo agregar." };
+  } else {
+    const { error } = await admin.from("grupo_miembros")
+      .delete().eq("grupo_id", grupoId).eq("user_id", usuario.id);
+    if (error) return { error: "No se pudo quitar." };
+  }
+  return { ok: true, nombre };
 }

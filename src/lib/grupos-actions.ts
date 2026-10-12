@@ -79,9 +79,24 @@ export async function listarGrupos(): Promise<{
       .select("modulo_id").eq("user_id", me).in("modulo_id", conCurso);
     cursosMios = (acc || []).map((a) => a.modulo_id as string);
   }
-  const grupos = todosGrupos.filter(
-    (g) => !g.curso_id || cursosMios.includes(g.curso_id as string)
+  // Un grupo VIP (publico = false y sin curso detrás, como Guardianes) no se
+  // lista siquiera: solo existe para quien ya está dentro, y para el equipo.
+  const soyDelEquipo = await (async () => {
+    const s2 = await createClient();
+    const { data: { user } } = await s2.auth.getUser();
+    if (!user) return false;
+    const { esAdminUsuario } = await import("@/lib/admin");
+    return esAdminUsuario(user.id, user.email);
+  })();
+  const misGrupos = new Set(
+    (miembros || []).filter((m) => me && m.user_id === me).map((m) => m.grupo_id as string)
   );
+
+  const grupos = todosGrupos.filter((g) => {
+    if (g.curso_id) return cursosMios.includes(g.curso_id as string);
+    if (g.publico === false) return soyDelEquipo || misGrupos.has(g.id as string);
+    return true;
+  });
   if (!grupos.length) return { propuestas: [], mios: [], otros: [] };
 
   const ids = [...new Set(grupos.map((g) => g.creador_id as string))];

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import IconoGrupo from "./IconoGrupo";
 import Link from "next/link";
 import {
-  getComunidadAdmin, alternarVisible, activarGrupo, borrarGrupoAdmin,
+  getComunidadAdmin, alternarVisible, activarGrupo, borrarGrupoAdmin, marcarGrupoVip, miembroDeGrupo,
   listarSugerencias, marcarSugerencia,
   type PublicacionAdmin, type GrupoAdmin, type ComentarioReto, type SugerenciaAdmin,
 } from "@/lib/comunidad-admin-actions";
@@ -165,6 +165,8 @@ function Grupos({ lista, busca, onCambio }: { lista: GrupoAdmin[]; busca: string
                   g.estado === "activo" ? "bg-green/10 text-green" : "bg-amber-100 text-amber-700"}`}>
                   {g.estado === "activo" ? "Activo" : "Propuesto"}
                 </span>
+                {g.vip && <span className="text-[10.5px] font-extrabold text-white bg-accent rounded-full px-2 py-0.5 shrink-0">VIP</span>}
+                {g.deCurso && <span className="text-[10.5px] font-bold text-sub bg-bg border border-border rounded-full px-2 py-0.5 shrink-0">De curso</span>}
               </div>
               <p className="text-[12.5px] text-sub mt-0.5 line-clamp-2">{g.descripcion}</p>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-hint mt-2">
@@ -190,10 +192,65 @@ function Grupos({ lista, busca, onCambio }: { lista: GrupoAdmin[]; busca: string
                   onCambio();
                 }} className="text-pink ml-auto">Borrar</button>
               </div>
+              {!g.deCurso && <ControlVip grupo={g} onCambio={onCambio} />}
             </div>
           </div>
         </article>
       ))}
+    </div>
+  );
+}
+
+// Convierte un grupo en VIP y maneja quién entra. Un grupo VIP no aparece en
+// la lista de nadie: solo existe para quien el equipo mete dentro.
+function ControlVip({ grupo, onCambio }: { grupo: GrupoAdmin; onCambio: () => void }) {
+  const [abierto, setAbierto] = useState(false);
+  const [correo, setCorreo] = useState("");
+  const [aviso, setAviso] = useState("");
+  const [ocupado, setOcupado] = useState(false);
+
+  async function mover(dentro: boolean) {
+    setOcupado(true);
+    const r = await miembroDeGrupo(grupo.id, correo, dentro);
+    setOcupado(false);
+    if ("error" in r) { setAviso(r.error); return; }
+    setCorreo("");
+    setAviso(dentro ? `${r.nombre} ya está dentro.` : `${r.nombre} quedó fuera.`);
+    onCambio();
+  }
+
+  return (
+    <div className="mt-3 pt-3 border-t border-border">
+      <div className="flex items-center gap-3 text-[12.5px] font-bold">
+        <button onClick={async () => {
+          const r = await marcarGrupoVip(grupo.id, !grupo.vip);
+          if ("error" in r) { setAviso(r.error); return; }
+          onCambio();
+        }} className={grupo.vip ? "text-sub" : "text-accent"}>
+          {grupo.vip ? "Quitar VIP" : "Hacer VIP"}
+        </button>
+        <button onClick={() => setAbierto((v) => !v)} className="text-sub">
+          {abierto ? "Cerrar" : "Quién entra"}
+        </button>
+      </div>
+      {abierto && (
+        <div className="mt-2">
+          <input value={correo} onChange={(e) => { setCorreo(e.target.value); setAviso(""); }}
+            placeholder="correo@ejemplo.com" type="email"
+            className="w-full bg-bg border border-border rounded-xl px-3 py-2 text-[12.5px] outline-none focus:border-accent" />
+          <div className="flex gap-2 mt-2">
+            <button onClick={() => mover(true)} disabled={ocupado || !correo.trim()}
+              className="bg-accent text-white rounded-full px-3.5 py-1.5 text-[12px] font-bold disabled:opacity-50">
+              Agregar
+            </button>
+            <button onClick={() => mover(false)} disabled={ocupado || !correo.trim()}
+              className="text-sub border border-border rounded-full px-3.5 py-1.5 text-[12px] font-bold disabled:opacity-50">
+              Quitar
+            </button>
+          </div>
+        </div>
+      )}
+      {aviso && <p className="text-[11.5px] text-accent mt-2">{aviso}</p>}
     </div>
   );
 }
