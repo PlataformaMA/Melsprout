@@ -14,6 +14,10 @@ const ESTADOS: Record<EstadoMod, { texto: string; clase: string }> = {
   spam: { texto: "Spam", clase: "bg-red-100 text-red-600" },
 };
 
+// Las reacciones rápidas del equipo. Se publican como una respuesta corta, que
+// es lo que de verdad ve la alumna debajo de su comentario.
+const REACCIONES = ["❤️", "🎉", "👏", "🔥", "💡", "😂"];
+
 function fecha(iso: string): string {
   return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" });
 }
@@ -26,6 +30,8 @@ export function ModeracionTab() {
   const [mundo, setMundo] = useState("todos");
   const [estado, setEstado] = useState<EstadoMod | "todos">("pendiente");
   const [orden, setOrden] = useState<"nuevos" | "viejos">("nuevos");
+  // Lo que el equipo ya contestó, aparte de lo que sigue esperando.
+  const [atendido, setAtendido] = useState<"todos" | "sin-responder" | "respondidos">("todos");
   const [marcados, setMarcados] = useState<Set<string>>(new Set());
   const [abierto, setAbierto] = useState<ItemModeracion | null>(null);
   const [trabajando, setTrabajando] = useState(false);
@@ -35,6 +41,17 @@ export function ModeracionTab() {
   const [aviso, setAviso] = useState("");
   // Imagen que se está viendo en grande.
   const [zoom, setZoom] = useState<string | null>(null);
+
+  // Un toque en un emoji vale como respuesta corta del equipo.
+  async function reaccionar(emoji: string) {
+    if (!abierto) return;
+    setEnviando(true);
+    const r = await responderModeracion({ id: abierto.id, origen: abierto.origen }, emoji);
+    setEnviando(false);
+    if ("error" in r) { setAviso(r.error); return; }
+    setAviso(`Reaccionaste con ${emoji}`);
+    cargar();
+  }
 
   async function responder() {
     if (!abierto || !respuesta.trim()) return;
@@ -75,12 +92,14 @@ export function ModeracionTab() {
     const q = busca.trim().toLowerCase();
     const out = (datos?.items || []).filter((i) => {
       if (estado !== "todos" && i.estado !== estado) return false;
+      if (atendido === "sin-responder" && i.respondido) return false;
+      if (atendido === "respondidos" && !i.respondido) return false;
       if (mundo !== "todos" && i.moduloId !== mundo) return false;
       if (!q) return true;
       return i.texto.toLowerCase().includes(q) || i.autorNombre.toLowerCase().includes(q);
     });
     return orden === "nuevos" ? out : [...out].reverse();
-  }, [datos, busca, mundo, estado, orden]);
+  }, [datos, busca, mundo, estado, orden, atendido]);
 
   const todosMarcados = lista.length > 0 && lista.every((i) => marcados.has(i.id));
 
@@ -150,6 +169,12 @@ export function ModeracionTab() {
           <option value="spam">Spam</option>
           <option value="todos">Todos</option>
         </select>
+        <select value={atendido} onChange={(e) => setAtendido(e.target.value as typeof atendido)}
+          className="bg-surface border border-border rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-accent">
+          <option value="todos">Respondidos y sin responder</option>
+          <option value="sin-responder">Sin responder</option>
+          <option value="respondidos">Ya respondidos</option>
+        </select>
         <select value={orden} onChange={(e) => setOrden(e.target.value as "nuevos" | "viejos")}
           className="bg-surface border border-border rounded-xl px-3 py-2.5 text-[13px] outline-none focus:border-accent">
           <option value="nuevos">Más recientes</option>
@@ -204,6 +229,15 @@ export function ModeracionTab() {
                       <div className="flex flex-wrap items-center gap-2">
                         <b className="text-[13.5px]">{i.autorNombre}</b>
                         {i.esEquipo && <SelloBoost />}
+                        {i.respondido ? (
+                          <span className="text-[11px] font-bold text-green bg-green/10 rounded-full px-2 py-0.5">
+                            ✓ Respondido
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-bold text-amber-700 bg-amber-100 rounded-full px-2 py-0.5">
+                            Sin responder
+                          </span>
+                        )}
                         {i.hilo.length > 0 && (
                           <span className="text-[11px] font-bold text-sub bg-bg border border-border rounded-full px-2 py-0.5">
                             💬 {i.hilo.length}
@@ -246,9 +280,9 @@ export function ModeracionTab() {
             <div className="bg-surface border border-border rounded-3xl shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b border-border">
                 <div className="text-[12.5px] font-bold text-sub">📄 {abierto.donde}</div>
-                {abierto.dondeId && (
-                  <Link href={`/app/clase/${abierto.dondeId}`} target="_blank"
-                    className="text-[11.5px] font-bold text-accent">Ver en la plataforma →</Link>
+                {abierto.enlace && (
+                  <Link href={abierto.enlace} target="_blank"
+                    className="text-[11.5px] font-bold text-accent">Ir al comentario original →</Link>
                 )}
               </div>
 
@@ -313,6 +347,18 @@ export function ModeracionTab() {
 
               {/* Responder sin salir del panel. */}
               <div className="px-5 pb-4 border-t border-border pt-4">
+                {/* Reaccionar de un toque: publica la reacción como respuesta
+                    del equipo y le llega el aviso a quien escribió. */}
+                <div className="flex items-center gap-1.5 flex-wrap mb-3">
+                  <span className="text-[11.5px] font-bold text-hint mr-0.5">Reaccionar:</span>
+                  {REACCIONES.map((e) => (
+                    <button key={e} type="button" disabled={enviando}
+                      onClick={() => reaccionar(e)}
+                      className="w-9 h-9 grid place-items-center text-[17px] rounded-full bg-bg border border-border hover:border-accent/50 hover:scale-110 active:scale-95 transition disabled:opacity-50">
+                      {e}
+                    </button>
+                  ))}
+                </div>
                 <textarea value={respuesta} onChange={(e) => { setRespuesta(e.target.value); setAviso(""); }}
                   rows={2} placeholder="Responde como Boost Academy…"
                   className="w-full bg-bg border border-border rounded-xl px-3.5 py-2.5 text-[13px] outline-none focus:border-accent resize-none" />

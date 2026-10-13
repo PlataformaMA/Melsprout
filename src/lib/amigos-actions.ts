@@ -211,3 +211,62 @@ export async function buscarPersonas(texto: string): Promise<Encontrada[]> {
     solicitada: estado.get(p.id as string) === "pendiente",
   }));
 }
+
+// Felicitar es gratis y no abre un chat: le llega como notificación.
+//
+// Antes el botón "Felicitar" llevaba al chat, que es de Boost Pro: quien no lo
+// tenía se topaba con el candado por querer decir "¡bien hecho!". Animarse
+// entre compañeras no debería costar.
+export async function felicitar(
+  aQuienId: string,
+  porQue: string
+): Promise<{ ok: true } | { error: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Inicia sesión." };
+  if (aQuienId === user.id) return { error: "Esa eres tú 😄" };
+
+  const admin = createAdminClient();
+  const { data: yo } = await admin.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
+  const nombre = (yo?.full_name as string) || "Alguien";
+
+  // notificar() ya no repite un aviso igual sin leer de la última hora, así que
+  // tocar el botón diez veces no le llena la campana a nadie.
+  const { notificar } = await import("@/lib/notificaciones-actions");
+  const ok = await notificar(aQuienId, "like",
+    `${nombre} te felicitó 🎉`,
+    porQue.slice(0, 120),
+    `/app/creador/${user.id}`);
+  return ok ? { ok: true } : { error: "No se pudo enviar." };
+}
+
+// Gente que quizá quieras seguir: las que más XP tienen y todavía no sigues.
+// Se deja fuera a quien ya seguiste o a quien ya le mandaste solicitud.
+export async function getSugeridos(limite = 6): Promise<Encontrada[]> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const admin = createAdminClient();
+  const { data: rel } = await admin
+    .from("seguidores").select("seguido_id").eq("seguidor_id", user.id);
+  const fuera = new Set([...(rel || []).map((r) => r.seguido_id as string), user.id]);
+
+  const { data } = await admin
+    .from("profiles")
+    .select("id, full_name, username, avatar_url, is_admin, xp, onboarding_completo")
+    .order("xp", { ascending: false })
+    .limit(limite + fuera.size + 10);
+
+  return (data || [])
+    .filter((p) => !fuera.has(p.id as string) && p.onboarding_completo === true)
+    .slice(0, limite)
+    .map((p) => ({
+      id: p.id as string,
+      nombre: (p.full_name as string) || (p.username as string) || "Creador",
+      avatar: (p.avatar_url as string) || null,
+      esBoost: p.is_admin === true,
+      loSigo: false,
+      solicitada: false,
+    }));
+}

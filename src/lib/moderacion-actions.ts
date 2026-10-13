@@ -31,6 +31,11 @@ export type ItemModeracion = {
   esEquipo: boolean;
   // Respuestas colgando de este comentario, como una conversación.
   hilo: Respuesta[];
+  // Ya le contestó alguien del equipo: sirve para separar lo atendido de lo
+  // que sigue esperando respuesta.
+  respondido: boolean;
+  // A dónde ir para verlo en la plataforma, en su sitio.
+  enlace: string | null;
 };
 
 export type Respuesta = {
@@ -150,6 +155,8 @@ export async function listarModeracion(ambito: Ambito): Promise<{
         imagen: null, video: null,
         esEquipo: delEquipo.has(c.autor_id as string),
         hilo: hilos.get(c.id as string) || [],
+        respondido: (hilos.get(c.id as string) || []).some((r) => r.esEquipo),
+        enlace: `/app/clase/${c.clase_id as string}#c-${c.id as string}`,
       });
     }
   } else {
@@ -198,6 +205,8 @@ export async function listarModeracion(ambito: Ambito): Promise<{
         video: (p.video_url as string) || null,
         esEquipo: delEquipo.has(p.autor_id as string),
         hilo: hilos.get(p.id as string) || [],
+        respondido: (hilos.get(p.id as string) || []).some((r) => r.esEquipo),
+        enlace: `/app/comunidad?post=${p.id as string}`,
       });
     }
     // Una respuesta cuya publicación no está en la lista (más vieja que el
@@ -221,6 +230,8 @@ export async function listarModeracion(ambito: Ambito): Promise<{
         imagen: null, video: null,
         esEquipo: delEquipo.has(r.autor_id as string),
         hilo: [],
+        respondido: false,
+        enlace: `/app/comunidad?post=${r.post_id as string}`,
       });
     }
     // Las publicaciones de los retos de comunidad también son de la comunidad.
@@ -251,6 +262,8 @@ export async function listarModeracion(ambito: Ambito): Promise<{
           video: esVideo(r.media_url as string) ? (r.media_url as string) : null,
           esEquipo: delEquipo.has(r.user_id as string),
           hilo: [],
+          respondido: false,
+          enlace: "/app/comunidad",
         });
       }
     }

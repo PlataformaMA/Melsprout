@@ -4,7 +4,7 @@ import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import type { Amigo } from "@/lib/chat-actions";
 import type { ActividadAmigo, PersonaLista, Encontrada } from "@/lib/amigos-actions";
-import { buscarPersonas } from "@/lib/amigos-actions";
+import { buscarPersonas, felicitar, getSugeridos } from "@/lib/amigos-actions";
 import { toggleSeguir } from "@/lib/seguidores-actions";
 import type { Solicitud } from "@/lib/seguidores-actions";
 import { ProSeccionModal } from "@/components/ProSeccionModal";
@@ -23,16 +23,17 @@ export function AmigosVista({
   actividad: ActividadAmigo[];
   seguidores: PersonaLista[];
   seguidos: PersonaLista[];
-  // Lo social es parte de Boost Pro (ver lib/pro.ts).
+  // Sin Boost Pro no hay chat (ver lib/pro.ts). El resto de la pantalla es
+  // libre: buscar, seguir y felicitar no cuestan.
   bloqueado?: boolean;
 }) {
   const [verTodos, setVerTodos] = useState(false);
   const [tab, setTab] = useState<"Seguidores" | "Seguidos">("Seguidores");
   const lista = tab === "Seguidores" ? seguidores : seguidos;
-  // Sin Pro la pantalla se ve, pero el aviso del plan sale encima al entrar y
-  // vuelve cada vez que se toca algo que necesita el plan (abrir un chat,
-  // felicitar, invitar).
-  const [proAbierto, setProAbierto] = useState(bloqueado);
+  // La pantalla es de todas: buscar gente, seguirla y felicitarla es gratis.
+  // Lo único que pide Boost Pro es el chat, así que el aviso solo sale cuando
+  // alguien intenta abrir una conversación.
+  const [proAbierto, setProAbierto] = useState(false);
   const alPro = bloqueado
     ? (e: React.MouseEvent) => { e.preventDefault(); setProAbierto(true); }
     : undefined;
@@ -128,10 +129,7 @@ export function AmigosVista({
                         <Link href={`/app/creador/${a.userId}`} className="font-display font-extrabold text-[15px] truncate hover:text-accent transition">
                           {a.nombre}
                         </Link>
-                        <Link href={`/app/amigos/${a.userId}`} onClick={alPro}
-                          className="ml-auto shrink-0 bg-accent text-white rounded-full px-4 py-1.5 text-[13px] font-bold hover:brightness-110 transition">
-                          Felicitar
-                        </Link>
+                        <BotonFelicitar userId={a.userId} porQue={a.texto} />
                       </div>
 
                       <div className="flex items-end gap-3 mt-3">
@@ -185,7 +183,9 @@ export function AmigosVista({
                 )}
               </section>
 
-              <InvitarCard userId={yo.id} bloqueado={bloqueado} />
+              <Sugeridos />
+
+              <InvitarCard userId={yo.id} />
             </aside>
           </div>
         </div>
@@ -345,5 +345,52 @@ function Lupa() {
       strokeWidth="2.2" strokeLinecap="round" className="shrink-0 text-hint" aria-hidden>
       <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
     </svg>
+  );
+}
+
+// Felicitar: gratis y sin abrir un chat. Le llega como notificación.
+function BotonFelicitar({ userId, porQue }: { userId: string; porQue: string }) {
+  const [enviado, setEnviado] = useState(false);
+  const [pendiente, startTransition] = useTransition();
+
+  function mandar() {
+    startTransition(async () => {
+      const r = await felicitar(userId, porQue);
+      if (!("error" in r)) setEnviado(true);
+    });
+  }
+
+  return (
+    <button type="button" onClick={mandar} disabled={pendiente || enviado}
+      className={`ml-auto shrink-0 rounded-full px-4 py-1.5 text-[13px] font-bold transition disabled:opacity-100 ${
+        enviado ? "bg-accent-soft text-accent" : "bg-accent text-white hover:brightness-110"
+      }`}>
+      {enviado ? "¡Enviado! 🎉" : "Felicitar"}
+    </button>
+  );
+}
+
+// Gente que quizá quieras seguir. Se carga al abrir la pantalla.
+function Sugeridos() {
+  const [lista, setLista] = useState<Encontrada[] | null>(null);
+
+  useEffect(() => {
+    let vivo = true;
+    getSugeridos().then((r) => { if (vivo) setLista(r); }).catch(() => { if (vivo) setLista([]); });
+    return () => { vivo = false; };
+  }, []);
+
+  if (!lista || lista.length === 0) return null;
+
+  return (
+    <section className="bg-surface border border-border rounded-3xl p-5 shadow-sm">
+      <h3 className="font-display font-extrabold text-[15px] mb-1">Quizá quieras seguir</h3>
+      <p className="text-[12px] text-sub leading-snug mb-3">
+        Creadores de Melsprout que todavía no sigues.
+      </p>
+      <div className="divide-y divide-border -mx-1.5">
+        {lista.map((p) => <FilaPersona key={p.id} persona={p} />)}
+      </div>
+    </section>
   );
 }

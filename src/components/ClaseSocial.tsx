@@ -126,7 +126,8 @@ export function ClaseSocial({ claseId, puedeCalificar = true }: {
         ) : (
           <div className="space-y-4">
             {raiz.map((c) => (
-              <div key={c.id}>
+              // El id deja que Moderación enlace directo al comentario.
+              <div key={c.id} id={`c-${c.id}`} className="scroll-mt-24">
                 <Comentario c={c} onResponder={() => setResponde(c)}
                   onEditar={(t) => editar(c.id, t)} onBorrar={() => borrar(c.id)} />
                 {respuestasDe(c.id).length > 0 && (
