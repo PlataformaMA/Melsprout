@@ -13,6 +13,7 @@ import { recordarPerfilIncompleto } from "@/lib/recordatorios-actions";
 import { getRachaInfo } from "@/lib/racha-actions";
 import { nivelPorXP } from "@/lib/data";
 import { todoDesbloqueado } from "@/lib/ajustes";
+import { esAdminUsuario } from "@/lib/admin";
 import { RutaAprendizaje } from "@/components/RutaAprendizaje";
 
 type EReto = "completada" | "en-revision" | "rechazada" | "pendiente" | "bloqueada";
@@ -119,7 +120,9 @@ export default async function RutaPage() {
     else if (s.estado === "publicado") retoEstados[rid] = "en-revision";
   }
 
-  const desbloqueado = await todoDesbloqueado();
+  // El equipo ve la Ruta abierta de par en par: necesita entrar a cualquier
+  // clase para revisarla sin tener que completarlas en orden.
+  const desbloqueado = (await todoDesbloqueado()) || (await esAdminUsuario(user.id, user.email));
   const recompensas = await getRecompensas();
 
   return (

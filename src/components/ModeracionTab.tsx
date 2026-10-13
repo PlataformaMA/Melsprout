@@ -203,7 +203,7 @@ export function ModeracionTab() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <b className="text-[13.5px]">{i.autorNombre}</b>
-                        {i.esEquipo && <SelloModerador />}
+                        {i.esEquipo && <SelloBoost />}
                         {i.hilo.length > 0 && (
                           <span className="text-[11px] font-bold text-sub bg-bg border border-border rounded-full px-2 py-0.5">
                             💬 {i.hilo.length}
@@ -301,7 +301,7 @@ export function ModeracionTab() {
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <b className="text-[12.5px]">{r.autorNombre}</b>
-                          {r.esEquipo && <SelloModerador />}
+                          {r.esEquipo && <SelloBoost />}
                           <span className="text-[11px] text-hint">{fecha(r.fecha)}</span>
                         </div>
                         <p className="text-[12.5px] text-sub leading-snug mt-0.5 whitespace-pre-wrap">{r.texto}</p>
@@ -314,7 +314,7 @@ export function ModeracionTab() {
               {/* Responder sin salir del panel. */}
               <div className="px-5 pb-4 border-t border-border pt-4">
                 <textarea value={respuesta} onChange={(e) => { setRespuesta(e.target.value); setAviso(""); }}
-                  rows={2} placeholder="Responde como moderador…"
+                  rows={2} placeholder="Responde como Boost Academy…"
                   className="w-full bg-bg border border-border rounded-xl px-3.5 py-2.5 text-[13px] outline-none focus:border-accent resize-none" />
                 <div className="flex items-center gap-2 mt-2">
                   <button onClick={responder} disabled={enviando || !respuesta.trim()}
@@ -359,10 +359,10 @@ export function ModeracionTab() {
 }
 
 // Distingue a Melissa, Alexia, Nancy y al resto del equipo de una alumna.
-function SelloModerador() {
+function SelloBoost() {
   return (
     <span className="text-[10.5px] font-extrabold text-white bg-accent rounded-full px-2 py-0.5 tracking-wide">
-      MODERADOR
+      BOOST ACADEMY
     </span>
   );
 }

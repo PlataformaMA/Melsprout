@@ -4,6 +4,7 @@ import { getPerfil } from "@/lib/perfil-actions";
 import { getCursoEspecial } from "@/lib/cursos-db";
 import { getClasesCompletadas } from "@/lib/progreso-actions";
 import { abiertasDelCurso } from "@/lib/secuencia";
+import { esAdminUsuario } from "@/lib/admin";
 import { tengoAcceso, getTestimonios } from "@/lib/acceso-actions";
 import { VentaCursoVista } from "@/components/VentaCursoVista";
 import { CursoCompradoVista } from "@/components/CursoCompradoVista";
@@ -36,6 +37,9 @@ export default async function CursoEspecialPage({ params }: { params: Promise<{ 
   const completadas = await getClasesCompletadas();
   // El curso se lleva en orden: dentro de cada módulo la clase se abre cuando
   // la anterior está terminada (video completo o reto entregado).
-  const abiertas = [...(await abiertasDelCurso(user.id, curso.clases, completadas))];
+  // El equipo ve el curso completo: tiene que poder revisar cualquier clase.
+  const abiertas = (await esAdminUsuario(user.id, user.email))
+    ? curso.clases.map((c) => c.id)
+    : [...(await abiertasDelCurso(user.id, curso.clases, completadas))];
   return <CursoCompradoVista yo={yo} curso={curso} completadas={[...completadas]} abiertas={abiertas} />;
 }

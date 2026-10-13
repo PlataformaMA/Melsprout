@@ -163,3 +163,51 @@ export async function getSeguidoresYSeguidos(): Promise<{ seguidores: PersonaLis
 
   return { seguidores: arma(idsA), seguidos: arma(idsB) };
 }
+
+// Buscar gente por nombre, para seguirla sin tener que toparse con ella.
+export type Encontrada = {
+  id: string;
+  nombre: string;
+  avatar: string | null;
+  // Melissa y su equipo salen señalados, para que nadie dude de quién es quién.
+  esBoost: boolean;
+  // Relación conmigo, para pintar el botón correcto.
+  loSigo: boolean;
+  solicitada: boolean;
+};
+
+export async function buscarPersonas(texto: string): Promise<Encontrada[]> {
+  const q = texto.trim();
+  if (q.length < 2) return [];
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const admin = createAdminClient();
+  // El % y el _ son comodines de SQL: se escapan para que buscar "100%" no
+  // acabe trayendo a todo el mundo.
+  const patron = `%${q.replace(/[%_\\]/g, (c) => "\\" + c)}%`;
+  const { data } = await admin
+    .from("profiles")
+    .select("id, full_name, username, avatar_url, is_admin")
+    .or(`full_name.ilike.${patron},username.ilike.${patron}`)
+    .neq("id", user.id)
+    .limit(20);
+  if (!data?.length) return [];
+
+  const ids = data.map((p) => p.id as string);
+  const { data: rel } = await admin
+    .from("seguidores").select("seguido_id, estado")
+    .eq("seguidor_id", user.id).in("seguido_id", ids);
+  const estado = new Map((rel || []).map((r) => [r.seguido_id as string, r.estado as string]));
+
+  return data.map((p) => ({
+    id: p.id as string,
+    nombre: (p.full_name as string) || (p.username as string) || "Creador",
+    avatar: (p.avatar_url as string) || null,
+    esBoost: p.is_admin === true,
+    loSigo: estado.get(p.id as string) === "aceptado",
+    solicitada: estado.get(p.id as string) === "pendiente",
+  }));
+}

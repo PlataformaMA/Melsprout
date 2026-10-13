@@ -6,6 +6,7 @@ import { getClasesCompletadas } from "@/lib/progreso-actions";
 import { getRecursos } from "@/lib/recursos-actions";
 import { puedeVerClase } from "@/lib/acceso-actions";
 import { todoDesbloqueado } from "@/lib/ajustes";
+import { esAdminUsuario } from "@/lib/admin";
 import { abiertasDelCurso } from "@/lib/secuencia";
 import { ReproductorClase } from "@/components/ReproductorClase";
 
@@ -57,13 +58,18 @@ export default async function ClasePage({ params }: { params: Promise<{ id: stri
   // La Ruta puede ir abierta de par en par (ajuste del panel); un curso
   // especial (BYW) siempre se lleva en orden: la clase se abre cuando la
   // anterior está terminada, y ahí el reto sí es parte del temario.
-  const abierto = !modulo.especialId && (await todoDesbloqueado());
+  // El equipo entra a cualquier clase, de la Ruta o de un curso especial: tiene
+  // que poder revisarlas sin completarlas en orden.
+  const soyDelEquipo = await esAdminUsuario(user.id, user.email);
+  const abierto = soyDelEquipo || (!modulo.especialId && (await todoDesbloqueado()));
 
   // En un curso especial, entrar de frente por URL a una clase que todavía no
   // toca regresa a la portada del curso (la lista ya las muestra con candado).
   let abiertasIds: string[] = [];
   if (modulo.especialId) {
-    abiertasIds = [...(await abiertasDelCurso(user.id, modulo.clases, completadasSet))];
+    abiertasIds = soyDelEquipo
+      ? modulo.clases.map((c) => c.id)
+      : [...(await abiertasDelCurso(user.id, modulo.clases, completadasSet))];
     if (!abiertasIds.includes(clase.id)) redirect(`/app/especiales/${modulo.especialId}`);
   }
 

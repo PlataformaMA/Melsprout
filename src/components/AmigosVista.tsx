@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import type { Amigo } from "@/lib/chat-actions";
-import type { ActividadAmigo, PersonaLista } from "@/lib/amigos-actions";
+import type { ActividadAmigo, PersonaLista, Encontrada } from "@/lib/amigos-actions";
+import { buscarPersonas } from "@/lib/amigos-actions";
+import { toggleSeguir } from "@/lib/seguidores-actions";
 import type { Solicitud } from "@/lib/seguidores-actions";
 import { ProSeccionModal } from "@/components/ProSeccionModal";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -50,7 +52,10 @@ export function AmigosVista({
             <UserMenu avatarUrl={yo.avatar} nombre={yo.nombre} />
           </header>
 
-          <h1 className="font-display text-2xl font-extrabold mb-4">Amigos</h1>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <h1 className="font-display text-2xl font-extrabold">Amigos</h1>
+            <BuscarPersonas />
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
             <div className="min-w-0">
@@ -227,5 +232,118 @@ export function AmigosVista({
         </div>
       )}
     </div>
+  );
+}
+
+// Buscador de personas: antes solo se podía seguir a alguien si te lo topabas
+// en la comunidad o te llegaba su enlace. Aquí se busca por nombre y se le
+// manda la solicitud desde la misma lista.
+function BuscarPersonas() {
+  const [abierto, setAbierto] = useState(false);
+  const [texto, setTexto] = useState("");
+  const [gente, setGente] = useState<Encontrada[]>([]);
+  const [buscando, setBuscando] = useState(false);
+
+  // Se busca sola mientras escribe, con una pausa para no pedir en cada tecla.
+  useEffect(() => {
+    if (!abierto) return;
+    const q = texto.trim();
+    if (q.length < 2) { setGente([]); return; }
+    let vivo = true;
+    setBuscando(true);
+    const t = setTimeout(async () => {
+      const r = await buscarPersonas(q);
+      if (vivo) { setGente(r); setBuscando(false); }
+    }, 350);
+    return () => { vivo = false; clearTimeout(t); };
+  }, [texto, abierto]);
+
+  if (!abierto) {
+    return (
+      <button type="button" onClick={() => setAbierto(true)}
+        className="flex items-center gap-2 bg-surface border border-border rounded-full px-4 py-2 text-[13px] font-bold text-sub hover:border-accent/40 transition">
+        <Lupa /> Buscar personas
+      </button>
+    );
+  }
+
+  return (
+    <div className="relative w-full sm:w-[340px]">
+      <div className="flex items-center gap-2 bg-surface border border-accent/40 rounded-full px-4 py-2">
+        <Lupa />
+        <input autoFocus value={texto} onChange={(e) => setTexto(e.target.value)}
+          placeholder="Busca por nombre…"
+          className="flex-1 min-w-0 bg-transparent text-[13.5px] outline-none" />
+        <button type="button" onClick={() => { setAbierto(false); setTexto(""); setGente([]); }}
+          aria-label="Cerrar búsqueda" className="text-hint hover:text-sub shrink-0">✕</button>
+      </div>
+
+      {texto.trim().length >= 2 && (
+        <div className="absolute z-30 left-0 right-0 mt-2 bg-surface border border-border rounded-2xl shadow-xl max-h-[380px] overflow-y-auto">
+          {buscando ? (
+            <p className="text-[13px] text-sub px-4 py-3">Buscando…</p>
+          ) : gente.length === 0 ? (
+            <p className="text-[13px] text-sub px-4 py-3">Nadie con ese nombre.</p>
+          ) : (
+            gente.map((p) => <FilaPersona key={p.id} persona={p} />)
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FilaPersona({ persona }: { persona: Encontrada }) {
+  const [loSigo, setLoSigo] = useState(persona.loSigo);
+  const [solicitada, setSolicitada] = useState(persona.solicitada);
+  const [pendiente, startTransition] = useTransition();
+
+  function seguir() {
+    startTransition(async () => {
+      const r = await toggleSeguir(persona.id);
+      if ("error" in r) return;
+      setLoSigo(r.loSigo);
+      setSolicitada(r.solicitada);
+    });
+  }
+
+  return (
+    <div className="flex items-center gap-3 px-3.5 py-2.5 hover:bg-bg transition">
+      <Link href={`/app/creador/${persona.id}`} className="shrink-0">
+        {persona.avatar ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={persona.avatar} alt="" className="w-9 h-9 rounded-full object-cover" />
+        ) : (
+          <span className="w-9 h-9 rounded-full bg-accent/15 text-accent grid place-items-center text-[11px] font-bold">
+            {persona.nombre.slice(0, 2).toUpperCase()}
+          </span>
+        )}
+      </Link>
+      <Link href={`/app/creador/${persona.id}`} className="min-w-0 flex-1">
+        <div className="text-[13.5px] font-bold truncate hover:text-accent transition">{persona.nombre}</div>
+        {persona.esBoost && (
+          <span className="inline-block text-[10px] font-extrabold text-white bg-accent rounded-full px-2 py-0.5 mt-0.5">
+            BOOST ACADEMY
+          </span>
+        )}
+      </Link>
+      <button type="button" onClick={seguir} disabled={pendiente}
+        className={`shrink-0 rounded-full px-3.5 py-1.5 text-[12px] font-bold transition disabled:opacity-60 ${
+          loSigo || solicitada
+            ? "bg-bg border border-border text-sub hover:border-accent/40"
+            : "bg-accent text-white hover:brightness-110"
+        }`}>
+        {loSigo ? "Siguiendo" : solicitada ? "Enviada" : "Seguir"}
+      </button>
+    </div>
+  );
+}
+
+function Lupa() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2.2" strokeLinecap="round" className="shrink-0 text-hint" aria-hidden>
+      <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
+    </svg>
   );
 }
