@@ -14,6 +14,8 @@ import { RachaRotaModal } from "@/components/RachaRotaModal";
 import { ProModal } from "@/components/ProModal";
 import { RecursosModal } from "@/components/RecursosModal";
 import { XpModal } from "@/components/XpModal";
+import { BuscarClases } from "@/components/BuscarClases";
+import { TourBienvenida } from "@/components/TourBienvenida";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import type { Recurso, Recompensa } from "@/lib/recursos-actions";
 import { octiFrases, type Genero } from "@/lib/genero";
@@ -294,8 +296,10 @@ export function RutaAprendizaje({
               <h1 className="font-display text-2xl font-extrabold">¡Hola, {nombre.split(" ")[0]}! 👋</h1>
               <p className="text-sub text-[14px] mt-0.5">Tu ruta de aprendizaje. Sigue creciendo, un paso a la vez. 💜</p>
             </div>
-            {/* Camino = el mapa serpenteante. Bloques = la misma ruta en lista,
-                para quien quiere ver todo de un vistazo sin hacer scroll. */}
+            {/* Buscador + vistas. Camino = el mapa serpenteante; Bloques = la
+                misma ruta en lista, para ver todo de un vistazo sin scroll. */}
+            <div className="shrink-0 flex items-center gap-2">
+            <BuscarClases />
             <div className="shrink-0 flex items-center gap-1 bg-surface border border-border rounded-full p-1 shadow-sm">
               {(["camino", "bloques"] as const).map((v) => (
                 <button key={v} onClick={() => setVista(v)}
@@ -307,6 +311,7 @@ export function RutaAprendizaje({
                   <span className="hidden sm:inline">{v === "camino" ? "Camino" : "Bloques"}</span>
                 </button>
               ))}
+            </div>
             </div>
           </div>
 
@@ -590,6 +595,9 @@ export function RutaAprendizaje({
           onClose={() => { setRachaRotaAbierto(false); abrirRankingSiToca(); }} />
       )}
       {proAbierto && <ProModal motivo="clases" onClose={() => setProAbierto(false)} />}
+
+      {/* Recorrido guiado: solo la primera vez. */}
+      <TourBienvenida />
 
       {/* Tocó la puerta del siguiente mundo sin terminar este: se le dice
           exactamente qué le falta, en vez de dejarla con una puerta muda. */}

@@ -46,6 +46,16 @@ export function UserMenu({ avatarUrl, nombre, esAdmin }: { avatarUrl: string | n
             <Item href="/app/perfil" icon={<UserIcon />}>Mi perfil</Item>
             <Item href="/app/config" icon={<GearIcon />}>Configuración</Item>
             <Item href="/app/config" icon={<ShieldIcon />}>Seguridad y 2FA</Item>
+            {/* Volver a ver el recorrido de bienvenida: borra la marca y manda
+                a la Ruta, que es donde se dispara. */}
+            <button type="button"
+              onClick={() => {
+                try { localStorage.removeItem("melsprout_tour"); } catch {}
+                window.location.href = "/app/ruta";
+              }}
+              className="w-full flex items-center gap-2.5 text-left text-sm rounded-xl px-3 py-2.5 text-text hover:bg-bg transition">
+              <span className="text-[15px]">🧭</span> Ver el recorrido
+            </button>
             {admin && (
               <>
                 <div className="h-px bg-border my-1" />
