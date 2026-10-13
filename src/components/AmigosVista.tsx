@@ -34,6 +34,14 @@ export function AmigosVista({
   // Lo único que pide Boost Pro es el chat, así que el aviso solo sale cuando
   // alguien intenta abrir una conversación.
   const [proAbierto, setProAbierto] = useState(false);
+  // Quien llega aquí rebotado de un chat (?pro=1) ve el aviso del plan: si no,
+  // se quedaría sin saber por qué no se abrió la conversación.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (new URLSearchParams(window.location.search).get("pro") === "1") setProAbierto(true);
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
   const alPro = bloqueado
     ? (e: React.MouseEvent) => { e.preventDefault(); setProAbierto(true); }
     : undefined;

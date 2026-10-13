@@ -18,7 +18,7 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
 
   // El chat es parte de Boost Pro: sin plan, a la lista (ahí sale el aviso).
   const pro = await estadoPro(user.id, await esAdminUsuario(user.id, user.email));
-  if (pro.activo && !pro.pro) redirect("/app/amigos");
+  if (pro.activo && !pro.pro) redirect("/app/amigos?pro=1");
 
   const [{ mensajes, amigo }, amigos] = await Promise.all([
     getConversacion(id),
