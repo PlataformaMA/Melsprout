@@ -174,12 +174,14 @@ export function TourBienvenida() {
           className="bg-accent text-white font-bold text-[13px] rounded-lg px-4 py-2 hover:brightness-110 active:scale-95 transition">
           Entendido
         </button>
-        <span className="text-[12px] font-bold text-hint">{cuenta}</span>
+        <div className="flex items-center gap-2.5">
+          <button type="button" onClick={terminar}
+            className="text-[11.5px] font-bold text-hint hover:text-sub transition">
+            Saltar
+          </button>
+          <span className="text-[12px] font-bold text-hint">{cuenta}</span>
+        </div>
       </div>
-      <button type="button" onClick={terminar}
-        className="absolute -top-7 right-0 text-[11.5px] font-bold text-white drop-shadow hover:opacity-80 transition">
-        Saltar recorrido
-      </button>
     </div>
   );
 
