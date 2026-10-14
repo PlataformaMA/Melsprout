@@ -1,120 +1,206 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { NAV_ITEMS } from "@/components/nav-items";
 
-// Recorrido guiado: qué es cada sección de Melsprout.
+// Recorrido guiado de bienvenida.
 //
-// Sale una sola vez, la primera vez que alguien entra a su Ruta, y se puede
-// saltar en cualquier momento. Son tarjetas, no globos pegados a los botones:
-// un globo anclado se descoloca en cuanto cambia el tamaño de la pantalla o la
-// barra lateral se contrae, y acaba señalando el vacío.
+// No es una tarjeta al centro: es un globo pegado a cada sección del menú, y el
+// fondo va cambiando a la pantalla de la que habla, para que se vea de qué
+// está hablando. Sale una sola vez y se puede volver a ver desde el menú de la
+// cuenta ("Ver el recorrido").
 //
-// Se puede volver a ver desde el menú de la cuenta ("Ver el recorrido").
+// En celular el menú lateral no existe (hay un drawer), así que ahí el mismo
+// texto se muestra como tarjeta abajo, sin flecha a ningún lado.
 
-const PASOS: { icono: string; titulo: string; texto: string }[] = [
+type Paso = {
+  // A qué entrada del menú se pega el globo (null = no se pega a ninguna).
+  nav: string | null;
+  ruta: string;
+  titulo: string;
+  texto: string;
+};
+
+const PASOS: Paso[] = [
   {
-    icono: "/octi.png",
-    titulo: "Esta es tu ruta",
-    texto:
-      "El camino de abajo son tus clases, en orden. Cada clase se abre cuando terminas la anterior, y al final de cada mundo hay una puerta al siguiente.",
+    nav: "clases",
+    ruta: "/app/ruta",
+    titulo: "Ruta de aprendizaje",
+    texto: "Aquí encontrarás tus últimos cursos adquiridos.",
   },
   {
-    icono: "/trofeo.png",
-    titulo: "Gana XP y sube de nivel",
+    nav: "especiales",
+    ruta: "/app/especiales",
+    titulo: "Cursos especiales",
     texto:
-      "Terminar una clase, entregar un reto o entrar a una clase en vivo te da puntos. Toca el 💎 de arriba cuando quieras ver cuántos llevas y cómo conseguir más.",
+      "Aquí encontrarás los cursos adicionales que ofrece la plataforma y estarán desbloqueados los que hayas adquirido.",
   },
   {
-    icono: "/desafios/diana.png",
-    titulo: "Los retos no se saltan",
+    nav: "vivo",
+    ruta: "/app/vivo",
+    titulo: "Clases en vivo",
     texto:
-      "Después de cada clase hay un reto. Es lo que convierte lo que viste en algo tuyo, así que hay que entregarlo para seguir avanzando.",
+      "Aquí encontrarás las clases en vivo programadas en el calendario y las grabaciones de clases pasadas.",
   },
   {
-    icono: "/octi.png",
-    titulo: "Clases en vivo y cursos especiales",
+    nav: "comunidad",
+    ruta: "/app/comunidad",
+    titulo: "Comunidad",
     texto:
-      "En el menú de la izquierda están las clases en vivo con invitados y los cursos especiales que vayas tomando. Ahí también quedan las grabaciones.",
+      "Aquí se publican dudas, presentaciones y avances. También están los grupos y los retos de la comunidad.",
   },
   {
-    icono: "/octi.png",
-    titulo: "No estás sola en esto",
+    nav: "amigos",
+    ruta: "/app/amigos",
+    titulo: "Amigos",
     texto:
-      "En Comunidad se publican dudas, avances y presentaciones. En Amigos puedes buscar a otras creadoras, seguirlas y felicitarlas cuando logren algo.",
+      "Aquí puedes buscar a otras creadoras, seguirlas y felicitarlas cuando logren algo.",
   },
   {
-    icono: "/cofre.png",
-    titulo: "Completa tu perfil",
+    nav: "perfil",
+    ruta: "/app/perfil",
+    titulo: "Mi perfil",
     texto:
-      "Con tu foto, tu bio y tus redes conectadas sumas gemas y las marcas pueden encontrarte. Está en «Mi perfil», al final del menú.",
+      "Aquí completas tu información y conectas tus redes. Mientras más completo, más fácil es que las marcas te encuentren.",
+  },
+  {
+    nav: null,
+    ruta: "/app/ruta",
+    titulo: "Tu racha y tus XP",
+    texto:
+      "Arriba a la derecha llevas tu racha 🔥 y tus XP 💎. Toca el diamante cuando quieras ver cuántos llevas y cómo conseguir más.",
   },
 ];
 
-const GUARDADO = "melsprout_tour";
+const HECHO = "melsprout_tour";
+const PASO = "melsprout_tour_paso";
+const ACTIVO = "melsprout_tour_activo";
 
-export function TourBienvenida({ forzar = false, alCerrar }: { forzar?: boolean; alCerrar?: () => void }) {
-  const [visible, setVisible] = useState(forzar);
-  const [paso, setPaso] = useState(0);
+function avisarAlMenu(activo: boolean) {
+  try {
+    if (activo) sessionStorage.setItem(ACTIVO, "1");
+    else sessionStorage.removeItem(ACTIVO);
+  } catch {}
+  window.dispatchEvent(new CustomEvent("melsprout:tour", { detail: activo }));
+}
+
+export function TourBienvenida() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [paso, setPaso] = useState<number | null>(null);
+  // Dónde está la entrada del menú a la que se pega el globo.
+  const [ancla, setAncla] = useState<{ top: number; left: number } | null>(null);
+
+  // ¿Toca mostrarlo? Se decide en el navegador, no en el servidor.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(HECHO)) return;
+      const n = Number(localStorage.getItem(PASO) || "0");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPaso(Number.isFinite(n) && n >= 0 && n < PASOS.length ? n : 0);
+      avisarAlMenu(true);
+    } catch {
+      // Navegación privada: mejor no molestar.
+    }
+  }, []);
+
+  // Si la pantalla no es la del paso, se va sola: el globo habla de lo que se
+  // está viendo, no de algo que quedó dos clics atrás.
+  useEffect(() => {
+    if (paso === null) return;
+    const destino = PASOS[paso].ruta;
+    if (pathname !== destino) router.push(destino);
+  }, [paso, pathname, router]);
+
+  // Mide la entrada del menú para pegarle el globo al lado.
+  const medir = useCallback(() => {
+    if (paso === null) return;
+    const nav = PASOS[paso].nav;
+    if (!nav || window.innerWidth < 1024) { setAncla(null); return; }
+    const el = document.querySelector<HTMLElement>(`[data-nav="${nav}"]`);
+    if (!el) { setAncla(null); return; }
+    const r = el.getBoundingClientRect();
+    setAncla({ top: r.top + r.height / 2, left: r.right + 14 });
+  }, [paso]);
 
   useEffect(() => {
-    if (forzar) return;
-    try {
-      if (localStorage.getItem(GUARDADO)) return;
-    } catch {
-      return; // navegación privada: mejor no molestar
-    }
-    // Un respiro antes de aparecer: que primero vea su ruta.
-    const t = setTimeout(() => setVisible(true), 900);
-    return () => clearTimeout(t);
-  }, [forzar]);
+    if (paso === null) return;
+    // El menú tarda un instante en abrirse; se mide un par de veces.
+    const t1 = setTimeout(medir, 60);
+    const t2 = setTimeout(medir, 400);
+    window.addEventListener("resize", medir);
+    window.addEventListener("scroll", medir, true);
+    return () => {
+      clearTimeout(t1); clearTimeout(t2);
+      window.removeEventListener("resize", medir);
+      window.removeEventListener("scroll", medir, true);
+    };
+  }, [paso, pathname, medir]);
 
-  function cerrar() {
-    try {
-      localStorage.setItem(GUARDADO, "1");
-    } catch {}
-    setVisible(false);
-    alCerrar?.();
+  function guardar(n: number) {
+    try { localStorage.setItem(PASO, String(n)); } catch {}
   }
 
-  if (!visible) return null;
+  function siguiente() {
+    if (paso === null) return;
+    if (paso + 1 >= PASOS.length) return terminar();
+    guardar(paso + 1);
+    setPaso(paso + 1);
+  }
+
+  function terminar() {
+    try {
+      localStorage.setItem(HECHO, "1");
+      localStorage.removeItem(PASO);
+    } catch {}
+    avisarAlMenu(false);
+    setPaso(null);
+  }
+
+  if (paso === null) return null;
   const p = PASOS[paso];
-  const ultimo = paso === PASOS.length - 1;
+  const cuenta = `${paso + 1}/${PASOS.length}`;
+
+  const globo = (
+    <div className="w-[280px] bg-surface rounded-2xl shadow-2xl border-2 border-accent p-4 pointer-events-auto relative">
+      <span className="w-9 h-9 rounded-xl bg-accent-soft text-accent grid place-items-center mb-2">
+        {NAV_ITEMS.find((i) => i.id === p.nav)?.icon ?? <span className="text-[16px]">💎</span>}
+      </span>
+      <h3 className="font-display font-extrabold text-[14px] leading-tight">{p.titulo}</h3>
+      <p className="text-[12.5px] text-sub leading-snug mt-1">{p.texto}</p>
+      <div className="flex items-center justify-between gap-3 mt-3">
+        <button type="button" onClick={siguiente}
+          className="bg-accent text-white font-bold text-[13px] rounded-lg px-4 py-2 hover:brightness-110 active:scale-95 transition">
+          Entendido
+        </button>
+        <span className="text-[12px] font-bold text-hint">{cuenta}</span>
+      </div>
+      <button type="button" onClick={terminar}
+        className="absolute -top-7 right-0 text-[11.5px] font-bold text-white drop-shadow hover:opacity-80 transition">
+        Saltar recorrido
+      </button>
+    </div>
+  );
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-start sm:items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="absolute inset-0 bg-black/55 backdrop-blur-sm" onClick={cerrar} />
-      <div className="relative w-full max-w-[400px] bg-surface rounded-[28px] shadow-2xl my-4 onb-slide p-6 text-center">
-        <button type="button" onClick={cerrar}
-          className="absolute top-4 right-4 text-[12px] font-bold text-hint hover:text-sub transition">
-          Saltar
-        </button>
-
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={p.icono} alt="" className="octi-vivo mx-auto w-[118px] select-none" draggable={false} />
-
-        <h2 className="font-display font-extrabold text-[21px] leading-tight mt-2">{p.titulo}</h2>
-        <p className="text-sub text-[13.5px] leading-relaxed mt-2.5">{p.texto}</p>
-
-        {/* Puntitos: cuántos pasos faltan. */}
-        <div className="flex items-center justify-center gap-1.5 mt-5">
-          {PASOS.map((_, i) => (
-            <span key={i}
-              className={`h-1.5 rounded-full transition-all ${i === paso ? "w-5 bg-accent" : "w-1.5 bg-border"}`} />
-          ))}
-        </div>
-
-        <div className="flex items-center gap-2 mt-5">
-          {paso > 0 && (
-            <button type="button" onClick={() => setPaso((n) => n - 1)}
-              className="rounded-full px-4 py-3 text-[14px] font-bold text-sub hover:bg-bg transition">
-              Atrás
-            </button>
+    // El fondo se oscurece pero deja ver la pantalla de la que habla el globo.
+    <div className="fixed inset-0 z-[140] bg-black/25 pointer-events-auto" onClick={terminar}>
+      <div
+        className="absolute"
+        onClick={(e) => e.stopPropagation()}
+        style={
+          ancla
+            ? { top: ancla.top, left: ancla.left, transform: "translateY(-50%)" }
+            : { left: "50%", bottom: 24, transform: "translateX(-50%)" }
+        }
+      >
+        <div className="relative">
+          {/* Piquito hacia el menú, solo cuando está pegado a una sección. */}
+          {ancla && (
+            <span className="absolute -left-[7px] top-1/2 -translate-y-1/2 w-3 h-3 rotate-45 bg-surface border-l-2 border-b-2 border-accent" />
           )}
-          <button type="button"
-            onClick={() => (ultimo ? cerrar() : setPaso((n) => n + 1))}
-            className="flex-1 rounded-full bg-accent text-white font-bold text-[14.5px] py-3 shadow-lg shadow-accent/25 hover:brightness-110 active:scale-95 transition">
-            {ultimo ? "¡Empezar! 🚀" : "Siguiente"}
-          </button>
+          {globo}
         </div>
       </div>
     </div>

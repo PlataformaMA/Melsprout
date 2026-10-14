@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { MobileNav } from "@/components/MobileNav";
 import { NAV_ITEMS as ITEMS } from "@/components/nav-items";
@@ -8,7 +8,19 @@ import { NAV_ITEMS as ITEMS } from "@/components/nav-items";
 export function AppSidebar({ active }: { active: string }) {
   const [fijado, setFijado] = useState(false);
   const [hover, setHover] = useState(false);
-  const abierto = fijado || hover; // se despliega al pasar el mouse o al fijarlo
+  // Durante el recorrido de bienvenida el menú se queda abierto: los globos
+  // apuntan a cada sección por su nombre, y plegado no se entendería nada.
+  const [tour, setTour] = useState(false);
+  useEffect(() => {
+    const alTour = (e: Event) => setTour((e as CustomEvent<boolean>).detail);
+    window.addEventListener("melsprout:tour", alTour);
+    // El recorrido pudo arrancar antes de que este menú se montara.
+    try {
+      if (sessionStorage.getItem("melsprout_tour_activo") === "1") setTour(true);
+    } catch {}
+    return () => window.removeEventListener("melsprout:tour", alTour);
+  }, []);
+  const abierto = fijado || hover || tour; // se despliega al pasar el mouse, al fijarlo o en el tour
   return (
     <>
     <div
@@ -17,7 +29,7 @@ export function AppSidebar({ active }: { active: string }) {
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      <div className="sticky top-5 ml-4 mt-4 transition-all">
+      <div className={`sticky top-5 ml-4 mt-4 transition-all ${tour ? "relative z-[145]" : ""}`}>
         <div className="text-[11px] text-sub mb-1 pl-3">Menú</div>
         <div className="bg-surface rounded-3xl shadow-md border border-border py-4 px-2.5">
           {/* Logo + expandir */}
@@ -35,7 +47,7 @@ export function AppSidebar({ active }: { active: string }) {
             {ITEMS.map((it) => {
               const on = it.id === active;
               return (
-                <Link key={it.id} href={it.href} title={it.label}
+                <Link key={it.id} href={it.href} title={it.label} data-nav={it.id}
                   className={`relative flex items-center gap-3 rounded-2xl h-11 transition ${abierto ? "px-3" : "justify-center w-11"} ${
                     on ? "bg-accent-soft text-accent font-bold" : "text-hint hover:bg-bg hover:text-sub"
                   }`}>

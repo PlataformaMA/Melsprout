@@ -15,7 +15,6 @@ import { ProModal } from "@/components/ProModal";
 import { RecursosModal } from "@/components/RecursosModal";
 import { XpModal } from "@/components/XpModal";
 import { BuscarClases } from "@/components/BuscarClases";
-import { TourBienvenida } from "@/components/TourBienvenida";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import type { Recurso, Recompensa } from "@/lib/recursos-actions";
 import { octiFrases, type Genero } from "@/lib/genero";
@@ -599,8 +598,6 @@ export function RutaAprendizaje({
       )}
       {proAbierto && <ProModal motivo="clases" onClose={() => setProAbierto(false)} />}
 
-      {/* Recorrido guiado: solo la primera vez. */}
-      <TourBienvenida />
 
       {/* Tocó la puerta del siguiente mundo sin terminar este: se le dice
           exactamente qué le falta, en vez de dejarla con una puerta muda. */}
