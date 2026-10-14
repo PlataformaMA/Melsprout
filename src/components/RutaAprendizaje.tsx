@@ -164,6 +164,9 @@ export function RutaAprendizaje({
         localStorage.setItem("melsprout_visto", hoy);
         return;
       }
+      // Mientras no termine el recorrido de bienvenida, ningún pop-up del día:
+      // si no, la racha y el ranking se le encimaban al tour.
+      if (!localStorage.getItem("melsprout_tour")) return;
       // Ya no le queda nada por ver: el aviso del siguiente nivel, una sola vez.
       if (rutaTerminada && !localStorage.getItem("melsprout_pro_visto")) {
         localStorage.setItem("melsprout_pro_visto", hoy);
