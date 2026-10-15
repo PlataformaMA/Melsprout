@@ -96,22 +96,21 @@ export function TourBienvenida() {
   useEffect(() => {
     try {
       if (localStorage.getItem(HECHO)) return;
-      const n = Number(localStorage.getItem(PASO) || "0");
+      const guardado = Number(localStorage.getItem(PASO) || "0");
+      const n = Number.isFinite(guardado) && guardado >= 0 && guardado < PASOS.length ? guardado : 0;
+      // Si abrió una pantalla que es parte del recorrido, el tour empieza AHÍ.
+      // Antes lo mandaba siempre a la Ruta: quien entraba a otra sección se
+      // encontraba con que la plataforma lo sacaba de donde quería estar.
+      const aqui = PASOS.findIndex((p) => p.ruta === pathname);
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setPaso(Number.isFinite(n) && n >= 0 && n < PASOS.length ? n : 0);
+      setPaso(aqui >= 0 ? aqui : n);
       avisarAlMenu(true);
     } catch {
       // Navegación privada: mejor no molestar.
     }
+    // Solo al montar: después manda lo que elija la persona.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Si la pantalla no es la del paso, se va sola: el globo habla de lo que se
-  // está viendo, no de algo que quedó dos clics atrás.
-  useEffect(() => {
-    if (paso === null) return;
-    const destino = PASOS[paso].ruta;
-    if (pathname !== destino) router.push(destino);
-  }, [paso, pathname, router]);
 
   // Mide la entrada del menú para pegarle el globo al lado.
   const medir = useCallback(() => {
@@ -145,8 +144,11 @@ export function TourBienvenida() {
   function siguiente() {
     if (paso === null) return;
     if (paso + 1 >= PASOS.length) return terminar();
-    guardar(paso + 1);
-    setPaso(paso + 1);
+    const n = paso + 1;
+    guardar(n);
+    setPaso(n);
+    // La pantalla cambia SOLO cuando ella avanza, no por estar parada aquí.
+    if (PASOS[n].ruta !== pathname) router.push(PASOS[n].ruta);
   }
 
   function terminar() {
