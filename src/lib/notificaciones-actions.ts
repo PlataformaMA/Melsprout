@@ -172,6 +172,9 @@ export async function avisarPendienteAlEquipo(
     await Promise.all(
       ids.map((id) => notificar(id, "general", "Hay algo por revisar", `${que} en ${donde}`, "/app/admin"))
     );
+    // Además de la campana, correo a quien modera (con espera, es un resumen).
+    const { avisarPorCorreoModeracion } = await import("@/lib/aviso-moderacion");
+    await avisarPorCorreoModeracion();
   } catch {
     // Un aviso que no sale no debe tumbar la publicación de la alumna.
   }
