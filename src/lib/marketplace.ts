@@ -325,3 +325,255 @@ export async function soyDelEquipo(): Promise<boolean> {
   const user = await quienSoy();
   return !!user && (await esAdminUsuario(user.id, user.email));
 }
+
+// ————————————— Panel: alta de marcas y campañas —————————————
+
+export type MarcaAdmin = {
+  id: string; nombre: string; lema: string | null; categoria: string | null;
+  logoUrl: string | null; destacada: boolean; activa: boolean; campanias: number;
+};
+
+export async function listarMarcasAdmin(): Promise<MarcaAdmin[]> {
+  if (!(await soyDelEquipo())) return [];
+  try {
+    const admin = createAdminClient();
+    const [{ data }, { data: camps }] = await Promise.all([
+      admin.from("marcas").select("*").order("nombre"),
+      admin.from("campanias").select("marca_id"),
+    ]);
+    const cuenta = new Map<string, number>();
+    for (const c of camps || []) {
+      const k = c.marca_id as string;
+      cuenta.set(k, (cuenta.get(k) || 0) + 1);
+    }
+    return (data || []).map((m) => ({
+      id: m.id as string,
+      nombre: m.nombre as string,
+      lema: (m.lema as string) || null,
+      categoria: (m.categoria as string) || null,
+      logoUrl: (m.logo_url as string) || null,
+      destacada: m.destacada === true,
+      activa: m.activa !== false,
+      campanias: cuenta.get(m.id as string) || 0,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function guardarMarca(datos: {
+  id?: string; nombre: string; lema?: string; categoria?: string;
+  logoUrl?: string; destacada?: boolean; activa?: boolean;
+}): Promise<{ ok: true } | { error: string }> {
+  if (!(await soyDelEquipo())) return { error: "No autorizado." };
+  const nombre = datos.nombre.trim();
+  if (!nombre) return { error: "La marca necesita un nombre." };
+
+  const fila = {
+    nombre,
+    lema: datos.lema?.trim() || null,
+    categoria: datos.categoria?.trim() || null,
+    logo_url: datos.logoUrl?.trim() || null,
+    destacada: datos.destacada === true,
+    activa: datos.activa !== false,
+  };
+  try {
+    const admin = createAdminClient();
+    const { error } = datos.id
+      ? await admin.from("marcas").update(fila).eq("id", datos.id)
+      : await admin.from("marcas").insert(fila);
+    if (error) return { error: "No se pudo guardar la marca." };
+    return { ok: true };
+  } catch {
+    return { error: "No se pudo guardar la marca." };
+  }
+}
+
+export async function borrarMarca(id: string): Promise<{ ok: true } | { error: string }> {
+  if (!(await soyDelEquipo())) return { error: "No autorizado." };
+  try {
+    // Las campañas cuelgan de la marca y se van con ella (on delete cascade).
+    const { error } = await createAdminClient().from("marcas").delete().eq("id", id);
+    if (error) return { error: "No se pudo borrar." };
+    return { ok: true };
+  } catch {
+    return { error: "No se pudo borrar." };
+  }
+}
+
+export type CampaniaAdmin = {
+  id: string; titulo: string; marca: string; marcaId: string;
+  descripcion: string | null; imagenUrl: string | null;
+  pagoMin: number | null; pagoMax: number | null;
+  categoria: string | null; etiquetas: string[]; plataformas: string[];
+  nivelMinimo: number; popular: boolean; activa: boolean;
+  cierraAt: string | null; aplicantes: number;
+};
+
+export async function listarCampaniasAdmin(): Promise<CampaniaAdmin[]> {
+  if (!(await soyDelEquipo())) return [];
+  try {
+    const admin = createAdminClient();
+    const [{ data }, { data: apps }] = await Promise.all([
+      admin.from("campanias").select("*, marcas(id, nombre)").order("created_at", { ascending: false }),
+      admin.from("campania_aplicaciones").select("campania_id"),
+    ]);
+    const cuenta = new Map<string, number>();
+    for (const a of apps || []) {
+      const k = a.campania_id as string;
+      cuenta.set(k, (cuenta.get(k) || 0) + 1);
+    }
+    return (data || []).map((c) => {
+      const m = c.marcas as unknown as { id: string; nombre: string } | null;
+      return {
+        id: c.id as string,
+        titulo: c.titulo as string,
+        marca: m?.nombre ?? "—",
+        marcaId: m?.id ?? "",
+        descripcion: (c.descripcion as string) || null,
+        imagenUrl: (c.imagen_url as string) || null,
+        pagoMin: (c.pago_min as number) ?? null,
+        pagoMax: (c.pago_max as number) ?? null,
+        categoria: (c.categoria as string) || null,
+        etiquetas: (c.etiquetas as string[]) || [],
+        plataformas: (c.plataformas as string[]) || [],
+        nivelMinimo: (c.nivel_minimo as number) || 0,
+        popular: c.popular === true,
+        activa: c.activa !== false,
+        cierraAt: (c.cierra_at as string) || null,
+        aplicantes: cuenta.get(c.id as string) || 0,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+export async function guardarCampania(datos: {
+  id?: string; marcaId: string; titulo: string; descripcion?: string; imagenUrl?: string;
+  pagoMin?: number | null; pagoMax?: number | null; categoria?: string;
+  etiquetas?: string[]; plataformas?: string[]; nivelMinimo?: number;
+  popular?: boolean; activa?: boolean; cierraAt?: string | null;
+}): Promise<{ ok: true } | { error: string }> {
+  if (!(await soyDelEquipo())) return { error: "No autorizado." };
+  if (!datos.marcaId) return { error: "Elige de qué marca es." };
+  const titulo = datos.titulo.trim();
+  if (!titulo) return { error: "La campaña necesita un título." };
+
+  const fila = {
+    marca_id: datos.marcaId,
+    titulo,
+    descripcion: datos.descripcion?.trim() || null,
+    imagen_url: datos.imagenUrl?.trim() || null,
+    pago_min: datos.pagoMin ?? null,
+    pago_max: datos.pagoMax ?? null,
+    categoria: datos.categoria?.trim() || null,
+    etiquetas: datos.etiquetas ?? [],
+    plataformas: datos.plataformas ?? [],
+    nivel_minimo: Math.max(0, datos.nivelMinimo ?? 0),
+    popular: datos.popular === true,
+    activa: datos.activa !== false,
+    cierra_at: datos.cierraAt || null,
+  };
+  try {
+    const admin = createAdminClient();
+    const { error } = datos.id
+      ? await admin.from("campanias").update(fila).eq("id", datos.id)
+      : await admin.from("campanias").insert(fila);
+    if (error) return { error: "No se pudo guardar la campaña." };
+    return { ok: true };
+  } catch {
+    return { error: "No se pudo guardar la campaña." };
+  }
+}
+
+export async function borrarCampania(id: string): Promise<{ ok: true } | { error: string }> {
+  if (!(await soyDelEquipo())) return { error: "No autorizado." };
+  try {
+    const { error } = await createAdminClient().from("campanias").delete().eq("id", id);
+    if (error) return { error: "No se pudo borrar." };
+    return { ok: true };
+  } catch {
+    return { error: "No se pudo borrar." };
+  }
+}
+
+// ————— Quién aplicó —————
+export type Aplicacion = {
+  id: string; campania: string; campaniaId: string;
+  nombre: string; avatar: string | null; userId: string;
+  mensaje: string | null; enlace: string | null;
+  estado: "enviada" | "aceptada" | "rechazada";
+  notaEquipo: string | null; fecha: string;
+};
+
+export async function listarAplicaciones(): Promise<Aplicacion[]> {
+  if (!(await soyDelEquipo())) return [];
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin
+      .from("campania_aplicaciones")
+      .select("*, campanias(id, titulo)")
+      .order("created_at", { ascending: false })
+      .limit(300);
+    if (!data?.length) return [];
+
+    const ids = [...new Set(data.map((a) => a.user_id as string))];
+    const { data: perfiles } = await admin
+      .from("profiles").select("id, full_name, avatar_url").in("id", ids);
+    const pm = new Map((perfiles || []).map((p) => [p.id as string, p]));
+
+    return data.map((a) => {
+      const c = a.campanias as unknown as { id: string; titulo: string } | null;
+      const p = pm.get(a.user_id as string);
+      return {
+        id: a.id as string,
+        campania: c?.titulo ?? "—",
+        campaniaId: c?.id ?? "",
+        userId: a.user_id as string,
+        nombre: (p?.full_name as string) || "Creador",
+        avatar: (p?.avatar_url as string) || null,
+        mensaje: (a.mensaje as string) || null,
+        enlace: (a.enlace as string) || null,
+        estado: a.estado as Aplicacion["estado"],
+        notaEquipo: (a.nota_equipo as string) || null,
+        fecha: a.created_at as string,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+export async function responderAplicacion(
+  id: string, estado: "aceptada" | "rechazada", nota = ""
+): Promise<{ ok: true } | { error: string }> {
+  if (!(await soyDelEquipo())) return { error: "No autorizado." };
+  try {
+    const admin = createAdminClient();
+    const { data: a } = await admin
+      .from("campania_aplicaciones")
+      .select("user_id, campanias(titulo)")
+      .eq("id", id).maybeSingle();
+
+    const { error } = await admin.from("campania_aplicaciones")
+      .update({ estado, nota_equipo: nota.trim() || null, updated_at: new Date().toISOString() })
+      .eq("id", id);
+    if (error) return { error: "No se pudo guardar." };
+
+    // Se le avisa a la creadora: una respuesta que nadie ve no sirve de nada.
+    if (a?.user_id) {
+      const c = a.campanias as unknown as { titulo: string } | null;
+      const { notificar } = await import("@/lib/notificaciones-actions");
+      await notificar(a.user_id as string, "general",
+        estado === "aceptada" ? "¡Te aceptaron en una campaña! 🎉" : "Respuesta a tu aplicación",
+        estado === "aceptada"
+          ? `Quedaste en «${c?.titulo ?? "la campaña"}». Revisa los detalles.`
+          : `Esta vez no quedaste en «${c?.titulo ?? "la campaña"}». Hay más campañas abiertas.`,
+        "/app/campanias");
+    }
+    return { ok: true };
+  } catch {
+    return { error: "No se pudo guardar." };
+  }
+}

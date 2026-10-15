@@ -29,6 +29,7 @@ import { EstudiantesTab } from "@/components/EstudiantesTab";
 import { ClasesRecursosTab } from "@/components/ClasesRecursosTab";
 import { RetosAdminTab } from "@/components/RetosAdminTab";
 import { ModeracionTab } from "@/components/ModeracionTab";
+import { MarketplaceAdminTab } from "@/components/MarketplaceAdminTab";
 import { ComunidadAdminTab } from "@/components/ComunidadAdminTab";
 import { VivoAdminTab } from "@/components/VivoAdminTab";
 import { crearModulo, actualizarModulo, borrarModulo, crearClase, actualizarClase, borrarClase, setVideoClaseDB, getVentaCurso, guardarVentaCurso, type ClaseInput, type VentaCurso } from "@/lib/cursos-actions";
@@ -113,7 +114,7 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
     personal: "bg-pink-soft text-pink", curso: "bg-amber-100 text-amber-700",
   };
 
-  const TITULOS: Record<string, string> = { resumen: "Resumen", retos: "Retos", clases: "Clases y recursos", vivo: "Clases en vivo", avances: "Revisión de retos", comentarios: "Comunidad", usuarios: "Usuarios", mensajes: "Mensajes", reportes: "Reportes", config: "Configuración", estudiantes: "Estudiantes", videos: "Videos y módulos", "retos-libres": "Retos sueltos", moderacion: "Moderación" };
+  const TITULOS: Record<string, string> = { resumen: "Resumen", retos: "Retos", clases: "Clases y recursos", vivo: "Clases en vivo", avances: "Revisión de retos", comentarios: "Comunidad", usuarios: "Usuarios", mensajes: "Mensajes", reportes: "Reportes", config: "Configuración", estudiantes: "Estudiantes", videos: "Videos y módulos", "retos-libres": "Retos sueltos", moderacion: "Moderación", marketplace: "Marketplace" };
 
   return (
     <div className="min-h-screen bg-bg flex">
@@ -160,6 +161,8 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
             <RetosAdminTab />
           ) : tab === "moderacion" ? (
             <ModeracionTab />
+          ) : tab === "marketplace" ? (
+            <MarketplaceAdminTab />
           ) : tab === "mensajes" ? (
             <MensajesTab />
           ) : tab === "reportes" ? (
@@ -224,7 +227,7 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
 }
 
 // ————— Barra lateral del admin —————
-type AdminTab = "resumen" | "retos" | "clases" | "vivo" | "avances" | "comentarios" | "usuarios" | "mensajes" | "reportes" | "config" | "estudiantes" | "videos" | "retos-libres" | "moderacion";
+type AdminTab = "resumen" | "retos" | "clases" | "vivo" | "avances" | "comentarios" | "usuarios" | "mensajes" | "reportes" | "config" | "estudiantes" | "videos" | "retos-libres" | "moderacion" | "marketplace";
 function AdminSidebar({ tab, setTab, adminEmail, counts }: {
   tab: AdminTab; setTab: (t: AdminTab) => void; adminEmail: string;
   counts: { retos: number; vivo: number; avances: number; comentarios: number; usuarios: number };
@@ -237,6 +240,7 @@ function AdminSidebar({ tab, setTab, adminEmail, counts }: {
     { id: "retos", label: "Retos", icon: <IcoEscudo />, count: counts.retos },
     { id: "comentarios", label: "Comunidad", icon: <IcoComunidad />, count: counts.comentarios },
     { id: "moderacion", label: "Moderación", icon: <IcoEscudo />, count: -1 },
+    { id: "marketplace", label: "Marketplace", icon: <IcoTienda />, count: -1 },
     { id: "mensajes", label: "Mensajes", icon: <IcoMensaje />, count: -1 },
     { id: "reportes", label: "Reportes", icon: <IcoBarras />, count: -1 },
     { id: "config", label: "Configuración", icon: <IcoEngrane />, count: -1 },
@@ -289,6 +293,7 @@ const traz = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLin
 function IcoCasa() { return <svg width="20" height="20" viewBox="0 0 24 24" {...traz}><path d="M3.5 10.5 12 4l8.5 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-3.5V15h-7v5.5H5A1.5 1.5 0 0 1 3.5 19z" /></svg>; }
 function IcoGente() { return <svg width="20" height="20" viewBox="0 0 24 24" {...traz}><circle cx="9" cy="8" r="3.2" /><path d="M3 20a6 6 0 0 1 12 0" /><path d="M16.5 5.4a3 3 0 0 1 0 5.6M21 20a6 6 0 0 0-3.6-5.5" /></svg>; }
 function IcoLibro() { return <svg width="20" height="20" viewBox="0 0 24 24" {...traz}><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15.5H5.5A1.5 1.5 0 0 0 4 21z" /><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v15.5h5.5A1.5 1.5 0 0 1 20 21z" /></svg>; }
+function IcoTienda() { return <svg width="20" height="20" viewBox="0 0 24 24" {...traz}><path d="M4 9.5h16V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z" /><path d="M3.5 9.5 5 4.5h14l1.5 5" /><path d="M9 20v-5h6v5" /></svg>; }
 function IcoEscudo() { return <svg width="20" height="20" viewBox="0 0 24 24" {...traz}><path d="M12 3.5 5.5 6v5.5c0 4 2.8 7.4 6.5 8.9 3.7-1.5 6.5-4.9 6.5-8.9V6z" /><path d="m9.4 12.2 1.9 1.9 3.4-3.6" /></svg>; }
 function IcoComunidad() { return <svg width="20" height="20" viewBox="0 0 24 24" {...traz}><circle cx="9.5" cy="8" r="3.2" /><path d="M3.5 20a6 6 0 0 1 12 0" /><path d="M18 6.5v4M20 8.5h-4" /></svg>; }
 function IcoTabla() { return <svg width="20" height="20" viewBox="0 0 24 24" {...traz}><rect x="4" y="4" width="16" height="16" rx="2.5" /><path d="M8 15v-3M12 15V9M16 15v-5" /></svg>; }
