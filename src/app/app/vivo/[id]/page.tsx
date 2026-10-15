@@ -20,12 +20,14 @@ export default async function GrabacionPage({ params }: { params: Promise<{ id: 
   if (!perfil) redirect("/onboarding");
   if (!perfil.onboarding_completo) redirect("/onboarding");
 
-  // Las grabaciones tambien son de Boost Pro: sin plan, de vuelta al listado
-  // (ahi se le ofrece con el pop-up, en vez de abrirle el video).
-  const pro = await estadoPro(user.id, await esAdminUsuario(user.id, user.email));
-  if (pro.activo && !pro.pro) redirect("/app/vivo");
-
   const clase = (await listarClasesVivo()).find((c) => c.id === id);
+
+  // Las grabaciones GENERALES son de Boost Pro: sin plan, de vuelta al listado
+  // (ahí se le ofrece con el pop-up, en vez de abrirle el video). Las de un
+  // curso comprado no: listarClasesVivo ya solo las devuelve a quien lo pagó,
+  // y lo pagado no se cobra dos veces.
+  const pro = await estadoPro(user.id, await esAdminUsuario(user.id, user.email));
+  if (pro.activo && !pro.pro && clase && !clase.modulo_id) redirect("/app/vivo?pro=1");
   if (!clase || !clase.grabacion_url) redirect("/app/vivo");
 
   // Una grabación nuestra vive en el almacén privado (videos://…): se firma al

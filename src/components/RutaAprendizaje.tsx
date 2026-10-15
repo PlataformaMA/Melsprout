@@ -49,19 +49,16 @@ type Elemento =
 // Construye los nodos según el progreso REAL. `completadas` es la FRONTERA:
 // hasta dónde llegó el alumno (la clase más avanzada que terminó, +1). `hechas`
 // dice cuáles terminó de verdad, para no pintar como vista una que se saltó.
-function construirElementos(cursos: ModuloCurso[], completadas: number, retoEstados: Record<string, EReto>, hechas: Set<string>, TODO_DESBLOQUEADO: boolean): Elemento[] {
+// `empezadas` son las clases que ya tenía abiertas antes del candado (les
+// dedicó tiempo de video). No se le vuelven a cerrar: lo que ya vio es suyo.
+function construirElementos(cursos: ModuloCurso[], completadas: number, retoEstados: Record<string, EReto>, hechas: Set<string>, TODO_DESBLOQUEADO: boolean, empezadas: Set<string>): Elemento[] {
   const els: Elemento[] = [];
   let gi = 0;
   cursos.forEach((modulo, mIdx) => {
     const inicioModulo = gi;
     modulo.clases.forEach((clase) => {
-      const ec: EClase = hechas.has(clase.id)
-        ? "completada"
-        : gi <= completadas || TODO_DESBLOQUEADO
-          ? "actual"
-          : "bloqueada";
-      // El reto se puede intentar si su clase ya está disponible (actual o completada).
-      const disponible = gi <= completadas || TODO_DESBLOQUEADO;
+      const disponible = gi <= completadas || TODO_DESBLOQUEADO || empezadas.has(clase.id);
+      const ec: EClase = hechas.has(clase.id) ? "completada" : disponible ? "actual" : "bloqueada";
       const er: EReto = retoEstados[clase.id] ?? (disponible ? "pendiente" : "bloqueada");
       els.push({ tipo: "clase", clase, estado: ec, mIdx });
       els.push({ tipo: "reto", clase, estado: er, mIdx });
@@ -82,22 +79,25 @@ function construirElementos(cursos: ModuloCurso[], completadas: number, retoEsta
 export type TopCreador = { id: string; nombre: string; avatarUrl: string | null; xp: number; esTu: boolean };
 
 export function RutaAprendizaje({
-  nombre, avatarUrl, racha, perfilPct, topCreadores = [], completadas = 0, completadasIds = [], retoEstados = {}, cursos, recursos = [], recompensas = [], desafios = { xp: 0, clases: 0, retos: 0 }, genero = "neutro", notifSinLeer = 0, tuRanking, ranking = [], emailVerificado = true, xp = 0, rachaInfo, desbloqueado = true,
+  nombre, avatarUrl, racha, perfilPct, topCreadores = [], completadas = 0, completadasIds = [], empezadasIds = [], retoEstados = {}, cursos, recursos = [], recompensas = [], desafios = { xp: 0, clases: 0, retos: 0 }, genero = "neutro", notifSinLeer = 0, tuRanking, ranking = [], emailVerificado = true, xp = 0, rachaInfo, desbloqueado = true,
 }: {
   nombre: string; avatarUrl: string | null; racha: number; perfilPct: number; topCreadores?: TopCreador[];
-  completadas?: number; completadasIds?: string[]; recursos?: Recurso[]; recompensas?: Recompensa[]; desafios?: { xp: number; clases: number; retos: number }; genero?: Genero; notifSinLeer?: number; retoEstados?: Record<string, EReto>; cursos: ModuloCurso[]; tuRanking?: { pos: number; xp: number };
+  completadas?: number; completadasIds?: string[];
+  // Clases con tiempo de video visto: se quedan abiertas aunque llegue el candado.
+  empezadasIds?: string[]; recursos?: Recurso[]; recompensas?: Recompensa[]; desafios?: { xp: number; clases: number; retos: number }; genero?: Genero; notifSinLeer?: number; retoEstados?: Record<string, EReto>; cursos: ModuloCurso[]; tuRanking?: { pos: number; xp: number };
   ranking?: RankItem[]; emailVerificado?: boolean; xp?: number; rachaInfo?: RachaInfo;
   desbloqueado?: boolean;   // todas las clases abiertas (se cambia desde el panel)
 }) {
   const TODO_DESBLOQUEADO = desbloqueado;
   const hechas = new Set(completadasIds);
+  const empezadas = useMemo(() => new Set(empezadasIds), [empezadasIds]);
   // Las clases "Próximamente" se ven, pero NO entran en la secuencia: si entraran,
   // todos se frenarían al llegar a una clase que todavía no está grabada.
   const cursosSeq = useMemo(
     () => cursos.map((m) => ({ ...m, clases: m.clases.filter((c) => !c.proximamente) })),
     [cursos]
   );
-  const todos = construirElementos(cursosSeq, completadas, retoEstados, hechas, TODO_DESBLOQUEADO);
+  const todos = construirElementos(cursosSeq, completadas, retoEstados, hechas, TODO_DESBLOQUEADO, empezadas);
   // Módulo actual (el que contiene la clase "actual")
   const idxGlobal = todos.findIndex((e) => e.tipo === "clase" && e.estado === "actual");
   const moduloActual = idxGlobal >= 0 && todos[idxGlobal].tipo === "clase"

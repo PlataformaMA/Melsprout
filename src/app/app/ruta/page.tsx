@@ -14,6 +14,7 @@ import { getRachaInfo } from "@/lib/racha-actions";
 import { nivelPorXP } from "@/lib/data";
 import { todoDesbloqueado } from "@/lib/ajustes";
 import { esAdminUsuario } from "@/lib/admin";
+import { clasesEmpezadas } from "@/lib/secuencia";
 import { RutaAprendizaje } from "@/components/RutaAprendizaje";
 
 type EReto = "completada" | "en-revision" | "rechazada" | "pendiente" | "bloqueada";
@@ -123,6 +124,9 @@ export default async function RutaPage() {
   // El equipo ve la Ruta abierta de par en par: necesita entrar a cualquier
   // clase para revisarla sin tener que completarlas en orden.
   const desbloqueado = (await todoDesbloqueado()) || (await esAdminUsuario(user.id, user.email));
+  // Lo que ya tenía empezado se queda abierto: el candado nuevo no le quita a
+  // nadie una clase en la que ya invirtió tiempo.
+  const empezadasIds = [...(await clasesEmpezadas(user.id, orden))];
   const recompensas = await getRecompensas();
 
   return (
@@ -135,6 +139,7 @@ export default async function RutaPage() {
       topCreadores={topCreadores}
       completadas={completadas}
       completadasIds={[...completadasSet]}
+      empezadasIds={empezadasIds}
       recursos={recursos}
       desafios={desafios}
       recompensas={recompensas}

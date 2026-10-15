@@ -11,8 +11,10 @@ import { AvatarInstructor } from "@/components/Instructor";
 
 type Props = {
   clases: ClaseVivo[]; asistidas: string[]; nombre: string; avatarUrl: string | null; xp: number; racha: number;
-  // Las clases en vivo son parte de Boost Pro. `bloqueado` solo es true cuando
-  // el plan ya existe en la base y esta persona no lo tiene (ver lib/pro.ts).
+  // Las clases en vivo GENERALES son parte de Boost Pro. `bloqueado` solo es
+  // true cuando el plan ya existe en la base y esta persona no lo tiene
+  // (ver lib/pro.ts). Las clases de un curso comprado nunca se bloquean:
+  // son parte de lo que ya pagó.
   bloqueado?: boolean;
 };
 
@@ -91,12 +93,16 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, xp, racha, blo
   }, []);
   const cerrarIntro = () => { localStorage.setItem("melsprout_vivo_intro", "1"); setPopup(false); };
 
+  // Una clase atada a un curso solo llega aquí si esa persona lo compró (lo
+  // filtra listarClasesVivo), así que es suya: el candado de Pro no aplica.
+  const pidePro = (c: ClaseVivo) => bloqueado && !c.modulo_id;
+
   const proximas = clases.filter((c) => estadoDe(c) !== "terminada");
   const grabaciones = clases.filter((c) => c.grabacion_url || estadoDe(c) === "terminada");
 
   async function asistir(c: ClaseVivo) {
     // Sin Pro no se entra ni se apunta: se le ofrece el plan.
-    if (bloqueado) { setProAbierto(true); return; }
+    if (pidePro(c)) { setProAbierto(true); return; }
     const st = estadoDe(c);
     if (st === "en_vivo" && c.stream_url) window.open(c.stream_url, "_blank");
     const r = await asistirClaseVivo(c.id);
@@ -170,7 +176,8 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, xp, racha, blo
                     <div className="space-y-3">
                       {grabaciones.map((c) => {
                         // Sin Pro la fila no lleva a ningun lado: ofrece el plan.
-                        const pinta = `w-full text-left flex items-center gap-4 bg-surface border border-border rounded-2xl p-3.5 shadow-sm transition group ${c.grabacion_url || bloqueado ? "hover:border-accent/30" : "opacity-70"}`;
+                        const cerrada = pidePro(c);
+                        const pinta = `w-full text-left flex items-center gap-4 bg-surface border border-border rounded-2xl p-3.5 shadow-sm transition group ${c.grabacion_url || cerrada ? "hover:border-accent/30" : "opacity-70"}`;
                         const dentro = (
                         <>
                           <span className="w-24 h-[54px] rounded-xl bg-gradient-to-br from-[#4c1d95] to-[#7c3aed] grid place-items-center text-white shrink-0 overflow-hidden">
@@ -197,7 +204,7 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, xp, racha, blo
                             : <span className="text-[11px] font-bold text-sub bg-bg border border-border rounded-full px-2.5 py-1 shrink-0">Próximamente</span>}
                         </>
                         );
-                        if (bloqueado) return <button key={c.id} type="button" onClick={() => setProAbierto(true)} className={pinta}>{dentro}</button>;
+                        if (cerrada) return <button key={c.id} type="button" onClick={() => setProAbierto(true)} className={pinta}>{dentro}</button>;
                         if (c.grabacion_url) return <Link key={c.id} href={`/app/vivo/${c.id}`} className={pinta}>{dentro}</Link>;
                         return <div key={c.id} className={pinta}>{dentro}</div>;
                       })}
@@ -218,8 +225,8 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, xp, racha, blo
                   </div>
                   <div className="space-y-3">
                     {grabaciones.filter((c) => c.grabacion_url).slice(0, 3).map((c) => (
-                      <Link key={c.id} href={bloqueado ? "#" : `/app/vivo/${c.id}`}
-                        onClick={bloqueado ? (e) => { e.preventDefault(); setProAbierto(true); } : undefined}
+                      <Link key={c.id} href={pidePro(c) ? "#" : `/app/vivo/${c.id}`}
+                        onClick={pidePro(c) ? (e) => { e.preventDefault(); setProAbierto(true); } : undefined}
                         className="flex items-center gap-2.5 group">
                         <span className="w-16 h-9 rounded-lg bg-gradient-to-br from-[#4c1d95] to-[#7c3aed] grid place-items-center text-white text-[11px] shrink-0 overflow-hidden">
                           {c.thumbnail_url ? (
