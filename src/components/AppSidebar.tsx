@@ -47,7 +47,13 @@ export function AppSidebar({ active }: { active: string }) {
             {ITEMS.map((it) => {
               const on = it.id === active;
               return (
-                <Link key={it.id} href={it.href} title={it.label} data-nav={it.id}
+                <div key={it.id}>
+                {/* Título del bloque (Principal, Aprende…). Plegado no cabe. */}
+                {it.grupo && abierto && (
+                  <div className="text-[13px] font-extrabold text-text px-3 pt-3 pb-1.5">{it.grupo}</div>
+                )}
+                {it.grupo && !abierto && <div className="h-px bg-border my-2 mx-2" />}
+                <Link href={it.href} title={it.label} data-nav={it.id}
                   className={`relative flex items-center gap-3 rounded-2xl h-11 transition ${abierto ? "px-3" : "justify-center w-11"} ${
                     on ? "bg-accent-soft text-accent font-bold" : "text-hint hover:bg-bg hover:text-sub"
                   }`}>
@@ -55,6 +61,7 @@ export function AppSidebar({ active }: { active: string }) {
                   <span className="shrink-0">{it.icon}</span>
                   {abierto && <span className="text-[15px] whitespace-nowrap">{it.label}</span>}
                 </Link>
+                </div>
               );
             })}
           </nav>

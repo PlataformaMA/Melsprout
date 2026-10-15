@@ -1,16 +1,45 @@
 // Menú de la app en UN solo lugar: lo usan la barra lateral (desktop) y el
 // drawer ☰ (móvil). Antes estaban duplicados y el móvil se quedó atrás —
 // le faltaba Amigos y usaba emojis en vez de los mismos iconos.
-export type NavItem = { id: string; label: string; href: string; icon: React.ReactNode };
+export type NavItem = {
+  id: string; label: string; href: string; icon: React.ReactNode;
+  // Título del bloque al que abre (Principal, Aprende, Comunidad, Herramientas).
+  grupo?: string;
+  // Solo con Boost Pro. Sin plan se ve, pero lleva al aviso del plan.
+  pro?: boolean;
+};
 
 export const NAV_ITEMS: NavItem[] = [
-  { id: "clases", label: "Ruta de aprendizaje", href: "/app/ruta", icon: <MapIcon /> },
+  { id: "inicio", label: "Inicio", href: "/app/inicio", icon: <CasaIcon />, grupo: "Principal" },
+  { id: "perfil", label: "Mi perfil", href: "/app/perfil", icon: <UserIcon /> },
+  { id: "campanias", label: "Campañas", href: "/app/campanias", icon: <MegafonoIcon />, pro: true },
+  { id: "clases", label: "Ruta de aprendizaje", href: "/app/ruta", icon: <MapIcon />, grupo: "Aprende" },
   { id: "especiales", label: "Cursos Especiales", href: "/app/especiales", icon: <ClaquetaIcon /> },
   { id: "vivo", label: "Clases en vivo", href: "/app/vivo", icon: <LiveIcon /> },
-  { id: "comunidad", label: "Comunidad", href: "/app/comunidad", icon: <PeopleIcon /> },
+  { id: "comunidad", label: "Comunidad", href: "/app/comunidad", icon: <PeopleIcon />, grupo: "Comunidad" },
   { id: "amigos", label: "Amigos", href: "/app/amigos", icon: <ChatIcon /> },
-  { id: "perfil", label: "Mi perfil", href: "/app/perfil", icon: <UserIcon /> },
+  { id: "marketplace", label: "Marketplace", href: "/app/marketplace", icon: <TiendaIcon />, grupo: "Herramientas", pro: true },
 ];
+
+export function CasaIcon() {
+  return <svg {...ICO}><path d="M3.5 10.5 12 3.5l8.5 7" /><path d="M5.5 9.5V20h13V9.5" /><path d="M10 20v-5.5h4V20" /></svg>;
+}
+export function MegafonoIcon() {
+  return (
+    <svg {...ICO}>
+      <path d="m3 11 15-6v14L3 13z" /><path d="M3 11v2a2 2 0 0 0 2 2h1" />
+      <path d="M7 15v4a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-3.5" />
+    </svg>
+  );
+}
+export function TiendaIcon() {
+  return (
+    <svg {...ICO}>
+      <path d="M4 9.5h16V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z" />
+      <path d="M3.5 9.5 5 4.5h14l1.5 5" /><path d="M9 20v-5h6v5" />
+    </svg>
+  );
+}
 
 const ICO = { width: 22, height: 22, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.9, strokeLinecap: "round", strokeLinejoin: "round" } as const;
 
