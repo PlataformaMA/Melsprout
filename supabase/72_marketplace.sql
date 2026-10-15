@@ -21,7 +21,7 @@ create table if not exists public.campanias (
   titulo          text not null,
   descripcion     text,
   imagen_url      text,
-  -- Rango de pago. Se guarda en centavos para no pelear con los decimales.
+  -- Rango de pago, en unidades enteras: 500 y 1500 salen como "$500 – $1,500".
   pago_min        integer,
   pago_max        integer,
   moneda          text not null default 'USD',
