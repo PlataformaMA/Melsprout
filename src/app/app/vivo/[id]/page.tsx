@@ -26,6 +26,9 @@ export default async function GrabacionPage({ params }: { params: Promise<{ id: 
   // (ahí se le ofrece con el pop-up, en vez de abrirle el video). Las de un
   // curso comprado no: listarClasesVivo ya solo las devuelve a quien lo pagó,
   // y lo pagado no se cobra dos veces.
+  // Es de un curso que no compró: a la página del curso, donde está la oferta.
+  if (clase?.bloqueadaPorCurso && clase.modulo_id) redirect(`/app/especiales/${clase.modulo_id}`);
+
   const pro = await estadoPro(user.id, await esAdminUsuario(user.id, user.email));
   if (pro.activo && !pro.pro && clase && !clase.modulo_id) redirect("/app/vivo?pro=1");
   if (!clase || !clase.grabacion_url) redirect("/app/vivo");

@@ -85,6 +85,8 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, xp, racha, blo
   const [calAbierto, setCalAbierto] = useState(false);
   const [asist, setAsist] = useState<string[]>(asistidas);
   const [proAbierto, setProAbierto] = useState(false);
+  // Clase de un curso que no compró: se le explica y se le ofrece el curso.
+  const [cursoAviso, setCursoAviso] = useState<ClaseVivo | null>(null);
 
   useEffect(() => {
     if (localStorage.getItem("melsprout_vivo_intro")) return;
@@ -96,11 +98,15 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, xp, racha, blo
   // Una clase atada a un curso solo llega aquí si esa persona lo compró (lo
   // filtra listarClasesVivo), así que es suya: el candado de Pro no aplica.
   const pidePro = (c: ClaseVivo) => bloqueado && !c.modulo_id;
+  // Cerrada por cualquiera de las dos razones: el curso o el plan.
+  const cerradaPara = (c: ClaseVivo) => c.bloqueadaPorCurso === true || pidePro(c);
 
   const proximas = clases.filter((c) => estadoDe(c) !== "terminada");
   const grabaciones = clases.filter((c) => c.grabacion_url || estadoDe(c) === "terminada");
 
   async function asistir(c: ClaseVivo) {
+    // Es de un curso que no tiene: primero el curso, no el plan.
+    if (c.bloqueadaPorCurso) { setCursoAviso(c); return; }
     // Sin Pro no se entra ni se apunta: se le ofrece el plan.
     if (pidePro(c)) { setProAbierto(true); return; }
     const st = estadoDe(c);
@@ -113,6 +119,7 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, xp, racha, blo
     <div className="min-h-screen bg-bg flex">
       {popup && !proAbierto && <ComoFuncionaPopup onClose={cerrarIntro} />}
       {proAbierto && <ProVivoModal onClose={() => setProAbierto(false)} />}
+      {cursoAviso && <AvisoCurso clase={cursoAviso} onCerrar={() => setCursoAviso(null)} />}
       {calAbierto && <CalendarioModal clases={proximas} asist={asist} onAsistir={asistir} onClose={() => setCalAbierto(false)} />}
       <AppSidebar active="vivo" />
       <div className="flex-1 min-w-0">
@@ -176,7 +183,7 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, xp, racha, blo
                     <div className="space-y-3">
                       {grabaciones.map((c) => {
                         // Sin Pro la fila no lleva a ningun lado: ofrece el plan.
-                        const cerrada = pidePro(c);
+                        const cerrada = cerradaPara(c);
                         const pinta = `w-full text-left flex items-center gap-4 bg-surface border border-border rounded-2xl p-3.5 shadow-sm transition group ${c.grabacion_url || cerrada ? "hover:border-accent/30" : "opacity-70"}`;
                         const dentro = (
                         <>
@@ -204,7 +211,12 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, xp, racha, blo
                             : <span className="text-[11px] font-bold text-sub bg-bg border border-border rounded-full px-2.5 py-1 shrink-0">Próximamente</span>}
                         </>
                         );
-                        if (cerrada) return <button key={c.id} type="button" onClick={() => setProAbierto(true)} className={pinta}>{dentro}</button>;
+                        if (cerrada) return (
+                          <button key={c.id} type="button" className={pinta}
+                            onClick={() => (c.bloqueadaPorCurso ? setCursoAviso(c) : setProAbierto(true))}>
+                            {dentro}
+                          </button>
+                        );
                         if (c.grabacion_url) return <Link key={c.id} href={`/app/vivo/${c.id}`} className={pinta}>{dentro}</Link>;
                         return <div key={c.id} className={pinta}>{dentro}</div>;
                       })}
@@ -225,8 +237,10 @@ export function VivoVista({ clases, asistidas, nombre, avatarUrl, xp, racha, blo
                   </div>
                   <div className="space-y-3">
                     {grabaciones.filter((c) => c.grabacion_url).slice(0, 3).map((c) => (
-                      <Link key={c.id} href={pidePro(c) ? "#" : `/app/vivo/${c.id}`}
-                        onClick={pidePro(c) ? (e) => { e.preventDefault(); setProAbierto(true); } : undefined}
+                      <Link key={c.id} href={cerradaPara(c) ? "#" : `/app/vivo/${c.id}`}
+                        onClick={cerradaPara(c)
+                          ? (e) => { e.preventDefault(); c.bloqueadaPorCurso ? setCursoAviso(c) : setProAbierto(true); }
+                          : undefined}
                         className="flex items-center gap-2.5 group">
                         <span className="w-16 h-9 rounded-lg bg-gradient-to-br from-[#4c1d95] to-[#7c3aed] grid place-items-center text-white text-[11px] shrink-0 overflow-hidden">
                           {c.thumbnail_url ? (
@@ -465,3 +479,43 @@ function ComoFuncionaPopup({ onClose }: { onClose: () => void }) {
 
 function CalIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2.5" /><path d="M3 9h18M8 3v3M16 3v3" /></svg>; }
 function BellMini() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 0 0 4 0" /></svg>; }
+
+// Clase de un curso que todavía no compró. No se le esconde: se le enseña con
+// candado y se le dice dónde conseguirla.
+function AvisoCurso({ clase, onCerrar }: { clase: ClaseVivo; onCerrar: () => void }) {
+  const curso = clase.cursoNombre ?? "este curso";
+  return (
+    <div className="fixed inset-0 z-[130] flex items-start sm:items-center justify-center p-3 sm:p-6 overflow-y-auto">
+      <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={onCerrar} />
+      <div className="relative w-full max-w-[400px] bg-surface rounded-[28px] shadow-2xl my-4 onb-slide p-6 text-center">
+        <button type="button" onClick={onCerrar} aria-label="Cerrar"
+          className="absolute top-4 right-4 w-9 h-9 grid place-items-center rounded-full text-hint hover:bg-bg transition">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/octi-candado.png" alt="" width={190} className="mx-auto" draggable={false} />
+        <h2 className="font-display font-extrabold text-[21px] leading-tight mt-1">
+          Esta clase es parte de<br /><span className="text-accent">{curso}</span>
+        </h2>
+        <p className="text-sub text-[13.5px] leading-snug mt-2.5">
+          «{clase.titulo}» viene incluida con el curso, junto con todas sus clases
+          y sus grabaciones.
+        </p>
+
+        {clase.modulo_id && (
+          <Link href={`/app/especiales/${clase.modulo_id}`}
+            className="mt-5 flex items-center justify-center gap-2 bg-accent text-white font-bold text-[15px] rounded-full py-3.5 shadow-lg shadow-accent/25 hover:brightness-110 active:scale-95 transition">
+            Ver {curso} <span aria-hidden>→</span>
+          </Link>
+        )}
+        <button type="button" onClick={onCerrar}
+          className="w-full mt-2.5 text-[12.5px] font-bold text-hint hover:text-sub transition py-1.5">
+          Quizás después
+        </button>
+      </div>
+    </div>
+  );
+}

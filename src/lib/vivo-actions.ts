@@ -19,6 +19,9 @@ export type ClaseVivo = {
   xp: number;
   activo?: boolean;
   modulo_id?: string | null;   // si apunta a un curso especial, es solo para quien lo compró
+  // Es de un curso que esta persona no ha comprado: se ve, pero con candado.
+  bloqueadaPorCurso?: boolean;
+  cursoNombre?: string | null;
 };
 
 async function comoAdmin() {
@@ -50,17 +53,27 @@ export async function listarClasesVivo(): Promise<ClaseVivo[]> {
 
   const { data: especiales } = await admin
     .from("cursos_modulos")
-    .select("id")
+    .select("id, nombre")
     .in("id", deCurso)
     .eq("especial", true);
-  const conLlave = new Set((especiales || []).map((m) => m.id as string));
+  const conLlave = new Map((especiales || []).map((m) => [m.id as string, m.nombre as string]));
   if (conLlave.size === 0) return clases;
+
+  // Marca las que son de un curso que esta persona no tiene. NO se esconden:
+  // se ven con candado y con el camino para comprar el curso. Esconderlas
+  // dejaba la clase invisible y nadie se enteraba de que existía.
+  const conCandado = (mios: Set<string>) =>
+    clases.map((c) => {
+      const curso = c.modulo_id ? conLlave.get(c.modulo_id) : null;
+      if (!curso || mios.has(c.modulo_id as string)) return c;
+      return { ...c, bloqueadaPorCurso: true, cursoNombre: curso };
+    });
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return clases.filter((c) => !c.modulo_id || !conLlave.has(c.modulo_id));
+  if (!user) return conCandado(new Set());
 
   // El equipo las ve todas, para poder revisarlas.
   if (await esAdminUsuario(user.id, user.email)) return clases;
@@ -69,9 +82,8 @@ export async function listarClasesVivo(): Promise<ClaseVivo[]> {
     .from("curso_accesos")
     .select("modulo_id")
     .eq("user_id", user.id)
-    .in("modulo_id", [...conLlave]);
-  const mios = new Set((accesos || []).map((a) => a.modulo_id as string));
-  return clases.filter((c) => !c.modulo_id || !conLlave.has(c.modulo_id) || mios.has(c.modulo_id));
+    .in("modulo_id", [...conLlave.keys()]);
+  return conCandado(new Set((accesos || []).map((a) => a.modulo_id as string)));
 }
 
 
