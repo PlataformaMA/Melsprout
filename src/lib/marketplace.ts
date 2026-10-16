@@ -80,12 +80,22 @@ async function quienSoy() {
   return user;
 }
 
+// El Marketplace es de Boost Pro. Se revisa AQUÍ, no solo en la pantalla:
+// esconder las tarjetas no sirve si la acción se puede llamar por fuera.
+// El equipo entra siempre (estadoPro ya lo contempla).
+async function conPro(user: { id: string; email?: string } | null): Promise<boolean> {
+  if (!user) return false;
+  const { estadoPro } = await import("@/lib/pro");
+  const pro = await estadoPro(user.id, await esAdminUsuario(user.id, user.email));
+  return !pro.activo || pro.pro;
+}
+
 export async function listarCampanias(
   f: Filtros = {}
 ): Promise<{ campanias: Campania[]; paginas: number }> {
   const vacio = { campanias: [], paginas: 1 };
   const user = await quienSoy();
-  if (!user) return vacio;
+  if (!user || !(await conPro(user))) return vacio;
 
   try {
     const admin = createAdminClient();
@@ -163,7 +173,7 @@ export async function listarMarcas(
   texto = "", categorias: string[] = [], pagina = 1
 ): Promise<{ marcas: Marca[]; paginas: number }> {
   const vacio = { marcas: [], paginas: 1 };
-  if (!(await quienSoy())) return vacio;
+  if (!(await conPro(await quienSoy()))) return vacio;
 
   try {
     const admin = createAdminClient();
@@ -225,6 +235,7 @@ export async function aplicarACampania(
 ): Promise<{ ok: true } | { error: string }> {
   const user = await quienSoy();
   if (!user) return { error: "Inicia sesión." };
+  if (!(await conPro(user))) return { error: "Aplicar a campañas es parte de Boost Pro." };
 
   const texto = mensaje.trim().slice(0, 1500);
   if (texto.length < 20) return { error: "Cuéntale a la marca por qué eres tú, aunque sea en dos líneas." };
@@ -285,7 +296,7 @@ export type MiCampania = {
 
 export async function misCampanias(): Promise<MiCampania[]> {
   const user = await quienSoy();
-  if (!user) return [];
+  if (!user || !(await conPro(user))) return [];
   try {
     const admin = createAdminClient();
     const { data, error } = await admin
