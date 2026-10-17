@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getPerfil } from "@/lib/perfil-actions";
-import { listarClasesVivo } from "@/lib/vivo-actions";
+import { listarClasesVivo, materialDeClaseVivo } from "@/lib/vivo-actions";
 import { firmarVideo } from "@/lib/cursos-db";
 import { GrabacionVista } from "@/components/GrabacionVista";
 import { estadoPro } from "@/lib/pro";
@@ -45,6 +45,7 @@ export default async function GrabacionPage({ params }: { params: Promise<{ id: 
       avatarUrl={perfil.avatar_url}
       xp={perfil.xp}
       racha={perfil.racha}
+      material={await materialDeClaseVivo(id)}
     />
   );
 }

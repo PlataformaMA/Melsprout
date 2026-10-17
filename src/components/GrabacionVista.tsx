@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useState, useTransition } from "react";
+import { descargarRecurso } from "@/lib/recursos-actions";
+import type { MaterialVivo } from "@/lib/vivo-actions";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { AvatarInstructor } from "@/components/Instructor";
@@ -25,12 +28,15 @@ export function GrabacionVista({
   avatarUrl,
   xp,
   racha,
+  material = [],
 }: {
   clase: ClaseVivo;
   nombre: string;
   avatarUrl: string | null;
   xp: number;
   racha: number;
+  // La presentación y lo demás que dejó quien dio la clase.
+  material?: MaterialVivo[];
 }) {
   const url = clase.grabacion_url || "";
   const yt = idYouTube(url);
@@ -94,8 +100,52 @@ export function GrabacionVista({
               </div>
             </div>
           </div>
+
+          {/* Material de la clase. Hasta ahora no se veía en ningún lado. */}
+          {material.length > 0 && (
+            <section className="mt-6">
+              <h2 className="font-display font-extrabold text-[16px] mb-3">Material de la clase</h2>
+              <div className="space-y-2.5">
+                {material.map((m) => <FilaMaterial key={m.id} m={m} />)}
+              </div>
+            </section>
+          )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// Una pieza de material: se pide el enlace al servidor (firmado y con caducidad)
+// y se abre. Así el archivo nunca queda expuesto.
+function FilaMaterial({ m }: { m: MaterialVivo }) {
+  const [error, setError] = useState("");
+  const [pendiente, startTransition] = useTransition();
+
+  function abrir() {
+    setError("");
+    startTransition(async () => {
+      const r = await descargarRecurso(m.id);
+      if ("error" in r) { setError(r.error); return; }
+      window.open(r.url, "_blank", "noopener");
+    });
+  }
+
+  return (
+    <div className="bg-surface border border-border rounded-2xl p-4 flex items-center gap-3.5">
+      <span className="w-11 h-11 rounded-xl bg-accent-soft grid place-items-center text-[20px] shrink-0">
+        {m.emoji}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="font-display font-extrabold text-[14px] leading-tight">{m.titulo}</div>
+        {m.descripcion && <p className="text-[12.5px] text-sub leading-snug mt-0.5">{m.descripcion}</p>}
+        {m.peso && <div className="text-[11.5px] text-hint mt-0.5">{m.peso}</div>}
+        {error && <p className="text-[11.5px] text-pink mt-1">{error}</p>}
+      </div>
+      <button type="button" onClick={abrir} disabled={pendiente}
+        className="shrink-0 bg-accent text-white rounded-xl px-4 py-2.5 text-[13px] font-bold hover:brightness-110 active:scale-95 transition disabled:opacity-60">
+        {pendiente ? "Abriendo…" : m.esArchivo ? "Descargar" : "Abrir"}
+      </button>
     </div>
   );
 }

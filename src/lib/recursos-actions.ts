@@ -58,7 +58,12 @@ export async function getRecursos(clasesDesbloqueadas: string[]): Promise<Recurs
   // es ruido para ella y publicidad gratis del temario para cualquiera.
   const deOtroCurso = await clasesAjenas(user.id, (filas || []).map((r) => r.clase_id as string | null));
 
-  return (filas || []).filter((r) => !r.clase_id || !deOtroCurso.has(r.clase_id as string)).map((r) => ({
+  // El material de una clase en vivo vive EN esa clase, no aquí. Si se colara,
+  // saldría para cualquiera: su clase_id va vacío y el filtro de arriba lo
+  // dejaría pasar, enseñando el material de un curso que no compró.
+  return (filas || [])
+    .filter((r) => !r.clase_vivo_id)
+    .filter((r) => !r.clase_id || !deOtroCurso.has(r.clase_id as string)).map((r) => ({
     id: r.id as string,
     claseId: (r.clase_id as string) ?? null,
     titulo: r.titulo as string,
@@ -111,10 +116,21 @@ export async function descargarRecurso(
   const admin = createAdminClient();
   const { data: r } = await admin
     .from("recursos")
-    .select("archivo, url, activo, xp")
+    .select("archivo, url, activo, xp, clase_vivo_id")
     .eq("id", recursoId)
     .maybeSingle();
   if (!r || !r.activo) return { error: "Ese recurso ya no está disponible." };
+
+  // Material de una clase en vivo: solo lo baja quien puede ver esa clase. Se
+  // revisa aquí porque el enlace firmado se puede pedir sin pasar por la
+  // pantalla.
+  if (r.clase_vivo_id) {
+    const { listarClasesVivo } = await import("@/lib/vivo-actions");
+    const clase = (await listarClasesVivo()).find((c) => c.id === r.clase_vivo_id);
+    if (!clase || clase.bloqueadaPorCurso) {
+      return { error: "Este material es de un curso que todavía no tienes." };
+    }
+  }
 
   // Recompensa del cofre: se comprueba el XP en el servidor, no solo en pantalla.
   if (typeof r.xp === "number") {

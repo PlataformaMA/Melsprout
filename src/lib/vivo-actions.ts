@@ -192,3 +192,44 @@ export async function borrarClaseVivo(id: string): Promise<{ ok: true } | { erro
   if (error) return { error: "No se pudo borrar." };
   return { ok: true };
 }
+
+// Material de una clase en vivo (la presentación, las plantillas…).
+//
+// Vive aquí y no en el panel de recursos de la Ruta: así hereda el acceso de la
+// clase, que ya sabe de qué curso es y quién lo compró.
+export type MaterialVivo = {
+  id: string;
+  titulo: string;
+  descripcion: string;
+  emoji: string;
+  peso: string | null;
+  url: string | null;
+  esArchivo: boolean;
+};
+
+export async function materialDeClaseVivo(claseVivoId: string): Promise<MaterialVivo[]> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  // Se comprueba el acceso a la clase antes de enseñar su material.
+  const clase = (await listarClasesVivo()).find((c) => c.id === claseVivoId);
+  if (!clase || clase.bloqueadaPorCurso) return [];
+
+  const { data } = await createAdminClient()
+    .from("recursos")
+    .select("id, titulo, descripcion, emoji, peso, url, archivo")
+    .eq("clase_vivo_id", claseVivoId)
+    .eq("activo", true)
+    .order("orden");
+
+  return (data || []).map((r) => ({
+    id: r.id as string,
+    titulo: r.titulo as string,
+    descripcion: (r.descripcion as string) || "",
+    emoji: (r.emoji as string) || "📄",
+    peso: (r.peso as string) ?? null,
+    url: (r.url as string) ?? null,
+    esArchivo: !!r.archivo,
+  }));
+}
