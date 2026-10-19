@@ -57,7 +57,10 @@ export function SocialPerfil({ userId, inicial, bloqueado = false }: {
           {s.loSigo ? "Siguiendo" : s.solicitada ? "Solicitud enviada" : "+ Seguir"}
         </button>
         {/* El chat se abre cuando ya la sigues: antes de eso no hay con quién. */}
-        {s.loSigo && (
+        {/* El chat se abre con que UNA de las dos siga a la otra: antes el
+            botón solo salía si yo la seguía, y con quien me seguía a mí no
+            había forma de escribirle aunque la conversación sí funcionara. */}
+        {(s.loSigo || s.meSigue) && (
           <Link href={bloqueado ? "#" : `/app/amigos/${userId}`}
             onClick={bloqueado ? (e) => { e.preventDefault(); setProAbierto(true); } : undefined}
             className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full px-5 py-2.5 sm:py-2 text-[13.5px] sm:text-[13px] font-bold bg-accent text-white hover:brightness-110 shadow-sm shadow-accent/30 transition">

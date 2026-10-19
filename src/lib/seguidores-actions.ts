@@ -9,6 +9,9 @@ export type Social = {
   siguiendo: number;    // solo los ACEPTADOS
   loSigo: boolean;      // ¿ya me aceptó y la sigo?
   solicitada: boolean;  // ¿le mandé solicitud y sigue pendiente?
+  // ¿ELLA me sigue a mí (y yo la acepté)? El chat se abre con que una de las
+  // dos siga a la otra, así que esto también habilita "Enviar mensaje".
+  meSigue: boolean;
 };
 
 // Una solicitud de seguimiento que espera mi respuesta.
@@ -25,7 +28,7 @@ export async function getSocial(userId: string): Promise<Social> {
   const { data: { user } } = await supabase.auth.getUser();
   const admin = createAdminClient();
 
-  const [{ count: seguidores }, { count: siguiendo }, { data: mio }] = await Promise.all([
+  const [{ count: seguidores }, { count: siguiendo }, { data: mio }, { data: suyo }] = await Promise.all([
     admin.from("seguidores").select("seguidor_id", { count: "exact", head: true })
       .eq("seguido_id", userId).eq("estado", "aceptado"),
     admin.from("seguidores").select("seguido_id", { count: "exact", head: true })
@@ -34,14 +37,20 @@ export async function getSocial(userId: string): Promise<Social> {
       ? admin.from("seguidores").select("estado")
           .eq("seguidor_id", user.id).eq("seguido_id", userId).maybeSingle()
       : Promise.resolve({ data: null }),
+    user && user.id !== userId
+      ? admin.from("seguidores").select("estado")
+          .eq("seguidor_id", userId).eq("seguido_id", user.id).maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
 
   const estado = (mio as { estado?: string } | null)?.estado ?? null;
+  const suEstado = (suyo as { estado?: string } | null)?.estado ?? null;
   return {
     seguidores: seguidores ?? 0,
     siguiendo: siguiendo ?? 0,
     loSigo: estado === "aceptado",
     solicitada: estado === "pendiente",
+    meSigue: suEstado === "aceptado",
   };
 }
 
