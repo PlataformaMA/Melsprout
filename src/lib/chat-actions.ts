@@ -20,7 +20,9 @@ export type Amigo = {
 
 export type Mensaje = {
   id: string;
-  sticker: string;
+  // Un mensaje es un sticker O un texto escrito.
+  sticker: string | null;
+  texto: string | null;
   mio: boolean;
   leido: boolean;
   fecha: string;
@@ -89,7 +91,7 @@ export async function getConversacion(
   const admin = createAdminClient();
   const { data } = await admin
     .from("chat_mensajes")
-    .select("id, de_id, sticker, leido, created_at")
+    .select("*")
     .or(`and(de_id.eq.${user.id},para_id.eq.${otroId}),and(de_id.eq.${otroId},para_id.eq.${user.id})`)
     // Los ÚLTIMOS 200 (antes traía los 200 primeros y los nuevos no se veían).
     .order("created_at", { ascending: false })
@@ -107,7 +109,8 @@ export async function getConversacion(
   return {
     mensajes: (data || []).slice().reverse().map((m) => ({
       id: m.id as string,
-      sticker: m.sticker as string,
+      sticker: (m.sticker as string) || null,
+      texto: (m.texto as string) || null,
       mio: m.de_id === user.id,
       leido: !!m.leido,
       fecha: m.created_at as string,
@@ -147,6 +150,41 @@ export async function enviarSticker(
     `${(yo?.full_name as string) || "Alguien"} te mandó una felicitación`,
     "", `/app/amigos/${user.id}`);
   await registrarRacha();   // escribirle a una compañera cuenta como actividad
+  return { ok: true };
+}
+
+// Mandar un mensaje escrito.
+//
+// Las mismas reglas que el sticker: solo entre quienes se siguen. El texto se
+// guarda tal cual lo escribió, recortado, y se le avisa a la otra persona.
+export async function enviarMensaje(
+  paraId: string,
+  texto: string
+): Promise<{ ok: true } | { error: string }> {
+  const t = texto.trim().slice(0, 2000);
+  if (!t) return { error: "Escribe algo." };
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Inicia sesión." };
+
+  const mutuos = await idsMutuos(user.id);
+  if (!mutuos.includes(paraId)) return { error: "Solo puedes escribirle a quien te sigue de vuelta." };
+
+  const admin = createAdminClient();
+  const { error } = await admin.from("chat_mensajes")
+    .insert({ de_id: user.id, para_id: paraId, texto: t });
+  if (error) {
+    // Pasa si todavía no se corrió supabase/73_chat_texto.sql.
+    return { error: "Los mensajes escritos todavía no están activados." };
+  }
+
+  const { data: yo } = await admin.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
+  await notificar(paraId, "general",
+    `${(yo?.full_name as string) || "Alguien"} te escribió`,
+    t.length > 90 ? t.slice(0, 90) + "…" : t,
+    `/app/amigos/${user.id}`);
+  await registrarRacha();
   return { ok: true };
 }
 

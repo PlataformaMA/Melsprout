@@ -6,7 +6,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import { STICKERS, stickerDe } from "@/lib/stickers";
 import { InvitarCard } from "@/components/InvitarCard";
-import { enviarSticker, getConversacion, marcarActividad, type Amigo, type Mensaje } from "@/lib/chat-actions";
+import { enviarSticker, enviarMensaje, getConversacion, marcarActividad, type Amigo, type Mensaje } from "@/lib/chat-actions";
 
 function hora(iso: string) {
   return new Date(iso).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" });
@@ -29,6 +29,9 @@ export function ChatVista({
   const [msgs, setMsgs] = useState<Mensaje[]>(mensajesIniciales);
   const [enLinea, setEnLinea] = useState(amigo.enLinea);
   const [todos, setTodos] = useState(false);
+  const [texto, setTexto] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [errorChat, setErrorChat] = useState("");
   const [, startTransition] = useTransition();
   const fin = useRef<HTMLDivElement>(null);
 
@@ -51,11 +54,32 @@ export function ChatVista({
   function mandar(clave: string) {
     // Se pinta al momento; el refresco lo reemplaza por el real del servidor.
     const provisional: Mensaje = {
-      id: `tmp-${clave}-${msgs.length}`, sticker: clave, mio: true, leido: false,
+      id: `tmp-${clave}-${msgs.length}`, sticker: clave, texto: null, mio: true, leido: false,
       fecha: new Date().toISOString(),
     };
     setMsgs((m) => [...m, provisional]);
     startTransition(async () => { await enviarSticker(amigo.id, clave); });
+  }
+
+  // Mandar lo escrito. Se pinta al momento y, si el servidor lo rechaza, se
+  // quita y se devuelve el texto a la caja para que no se pierda.
+  async function escribir() {
+    const t = texto.trim();
+    if (!t || enviando) return;
+    const provisional: Mensaje = {
+      id: `tmp-txt-${msgs.length}`, sticker: null, texto: t, mio: true, leido: false,
+      fecha: new Date().toISOString(),
+    };
+    setMsgs((m) => [...m, provisional]);
+    setTexto("");
+    setEnviando(true);
+    const r = await enviarMensaje(amigo.id, t);
+    setEnviando(false);
+    if ("error" in r) {
+      setMsgs((m) => m.filter((x) => x.id !== provisional.id));
+      setTexto(t);
+      setErrorChat(r.error);
+    }
   }
 
   const visibles = todos ? STICKERS : STICKERS.slice(0, 5);
@@ -90,11 +114,11 @@ export function ChatVista({
               <div className="flex-1 overflow-y-auto px-4 sm:px-5 py-4 space-y-3">
                 {msgs.length === 0 && (
                   <p className="text-center text-sub text-[13px] py-10">
-                    Mándale una felicitación para romper el hielo. 💜
+                    Escríbele o mándale una felicitación para romper el hielo. 💜
                   </p>
                 )}
                 {msgs.map((m, i) => {
-                  const s = stickerDe(m.sticker);
+                  const s = m.sticker ? stickerDe(m.sticker) : null;
                   const nuevoDia = i === 0 || dia(msgs[i - 1].fecha) !== dia(m.fecha);
                   return (
                     <div key={m.id}>
@@ -106,6 +130,9 @@ export function ChatVista({
                         <div className={`max-w-[68%] rounded-2xl px-3.5 py-2.5 shadow-sm ${
                           m.mio ? "bg-accent-soft" : "bg-bg border border-border"
                         }`}>
+                          {m.texto ? (
+                            <p className="text-[14px] leading-relaxed whitespace-pre-wrap break-words">{m.texto}</p>
+                          ) : (
                           <div className="flex items-center gap-2.5">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src="/octi.png" alt="" className="octi-vivo w-9 shrink-0" />
@@ -116,6 +143,7 @@ export function ChatVista({
                               {s?.cuerpo && <p className="text-[12px] text-sub leading-snug">{s.cuerpo}</p>}
                             </div>
                           </div>
+                          )}
                           {m.mio && (
                             <p className="text-[10.5px] text-hint text-right mt-1">
                               {hora(m.fecha)} {m.leido ? "✓✓" : "✓"}
@@ -128,6 +156,28 @@ export function ChatVista({
                 })}
                 <div ref={fin} />
               </div>
+
+              {/* Escribir. Los stickers siguen debajo, para quien prefiere eso. */}
+              <form onSubmit={(e) => { e.preventDefault(); escribir(); }}
+                className="border-t border-border p-3 flex items-end gap-2">
+                <textarea value={texto} rows={1}
+                  onChange={(e) => { setTexto(e.target.value); setErrorChat(""); }}
+                  onKeyDown={(e) => {
+                    // Enter manda; Shift+Enter hace salto de línea.
+                    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); escribir(); }
+                  }}
+                  placeholder={`Escríbele a ${amigo.nombre.split(" ")[0]}…`} maxLength={2000}
+                  className="flex-1 min-w-0 bg-bg border border-border rounded-2xl px-4 py-2.5 text-[14px] outline-none focus:border-accent resize-none max-h-32" />
+                <button type="submit" disabled={!texto.trim() || enviando}
+                  aria-label="Enviar mensaje"
+                  className="shrink-0 w-11 h-11 rounded-full bg-accent text-white grid place-items-center hover:brightness-110 active:scale-95 transition disabled:opacity-40">
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M4 12 20 4l-4 16-4.5-6.5z" /><path d="m11.5 13.5 8.5-9.5" />
+                  </svg>
+                </button>
+              </form>
+              {errorChat && <p className="text-[12px] text-pink px-4 pb-2">{errorChat}</p>}
 
               {/* Stickers */}
               <div className="border-t border-border p-3 flex items-center gap-2 overflow-x-auto">
