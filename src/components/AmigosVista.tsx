@@ -174,18 +174,24 @@ export function AmigosVista({
                 ) : (
                   <div className="max-h-[320px] overflow-y-auto divide-y divide-border">
                     {lista.map((p) => (
-                      <Link key={p.id} href={`/app/creador/${p.id}`}
-                        className="flex items-center gap-3 px-5 py-3 hover:bg-bg transition">
-                        {p.avatar ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={p.avatar} alt={p.nombre} className="w-10 h-10 rounded-full object-cover shrink-0" />
-                        ) : (
-                          <span className="w-10 h-10 rounded-full bg-accent-soft text-accent grid place-items-center font-bold shrink-0">
-                            {p.nombre.slice(0, 2).toUpperCase()}
-                          </span>
-                        )}
-                        <span className="font-bold text-[14px] truncate">{p.nombre}</span>
-                      </Link>
+                      <div key={p.id} className="flex items-center gap-2.5 px-4 py-3 hover:bg-bg transition">
+                        <Link href={`/app/creador/${p.id}`} className="shrink-0">
+                          {p.avatar ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={p.avatar} alt={p.nombre} className="w-10 h-10 rounded-full object-cover" />
+                          ) : (
+                            <span className="w-10 h-10 rounded-full bg-accent-soft text-accent grid place-items-center font-bold">
+                              {p.nombre.slice(0, 2).toUpperCase()}
+                            </span>
+                          )}
+                        </Link>
+                        <Link href={`/app/creador/${p.id}`}
+                          className="flex-1 min-w-0 font-bold text-[14px] truncate hover:text-accent transition">
+                          {p.nombre}
+                        </Link>
+                        <BotonFelicitar userId={p.id} porQue={`¡Sigue así, ${p.nombre.split(" ")[0]}!`} compacto />
+                        <BotonMensaje userId={p.id} bloqueado={bloqueado} alPro={() => setProAbierto(true)} compacto />
+                      </div>
                     ))}
                   </div>
                 )}
@@ -217,22 +223,30 @@ export function AmigosVista({
             ) : (
               <div className="space-y-2">
                 {amigos.map((a) => (
-                  <Link key={a.id} href={`/app/amigos/${a.id}`} onClick={alPro}
-                    className="flex items-center gap-3 rounded-2xl p-2 hover:bg-bg transition">
-                    {a.avatar ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={a.avatar} alt={a.nombre} className="w-12 h-12 rounded-full object-cover shrink-0" />
-                    ) : (
-                      <span className="w-12 h-12 rounded-full bg-accent-soft text-accent grid place-items-center font-bold shrink-0">
-                        {a.nombre.slice(0, 2).toUpperCase()}
-                      </span>
-                    )}
-                    <span className="flex-1 min-w-0 font-display font-extrabold text-[15px] truncate">{a.nombre}</span>
-                    <span className="shrink-0 flex items-center gap-4 bg-bg rounded-xl px-3 py-2">
-                      <span className="flex items-center gap-1.5 text-[14px] font-bold">🔥 {a.racha}</span>
-                      <span className="flex items-center gap-1.5 text-[14px] font-bold">💎 {a.gemas}</span>
+                  <div key={a.id} className="flex flex-wrap items-center gap-3 rounded-2xl p-2 hover:bg-bg transition">
+                    <Link href={`/app/creador/${a.id}`} className="shrink-0">
+                      {a.avatar ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={a.avatar} alt={a.nombre} className="w-12 h-12 rounded-full object-cover" />
+                      ) : (
+                        <span className="w-12 h-12 rounded-full bg-accent-soft text-accent grid place-items-center font-bold">
+                          {a.nombre.slice(0, 2).toUpperCase()}
+                        </span>
+                      )}
+                    </Link>
+                    <Link href={`/app/creador/${a.id}`}
+                      className="flex-1 min-w-0 font-display font-extrabold text-[15px] truncate hover:text-accent transition">
+                      {a.nombre}
+                    </Link>
+                    <span className="shrink-0 flex items-center gap-3 bg-bg rounded-xl px-3 py-1.5">
+                      <span className="flex items-center gap-1.5 text-[13px] font-bold">🔥 {a.racha}</span>
+                      <span className="flex items-center gap-1.5 text-[13px] font-bold">💎 {a.gemas}</span>
                     </span>
-                  </Link>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <BotonFelicitar userId={a.id} porQue={`¡Sigue así, ${a.nombre.split(" ")[0]}!`} compacto />
+                      <BotonMensaje userId={a.id} bloqueado={bloqueado} alPro={() => setProAbierto(true)} />
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
@@ -357,7 +371,7 @@ function Lupa() {
 }
 
 // Felicitar: gratis y sin abrir un chat. Le llega como notificación.
-function BotonFelicitar({ userId, porQue }: { userId: string; porQue: string }) {
+function BotonFelicitar({ userId, porQue, compacto }: { userId: string; porQue: string; compacto?: boolean }) {
   const [enviado, setEnviado] = useState(false);
   const [pendiente, startTransition] = useTransition();
 
@@ -368,6 +382,20 @@ function BotonFelicitar({ userId, porQue }: { userId: string; porQue: string }) 
     });
   }
 
+  // En las listas va chiquito (solo el 🎉); en la actividad, con su texto.
+  if (compacto) {
+    return (
+      <button type="button" onClick={mandar} disabled={pendiente || enviado}
+        title={enviado ? "Ya la felicitaste" : "Felicitar"}
+        aria-label={enviado ? "Ya la felicitaste" : "Felicitar"}
+        className={`shrink-0 w-9 h-9 rounded-full grid place-items-center text-[15px] transition disabled:opacity-100 ${
+          enviado ? "bg-accent-soft" : "bg-bg border border-border hover:border-accent/50"
+        }`}>
+        {enviado ? "✓" : "🎉"}
+      </button>
+    );
+  }
+
   return (
     <button type="button" onClick={mandar} disabled={pendiente || enviado}
       className={`ml-auto shrink-0 rounded-full px-4 py-1.5 text-[13px] font-bold transition disabled:opacity-100 ${
@@ -375,6 +403,44 @@ function BotonFelicitar({ userId, porQue }: { userId: string; porQue: string }) 
       }`}>
       {enviado ? "¡Enviado! 🎉" : "Felicitar"}
     </button>
+  );
+}
+
+// Enviar mensaje: el chat es de Boost Pro, así que sin plan abre el aviso en
+// vez de llevar a una conversación que no se va a poder abrir.
+function BotonMensaje({ userId, bloqueado, alPro, compacto }: {
+  userId: string; bloqueado: boolean; alPro: () => void; compacto?: boolean;
+}) {
+  const comun = "shrink-0 font-bold transition flex items-center justify-center gap-1.5";
+  const medida = compacto ? "w-9 h-9 rounded-full" : "rounded-full px-4 py-1.5 text-[13px]";
+  const pinta = bloqueado
+    ? "bg-bg border border-border text-sub hover:border-accent/50"
+    : "bg-accent text-white hover:brightness-110";
+
+  if (bloqueado) {
+    return (
+      <button type="button" onClick={alPro} title="Enviar mensaje · Boost Pro"
+        aria-label="Enviar mensaje · Boost Pro" className={`${comun} ${medida} ${pinta}`}>
+        <Sobre />
+        {!compacto && <>Enviar mensaje <span className="text-[10px] font-extrabold bg-accent text-white rounded-full px-1.5 py-0.5">PRO</span></>}
+      </button>
+    );
+  }
+  return (
+    <Link href={`/app/amigos/${userId}`} title="Enviar mensaje" aria-label="Enviar mensaje"
+      className={`${comun} ${medida} ${pinta}`}>
+      <Sobre />
+      {!compacto && "Enviar mensaje"}
+    </Link>
+  );
+}
+
+function Sobre() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M21 12a7.5 7.5 0 0 1-7.5 7.5H8l-4 2.5V12A7.5 7.5 0 0 1 11.5 4.5h2A7.5 7.5 0 0 1 21 12Z" />
+    </svg>
   );
 }
 
