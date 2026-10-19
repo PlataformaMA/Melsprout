@@ -172,11 +172,13 @@ export async function enviarMensaje(
   if (!mutuos.includes(paraId)) return { error: "Solo puedes escribirle a quien te sigue de vuelta." };
 
   const admin = createAdminClient();
+  // `sticker` es obligatorio desde que el chat solo mandaba stickers: en un
+  // mensaje escrito va vacío, que es más sencillo que cambiar la columna.
   const { error } = await admin.from("chat_mensajes")
-    .insert({ de_id: user.id, para_id: paraId, texto: t });
+    .insert({ de_id: user.id, para_id: paraId, sticker: "", texto: t });
   if (error) {
-    // Pasa si todavía no se corrió supabase/73_chat_texto.sql.
-    return { error: "Los mensajes escritos todavía no están activados." };
+    console.error("enviarMensaje:", error.message);
+    return { error: "No se pudo enviar tu mensaje." };
   }
 
   const { data: yo } = await admin.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
