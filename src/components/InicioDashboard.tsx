@@ -1,10 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
-import type { DatosInicio } from "@/lib/inicio";
+import type { DatosInicio, SesionVivo } from "@/lib/inicio";
 
 // Inicio: dónde se quedó, qué sigue y qué hay abierto en el Marketplace.
 
@@ -173,25 +174,7 @@ export function InicioDashboard({
                   </p>
                 ) : (
                   <div className="space-y-2.5">
-                    {d.sesiones.map((s) => (
-                      <Link key={s.id} href="/app/vivo"
-                        className="flex items-center gap-3 rounded-xl p-2 -mx-2 hover:bg-bg transition">
-                        <span className="shrink-0 w-11 rounded-lg bg-accent-soft text-accent text-center py-1.5">
-                          <span className="block font-display font-extrabold text-[15px] leading-none">{s.dia}</span>
-                          <span className="block text-[10px] font-bold uppercase mt-0.5">{s.mes}</span>
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-[12.5px] font-bold leading-tight line-clamp-2">{s.titulo}</span>
-                          <span className="block text-[11px] text-hint truncate">
-                            {s.instructor ? `${s.instructor} · ` : ""}{s.hora}
-                          </span>
-                        </span>
-                        <span className={`shrink-0 text-[11px] font-bold rounded-full px-2.5 py-1 ${
-                          s.hoy ? "bg-pink-soft text-pink" : "bg-bg border border-border text-sub"}`}>
-                          {s.hoy ? "Hoy" : "Reservar"}
-                        </span>
-                      </Link>
-                    ))}
+                    {d.sesiones.map((s) => <FilaSesion key={s.id} s={s} />)}
                   </div>
                 )}
               </section>
@@ -212,6 +195,40 @@ export function InicioDashboard({
         </div>
       </main>
     </div>
+  );
+}
+
+// La fecha se arma en el navegador, con la zona horaria de quien mira. En el
+// servidor saldría en UTC y una clase de las 7 p.m. se anunciaba a la 1 a.m.
+function FilaSesion({ s }: { s: SesionVivo }) {
+  const [cuando, setCuando] = useState<{ dia: string; mes: string; hora: string; hoy: boolean } | null>(null);
+  useEffect(() => {
+    const f = new Date(s.inicia);
+    setCuando({
+      dia: f.toLocaleDateString("es-MX", { day: "2-digit" }),
+      mes: f.toLocaleDateString("es-MX", { month: "short" }).replace(".", ""),
+      hora: f.toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" }),
+      hoy: new Date().toDateString() === f.toDateString(),
+    });
+  }, [s.inicia]);
+
+  return (
+    <Link href="/app/vivo" className="flex items-center gap-3 rounded-xl p-2 -mx-2 hover:bg-bg transition">
+      <span className="shrink-0 w-11 rounded-lg bg-accent-soft text-accent text-center py-1.5">
+        <span className="block font-display font-extrabold text-[15px] leading-none">{cuando?.dia ?? "·"}</span>
+        <span className="block text-[10px] font-bold uppercase mt-0.5">{cuando?.mes ?? ""}</span>
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[12.5px] font-bold leading-tight line-clamp-2">{s.titulo}</span>
+        <span className="block text-[11px] text-hint truncate">
+          {s.instructor ? `${s.instructor} · ` : ""}{cuando?.hora ?? ""}
+        </span>
+      </span>
+      <span className={`shrink-0 text-[11px] font-bold rounded-full px-2.5 py-1 ${
+        cuando?.hoy ? "bg-pink-soft text-pink" : "bg-bg border border-border text-sub"}`}>
+        {cuando?.hoy ? "Hoy" : "Reservar"}
+      </span>
+    </Link>
   );
 }
 

@@ -38,10 +38,10 @@ export type SesionVivo = {
   id: string;
   titulo: string;
   instructor: string | null;
-  dia: string;      // "16"
-  mes: string;      // "oct"
-  hora: string;     // "7:00 PM"
-  hoy: boolean;
+  // La fecha va cruda: la hora se arma en el navegador, con la zona de quien
+  // mira. Si se armara aquí saldría la del servidor (UTC) y una clase de las
+  // 7 de la tarde se anunciaba a la 1 de la mañana.
+  inicia: string;
 };
 
 export type DatosInicio = {
@@ -175,17 +175,9 @@ export async function getInicio(): Promise<DatosInicio | null> {
   const sesiones: SesionVivo[] = (await listarClasesVivo())
     .filter((c) => new Date(c.inicia_at).getTime() > ahora)
     .slice(0, 3)
-    .map((c) => {
-      const d = new Date(c.inicia_at);
-      const hoy = new Date().toDateString() === d.toDateString();
-      return {
-        id: c.id, titulo: c.titulo, instructor: c.instructor,
-        dia: d.toLocaleDateString("es-MX", { day: "2-digit" }),
-        mes: d.toLocaleDateString("es-MX", { month: "short" }).replace(".", ""),
-        hora: d.toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit" }),
-        hoy,
-      };
-    });
+    .map((c) => ({
+      id: c.id, titulo: c.titulo, instructor: c.instructor, inicia: c.inicia_at,
+    }));
 
   return {
     nivel: { numero: nivel.nivel, nombre: nivel.nombre },
