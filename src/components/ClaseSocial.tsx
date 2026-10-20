@@ -66,7 +66,9 @@ export function ClaseSocial({ claseId, puedeCalificar = true }: {
     setComents(await getComentariosClase(claseId));
   }
 
-  const raiz = (coments || []).filter((c) => !c.respondeA);
+  // Lo más reciente arriba. Las respuestas DENTRO de un hilo se quedan en
+  // orden natural: una conversación se lee de la primera a la última.
+  const raiz = (coments || []).filter((c) => !c.respondeA).slice().reverse();
   const respuestasDe = (id: string) => (coments || []).filter((c) => c.respondeA === id);
 
   return (
@@ -101,23 +103,20 @@ export function ClaseSocial({ claseId, puedeCalificar = true }: {
           Comentarios {coments ? `(${coments.length})` : ""}
         </h2>
 
-        {responde && (
-          <div className="flex items-center gap-2 text-[12.5px] text-sub bg-bg rounded-xl px-3 py-2 mb-2">
-            Respondiendo a <b className="text-text">{responde.autorNombre}</b>
-            <button onClick={() => setResponde(null)} className="ml-auto text-hint hover:text-pink">×</button>
+        {/* Caja para un comentario nuevo. La de responder va abajo del
+            comentario al que se contesta, no aquí arriba. */}
+        {!responde && (
+          <div className="flex items-center gap-2 mb-4">
+            <input value={texto} onChange={(e) => setTexto(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") publicar(); }}
+              placeholder="Escribe tu comentario…" maxLength={800}
+              className="flex-1 bg-bg border border-border rounded-full px-4 py-2.5 text-[14px] outline-none focus:border-accent" />
+            <button onClick={publicar} disabled={enviando || texto.trim().length < 2}
+              className="bg-accent text-white rounded-full px-4 py-2.5 text-[13px] font-bold disabled:opacity-50 hover:brightness-110 transition shrink-0">
+              {enviando ? "…" : "Enviar"}
+            </button>
           </div>
         )}
-
-        <div className="flex items-center gap-2 mb-4">
-          <input value={texto} onChange={(e) => setTexto(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") publicar(); }}
-            placeholder="Escribe tu comentario…" maxLength={800}
-            className="flex-1 bg-bg border border-border rounded-full px-4 py-2.5 text-[14px] outline-none focus:border-accent" />
-          <button onClick={publicar} disabled={enviando || texto.trim().length < 2}
-            className="bg-accent text-white rounded-full px-4 py-2.5 text-[13px] font-bold disabled:opacity-50 hover:brightness-110 transition shrink-0">
-            {enviando ? "…" : "Enviar"}
-          </button>
-        </div>
 
         {coments === null ? (
           <p className="text-[13px] text-hint">Cargando comentarios…</p>
@@ -136,6 +135,27 @@ export function ClaseSocial({ claseId, puedeCalificar = true }: {
                       <Comentario key={r.id} c={r} onResponder={() => setResponde(c)}
                         onEditar={(t) => editar(r.id, t)} onBorrar={() => borrar(r.id)} />
                     ))}
+                  </div>
+                )}
+
+                {/* Aquí mismo se escribe la respuesta. */}
+                {responde?.id === c.id && (
+                  <div className="ml-11 mt-3">
+                    <div className="flex items-center gap-2 text-[12px] text-sub mb-1.5">
+                      Respondiendo a <b className="text-text">{c.autorNombre}</b>
+                      <button onClick={() => { setResponde(null); setTexto(""); }}
+                        className="ml-auto text-hint hover:text-pink">×</button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input autoFocus value={texto} onChange={(e) => setTexto(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") publicar(); }}
+                        placeholder={`Responde a ${c.autorNombre.split(" ")[0]}…`} maxLength={800}
+                        className="flex-1 bg-bg border border-border rounded-full px-4 py-2.5 text-[14px] outline-none focus:border-accent" />
+                      <button onClick={publicar} disabled={enviando || texto.trim().length < 2}
+                        className="bg-accent text-white rounded-full px-4 py-2.5 text-[13px] font-bold disabled:opacity-50 hover:brightness-110 transition shrink-0">
+                        {enviando ? "…" : "Enviar"}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

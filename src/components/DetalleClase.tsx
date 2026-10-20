@@ -100,7 +100,8 @@ export function DetalleClase({ clase, onCerrar, onCambio }: {
                 <p className="text-[13.5px] text-hint">Nadie ha comentado esta clase.</p>
               ) : (
                 <div className="space-y-3">
-                  {coments.map((c) => (
+                  {/* Lo más reciente arriba, igual que en la clase. */}
+                  {[...coments].reverse().map((c) => (
                     <div key={c.id} className="flex items-start gap-2.5">
                       {c.autorAvatar ? (
                         // eslint-disable-next-line @next/next/no-img-element
