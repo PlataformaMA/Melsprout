@@ -22,6 +22,8 @@ export type Marca = {
   activas: number;
   total: number;
   creadores: number;
+  // La estrellita de la tarjeta. null = todavía sin calificar.
+  calificacion: number | null;
 };
 
 export type Campania = {
@@ -218,6 +220,7 @@ export async function listarMarcas(
         activas: suyas.filter((c) => c.activa).length,
         total: suyas.length,
         creadores: creadoresPor.get(m.id as string)?.size ?? 0,
+        calificacion: m.calificacion != null ? Number(m.calificacion) : null,
       };
     });
 
@@ -342,6 +345,7 @@ export async function soyDelEquipo(): Promise<boolean> {
 export type MarcaAdmin = {
   id: string; nombre: string; lema: string | null; categoria: string | null;
   logoUrl: string | null; destacada: boolean; activa: boolean; campanias: number;
+  calificacion: number | null;
 };
 
 export async function listarMarcasAdmin(): Promise<MarcaAdmin[]> {
@@ -366,6 +370,7 @@ export async function listarMarcasAdmin(): Promise<MarcaAdmin[]> {
       destacada: m.destacada === true,
       activa: m.activa !== false,
       campanias: cuenta.get(m.id as string) || 0,
+      calificacion: m.calificacion != null ? Number(m.calificacion) : null,
     }));
   } catch {
     return [];
@@ -374,7 +379,7 @@ export async function listarMarcasAdmin(): Promise<MarcaAdmin[]> {
 
 export async function guardarMarca(datos: {
   id?: string; nombre: string; lema?: string; categoria?: string;
-  logoUrl?: string; destacada?: boolean; activa?: boolean;
+  logoUrl?: string; destacada?: boolean; activa?: boolean; calificacion?: number | null;
 }): Promise<{ ok: true } | { error: string }> {
   if (!(await soyDelEquipo())) return { error: "No autorizado." };
   const nombre = datos.nombre.trim();
@@ -387,6 +392,7 @@ export async function guardarMarca(datos: {
     logo_url: datos.logoUrl?.trim() || null,
     destacada: datos.destacada === true,
     activa: datos.activa !== false,
+    calificacion: datos.calificacion ?? null,
   };
   try {
     const admin = createAdminClient();

@@ -273,10 +273,18 @@ function TarjetaMarca({ m }: { m: Marca }) {
           {m.categoria}
         </span>
       )}
-      <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-border text-center">
+      <div className={`grid ${m.calificacion != null ? "grid-cols-4" : "grid-cols-3"} gap-2 mt-4 pt-3 border-t border-border text-center`}>
         <Dato n={m.activas} txt="Activas" />
         <Dato n={m.total} txt="Total" />
         <Dato n={m.creadores} txt="Creadores" />
+        {m.calificacion != null && (
+          <div>
+            <div className="font-display font-extrabold text-[16px] text-accent flex items-center justify-center gap-1">
+              <span aria-hidden>★</span>{m.calificacion.toFixed(1)}
+            </div>
+            <div className="text-[11px] text-hint">Calificación</div>
+          </div>
+        )}
       </div>
     </article>
   );

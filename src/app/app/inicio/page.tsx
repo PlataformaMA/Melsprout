@@ -1,6 +1,27 @@
 import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { getPerfil } from "@/lib/perfil-actions";
+import { getInicio } from "@/lib/inicio";
+import { InicioDashboard } from "@/components/InicioDashboard";
 
-// La pantalla de Inicio quedó retirada: siempre reenviamos a la Ruta de aprendizaje.
 export default async function InicioPage() {
-  redirect("/app/ruta");
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const perfil = await getPerfil();
+  if (!perfil?.onboarding_completo) redirect("/onboarding");
+
+  const datos = await getInicio();
+  if (!datos) redirect("/app/ruta");
+
+  return (
+    <InicioDashboard
+      datos={datos}
+      nombre={perfil.full_name ?? "Creador"}
+      avatarUrl={perfil.avatar_url}
+      xp={perfil.xp}
+      racha={perfil.racha}
+    />
+  );
 }

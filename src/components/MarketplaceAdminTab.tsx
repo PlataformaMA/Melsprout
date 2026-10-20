@@ -247,7 +247,7 @@ function FormMarca({ marca, categorias, onCerrar, onGuardado }: {
     const r = await guardarMarca({
       id: f.id, nombre: f.nombre ?? "", lema: f.lema ?? undefined,
       categoria: f.categoria ?? undefined, logoUrl: f.logoUrl ?? undefined,
-      destacada: f.destacada, activa: f.activa,
+      destacada: f.destacada, activa: f.activa, calificacion: f.calificacion ?? null,
     });
     setOcupado(false);
     if ("error" in r) { setError(r.error); return; }
@@ -268,6 +268,11 @@ function FormMarca({ marca, categorias, onCerrar, onGuardado }: {
           <option value="">Sin categoría</option>
           {categorias.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
+      </Campo>
+      <Campo label="Calificación" ayuda="De 0 a 5, con un decimal. Vacío = sin calificar.">
+        <input type="number" min={0} max={5} step={0.1} value={f.calificacion ?? ""}
+          onChange={(e) => setF({ ...f, calificacion: e.target.value ? Number(e.target.value) : null })}
+          placeholder="4.8" className={input} />
       </Campo>
       <Campo label="Logo (enlace a la imagen)">
         <input value={f.logoUrl ?? ""} onChange={(e) => setF({ ...f, logoUrl: e.target.value })}
