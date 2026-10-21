@@ -2,8 +2,10 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { esAdminUsuario } from "@/lib/admin";
+import { miMarca } from "@/lib/marca-cuenta";
 
-// Los admins entran directo a su panel; los usuarios, a su Ruta de Aprendizaje.
+// Los admins entran directo a su panel; las empresas, al portal de marcas; las
+// alumnas, a su Ruta de Aprendizaje.
 // Quien compró Boost Your Web entra SIEMPRE a su curso (pedido de Sveidy,
 // 17-sep-2026); cualquier otro curso especial solo la primera vez.
 export default async function AppHome() {
@@ -12,6 +14,9 @@ export default async function AppHome() {
     data: { user },
   } = await supabase.auth.getUser();
   if (user && (await esAdminUsuario(user.id, user.email))) redirect("/app/admin");
+
+  // Una empresa no tiene ruta que seguir: va a su portal.
+  if (user && (await miMarca())) redirect("/app/marca");
 
   if (user) {
     const destino = (await cursoRecienRecibido(user.id)) ?? (await cursoDeEntrada(user.id));

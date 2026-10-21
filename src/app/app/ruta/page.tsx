@@ -14,6 +14,7 @@ import { getRachaInfo } from "@/lib/racha-actions";
 import { nivelPorXP } from "@/lib/data";
 import { todoDesbloqueado } from "@/lib/ajustes";
 import { esAdminUsuario } from "@/lib/admin";
+import { miMarca } from "@/lib/marca-cuenta";
 import { clasesEmpezadas } from "@/lib/secuencia";
 import { RutaAprendizaje } from "@/components/RutaAprendizaje";
 
@@ -25,6 +26,9 @@ export default async function RutaPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  // Una empresa que llega aquí por un enlace viejo va a su portal.
+  if (await miMarca()) redirect("/app/marca");
 
   const perfil = await getPerfil();
   if (!perfil) redirect("/onboarding");
