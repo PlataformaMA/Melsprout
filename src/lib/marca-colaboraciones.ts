@@ -92,10 +92,17 @@ export async function colaboracionesDe(campaniaId: string): Promise<Colaboracion
       .select("marca_id").eq("id", campaniaId).maybeSingle();
     if (!c || c.marca_id !== marca.id) return [];
 
+    // Los perfiles van aparte: campania_aplicaciones apunta a auth.users, no a
+    // profiles, así que no hay relación que PostgREST pueda seguir sola.
     const { data: apps } = await admin.from("campania_aplicaciones")
-      .select("id, user_id, profiles!inner(id, full_name, username, avatar_url)")
+      .select("id, user_id")
       .eq("campania_id", campaniaId).eq("etapa", "seleccionada");
     if (!apps?.length) return [];
+
+    const { data: perfiles } = await admin.from("profiles")
+      .select("id, full_name, username, avatar_url")
+      .in("id", apps.map((a) => a.user_id as string));
+    const pm = new Map((perfiles || []).map((x) => [x.id as string, x]));
 
     const ids = apps.map((a) => a.id as string);
     const { data: filas } = await admin.from("campania_colaboraciones")
@@ -112,17 +119,17 @@ export async function colaboracionesDe(campaniaId: string): Promise<Colaboracion
     }
 
     return apps.map((a) => {
-      const p = a.profiles as unknown as {
+      const p = pm.get(a.user_id as string) as {
         id: string; full_name: string; username: string | null; avatar_url: string | null;
-      };
+      } | undefined;
       const f = (por.get(a.id as string) ?? {}) as Record<string, unknown>;
       return {
         id: (f.id as string) ?? "",
         aplicacionId: a.id as string,
-        creadorId: p.id,
-        nombre: p.full_name || "Creador",
-        usuario: p.username,
-        avatar: p.avatar_url,
+        creadorId: a.user_id as string,
+        nombre: p?.full_name || "Creador",
+        usuario: p?.username ?? null,
+        avatar: p?.avatar_url ?? null,
         guion: ((f.guion as string) || "no_empezado") as Etapa,
         grabacion: ((f.grabacion as string) || "no_empezado") as Etapa,
         entregaFinal: ((f.entrega_final as string) || "no_empezado") as Etapa,

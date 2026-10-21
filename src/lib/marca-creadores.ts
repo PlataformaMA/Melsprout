@@ -151,15 +151,22 @@ export async function postulacionesDe(campaniaId: string): Promise<Postulacion[]
     const preguntas = (c.preguntas as { id: string; texto: string }[]) || [];
 
     const { data } = await admin.from("campania_aplicaciones")
-      .select("*, profiles!inner(id, full_name, username, avatar_url, headline, nicho, ciudad, pais, redes)")
+      .select("*")
       .eq("campania_id", campaniaId)
       .order("created_at", { ascending: false });
+    if (!data?.length) return [];
 
-    return (data || []).map((a) => {
+    // Aparte: la postulación apunta a auth.users, no a profiles.
+    const { data: perfiles } = await admin.from("profiles")
+      .select("id, full_name, username, avatar_url, headline, nicho, ciudad, pais, redes")
+      .in("id", data.map((a) => a.user_id as string));
+    const pm = new Map((perfiles || []).map((x) => [x.id as string, x]));
+
+    return data.map((a) => {
       const resp = (a.respuestas as Record<string, string>) || {};
       return {
         id: a.id as string,
-        creador: fichaDe(a.profiles as unknown as Record<string, unknown>),
+        creador: fichaDe((pm.get(a.user_id as string) ?? { id: a.user_id }) as Record<string, unknown>),
         fecha: a.created_at as string,
         etapa: (a.etapa as string) || "postulada",
         mensaje: (a.mensaje as string) || null,

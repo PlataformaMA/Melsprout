@@ -325,9 +325,14 @@ export async function inicioDeMarca(): Promise<InicioMarca | null> {
     const ids = data.map((c) => c.id as string);
     const { data: apps } = await admin
       .from("campania_aplicaciones")
-      .select("campania_id, etapa, created_at, profiles!inner(full_name)")
+      .select("campania_id, user_id, etapa, created_at")
       .in("campania_id", ids)
       .order("created_at", { ascending: false });
+
+    // Aparte: la postulación apunta a auth.users, no a profiles.
+    const { data: perfiles } = await admin.from("profiles")
+      .select("id, full_name").in("id", [...new Set((apps || []).map((a) => a.user_id as string))]);
+    const nombres = new Map((perfiles || []).map((x) => [x.id as string, (x.full_name as string) || "Alguien"]));
 
     const porCamp = new Map<string, { total: number; sel: number }>();
     for (const a of apps || []) {
@@ -356,10 +361,9 @@ export async function inicioDeMarca(): Promise<InicioMarca | null> {
         };
       }),
       actividad: (apps || []).slice(0, 5).map((a, i) => {
-        const p = a.profiles as unknown as { full_name: string } | null;
         return {
           id: `${a.campania_id as string}-${i}`,
-          titulo: `${p?.full_name ?? "Alguien"} se postuló`,
+          titulo: `${nombres.get(a.user_id as string) ?? "Alguien"} se postuló`,
           detalle: titulos.get(a.campania_id as string) ?? "",
           fecha: a.created_at as string,
         };
