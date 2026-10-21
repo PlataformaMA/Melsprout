@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { miMarca } from "@/lib/marca-cuenta";
 import { getCampaniaDeMarca } from "@/lib/marca-campanias";
 import { postulacionesDe } from "@/lib/marca-creadores";
+import { colaboracionesDe, opcionesColaboracion } from "@/lib/marca-colaboraciones";
 import { MarcaCampaniaDetalle } from "@/components/MarcaCampaniaDetalle";
 
 export default async function CampaniaDetallePage({ params }: { params: Promise<{ id: string }> }) {
@@ -17,6 +18,8 @@ export default async function CampaniaDetallePage({ params }: { params: Promise<
       marca={marca}
       campania={campania}
       postulaciones={await postulacionesDe(id)}
+      colaboraciones={await colaboracionesDe(id)}
+      opciones={await opcionesColaboracion()}
       sitio={process.env.NEXT_PUBLIC_SITE_URL || "https://melsprout.boostacademy.io"}
     />
   );

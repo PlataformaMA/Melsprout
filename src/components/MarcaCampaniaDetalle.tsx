@@ -8,6 +8,8 @@ import { moverPostulacion } from "@/lib/marca-creadores";
 import type { MiMarca } from "@/lib/marca-cuenta";
 import type { CampaniaMarca } from "@/lib/marca-campanias";
 import type { Postulacion } from "@/lib/marca-creadores";
+import { MarcaColaboraciones } from "@/components/MarcaColaboraciones";
+import type { Colaboracion } from "@/lib/marca-colaboraciones";
 
 // El detalle de una campaña, con sus pestañas.
 
@@ -20,9 +22,12 @@ const ESTADOS: Record<string, { txt: string; clase: string }> = {
 };
 
 export function MarcaCampaniaDetalle({
-  marca, campania, postulaciones, sitio,
+  marca, campania, postulaciones, colaboraciones, opciones, sitio,
 }: {
-  marca: MiMarca; campania: CampaniaMarca; postulaciones: Postulacion[]; sitio: string;
+  marca: MiMarca; campania: CampaniaMarca; postulaciones: Postulacion[];
+  colaboraciones: Colaboracion[];
+  opciones: Parameters<typeof MarcaColaboraciones>[0]["opciones"];
+  sitio: string;
 }) {
   const [tab, setTab] = useState<"info" | "creadores" | "colaboraciones" | "envios">("info");
   const [c, setC] = useState(campania);
@@ -164,17 +169,11 @@ export function MarcaCampaniaDetalle({
       )}
 
       {tab === "colaboraciones" && (
-        <Pendiente
-          titulo="Colaboraciones"
-          texto="Aquí va el seguimiento de guion, grabación y entrega final de cada creadora, con su calificación y sus pagos. Es la siguiente etapa del portal."
-        />
+        <MarcaColaboraciones lista={colaboraciones} opciones={opciones} vista="colaboraciones" />
       )}
 
       {tab === "envios" && (
-        <Pendiente
-          titulo="Envíos"
-          texto="Aquí van las direcciones, la paquetería, el número de guía y el estatus de entrega de los productos. Es la siguiente etapa del portal."
-        />
+        <MarcaColaboraciones lista={colaboraciones} opciones={opciones} vista="envios" />
       )}
     </MarcaShell>
   );
@@ -382,15 +381,6 @@ function Interruptor({ on, set, titulo, sub }: {
         <span className="block text-[11.5px] text-hint leading-snug">{sub}</span>
       </span>
     </button>
-  );
-}
-
-function Pendiente({ titulo, texto }: { titulo: string; texto: string }) {
-  return (
-    <div className="bg-surface border border-dashed border-border rounded-2xl p-10 text-center">
-      <h3 className="font-display font-extrabold text-[16px]">{titulo}</h3>
-      <p className="text-[13.5px] text-sub max-w-md mx-auto leading-snug mt-1.5">{texto}</p>
-    </div>
   );
 }
 
