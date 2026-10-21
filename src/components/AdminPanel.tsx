@@ -30,6 +30,7 @@ import { ClasesRecursosTab } from "@/components/ClasesRecursosTab";
 import { RetosAdminTab } from "@/components/RetosAdminTab";
 import { ModeracionTab } from "@/components/ModeracionTab";
 import { MarketplaceAdminTab } from "@/components/MarketplaceAdminTab";
+import { MarcasAdminTab } from "@/components/MarcasAdminTab";
 import { ComunidadAdminTab } from "@/components/ComunidadAdminTab";
 import { VivoAdminTab } from "@/components/VivoAdminTab";
 import { crearModulo, actualizarModulo, borrarModulo, crearClase, actualizarClase, borrarClase, setVideoClaseDB, getVentaCurso, guardarVentaCurso, type ClaseInput, type VentaCurso } from "@/lib/cursos-actions";
@@ -114,7 +115,7 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
     personal: "bg-pink-soft text-pink", curso: "bg-amber-100 text-amber-700",
   };
 
-  const TITULOS: Record<string, string> = { resumen: "Resumen", retos: "Retos", clases: "Clases y recursos", vivo: "Clases en vivo", avances: "Revisión de retos", comentarios: "Comunidad", usuarios: "Usuarios", mensajes: "Mensajes", reportes: "Reportes", config: "Configuración", estudiantes: "Estudiantes", videos: "Videos y módulos", "retos-libres": "Retos sueltos", moderacion: "Moderación", marketplace: "Marketplace" };
+  const TITULOS: Record<string, string> = { resumen: "Resumen", retos: "Retos", clases: "Clases y recursos", vivo: "Clases en vivo", avances: "Revisión de retos", comentarios: "Comunidad", usuarios: "Usuarios", mensajes: "Mensajes", reportes: "Reportes", config: "Configuración", estudiantes: "Estudiantes", videos: "Videos y módulos", "retos-libres": "Retos sueltos", moderacion: "Moderación", marketplace: "Marketplace", marcas: "Empresas y campañas" };
 
   return (
     <div className="min-h-screen bg-bg flex">
@@ -163,6 +164,8 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
             <ModeracionTab />
           ) : tab === "marketplace" ? (
             <MarketplaceAdminTab />
+          ) : tab === "marcas" ? (
+            <MarcasAdminTab />
           ) : tab === "mensajes" ? (
             <MensajesTab />
           ) : tab === "reportes" ? (
@@ -227,7 +230,7 @@ export function AdminPanel({ retos, usuarios, avances, comentarios, clasesVivo, 
 }
 
 // ————— Barra lateral del admin —————
-type AdminTab = "resumen" | "retos" | "clases" | "vivo" | "avances" | "comentarios" | "usuarios" | "mensajes" | "reportes" | "config" | "estudiantes" | "videos" | "retos-libres" | "moderacion" | "marketplace";
+type AdminTab = "resumen" | "retos" | "clases" | "vivo" | "avances" | "comentarios" | "usuarios" | "mensajes" | "reportes" | "config" | "estudiantes" | "videos" | "retos-libres" | "moderacion" | "marketplace" | "marcas";
 function AdminSidebar({ tab, setTab, adminEmail, counts }: {
   tab: AdminTab; setTab: (t: AdminTab) => void; adminEmail: string;
   counts: { retos: number; vivo: number; avances: number; comentarios: number; usuarios: number };
@@ -241,6 +244,7 @@ function AdminSidebar({ tab, setTab, adminEmail, counts }: {
     { id: "comentarios", label: "Comunidad", icon: <IcoComunidad />, count: counts.comentarios },
     { id: "moderacion", label: "Moderación", icon: <IcoEscudo />, count: -1 },
     { id: "marketplace", label: "Marketplace", icon: <IcoTienda />, count: -1 },
+    { id: "marcas", label: "Empresas", icon: <IcoTienda />, count: -1 },
     { id: "mensajes", label: "Mensajes", icon: <IcoMensaje />, count: -1 },
     { id: "reportes", label: "Reportes", icon: <IcoBarras />, count: -1 },
     { id: "config", label: "Configuración", icon: <IcoEngrane />, count: -1 },

@@ -14,6 +14,8 @@ export default function RegistroPage() {
     {}
   );
   const [captchaToken, setCaptchaToken] = useState("");
+  // Creadora o empresa: son dos productos distintos dentro de la plataforma.
+  const [tipo, setTipo] = useState<"creador" | "empresa">("creador");
   // Cada error obliga a renovar el captcha: su token es de un solo uso, así que
   // el reinicio se deriva del propio mensaje de error (sin estado extra).
   const reiniciarCaptcha = estado.error ? estado.error.length : 0;
@@ -73,10 +75,25 @@ export default function RegistroPage() {
       <Separador />
 
       <form action={formAction} className="space-y-3.5">
+        {/* Qué tipo de cuenta. Una empresa no entra a la ruta: va a su portal. */}
+        <input type="hidden" name="tipo" value={tipo} />
+        <div className="grid grid-cols-2 gap-2">
+          {([["creador", "Soy creador", "Quiero aprender y colaborar"],
+             ["empresa", "Soy una marca", "Quiero buscar creadores"]] as const).map(([k, t, s2]) => (
+            <button key={k} type="button" onClick={() => setTipo(k)}
+              className={`rounded-2xl border p-3 text-left transition ${
+                tipo === k ? "border-accent bg-accent-soft/50" : "border-border hover:border-accent/40"
+              }`}>
+              <span className="block text-[13.5px] font-bold">{t}</span>
+              <span className="block text-[11.5px] text-sub leading-snug mt-0.5">{s2}</span>
+            </button>
+          ))}
+        </div>
+
         <TextField
-          label="Nombre completo"
+          label={tipo === "empresa" ? "Tu nombre" : "Nombre completo"}
           name="nombre"
-          placeholder="Ej. Valentina Rodríguez"
+          placeholder={tipo === "empresa" ? "Ej. Ana Pérez" : "Ej. Valentina Rodríguez"}
           autoComplete="name"
         />
         <TextField

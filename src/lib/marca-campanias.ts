@@ -294,3 +294,78 @@ export async function campaniasPendientes(): Promise<
     return [];
   }
 }
+
+// ————— Lo que pinta el Inicio de la empresa —————
+export type InicioMarca = {
+  activas: number;
+  enSeleccion: number;
+  pendientesAprobacion: number;
+  campanias: {
+    id: string; titulo: string; tipos: string[]; creadores: string;
+    estado: EstadoCampania; cierra: string | null;
+  }[];
+  // Lo último que pasó, para la columna de la derecha.
+  actividad: { id: string; titulo: string; detalle: string; fecha: string }[];
+};
+
+export async function inicioDeMarca(): Promise<InicioMarca | null> {
+  const marca = await miMarca();
+  if (!marca) return null;
+
+  const vacio: InicioMarca = {
+    activas: 0, enSeleccion: 0, pendientesAprobacion: 0, campanias: [], actividad: [],
+  };
+
+  try {
+    const admin = createAdminClient();
+    const { data } = await admin.from("campanias").select("*")
+      .eq("marca_id", marca.id).order("created_at", { ascending: false });
+    if (!data?.length) return vacio;
+
+    const ids = data.map((c) => c.id as string);
+    const { data: apps } = await admin
+      .from("campania_aplicaciones")
+      .select("campania_id, etapa, created_at, profiles!inner(full_name)")
+      .in("campania_id", ids)
+      .order("created_at", { ascending: false });
+
+    const porCamp = new Map<string, { total: number; sel: number }>();
+    for (const a of apps || []) {
+      const k = a.campania_id as string;
+      const x = porCamp.get(k) ?? { total: 0, sel: 0 };
+      x.total++;
+      if (a.etapa !== "postulada") x.sel++;
+      porCamp.set(k, x);
+    }
+
+    const titulos = new Map(data.map((c) => [c.id as string, c.titulo as string]));
+
+    return {
+      activas: data.filter((c) => c.estado === "aprobada").length,
+      enSeleccion: [...porCamp.values()].reduce((n, x) => n + x.total, 0),
+      pendientesAprobacion: data.filter((c) => c.estado === "pendiente").length,
+      campanias: data.slice(0, 6).map((c) => {
+        const x = porCamp.get(c.id as string) ?? { total: 0, sel: 0 };
+        return {
+          id: c.id as string,
+          titulo: c.titulo as string,
+          tipos: (c.tipos as string[]) || [],
+          creadores: `${x.sel} / ${(c.limite_postulaciones as number) || x.total}`,
+          estado: ((c.estado as string) || "borrador") as EstadoCampania,
+          cierra: (c.cierra_at as string) || null,
+        };
+      }),
+      actividad: (apps || []).slice(0, 5).map((a, i) => {
+        const p = a.profiles as unknown as { full_name: string } | null;
+        return {
+          id: `${a.campania_id as string}-${i}`,
+          titulo: `${p?.full_name ?? "Alguien"} se postuló`,
+          detalle: titulos.get(a.campania_id as string) ?? "",
+          fecha: a.created_at as string,
+        };
+      }),
+    };
+  } catch {
+    return vacio;
+  }
+}

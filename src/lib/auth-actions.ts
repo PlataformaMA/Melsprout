@@ -91,6 +91,8 @@ export async function crearCuenta(
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const acepta = formData.get("acepta") === "on";
+  // Quien se registra como empresa no es una alumna: va a su propio portal.
+  const esEmpresa = String(formData.get("tipo") ?? "") === "empresa";
   const noticias = formData.get("noticias") === "on";
   const captchaToken = String(formData.get("captchaToken") ?? "");
 
@@ -109,8 +111,8 @@ export async function crearCuenta(
     email,
     password,
     options: {
-      data: { full_name: nombre, acepta_noticias: noticias },
-      emailRedirectTo: `${await urlSitio()}/auth/callback?next=/app`,
+      data: { full_name: nombre, acepta_noticias: noticias, tipo: esEmpresa ? "empresa" : "creador" },
+      emailRedirectTo: `${await urlSitio()}/auth/callback?next=${esEmpresa ? "/alta-empresa" : "/app"}`,
       // Filtro anti-robots (solo se valida si el captcha está activo en Supabase).
       ...(captchaToken ? { captchaToken } : {}),
     },
@@ -157,7 +159,7 @@ export async function crearCuenta(
   // Si por config ya hubiera sesión (Confirm email apagado), entra directo.
   if (data.session) {
     revalidatePath("/", "layout");
-    redirect("/onboarding");
+    redirect(esEmpresa ? "/alta-empresa" : "/onboarding");
   }
 
   return {
