@@ -528,7 +528,7 @@ export async function misPagos(
     const admin = createAdminClient();
     const { data: colabs } = await admin
       .from("campania_colaboraciones")
-      .select("id, producto, campania_aplicaciones!inner(user_id, campanias!inner(titulo))")
+      .select("id, producto, campania_aplicaciones!inner(user_id, campanias!inner(titulo, marcas!inner(nombre)))")
       .eq("campania_aplicaciones.user_id", user.id);
     if (!colabs?.length) return vacio;
 
@@ -538,9 +538,16 @@ export async function misPagos(
       .order("colaboracion_id").order("numero");
     if (!pagos?.length) return vacio;
 
+    // En la tabla manda el nombre de la marca, no el título de la campaña: es
+    // como se lee en el diseño ("Bloom Beauty" arriba, "Bloom Glow Kit" abajo).
     const nombre = new Map(colabs.map((c) => {
-      const a = c.campania_aplicaciones as unknown as { campanias: { titulo: string } };
-      return [c.id as string, { campania: a?.campanias?.titulo ?? "Campaña", producto: (c.producto as string) || null }];
+      const a = c.campania_aplicaciones as unknown as {
+        campanias: { titulo: string; marcas: { nombre: string } };
+      };
+      return [c.id as string, {
+        campania: a?.campanias?.marcas?.nombre ?? a?.campanias?.titulo ?? "Campaña",
+        producto: (c.producto as string) || a?.campanias?.titulo || null,
+      }];
     }));
 
     const porColab = new Map<string, typeof pagos>();
