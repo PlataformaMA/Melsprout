@@ -76,6 +76,9 @@ const PASOS: Paso[] = [
 const HECHO = "melsprout_tour";
 const PASO = "melsprout_tour_paso";
 const ACTIVO = "melsprout_tour_activo";
+// Lo pone el menú de la cuenta al pedir "Ver el recorrido". Sirve para que el
+// equipo, que no lo recibe solo, sí pueda verlo cuando quiera.
+export const PEDIDO = "melsprout_tour_pedido";
 
 function avisarAlMenu(activo: boolean) {
   try {
@@ -85,7 +88,12 @@ function avisarAlMenu(activo: boolean) {
   window.dispatchEvent(new CustomEvent("melsprout:tour", { detail: activo }));
 }
 
-export function TourBienvenida() {
+export function TourBienvenida({ auto = true }: {
+  // false para el equipo: el recorrido explica la vista de las alumnas y no
+  // tiene por qué saltarles encima del panel. Lo pueden abrir a mano desde
+  // "🧭 Ver el recorrido".
+  auto?: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const [paso, setPaso] = useState<number | null>(null);
@@ -96,6 +104,17 @@ export function TourBienvenida() {
   useEffect(() => {
     try {
       if (localStorage.getItem(HECHO)) return;
+      // El panel de administración no es parte del recorrido: el globo no
+      // tiene a qué pegarse y "Entendido" te sacaba de ahí a la Ruta.
+      if (pathname.startsWith("/app/admin")) return;
+
+      let pedido = false;
+      try {
+        pedido = sessionStorage.getItem(PEDIDO) === "1";
+        if (pedido) sessionStorage.removeItem(PEDIDO);
+      } catch { /* navegación privada */ }
+      if (!auto && !pedido) return;
+
       const guardado = Number(localStorage.getItem(PASO) || "0");
       const n = Number.isFinite(guardado) && guardado >= 0 && guardado < PASOS.length ? guardado : 0;
       // Si abrió una pantalla que es parte del recorrido, el tour empieza AHÍ.

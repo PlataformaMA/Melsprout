@@ -50,7 +50,12 @@ export function UserMenu({ avatarUrl, nombre, esAdmin }: { avatarUrl: string | n
                 a la Ruta, que es donde se dispara. */}
             <button type="button"
               onClick={() => {
-                try { localStorage.removeItem("melsprout_tour"); } catch {}
+                try {
+                  localStorage.removeItem("melsprout_tour");
+                  // Marca que lo pidió: así también se abre para el equipo,
+                  // que no lo recibe automáticamente.
+                  sessionStorage.setItem("melsprout_tour_pedido", "1");
+                } catch { /* navegación privada */ }
                 window.location.href = "/app/ruta";
               }}
               className="w-full flex items-center gap-2.5 text-left text-sm rounded-xl px-3 py-2.5 text-text hover:bg-bg transition">
