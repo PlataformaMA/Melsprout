@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import { ProSeccionModal } from "@/components/ProSeccionModal";
-import { listarCampanias, listarMarcas, aplicarACampania } from "@/lib/marketplace";
+import { listarCampanias, listarMarcas } from "@/lib/marketplace";
 import type { Campania, Marca } from "@/lib/marketplace";
 
 // Marketplace: las campañas de marcas a las que se puede aplicar, y las marcas
@@ -34,7 +35,6 @@ export function MarketplaceVista({
   const [marcas, setMarcas] = useState<Marca[]>([]);
   const [paginas, setPaginas] = useState(1);
   const [cargando, setCargando] = useState(true);
-  const [aplicando, setAplicando] = useState<Campania | null>(null);
   const [proAbierto, setProAbierto] = useState(bloqueado);
 
   // Trae lo que toca cada vez que cambia algo del filtro.
@@ -139,7 +139,7 @@ export function MarketplaceVista({
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {campanias.map((c) => (
-                  <TarjetaCampania key={c.id} c={c} onAplicar={() => setAplicando(c)} />
+                  <TarjetaCampania key={c.id} c={c} />
                 ))}
               </div>
             )
@@ -170,22 +170,13 @@ export function MarketplaceVista({
         />
       )}
 
-      {aplicando && (
-        <ModalAplicar
-          campania={aplicando}
-          onListo={() => {
-            setAplicando(null);
-            setCampanias((v) => v.map((c) => (c.id === aplicando.id ? { ...c, miEstado: "enviada", aplicantes: c.aplicantes + 1 } : c)));
-          }}
-          onCerrar={() => setAplicando(null)}
-        />
-      )}
     </div>
   );
 }
 
 // ————— Tarjeta de campaña —————
-function TarjetaCampania({ c, onAplicar }: { c: Campania; onAplicar: () => void }) {
+function TarjetaCampania({ c }: { c: Campania }) {
+  const detalle = `/app/marketplace/${c.id}`;
   return (
     <article className="bg-surface border border-border rounded-2xl p-4 shadow-sm flex flex-col">
       <div className="flex gap-4">
@@ -206,7 +197,7 @@ function TarjetaCampania({ c, onAplicar }: { c: Campania; onAplicar: () => void 
               <Chip texto="● Abierta" clase="bg-green/10 text-green" />
             )}
           </div>
-          <h3 className="font-display font-extrabold text-[16px] leading-tight mt-0.5">{c.titulo}</h3>
+          <Link href={detalle} className="font-display font-extrabold text-[16px] leading-tight mt-0.5 block hover:text-accent transition">{c.titulo}</Link>
           {c.descripcion && (
             <p className="text-[12.5px] text-sub leading-snug mt-1 line-clamp-2">{c.descripcion}</p>
           )}
@@ -243,10 +234,10 @@ function TarjetaCampania({ c, onAplicar }: { c: Campania; onAplicar: () => void 
             {c.miEstado === "aceptada" ? "Aceptada ✓" : c.miEstado === "rechazada" ? "No seleccionada" : "Enviada ✓"}
           </span>
         ) : (
-          <button onClick={onAplicar}
+          <Link href={detalle}
             className="shrink-0 flex items-center gap-2 bg-accent text-white rounded-xl px-5 py-2.5 text-[13.5px] font-bold hover:brightness-110 active:scale-95 transition">
             Aplicar
-          </button>
+          </Link>
         )}
       </div>
     </article>
@@ -364,73 +355,6 @@ function Grupo({ titulo, opciones, puestos, alternar }: {
             {o}
           </label>
         ))}
-      </div>
-    </div>
-  );
-}
-
-// ————— Aplicar —————
-function ModalAplicar({ campania, onListo, onCerrar }: {
-  campania: Campania; onListo: () => void; onCerrar: () => void;
-}) {
-  const [mensaje, setMensaje] = useState("");
-  const [enlace, setEnlace] = useState("");
-  const [error, setError] = useState("");
-  const [pendiente, startTransition] = useTransition();
-
-  function enviar() {
-    setError("");
-    startTransition(async () => {
-      const r = await aplicarACampania(campania.id, mensaje, enlace);
-      if ("error" in r) { setError(r.error); return; }
-      onListo();
-    });
-  }
-
-  return (
-    <div className="fixed inset-0 z-[120] flex items-start sm:items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="absolute inset-0 bg-black/45 backdrop-blur-sm" onClick={onCerrar} />
-      <div className="relative w-full max-w-[440px] bg-surface rounded-3xl shadow-2xl my-4 onb-slide p-6">
-        <button type="button" onClick={onCerrar} aria-label="Cerrar"
-          className="absolute top-4 right-4 w-9 h-9 grid place-items-center rounded-full text-hint hover:bg-bg transition">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
-            <path d="M6 6l12 12M18 6L6 18" />
-          </svg>
-        </button>
-
-        <div className="text-[12.5px] text-sub pr-8">{campania.marca}</div>
-        <h2 className="font-display font-extrabold text-[20px] leading-tight mt-0.5 pr-8">
-          {campania.titulo}
-        </h2>
-        <div className="font-display font-extrabold text-[15px] text-green mt-1.5">{rango(campania)}</div>
-
-        <label className="block mt-5">
-          <span className="text-[13px] font-bold">¿Por qué tú?</span>
-          <p className="text-[12px] text-sub leading-snug mt-0.5 mb-1.5">
-            Cuéntale a la marca qué harías con su producto y por qué encaja con tu audiencia.
-          </p>
-          <textarea value={mensaje} onChange={(e) => { setMensaje(e.target.value); setError(""); }}
-            rows={4} maxLength={1500}
-            placeholder="Yo haría…"
-            className="w-full bg-bg border border-border rounded-xl px-3.5 py-3 text-[13.5px] outline-none focus:border-accent resize-none" />
-        </label>
-
-        <label className="block mt-3">
-          <span className="text-[13px] font-bold">Un enlace a tu contenido <span className="text-hint font-semibold">(opcional)</span></span>
-          <input value={enlace} onChange={(e) => { setEnlace(e.target.value); setError(""); }}
-            type="url" placeholder="https://instagram.com/tu-cuenta"
-            className="w-full mt-1.5 bg-bg border border-border rounded-xl px-3.5 py-2.5 text-[13.5px] outline-none focus:border-accent" />
-        </label>
-
-        {error && <p className="text-[12.5px] text-pink bg-pink-soft rounded-lg px-3 py-2 mt-3">{error}</p>}
-
-        <button onClick={enviar} disabled={pendiente}
-          className="w-full mt-5 bg-accent text-white font-bold text-[15px] rounded-full py-3.5 shadow-lg shadow-accent/25 hover:brightness-110 active:scale-95 transition disabled:opacity-60">
-          {pendiente ? "Enviando…" : "Enviar mi aplicación"}
-        </button>
-        <p className="text-[11.5px] text-hint text-center mt-2.5 leading-snug">
-          El equipo de Melsprout la revisa y te avisa. La puedes seguir en «Campañas».
-        </p>
       </div>
     </div>
   );

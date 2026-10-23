@@ -232,108 +232,6 @@ export async function listarMarcas(
   }
 }
 
-// Aplicar a una campaña: mensaje y enlace a su contenido.
-export async function aplicarACampania(
-  campaniaId: string, mensaje: string, enlace: string
-): Promise<{ ok: true } | { error: string }> {
-  const user = await quienSoy();
-  if (!user) return { error: "Inicia sesión." };
-  if (!(await conPro(user))) return { error: "Aplicar a campañas es parte de Boost Pro." };
-
-  const texto = mensaje.trim().slice(0, 1500);
-  if (texto.length < 20) return { error: "Cuéntale a la marca por qué eres tú, aunque sea en dos líneas." };
-
-  const url = enlace.trim();
-  if (url && !/^https?:\/\//i.test(url)) return { error: "El enlace tiene que empezar con http o https." };
-
-  try {
-    const admin = createAdminClient();
-    const { data: c } = await admin
-      .from("campanias").select("id, titulo, activa, nivel_minimo").eq("id", campaniaId).maybeSingle();
-    if (!c || c.activa !== true) return { error: "Esta campaña ya no está abierta." };
-
-    // El nivel se vuelve a revisar aquí: esconder el botón no basta.
-    const { data: perfil } = await admin
-      .from("profiles").select("xp, full_name").eq("id", user.id).maybeSingle();
-    const miNivel = nivelPorXP((perfil?.xp as number) || 0).actual.nivel;
-    if (((c.nivel_minimo as number) || 0) > miNivel) {
-      return { error: "Todavía no tienes el nivel que pide esta campaña." };
-    }
-
-    const { error } = await admin.from("campania_aplicaciones").upsert({
-      campania_id: campaniaId, user_id: user.id,
-      mensaje: texto, enlace: url || null,
-      estado: "enviada", updated_at: new Date().toISOString(),
-    }, { onConflict: "campania_id,user_id" });
-    if (error) return { error: "No se pudo enviar tu aplicación." };
-
-    // Avisa al equipo, que es quien decide.
-    const { notificar } = await import("@/lib/notificaciones-actions");
-    const { data: equipo } = await admin.from("profiles").select("id").eq("is_admin", true);
-    await Promise.all(
-      (equipo || []).map((p) => notificar(p.id as string, "general",
-        "Nueva aplicación a una campaña",
-        `${(perfil?.full_name as string) || "Alguien"} aplicó a «${c.titulo as string}»`,
-        "/app/admin"))
-    );
-    return { ok: true };
-  } catch {
-    return { error: "No se pudo enviar tu aplicación." };
-  }
-}
-
-// Mis campañas: a lo que apliqué y cómo va.
-export type MiCampania = {
-  id: string;
-  campaniaId: string;
-  titulo: string;
-  marca: string;
-  imagenUrl: string | null;
-  pagoMin: number | null;
-  pagoMax: number | null;
-  moneda: string;
-  estado: "enviada" | "aceptada" | "rechazada";
-  notaEquipo: string | null;
-  fecha: string;
-};
-
-export async function misCampanias(): Promise<MiCampania[]> {
-  const user = await quienSoy();
-  if (!user || !(await conPro(user))) return [];
-  try {
-    const admin = createAdminClient();
-    const { data, error } = await admin
-      .from("campania_aplicaciones")
-      .select("*, campanias!inner(id, titulo, imagen_url, pago_min, pago_max, moneda, marcas!inner(nombre))")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-    if (error || !data) return [];
-
-    return data.map((a) => {
-      const c = a.campanias as unknown as {
-        id: string; titulo: string; imagen_url: string | null;
-        pago_min: number | null; pago_max: number | null; moneda: string;
-        marcas: { nombre: string };
-      };
-      return {
-        id: a.id as string,
-        campaniaId: c.id,
-        titulo: c.titulo,
-        marca: c.marcas?.nombre ?? "Marca",
-        imagenUrl: c.imagen_url,
-        pagoMin: c.pago_min,
-        pagoMax: c.pago_max,
-        moneda: c.moneda || "USD",
-        estado: a.estado as MiCampania["estado"],
-        notaEquipo: (a.nota_equipo as string) || null,
-        fecha: a.created_at as string,
-      };
-    });
-  } catch {
-    return [];
-  }
-}
-
 // ————— Panel —————
 export async function soyDelEquipo(): Promise<boolean> {
   const user = await quienSoy();
@@ -592,5 +490,212 @@ export async function responderAplicacion(
     return { ok: true };
   } catch {
     return { error: "No se pudo guardar." };
+  }
+}
+
+// ————————————————— El detalle que ve la creadora —————————————————
+// La misma fila que publicó la empresa, con todo lo que el diseño muestra:
+// descripción, galería, perfil buscado, compensación y preguntas de selección.
+
+export type Pregunta = {
+  id: string;
+  texto: string;
+  // corto | largo | enlace
+  tipo: string;
+  obligatoria: boolean;
+};
+
+export type CompensacionDetalle = {
+  intercambio?: { productos: string };
+  monto?: { cantidad: number; moneda: string };
+  afiliados?: { porcentaje: number; duracion: string };
+};
+
+export type CampaniaDetalle = {
+  id: string;
+  titulo: string;
+  descripcion: string | null;
+  marca: string;
+  marcaId: string;
+  marcaLogo: string | null;
+  imagenUrl: string | null;
+  imagenes: string[];
+  publicadaAt: string | null;
+  activa: boolean;
+  cierraAt: string | null;
+
+  // Perfil del creador objetivo
+  nicho: string | null;
+  genero: string | null;
+  edadMin: number | null;
+  edadMax: number | null;
+  seguidoresMin: number;
+  seguidoresMax: number | null;
+  ubicaciones: string[];
+
+  // Pago y compensación
+  tipos: string[];
+  compensacionDetalle: string | null;
+  compensacion: CompensacionDetalle;
+  pagoMin: number | null;
+  pagoMax: number | null;
+  moneda: string;
+
+  preguntas: Pregunta[];
+  aplicantes: number;
+  miEstado: "enviada" | "aceptada" | "rechazada" | null;
+  bajoNivel: boolean;
+  nivelMinimo: number;
+};
+
+export async function getCampaniaDetalle(id: string): Promise<CampaniaDetalle | null> {
+  const user = await quienSoy();
+  if (!user || !(await conPro(user))) return null;
+
+  try {
+    const admin = createAdminClient();
+    const { data: c } = await admin
+      .from("campanias")
+      .select("*, marcas!inner(id, nombre, logo_url)")
+      .eq("id", id)
+      .maybeSingle();
+    if (!c) return null;
+
+    // Un borrador o una campaña rechazada no se le enseña a nadie de fuera.
+    const estado = (c.estado as string) || "aprobada";
+    if (estado !== "aprobada" && estado !== "cerrada") return null;
+
+    const [{ count }, { data: mia }, { data: perfil }] = await Promise.all([
+      admin.from("campania_aplicaciones")
+        .select("id", { count: "exact", head: true }).eq("campania_id", id),
+      admin.from("campania_aplicaciones")
+        .select("estado").eq("campania_id", id).eq("user_id", user.id).maybeSingle(),
+      admin.from("profiles").select("xp").eq("id", user.id).maybeSingle(),
+    ]);
+
+    const marca = c.marcas as unknown as { id: string; nombre: string; logo_url: string | null };
+    const miNivel = nivelPorXP((perfil?.xp as number) || 0).actual.nivel;
+    const preguntas = Array.isArray(c.preguntas) ? (c.preguntas as Record<string, unknown>[]) : [];
+
+    return {
+      id: c.id as string,
+      titulo: c.titulo as string,
+      descripcion: (c.descripcion as string) || null,
+      marca: marca?.nombre ?? "Marca",
+      marcaId: marca?.id ?? "",
+      marcaLogo: marca?.logo_url ?? null,
+      imagenUrl: (c.imagen_url as string) || null,
+      imagenes: (c.imagenes as string[]) || [],
+      publicadaAt: (c.publicada_at as string) || (c.created_at as string) || null,
+      activa: c.activa !== false && estado === "aprobada",
+      cierraAt: (c.cierra_at as string) || null,
+
+      nicho: (c.nicho as string) || (c.categoria as string) || null,
+      genero: (c.genero as string) || null,
+      edadMin: (c.edad_min as number) ?? null,
+      edadMax: (c.edad_max as number) ?? null,
+      seguidoresMin: (c.seguidores_min as number) || 0,
+      seguidoresMax: (c.seguidores_max as number) ?? null,
+      ubicaciones: (c.ubicaciones as string[]) || [],
+
+      tipos: (c.tipos as string[]) || [],
+      compensacionDetalle: (c.compensacion_detalle as string) || null,
+      compensacion: (c.compensacion as CompensacionDetalle) || {},
+      pagoMin: (c.pago_min as number) ?? null,
+      pagoMax: (c.pago_max as number) ?? null,
+      moneda: (c.moneda as string) || "MXN",
+
+      preguntas: preguntas.map((p, i) => ({
+        id: String(p.id ?? i),
+        texto: String(p.texto ?? ""),
+        tipo: String(p.tipo ?? "largo"),
+        obligatoria: p.obligatoria !== false,
+      })).filter((p) => p.texto),
+      aplicantes: count ?? 0,
+      miEstado: (mia?.estado as CampaniaDetalle["miEstado"]) ?? null,
+      bajoNivel: ((c.nivel_minimo as number) || 0) > miNivel,
+      nivelMinimo: (c.nivel_minimo as number) || 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// Postularse desde el detalle: un clic manda el perfil, y si la marca dejó
+// preguntas, las respuestas van en el mismo envío.
+export async function postularme(
+  campaniaId: string, respuestas: Record<string, string> = {}
+): Promise<{ ok: true } | { error: string }> {
+  const user = await quienSoy();
+  if (!user) return { error: "Inicia sesión." };
+  if (!(await conPro(user))) return { error: "Postularte a campañas es parte de Boost Pro." };
+
+  try {
+    const admin = createAdminClient();
+    const { data: c } = await admin
+      .from("campanias")
+      .select("id, titulo, activa, estado, nivel_minimo, preguntas, limite_postulaciones, marcas!inner(dueno_id)")
+      .eq("id", campaniaId).maybeSingle();
+    if (!c || c.activa !== true || ((c.estado as string) || "aprobada") !== "aprobada") {
+      return { error: "Esta campaña ya no está abierta." };
+    }
+
+    const { data: perfil } = await admin
+      .from("profiles").select("xp, full_name").eq("id", user.id).maybeSingle();
+    if (((c.nivel_minimo as number) || 0) > nivelPorXP((perfil?.xp as number) || 0).actual.nivel) {
+      return { error: "Todavía no tienes el nivel que pide esta campaña." };
+    }
+
+    // Las obligatorias se revisan aquí también: el pop-up vive en el navegador.
+    const preguntas = Array.isArray(c.preguntas) ? (c.preguntas as Record<string, unknown>[]) : [];
+    const limpias: Record<string, string> = {};
+    for (const [i, p] of preguntas.entries()) {
+      const id = String(p.id ?? i);
+      const valor = (respuestas[id] || "").trim().slice(0, 2000);
+      if (p.obligatoria !== false && !valor) {
+        return { error: "Te falta responder una de las preguntas." };
+      }
+      if (String(p.tipo) === "enlace" && valor && !/^https?:\/\//i.test(valor)) {
+        return { error: "El enlace tiene que empezar con http o https." };
+      }
+      if (valor) limpias[id] = valor;
+    }
+
+    // El cupo se cierra cuando se llena, no cuando alguien se acuerda.
+    const tope = c.limite_postulaciones as number | null;
+    if (tope && tope > 0) {
+      const { count } = await admin.from("campania_aplicaciones")
+        .select("id", { count: "exact", head: true }).eq("campania_id", campaniaId);
+      const { data: yaEstoy } = await admin.from("campania_aplicaciones")
+        .select("id").eq("campania_id", campaniaId).eq("user_id", user.id).maybeSingle();
+      if (!yaEstoy && (count ?? 0) >= tope) {
+        return { error: "Esta campaña ya llegó a su cupo de postulaciones." };
+      }
+    }
+
+    const { error } = await admin.from("campania_aplicaciones").upsert({
+      campania_id: campaniaId, user_id: user.id,
+      respuestas: limpias, estado: "enviada", etapa: "postulada",
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "campania_id,user_id" });
+    if (error) return { error: "No se pudo enviar tu postulación." };
+
+    // Le avisa a la empresa, que es quien elige, y al equipo si la cargó él.
+    const { notificar } = await import("@/lib/notificaciones-actions");
+    const m = c.marcas as unknown as { dueno_id: string | null } | null;
+    const quien = (perfil?.full_name as string) || "Alguien";
+    if (m?.dueno_id) {
+      await notificar(m.dueno_id, "general", "Nueva postulación",
+        `${quien} se postuló a «${c.titulo as string}».`,
+        `/app/marca/campanias/${campaniaId}`);
+    } else {
+      const { data: equipo } = await admin.from("profiles").select("id").eq("is_admin", true);
+      await Promise.all((equipo || []).map((p) => notificar(p.id as string, "general",
+        "Nueva postulación a una campaña",
+        `${quien} se postuló a «${c.titulo as string}».`, "/app/admin")));
+    }
+    return { ok: true };
+  } catch {
+    return { error: "No se pudo enviar tu postulación." };
   }
 }

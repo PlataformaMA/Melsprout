@@ -5,18 +5,24 @@ import Link from "next/link";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
+import { ModalSeleccionado } from "@/components/ModalSeleccionado";
+import type { DatosCreador, Seleccion } from "@/lib/creador-campanias";
 import type { DatosInicio, SesionVivo } from "@/lib/inicio";
 
 // Inicio: dónde se quedó, qué sigue y qué hay abierto en el Marketplace.
 
 export function InicioDashboard({
-  datos, nombre, avatarUrl, xp, racha,
+  datos, nombre, avatarUrl, xp, racha, seleccion = null, misDatos = null,
 }: {
   datos: DatosInicio; nombre: string; avatarUrl: string | null; xp: number; racha: number;
+  // Te acaban de seleccionar para una campaña y faltan tus datos de cobro.
+  seleccion?: Seleccion | null;
+  misDatos?: DatosCreador | null;
 }) {
   const d = datos;
   return (
     <div className="min-h-screen bg-bg flex">
+      <ModalSeleccionado seleccion={seleccion} datos={misDatos} />
       <AppSidebar active="inicio" />
 
       <main className="flex-1 min-w-0">
