@@ -21,10 +21,20 @@ const VACIOS: DatosCreador = {
   razonSocial: "", clabe: "", correo: "", nombreCompleto: "", direccion: "",
 };
 
+// Todo lo de este archivo es parte de Boost Pro, así que el candado va aquí
+// abajo y no pantalla por pantalla: esconder un botón no sirve si la acción se
+// puede llamar por fuera. Si no tiene plan, es como si no hubiera sesión.
+// El equipo entra siempre (estadoPro ya lo contempla).
 async function quienSoy() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  return user;
+  if (!user) return null;
+
+  const { esAdminUsuario } = await import("@/lib/admin");
+  const { estadoPro } = await import("@/lib/pro");
+  const pro = await estadoPro(user.id, await esAdminUsuario(user.id, user.email));
+  // Mientras el plan no exista en la base, el candado está apagado (ver pro.ts).
+  return !pro.activo || pro.pro ? user : null;
 }
 
 export async function misDatos(): Promise<DatosCreador | null> {
