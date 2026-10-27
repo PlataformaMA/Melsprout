@@ -2,6 +2,7 @@
 
 import { createAdminClient } from "@/lib/supabase/admin";
 import { miMarca } from "@/lib/marca-cuenta";
+import { puedeVerCampania, puedeVerAplicacion } from "@/lib/acceso-campania";
 import { notificar } from "@/lib/notificaciones-actions";
 
 // Las creadoras, vistas por una marca.
@@ -139,14 +140,13 @@ export async function solicitarCreadores(
 
 // ————— Quién se postuló a una campaña —————
 export async function postulacionesDe(campaniaId: string): Promise<Postulacion[]> {
-  const marca = await miMarca();
-  if (!marca) return [];
+  // La dueña de la campaña, o el equipo. Si no, nadie ve postulaciones ajenas.
+  if (!(await puedeVerCampania(campaniaId))) return [];
   try {
     const admin = createAdminClient();
-    // Que la campaña sea suya: si no, cualquiera vería postulaciones ajenas.
     const { data: c } = await admin.from("campanias")
       .select("marca_id, preguntas").eq("id", campaniaId).maybeSingle();
-    if (!c || c.marca_id !== marca.id) return [];
+    if (!c) return [];
 
     const preguntas = (c.preguntas as { id: string; texto: string }[]) || [];
 
@@ -185,15 +185,20 @@ export async function postulacionesDe(campaniaId: string): Promise<Postulacion[]
 export async function moverPostulacion(
   id: string, etapa: "postulada" | "seleccionada" | "descartada"
 ): Promise<{ ok: true } | { error: string }> {
-  const marca = await miMarca();
-  if (!marca) return { error: "Esta cuenta no es de una empresa." };
+  if (!(await puedeVerAplicacion(id))) return { error: "Esa postulación no es tuya." };
 
   try {
     const admin = createAdminClient();
     const { data: a } = await admin.from("campania_aplicaciones")
       .select("user_id, campanias!inner(titulo, marca_id)").eq("id", id).maybeSingle();
     const c = a?.campanias as unknown as { titulo: string; marca_id: string } | undefined;
-    if (!a || c?.marca_id !== marca.id) return { error: "Esa postulación no es tuya." };
+    if (!a) return { error: "Esa postulación no es tuya." };
+
+    // El nombre de la marca para el aviso. No se saca de miMarca() porque
+    // quien mueve la postulación puede ser el equipo, que no tiene marca.
+    const { data: m } = await admin
+      .from("marcas").select("nombre").eq("id", c?.marca_id as string).maybeSingle();
+    const nombreMarca = (m?.nombre as string) || "La marca";
 
     const { error } = await admin.from("campania_aplicaciones")
       .update({
@@ -208,7 +213,7 @@ export async function moverPostulacion(
       await notificar(a.user_id as string, "general",
         etapa === "seleccionada" ? "¡Te seleccionaron para una campaña! 🎉" : "Respuesta a tu postulación",
         etapa === "seleccionada"
-          ? `${marca.nombre} te eligió para «${c?.titulo ?? "la campaña"}».`
+          ? `${nombreMarca} te eligió para «${c?.titulo ?? "la campaña"}».`
           : `Esta vez no quedaste en «${c?.titulo ?? "la campaña"}». Hay más campañas abiertas.`,
         "/app/campanias");
     }

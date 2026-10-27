@@ -1,16 +1,6 @@
-import { MktPendiente } from "@/components/MktPendiente";
+import { campaniasDelEquipo } from "@/lib/mkt-admin";
+import { MktCampanias } from "@/components/MktCampanias";
 
-export default function CampaniasPage() {
-  return (
-    <MktPendiente
-      titulo="Campañas"
-      pie="Todas las campañas de la plataforma, de cualquier marca."
-      falta={[
-        "La lista con portada, estatus, fechas y pago de cada campaña",
-        "El detalle con Información, Creadores, Colaboraciones y Envíos",
-        "Ver respuestas y perfil de cada creador postulado",
-        "Revisar el video final: aprobarlo o mandar comentarios",
-      ]}
-    />
-  );
+export default async function CampaniasPage() {
+  return <MktCampanias lista={await campaniasDelEquipo()} />;
 }

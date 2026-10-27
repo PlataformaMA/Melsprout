@@ -1,7 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { miMarca } from "@/lib/marca-cuenta";
+import { puedeVerCampania, puedeVerAplicacion } from "@/lib/acceso-campania";
 import { notificar } from "@/lib/notificaciones-actions";
 
 // Lo que pasa DESPUÉS de seleccionar a una creadora: su contenido, su pago y
@@ -83,14 +83,11 @@ export async function opcionesColaboracion(): Promise<{
 // La fila se crea sola la primera vez que se abre la pestaña, para no depender
 // de que la selección haya pasado por un sitio concreto.
 export async function colaboracionesDe(campaniaId: string): Promise<Colaboracion[]> {
-  const marca = await miMarca();
-  if (!marca) return [];
+  // La dueña de la campaña, o el equipo.
+  if (!(await puedeVerCampania(campaniaId))) return [];
 
   try {
     const admin = createAdminClient();
-    const { data: c } = await admin.from("campanias")
-      .select("marca_id").eq("id", campaniaId).maybeSingle();
-    if (!c || c.marca_id !== marca.id) return [];
 
     // Los perfiles van aparte: campania_aplicaciones apunta a auth.users, no a
     // profiles, así que no hay relación que PostgREST pueda seguir sola.
@@ -161,16 +158,22 @@ export async function colaboracionesDe(campaniaId: string): Promise<Colaboracion
 export async function guardarColaboracion(
   aplicacionId: string, campos: Partial<Colaboracion>
 ): Promise<{ ok: true } | { error: string }> {
-  const marca = await miMarca();
-  if (!marca) return { error: "Esta cuenta no es de una empresa." };
+  // Que la colaboración sea de una campaña suya, o que sea el equipo: ellos
+  // también actualizan estatus para mantener la campaña al día.
+  if (!(await puedeVerAplicacion(aplicacionId))) return { error: "Esa colaboración no es tuya." };
 
   try {
     const admin = createAdminClient();
-    // Que la postulación sea de una campaña suya.
     const { data: a } = await admin.from("campania_aplicaciones")
       .select("user_id, campanias!inner(titulo, marca_id)").eq("id", aplicacionId).maybeSingle();
     const camp = a?.campanias as unknown as { titulo: string; marca_id: string } | undefined;
-    if (!a || camp?.marca_id !== marca.id) return { error: "Esa colaboración no es tuya." };
+    if (!a) return { error: "Esa colaboración no es tuya." };
+
+    // El nombre de la marca para los avisos. No sale de miMarca() porque quien
+    // guarda puede ser el equipo, que no tiene marca propia.
+    const { data: m } = await admin
+      .from("marcas").select("nombre").eq("id", camp?.marca_id as string).maybeSingle();
+    const nombreMarca = (m?.nombre as string) || "La marca";
 
     const fila: Record<string, unknown> = { updated_at: new Date().toISOString() };
     const poner = (k: string, v: unknown) => { if (v !== undefined) fila[k] = v; };
@@ -203,13 +206,13 @@ export async function guardarColaboracion(
     if (campos.envioEstado === "en_transito" && campos.guia) {
       await notificar(a.user_id as string, "general",
         "Tu producto va en camino 📦",
-        `${marca.nombre} envió tu kit de «${camp?.titulo ?? "la campaña"}». Guía: ${campos.guia}`,
+        `${nombreMarca} envió tu kit de «${camp?.titulo ?? "la campaña"}». Guía: ${campos.guia}`,
         "/app/campanias");
     }
     if (campos.pagoCompletado === true) {
       await notificar(a.user_id as string, "general",
         "Tu pago quedó completado 💸",
-        `${marca.nombre} marcó tu pago de «${camp?.titulo ?? "la campaña"}» como completado.`,
+        `${nombreMarca} marcó tu pago de «${camp?.titulo ?? "la campaña"}» como completado.`,
         "/app/campanias");
     }
     return { ok: true };

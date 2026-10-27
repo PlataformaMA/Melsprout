@@ -22,12 +22,29 @@ const ESTADOS: Record<string, { txt: string; clase: string }> = {
 };
 
 export function MarcaCampaniaDetalle({
-  marca, campania, postulaciones, colaboraciones, opciones, sitio,
+  marca, ...resto
+}: { marca: MiMarca } & Parameters<typeof CampaniaDetalleCuerpo>[0]) {
+  return (
+    <MarcaShell marca={marca} activo="campanias">
+      <CampaniaDetalleCuerpo {...resto} />
+    </MarcaShell>
+  );
+}
+
+// El cuerpo, sin el menú de alrededor. Lo usan el portal de la marca y el
+// panel del equipo: tienen menús distintos, pero es la MISMA campaña, así que
+// las tablas, los estatus y los envíos se escriben una sola vez.
+export function CampaniaDetalleCuerpo({
+  campania, postulaciones, colaboraciones, opciones, sitio,
+  volverHref = "/app/marca/campanias", comoEquipo = false,
 }: {
-  marca: MiMarca; campania: CampaniaMarca; postulaciones: Postulacion[];
+  campania: CampaniaMarca; postulaciones: Postulacion[];
   colaboraciones: Colaboracion[];
   opciones: Parameters<typeof MarcaColaboraciones>[0]["opciones"];
   sitio: string;
+  volverHref?: string;
+  // El equipo ve todo, pero no toca lo que solo le corresponde a la marca.
+  comoEquipo?: boolean;
 }) {
   const [tab, setTab] = useState<"info" | "creadores" | "colaboraciones" | "envios">("info");
   const [c, setC] = useState(campania);
@@ -36,8 +53,8 @@ export function MarcaCampaniaDetalle({
   const enlace = `${sitio}/app/marketplace?campania=${c.id}`;
 
   return (
-    <MarcaShell marca={marca} activo="campanias">
-      <Link href="/app/marca/campanias" className="text-[13.5px] font-bold text-accent">← Volver</Link>
+    <>
+      <Link href={volverHref} className="text-[13.5px] font-bold text-accent">← Volver</Link>
 
       <h1 className="font-display text-2xl font-extrabold mt-3">{c.titulo}</h1>
       <p className="text-[12.5px] text-hint mt-0.5">
@@ -64,7 +81,7 @@ export function MarcaCampaniaDetalle({
                   <span className="text-[13px] font-bold">Estatus:</span>
                   <span className={`text-[11.5px] font-bold rounded-full px-2.5 py-1 ${e.clase}`}>{e.txt}</span>
                 </div>
-                {c.estado === "borrador" || c.estado === "rechazada" ? (
+                {!comoEquipo && (c.estado === "borrador" || c.estado === "rechazada") ? (
                   <Link href={`/app/marca/campanias/${c.id}/editar`}
                     className="text-[12.5px] font-bold text-accent">Editar ✎</Link>
                 ) : null}
@@ -148,6 +165,7 @@ export function MarcaCampaniaDetalle({
               </button>
             </Caja>
 
+            {!comoEquipo && (
             <Caja>
               <h3 className="font-display font-extrabold text-[14px] mb-3">Estado y visibilidad</h3>
               <Interruptor on={c.enMarketplace}
@@ -160,6 +178,7 @@ export function MarcaCampaniaDetalle({
                 titulo="Compartir con todos los creadores de mi lista"
                 sub="Se enviará la campaña a los creadores guardados." />
             </Caja>
+            )}
           </aside>
         </div>
       )}
@@ -175,7 +194,7 @@ export function MarcaCampaniaDetalle({
       {tab === "envios" && (
         <MarcaColaboraciones lista={colaboraciones} opciones={opciones} vista="envios" />
       )}
-    </MarcaShell>
+    </>
   );
 }
 
