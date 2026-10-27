@@ -6,14 +6,17 @@ import { fechaCorta, dinero } from "@/lib/formato-campanias";
 // Todo sale de la base; si una marca no tiene categoría cae en "Sin categoría"
 // en vez de desaparecer de la gráfica.
 
-const COLORES = ["#7C3AED", "#A78BFA", "#86EFAC", "#FDBA9B"] as const;
+const COLORES = ["#7C3AED", "#A78BFA", "#86EFAC", "#FDBA9B", "#D4D1DC"] as const;
 
 export function MktInicio({ r }: { r: ResumenMkt }) {
+  // Los borradores también van en la dona. Si se dejaban fuera, el total del
+  // centro no cuadraba con "Campañas totales" de arriba y parecía un error.
   const aro = [
     { texto: "Activas", n: r.estados.activas, color: COLORES[0] },
     { texto: "En revisión", n: r.estados.revision, color: COLORES[1] },
     { texto: "Completadas", n: r.estados.completadas, color: COLORES[2] },
     { texto: "Pausadas", n: r.estados.pausadas, color: COLORES[3] },
+    { texto: "Borradores", n: r.estados.borradores, color: COLORES[4] },
   ];
   const totalAro = aro.reduce((s, x) => s + x.n, 0);
 

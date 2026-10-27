@@ -33,8 +33,9 @@ export function MktSolicitudDetalle({ s }: { s: SolicitudDetalle }) {
   const [error, setError] = useState("");
 
   // Si la marca ofrece dinero, el monto es obligatorio antes de aprobar: es el
-  // número con el que la creadora decide si se postula.
-  const pideMonto = s.tipos.includes("monto");
+  // número con el que la creadora decide si se postula. Se mira también la
+  // compensación: hay campañas con monto puesto que no marcaron el tipo.
+  const pideMonto = s.tipos.includes("monto") || !!s.compensacion.monto?.cantidad;
 
   async function aprobar() {
     setError("");

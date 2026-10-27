@@ -39,7 +39,7 @@ export type ResumenMkt = {
   marcas: number;
   creadores: number;
   pendientes: number;
-  estados: { activas: number; revision: number; completadas: number; pausadas: number };
+  estados: { activas: number; revision: number; completadas: number; pausadas: number; borradores: number };
   categorias: { nombre: string; total: number }[];
   pagos: FilaPago[];
   mes: {
@@ -101,7 +101,7 @@ export async function resumenMarketplace(): Promise<ResumenMkt | null> {
 
     // Estado de campañas. "Pausada" es una campaña ya aprobada que la marca o
     // el equipo apagaron: sigue existiendo pero no se ve en el Marketplace.
-    const estados = { activas: 0, revision: 0, completadas: 0, pausadas: 0 };
+    const estados = { activas: 0, revision: 0, completadas: 0, pausadas: 0, borradores: 0 };
     for (const c of listaCampanias) {
       const e = (c.estado as string) || "borrador";
       if (e === "pendiente") estados.revision++;
@@ -109,7 +109,7 @@ export async function resumenMarketplace(): Promise<ResumenMkt | null> {
       else if (e === "aprobada") {
         if (c.activa === false) estados.pausadas++;
         else estados.activas++;
-      }
+      } else estados.borradores++;   // borrador y rechazada: aún no salen
     }
 
     // Marcas por categoría, de la más poblada a la menos.
