@@ -16,6 +16,7 @@ const MENU = [
   { href: "/app/admin/marketplace/campanias", texto: "Campañas", icono: "📣" },
   { href: "/app/admin/marketplace/marcas", texto: "Marcas", icono: "🏷️" },
   { href: "/app/admin/marketplace/creadores", texto: "Creadores destacados", icono: "⭐" },
+  { href: "/app/admin/marketplace/mensajes", texto: "Mensajes", icono: "💬" },
 ];
 
 export function MktShell({

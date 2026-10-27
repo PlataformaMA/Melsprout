@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { ModalRevisarVideo } from "@/components/ModalRevisarVideo";
 import { guardarColaboracion } from "@/lib/marca-colaboraciones";
 import type { Colaboracion, Etapa } from "@/lib/marca-colaboraciones";
 
@@ -43,6 +44,8 @@ export function MarcaColaboraciones({
 }) {
   const [filas, setFilas] = useState(lista);
   const [sub, setSub] = useState<"seguimiento" | "pagos">("seguimiento");
+  // La colaboración cuyo video se está revisando, si hay alguna abierta.
+  const [revisando, setRevisando] = useState<Colaboracion | null>(null);
   const [busca, setBusca] = useState("");
   const [, startTransition] = useTransition();
 
@@ -67,6 +70,11 @@ export function MarcaColaboraciones({
 
   return (
     <div>
+      {revisando && (
+        <ModalRevisarVideo colaboracionId={revisando.id} creador={revisando.nombre}
+          onCerrar={() => setRevisando(null)} />
+      )}
+
       <div className="flex flex-wrap items-center gap-2 mb-4">
         {vista === "colaboraciones" &&
           ([["seguimiento", "Seguimiento"], ["pagos", "Pagos"]] as const).map(([k, txt]) => (
@@ -199,13 +207,21 @@ export function MarcaColaboraciones({
                         </td>
                       ))}
                       <td className="px-3 py-2.5">
-                        {f.materialUrl ? (
-                          <a href={f.materialUrl} target="_blank" rel="noreferrer"
-                            className="text-[11.5px] font-bold text-accent whitespace-nowrap">⬇ Descargar</a>
-                        ) : (
-                          <Texto valor={f.materialUrl} marcador="Enlace al material"
-                            onCambio={(v) => cambiar(f.aplicacionId, { materialUrl: v })} ancho={130} />
-                        )}
+                        <div className="flex items-center gap-2">
+                          {/* Lo que subió la creadora se revisa aquí dentro; el
+                              enlace de al lado es por si lo mandó por fuera. */}
+                          <button onClick={() => setRevisando(f)}
+                            className="text-[11.5px] font-bold text-accent bg-accent-soft rounded-lg px-2 py-1 whitespace-nowrap hover:bg-accent hover:text-white transition">
+                            ▶ Revisar
+                          </button>
+                          {f.materialUrl ? (
+                            <a href={f.materialUrl} target="_blank" rel="noreferrer"
+                              className="text-[11.5px] font-bold text-accent whitespace-nowrap">⬇</a>
+                          ) : (
+                            <Texto valor={f.materialUrl} marcador="Enlace"
+                              onCambio={(v) => cambiar(f.aplicacionId, { materialUrl: v })} ancho={90} />
+                          )}
+                        </div>
                       </td>
                       <td className="px-3 py-2.5">
                         <Fecha valor={f.fechaEntrega} onCambio={(v) => cambiar(f.aplicacionId, { fechaEntrega: v })} />
