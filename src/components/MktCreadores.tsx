@@ -91,9 +91,11 @@ export function MktCreadores({ lista }: { lista: CreadorEquipo[] }) {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="font-display text-2xl sm:text-3xl font-extrabold">Creadores destacados</h1>
+          {/* Se dice "con perfil terminado" porque aquí solo salen esos, y si
+              no, el número no cuadra con el de creadores del Inicio. */}
           <p className="text-sub text-[14px] mt-1">
             {destacados > 0
-              ? `${destacados} ${destacados === 1 ? "creador destacado" : "creadores destacados"} de ${datos.length}.`
+              ? `${destacados} ${destacados === 1 ? "destacado" : "destacados"} de ${datos.length} creadores con perfil terminado.`
               : "Marca con la estrella a quién quieres poner al frente de las marcas."}
           </p>
         </div>
