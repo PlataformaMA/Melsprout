@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { MiEnlaceEmbajador } from "@/components/MiEnlaceEmbajador";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
@@ -121,6 +122,12 @@ export function CampaniaDetalleVista({
 
           {/* ————— Qué paga ————— */}
           <Compensacion c={campania} />
+
+          {/* En las campañas de afiliados, lo primero que quiere ver quien ya
+              quedó es su enlace: es con lo que va a trabajar. */}
+          {estado === "aceptada" && campania.tipos.includes("afiliados") && (
+            <MiEnlaceEmbajador campaniaId={campania.id} />
+          )}
 
           {/* ————— Postularse ————— */}
           <div className="mt-6">

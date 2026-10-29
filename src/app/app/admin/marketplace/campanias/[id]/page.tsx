@@ -4,6 +4,8 @@ import { puedeVerCampania } from "@/lib/acceso-campania";
 import { postulacionesDe } from "@/lib/marca-creadores";
 import { colaboracionesDe, opcionesColaboracion } from "@/lib/marca-colaboraciones";
 import { CampaniaDetalleCuerpo } from "@/components/MarcaCampaniaDetalle";
+import { MktEnlaces } from "@/components/MktEnlaces";
+import { enlacesDeCampania } from "@/lib/enlaces-afiliado";
 import type { CampaniaMarca, Compensacion, Pregunta, EstadoCampania } from "@/lib/marca-campanias";
 
 const SITIO = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "https://melsprout.boostacademy.io";
@@ -23,11 +25,22 @@ export default async function CampaniaEquipoPage({
   const { data: c } = await db.from("campanias").select("*").eq("id", id).maybeSingle();
   if (!c) redirect("/app/admin/marketplace/campanias");
 
-  const [postulaciones, colaboraciones, opciones] = await Promise.all([
+  const [postulaciones, colaboraciones, opciones, enlaces] = await Promise.all([
     postulacionesDe(id),
     colaboracionesDe(id),
     opcionesColaboracion(),
+    enlacesDeCampania(id),
   ]);
+
+  // Las campañas de afiliados trabajan con enlaces; las demás no, y ahí la
+  // sección sobraría.
+  const esAfiliados = ((c.tipos as string[]) || []).includes("afiliados");
+  let destino = (c.enlace_destino as string) || null;
+  if (!destino && c.requiere_curso) {
+    const { data: m } = await db
+      .from("cursos_modulos").select("checkout_url").eq("id", c.requiere_curso as string).maybeSingle();
+    destino = (m?.checkout_url as string) || null;
+  }
 
   const campania: CampaniaMarca = {
     id: c.id as string,
@@ -56,6 +69,7 @@ export default async function CampaniaEquipoPage({
   };
 
   return (
+    <>
     <CampaniaDetalleCuerpo
       campania={campania}
       postulaciones={postulaciones}
@@ -65,5 +79,9 @@ export default async function CampaniaEquipoPage({
       volverHref="/app/admin/marketplace/campanias"
       comoEquipo
     />
+    {esAfiliados && (
+      <MktEnlaces campaniaId={id} lista={enlaces} destino={destino} />
+    )}
+    </>
   );
 }

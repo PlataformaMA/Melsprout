@@ -23,6 +23,9 @@ type Cuerpo = {
   nombre?: string;
   telefono?: string;
   transaccion?: string;
+  // Código del embajador que trajo la venta. Hotmart lo devuelve en `sck`
+  // porque así se lo mandamos en el enlace (/r/<codigo>).
+  sck?: string;
 };
 
 const EVENTOS: Evento[] = ["compra_aprobada", "acceso_revocado"];
@@ -67,6 +70,7 @@ export async function POST(request: Request) {
   const nombre = (cuerpo.nombre || "").trim();
   const telefono = (cuerpo.telefono || "").trim();
   const transaccion = (cuerpo.transaccion || "").trim();
+  const embajador = (cuerpo.sck || "").trim().toLowerCase();
 
   if (!EVENTOS.includes(evento)) return malaPeticion(`evento debe ser uno de: ${EVENTOS.join(", ")}`);
   if (!cursoSlug) return malaPeticion("falta curso");
@@ -194,9 +198,19 @@ export async function POST(request: Request) {
     }
   }
 
+  // Si la compra vino del enlace de un embajador, se le apunta la venta.
+  // Que falle esto no debe tumbar el acceso, que es lo que importa.
+  if (embajador && /^[a-z0-9]{4,16}$/.test(embajador)) {
+    try {
+      await admin.rpc("sumar_venta", { p_codigo: embajador });
+    } catch (e) {
+      console.error("/api/acceso: no se pudo apuntar la venta del embajador", e);
+    }
+  }
+
   await bitacora(
     "aplicado",
-    `${cuentaNueva ? `cuenta creada (correo ${correoEnviado ? "enviado" : "no enviado"})` : "cuenta existente"} · acceso a «${curso.nombre}»`,
+    `${cuentaNueva ? `cuenta creada (correo ${correoEnviado ? "enviado" : "no enviado"})` : "cuenta existente"} · acceso a «${curso.nombre}»${embajador ? ` · embajador ${embajador}` : ""}`,
     usuario.id,
   );
 

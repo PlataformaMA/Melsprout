@@ -93,9 +93,9 @@ async function conPro(user: { id: string; email?: string } | null): Promise<bool
 }
 
 // Una campaña puede ser exclusiva de un curso (la de embajadores de Boost Your
-// Web, por ejemplo). Entonces manda el curso, no el plan: la ve quien lo
-// compró —aunque no tenga Pro— y NO la ve quien no lo compró —aunque sí lo
-// tenga—, porque es una convocatoria cerrada, no un extra del plan.
+// Web, por ejemplo). El plan sigue mandando: el Marketplace es de Boost Pro y
+// sin Pro no se entra. El curso es un filtro ADEMÁS del plan, no en lugar de:
+// para esas campañas hay que tener Pro Y haber comprado el curso.
 async function cursosQueTengo(userId: string): Promise<Set<string>> {
   try {
     const { data } = await createAdminClient()
@@ -110,9 +110,12 @@ async function cursosQueTengo(userId: string): Promise<Set<string>> {
 async function puedoVerla(
   user: { id: string; email?: string }, requiereCurso: string | null,
 ): Promise<boolean> {
-  if (!requiereCurso) return conPro(user);
-  // El equipo entra siempre, para poder revisarla.
+  // El equipo entra siempre, para poder revisarla antes de publicarla.
   if (await esAdminUsuario(user.id, user.email)) return true;
+  // Primero el plan, sin excepciones.
+  if (!(await conPro(user))) return false;
+  if (!requiereCurso) return true;
+  // Y encima, que de verdad sea alumno de ese curso.
   return (await cursosQueTengo(user.id)).has(requiereCurso);
 }
 
@@ -123,12 +126,11 @@ export async function listarCampanias(
   const user = await quienSoy();
   if (!user) return vacio;
 
-  // Sin Pro todavía se puede entrar, pero solo a las campañas del curso que
-  // uno compró. Si no tiene ni lo uno ni lo otro, no hay nada que enseñar.
+  // El Marketplace es de Boost Pro: sin plan no se entra, tenga el curso que
+  // tenga. El equipo pasa siempre.
   const esEquipo = await esAdminUsuario(user.id, user.email);
-  const pro = await conPro(user);
+  if (!esEquipo && !(await conPro(user))) return vacio;
   const misCursos = esEquipo ? null : await cursosQueTengo(user.id);
-  if (!pro && !misCursos?.size) return vacio;
 
   try {
     const admin = createAdminClient();
@@ -154,11 +156,11 @@ export async function listarCampanias(
     const { data: crudas, error } = await q.limit(200);
     if (error || !crudas) return vacio;
 
-    // Las exclusivas de un curso solo salen para quien lo tiene; las normales,
-    // solo para quien tiene Pro.
+    // Aquí ya todos tienen Pro. Lo único que falta filtrar son las exclusivas
+    // de un curso: esas salen solo para quien de verdad lo compró.
     const data = crudas.filter((c) => {
       const curso = (c.requiere_curso as string) || null;
-      if (!curso) return pro;
+      if (!curso) return true;
       return esEquipo || !!misCursos?.has(curso);
     });
 
@@ -699,9 +701,9 @@ export async function postularme(
     const curso = (c.requiere_curso as string) || null;
     if (!(await puedoVerla(user, curso))) {
       return {
-        error: curso
-          ? "Esta convocatoria es solo para alumnos del curso."
-          : "Postularte a campañas es parte de Boost Pro.",
+        error: !(await conPro(user))
+          ? "Postularte a campañas es parte de Boost Pro."
+          : "Esta convocatoria es solo para alumnos del curso.",
       };
     }
 
