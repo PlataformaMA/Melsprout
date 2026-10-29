@@ -32,6 +32,10 @@ alter table public.campanias
 -- panel, que ya revisan quién es quien pregunta.
 alter table public.campania_enlaces enable row level security;
 
+-- OJO con el delimitador: tiene que ser ASCII ($fn$). Con uno acentuado,
+-- el editor de Supabase no lo reconoce, parte el cuerpo en el primer ; y la
+-- función nunca se crea (pasó el 29-oct).
+--
 -- Sumar el clic y decir a dónde ir, de una sola vez. Va en la base y no en la
 -- app porque si se leyera y luego se escribiera, dos clics al mismo tiempo
 -- contarían como uno.
@@ -40,7 +44,7 @@ returns text
 language plpgsql
 security definer
 set search_path = public
-as $función$
+as $fn$
 declare
   v_campania uuid;
   v_destino  text;
@@ -64,7 +68,7 @@ begin
 
   return v_destino;
 end;
-$función$;
+$fn$;
 
 -- Sumar una venta cuando el webhook de compras la reporte con el código.
 create or replace function public.sumar_venta(p_codigo text)
@@ -72,7 +76,7 @@ returns integer
 language plpgsql
 security definer
 set search_path = public
-as $función$
+as $fn$
 declare
   v_total integer;
 begin
@@ -83,7 +87,7 @@ begin
 
   return v_total;   -- null si el código no existe
 end;
-$función$;
+$fn$;
 
 -- Que PostgREST se entere de las tablas y funciones nuevas sin esperar.
 notify pgrst, 'reload schema';
