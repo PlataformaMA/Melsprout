@@ -90,19 +90,26 @@ export function ColaboracionVista({
           {c.esAfiliados && <MiEnlaceEmbajador campaniaId={c.campaniaId} />}
 
           {/* ————— Entregables ————— */}
-          {!c.esAfiliados && (
           <section className="bg-surface border border-border rounded-3xl p-5 sm:p-7 mt-4 shadow-sm">
             <div className="flex items-start gap-3">
               <span className="text-accent mt-0.5"><IcoDocumento /></span>
               <div>
-                <h2 className="font-display font-extrabold text-[19px]">Entrega de contenido</h2>
+                {/* En afiliados nadie le exige un video: su trabajo es el
+                    enlace. Pero el contenido que haga sí puede compartirlo, y
+                    el programa lo contempla ("contenido voluntario"). */}
+                <h2 className="font-display font-extrabold text-[19px]">
+                  {c.esAfiliados ? "Comparte tu contenido" : "Entrega de contenido"}
+                </h2>
                 <p className="text-sub text-[13.5px] mt-0.5">
-                  Completa los entregables de la campaña. Asegúrate de cumplir con las fechas establecidas.
+                  {c.esAfiliados
+                    ? "Opcional: sube lo que publiques para que el equipo lo vea y te dé retroalimentación. No hay entregables obligatorios."
+                    : "Completa los entregables de la campaña. Asegúrate de cumplir con las fechas establecidas."}
                 </p>
               </div>
             </div>
 
             <div className="space-y-4 mt-5">
+              {!c.esAfiliados && (
               <Entregable
                 n={1}
                 titulo="Guion"
@@ -116,11 +123,15 @@ export function ColaboracionVista({
               >
                 <SubirGuion colaboracionId={c.id} />
               </Entregable>
+              )}
 
               <Entregable
-                n={2}
-                titulo="Video final"
-                texto="Sube aquí el video de tu campaña. Asegúrate de cumplir con las especificaciones acordadas."
+                n={c.esAfiliados ? 1 : 2}
+                titulo={c.esAfiliados ? "Tu video" : "Video final"}
+                opcional={c.esAfiliados}
+                texto={c.esAfiliados
+                  ? "Si grabas algo recomendando el curso y quieres compartirlo, súbelo aquí."
+                  : "Sube aquí el video de tu campaña. Asegúrate de cumplir con las especificaciones acordadas."}
                 estado={c.entregaFinal}
                 entregas={entregasDe("video")}
                 comentarios={comentarios("video")}
@@ -142,7 +153,6 @@ export function ColaboracionVista({
               </Entregable>
             </div>
           </section>
-          )}
         </div>
       </main>
 
