@@ -184,7 +184,7 @@ export function CampaniaDetalleCuerpo({
       )}
 
       {tab === "creadores" && (
-        <Creadores lista={lista} onCambio={setLista} />
+        <Creadores lista={lista} onCambio={setLista} comoEquipo={comoEquipo} />
       )}
 
       {tab === "colaboraciones" && (
@@ -199,7 +199,13 @@ export function CampaniaDetalleCuerpo({
 }
 
 // ————— Pestaña de creadores —————
-function Creadores({ lista, onCambio }: { lista: Postulacion[]; onCambio: (l: Postulacion[]) => void }) {
+function Creadores({ lista, onCambio, comoEquipo }: {
+  lista: Postulacion[];
+  onCambio: (l: Postulacion[]) => void;
+  // El perfil del creador vive en dos lados: el del portal de la empresa y el
+  // del panel del equipo. Al equipo el de la empresa lo rebota.
+  comoEquipo?: boolean;
+}) {
   const [sub, setSub] = useState<"postulaciones" | "seleccionados">("postulaciones");
   const [busca, setBusca] = useState("");
   const [viendo, setViendo] = useState<Postulacion | null>(null);
@@ -294,7 +300,9 @@ function Creadores({ lista, onCambio }: { lista: Postulacion[]; onCambio: (l: Po
                           className="text-[11.5px] font-bold text-accent border border-border rounded-lg px-2.5 py-1.5 hover:border-accent/40 transition whitespace-nowrap">
                           Ver respuestas
                         </button>
-                        <Link href={`/app/marca/creadores/${p.creador.id}`}
+                        <Link href={comoEquipo
+                          ? `/app/admin/marketplace/creadores/${p.creador.id}`
+                          : `/app/marca/creadores/${p.creador.id}`}
                           className="text-[11.5px] font-bold text-accent border border-border rounded-lg px-2.5 py-1.5 hover:border-accent/40 transition whitespace-nowrap">
                           Ver perfil
                         </Link>

@@ -2,11 +2,21 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import type { Solicitud } from "@/lib/mkt-admin";
+import { moverPostulacion } from "@/lib/marca-creadores";
+import { fechaCorta } from "@/lib/formato-campanias";
+import type { Solicitud, PostulacionPendiente } from "@/lib/mkt-admin";
 
 // Las campañas que las marcas mandaron a revisión. El equipo entra a cada una
 // y decide: aprobar (sale al Marketplace) o regresarla con comentarios.
-export function MktSolicitudes({ lista }: { lista: Solicitud[] }) {
+export function MktSolicitudes({ lista, postulaciones }: {
+  lista: Solicitud[];
+  postulaciones: PostulacionPendiente[];
+}) {
+  const [sub, setSub] = useState<"campanias" | "creadores">(
+    // Si no hay campañas por revisar pero sí postulaciones, se abre donde hay
+    // trabajo, en vez de en una pantalla vacía.
+    lista.length === 0 && postulaciones.length > 0 ? "creadores" : "campanias",
+  );
   const [busca, setBusca] = useState("");
   const [orden, setOrden] = useState<"recientes" | "antiguas">("recientes");
 
@@ -27,10 +37,26 @@ export function MktSolicitudes({ lista }: { lista: Solicitud[] }) {
 
   return (
     <>
-      <h1 className="font-display text-2xl sm:text-3xl font-extrabold">Solicitudes de campañas</h1>
+      <h1 className="font-display text-2xl sm:text-3xl font-extrabold">Solicitudes</h1>
       <p className="text-sub text-[14px] mt-1">
-        Lo que las marcas mandaron a revisión. Nada sale al Marketplace sin pasar por aquí.
+        Lo que está esperando una respuesta del equipo.
       </p>
+
+      <div className="flex gap-2 mt-4 flex-wrap">
+        {([["campanias", "Campañas de marcas", lista.length],
+           ["creadores", "Postulaciones de creadoras", postulaciones.length]] as const).map(([k, txt, n]) => (
+          <button key={k} onClick={() => setSub(k)}
+            className={`rounded-full px-4 py-2 text-[13px] font-bold transition ${
+              sub === k ? "bg-accent text-white" : "bg-surface border border-border text-sub hover:bg-bg"}`}>
+            {txt}
+            {n > 0 && <span className="ml-1.5 opacity-80">{n}</span>}
+          </button>
+        ))}
+      </div>
+
+      {sub === "creadores"
+        ? <Postulaciones lista={postulaciones} />
+        : <>
 
       <div className="flex gap-2.5 mt-5 flex-wrap">
         <label className="flex-1 min-w-[220px] flex items-center gap-2 bg-surface border border-border rounded-2xl px-3.5 h-11">
@@ -96,6 +122,123 @@ export function MktSolicitudes({ lista }: { lista: Solicitud[] }) {
           ))
         )}
       </div>
+      </>}
     </>
   );
+}
+
+// ————— Las creadoras que esperan respuesta —————
+function Postulaciones({ lista }: { lista: PostulacionPendiente[] }) {
+  const [datos, setDatos] = useState(lista);
+  const [abierta, setAbierta] = useState<string | null>(null);
+  const [ocupada, setOcupada] = useState<string | null>(null);
+  const [error, setError] = useState("");
+
+  async function decidir(p: PostulacionPendiente, etapa: "seleccionada" | "descartada") {
+    setOcupada(p.id);
+    setError("");
+    const r = await moverPostulacion(p.id, etapa);
+    setOcupada(null);
+    if ("error" in r) { setError(r.error); return; }
+    // Ya tiene respuesta: sale de la bandeja.
+    setDatos((d) => d.filter((x) => x.id !== p.id));
+  }
+
+  if (datos.length === 0) {
+    return (
+      <div className="bg-surface border border-dashed border-border rounded-3xl p-10 text-center mt-5">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/octi.png" alt="" className="octi-vivo w-20 mx-auto" draggable={false} />
+        <h2 className="font-display font-extrabold text-[16px] mt-3">No hay postulaciones esperando</h2>
+        <p className="text-sub text-[13.5px] mt-1.5 max-w-sm mx-auto leading-snug">
+          Cuando una creadora se postule a una campaña, te aparece aquí para abrirla y decidir.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-5 space-y-3">
+      {error && <p className="text-[13px] text-pink bg-pink-soft rounded-xl px-3.5 py-3">{error}</p>}
+
+      {datos.map((p) => (
+        <article key={p.id} className="bg-surface border border-border rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center gap-3.5 flex-wrap">
+            {p.avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={p.avatar} alt="" className="w-14 h-14 rounded-full object-cover shrink-0" />
+            ) : (
+              <span className="w-14 h-14 rounded-full bg-accent-soft text-accent grid place-items-center text-[14px] font-extrabold shrink-0">
+                {p.nombre.slice(0, 2).toUpperCase()}
+              </span>
+            )}
+
+            <div className="min-w-0 flex-1">
+              <h3 className="font-display font-extrabold text-[15px] truncate">{p.nombre}</h3>
+              {p.usuario && <p className="text-[12px] text-hint truncate">@{p.usuario}</p>}
+              <p className="text-[12.5px] text-sub truncate">
+                se postuló a <b>{p.campania}</b> · {p.marca}
+              </p>
+            </div>
+
+            <div className="shrink-0 text-right">
+              <div className="text-[12.5px] font-bold">{abrev(p.seguidores)} seguidores</div>
+              <div className="text-[11.5px] text-hint">{fechaCorta(p.fecha)}</div>
+            </div>
+          </div>
+
+          <div className="flex gap-2 mt-3.5 flex-wrap">
+            <button onClick={() => setAbierta(abierta === p.id ? null : p.id)}
+              className="bg-accent-soft text-accent rounded-xl px-3.5 py-2 text-[12.5px] font-bold hover:bg-accent hover:text-white transition">
+              {abierta === p.id ? "Ocultar respuestas" : `Ver respuestas${p.respuestas.length ? ` (${p.respuestas.length})` : ""}`}
+            </button>
+            <Link href={`/app/admin/marketplace/creadores/${p.userId}?volver=/app/admin/marketplace/solicitudes`}
+              className="border border-border rounded-xl px-3.5 py-2 text-[12.5px] font-bold text-sub hover:border-accent/40 hover:text-accent transition">
+              Ver perfil
+            </Link>
+            <span className="flex-1" />
+            <button onClick={() => decidir(p, "descartada")} disabled={ocupada === p.id}
+              className="border border-border rounded-xl px-3.5 py-2 text-[12.5px] font-bold text-sub hover:border-pink/40 hover:text-pink transition disabled:opacity-50">
+              No quedó
+            </button>
+            <button onClick={() => decidir(p, "seleccionada")} disabled={ocupada === p.id}
+              className="bg-green text-white rounded-xl px-4 py-2 text-[12.5px] font-bold hover:brightness-110 transition disabled:opacity-50">
+              {ocupada === p.id ? "Guardando…" : "Seleccionar"}
+            </button>
+          </div>
+
+          {abierta === p.id && (
+            <div className="mt-3.5 pt-3.5 border-t border-border space-y-3">
+              {p.mensaje && (
+                <p className="text-[13px] text-sub leading-relaxed bg-bg rounded-xl px-3.5 py-3">{p.mensaje}</p>
+              )}
+              {p.respuestas.length === 0 && !p.mensaje ? (
+                <p className="text-[13px] text-hint">Esta campaña no tenía preguntas.</p>
+              ) : (
+                p.respuestas.map((r, i) => (
+                  <div key={i}>
+                    <p className="text-[13px] font-bold">{i + 1}. {r.pregunta}</p>
+                    <p className="text-[13px] text-sub leading-relaxed bg-accent-soft/40 rounded-xl px-3.5 py-3 mt-1.5">
+                      {r.respuesta}
+                    </p>
+                  </div>
+                ))
+              )}
+              {p.enlace && (
+                <a href={p.enlace} target="_blank" rel="noreferrer"
+                  className="inline-block text-[12.5px] font-bold text-accent break-all">{p.enlace} ↗</a>
+              )}
+            </div>
+          )}
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function abrev(n: number): string {
+  if (!n) return "0";
+  if (n >= 1_000_000) return `${Math.round(n / 100_000) / 10}M`;
+  if (n >= 1_000) return `${Math.round(n / 100) / 10}K`;
+  return String(n);
 }

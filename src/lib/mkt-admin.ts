@@ -784,3 +784,169 @@ export async function marcarDestacado(
   }
   return { ok: true };
 }
+
+// ————————————————————————————————————————————— Postulaciones
+
+export type PostulacionPendiente = {
+  id: string;
+  campaniaId: string;
+  campania: string;
+  marca: string;
+  logoUrl: string | null;
+  // Quién se postuló
+  userId: string;
+  nombre: string;
+  usuario: string | null;
+  avatar: string | null;
+  nicho: string | null;
+  ciudad: string | null;
+  pais: string | null;
+  seguidores: number;
+  fecha: string;
+  mensaje: string | null;
+  enlace: string | null;
+  respuestas: { pregunta: string; respuesta: string }[];
+};
+
+// Las creadoras que se postularon y todavía esperan respuesta, de todas las
+// campañas juntas. Antes solo se veían entrando campaña por campaña, así que
+// una postulación de una campaña poco visitada se podía quedar semanas ahí.
+export async function postulacionesPendientes(): Promise<PostulacionPendiente[]> {
+  if (!(await soyEquipo())) return [];
+  const db = createAdminClient();
+
+  try {
+    const { data: apps } = await db
+      .from("campania_aplicaciones")
+      .select("id, campania_id, user_id, mensaje, enlace, respuestas, created_at")
+      .eq("etapa", "postulada")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (!apps?.length) return [];
+
+    const { data: camps } = await db
+      .from("campanias").select("id, titulo, marca_id, preguntas")
+      .in("id", [...new Set(apps.map((a) => a.campania_id as string))]);
+    const campania = new Map((camps || []).map((c) => [c.id as string, c]));
+
+    const { data: marcas } = await db
+      .from("marcas").select("id, nombre, logo_url")
+      .in("id", [...new Set((camps || []).map((c) => c.marca_id as string))]);
+    const marca = new Map((marcas || []).map((m) => [m.id as string, m]));
+
+    // Los perfiles van aparte: la postulación apunta a auth.users.
+    const { data: perfiles } = await db
+      .from("profiles").select("id, full_name, username, avatar_url, nicho, ciudad, pais, redes, metricas")
+      .in("id", [...new Set(apps.map((a) => a.user_id as string))]);
+    const perfil = new Map((perfiles || []).map((p) => [p.id as string, p]));
+
+    return apps.map((a) => {
+      const c = campania.get(a.campania_id as string);
+      const m = c ? marca.get(c.marca_id as string) : undefined;
+      const p = perfil.get(a.user_id as string);
+      const preguntas = (c?.preguntas as { id: string; texto: string }[]) || [];
+      const resp = (a.respuestas as Record<string, string>) || {};
+
+      return {
+        id: a.id as string,
+        campaniaId: a.campania_id as string,
+        campania: (c?.titulo as string) || "Campaña",
+        marca: (m?.nombre as string) || "Sin marca",
+        logoUrl: (m?.logo_url as string) || null,
+        userId: a.user_id as string,
+        nombre: (p?.full_name as string) || "Creador",
+        usuario: (p?.username as string) || null,
+        avatar: (p?.avatar_url as string) || null,
+        nicho: (p?.nicho as string) || null,
+        ciudad: (p?.ciudad as string) || null,
+        pais: (p?.pais as string) || null,
+        seguidores: p ? metricasDe(p).seguidores : 0,
+        fecha: a.created_at as string,
+        mensaje: (a.mensaje as string) || null,
+        enlace: (a.enlace as string) || null,
+        respuestas: preguntas
+          .filter((q) => resp[q.id])
+          .map((q) => ({ pregunta: q.texto, respuesta: resp[q.id] })),
+      };
+    });
+  } catch (e) {
+    console.error("[mkt-admin] postulaciones:", e);
+    return [];
+  }
+}
+
+export type CreadorFichaEquipo = CreadorEquipo & {
+  bio: string | null;
+  titular: string | null;
+  correo: string | null;
+  seMeUnio: string | null;
+  usuarios: { red: string; usuario: string | null; seguidores: number }[];
+  historial: { campaniaId: string; campania: string; marca: string; etapa: string; fecha: string }[];
+};
+
+export async function getCreadorEquipo(id: string): Promise<CreadorFichaEquipo | null> {
+  if (!(await soyEquipo())) return null;
+  const db = createAdminClient();
+  try {
+    const { data: p } = await db.from("profiles").select("*").eq("id", id).maybeSingle();
+    if (!p) return null;
+
+    const m = metricasDe(p);
+    const redes = (p.redes as Record<string, { usuario?: string; seguidores?: number }>) || {};
+
+    // Con qué correo entra, por si el equipo tiene que escribirle.
+    const { data: u } = await db.auth.admin.getUserById(id);
+
+    // A qué se ha postulado y cómo le fue.
+    const { data: apps } = await db
+      .from("campania_aplicaciones").select("campania_id, etapa, created_at")
+      .eq("user_id", id).order("created_at", { ascending: false });
+    const { data: camps } = await db
+      .from("campanias").select("id, titulo, marca_id")
+      .in("id", [...new Set((apps || []).map((a) => a.campania_id as string))]);
+    const campania = new Map((camps || []).map((c) => [c.id as string, c]));
+    const { data: marcas } = await db
+      .from("marcas").select("id, nombre")
+      .in("id", [...new Set((camps || []).map((c) => c.marca_id as string))]);
+    const marca = new Map((marcas || []).map((x) => [x.id as string, x.nombre as string]));
+
+    const { data: apps2 } = await db
+      .from("campania_aplicaciones").select("user_id").eq("user_id", id).eq("etapa", "seleccionada");
+
+    return {
+      id,
+      nombre: (p.full_name as string) || "Creador",
+      usuario: (p.username as string) || null,
+      avatar: (p.avatar_url as string) || null,
+      titular: (p.headline as string) || null,
+      nicho: (p.nicho as string) || null,
+      ciudad: (p.ciudad as string) || null,
+      pais: (p.pais as string) || null,
+      destacado: p.destacado === true,
+      pro: p.pro === true,
+      ...m,
+      campanias: (apps2 || []).length,
+      bio: (p.bio as string) || null,
+      correo: u?.user?.email ?? null,
+      seMeUnio: (p.created_at as string) || null,
+      usuarios: Object.entries(redes).map(([red, v]) => ({
+        red,
+        usuario: v?.usuario ?? null,
+        seguidores: Number(v?.seguidores ?? 0),
+      })),
+      historial: (apps || []).map((a) => {
+        const c = campania.get(a.campania_id as string);
+        return {
+          campaniaId: a.campania_id as string,
+          campania: (c?.titulo as string) || "Campaña",
+          marca: c ? marca.get(c.marca_id as string) || "Sin marca" : "Sin marca",
+          etapa: (a.etapa as string) || "postulada",
+          fecha: a.created_at as string,
+        };
+      }),
+    };
+  } catch (e) {
+    console.error("[mkt-admin] ficha de creador:", e);
+    return null;
+  }
+}
