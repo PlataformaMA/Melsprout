@@ -512,10 +512,18 @@ export async function responderAplicacion(
       .select("user_id, campanias(titulo)")
       .eq("id", id).maybeSingle();
 
+    // La etapa va junto con el estado. Si solo se movía el estado, la creadora
+    // quedaba "aceptada" para el equipo y "postulada" para ella, y su campaña
+    // no aparecía en «Mis campañas».
+    const { etapaDelEstado, asegurarColaboracion } = await import("@/lib/colaboracion-alta");
+    const etapa = etapaDelEstado(estado);
+
     const { error } = await admin.from("campania_aplicaciones")
-      .update({ estado, nota_equipo: nota.trim() || null, updated_at: new Date().toISOString() })
+      .update({ estado, etapa, nota_equipo: nota.trim() || null, updated_at: new Date().toISOString() })
       .eq("id", id);
     if (error) return { error: "No se pudo guardar." };
+
+    if (etapa === "seleccionada") await asegurarColaboracion(id);
 
     // Se le avisa a la creadora: una respuesta que nadie ve no sirve de nada.
     if (a?.user_id) {

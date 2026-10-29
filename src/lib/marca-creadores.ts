@@ -209,6 +209,13 @@ export async function moverPostulacion(
       .eq("id", id);
     if (error) return { error: "No se pudo guardar." };
 
+    // Su colaboración existe desde el momento en que queda, no desde que la
+    // marca se asoma a la pestaña de Colaboraciones.
+    if (etapa === "seleccionada") {
+      const { asegurarColaboracion } = await import("@/lib/colaboracion-alta");
+      await asegurarColaboracion(id);
+    }
+
     if (etapa !== "postulada") {
       await notificar(a.user_id as string, "general",
         etapa === "seleccionada" ? "¡Te seleccionaron para una campaña! 🎉" : "Respuesta a tu postulación",
