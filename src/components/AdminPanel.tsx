@@ -33,6 +33,7 @@ import { MarketplaceAdminTab } from "@/components/MarketplaceAdminTab";
 import { MarcasAdminTab } from "@/components/MarcasAdminTab";
 import { ComunidadAdminTab } from "@/components/ComunidadAdminTab";
 import { VivoAdminTab } from "@/components/VivoAdminTab";
+import { ConmutadorPanel } from "@/components/ConmutadorPanel";
 import { crearModulo, actualizarModulo, borrarModulo, crearClase, actualizarClase, borrarClase, setVideoClaseDB, getVentaCurso, guardarVentaCurso, type ClaseInput, type VentaCurso } from "@/lib/cursos-actions";
 import { generarSubtitulos, revisarSubtitulos, borrarSubtitulos } from "@/lib/subtitulos-actions";
 import type { ModuloRow, ClaseRow } from "@/lib/cursos-db";
@@ -243,8 +244,8 @@ function AdminSidebar({ tab, setTab, adminEmail, counts }: {
     { id: "retos", label: "Retos", icon: <IcoEscudo />, count: counts.retos },
     { id: "comentarios", label: "Comunidad", icon: <IcoComunidad />, count: counts.comentarios },
     { id: "moderacion", label: "Moderación", icon: <IcoEscudo />, count: -1 },
-    { id: "marketplace", label: "Marketplace", icon: <IcoTienda />, count: -1 },
-    { id: "marcas", label: "Empresas", icon: <IcoTienda />, count: -1 },
+    { id: "marketplace", label: "Alta de campañas", icon: <IcoTienda />, count: -1 },
+    { id: "marcas", label: "Aprobar empresas", icon: <IcoTienda />, count: -1 },
     { id: "mensajes", label: "Mensajes", icon: <IcoMensaje />, count: -1 },
     { id: "reportes", label: "Reportes", icon: <IcoBarras />, count: -1 },
     { id: "config", label: "Configuración", icon: <IcoEngrane />, count: -1 },
@@ -263,6 +264,12 @@ function AdminSidebar({ tab, setTab, adminEmail, counts }: {
           <div className="font-display font-extrabold leading-tight">Melsprout</div>
           <div className="text-[11.5px] text-sub">Superadmin</div>
         </div>
+      </div>
+
+      {/* La puerta al otro panel. Sin esto no había forma de llegar al
+          Marketplace que no fuera escribir la URL. */}
+      <div className="mb-5">
+        <ConmutadorPanel activo="academia" />
       </div>
 
       <nav className="flex flex-col gap-1.5">

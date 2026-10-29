@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserMenu } from "@/components/UserMenu";
 import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
+import { ConmutadorPanel } from "@/components/ConmutadorPanel";
 
 // El menú del Marketplace del equipo. Es un panel aparte del de la Academia:
 // arriba se cambia de uno a otro, porque son dos operaciones distintas con la
@@ -35,7 +35,7 @@ export function MktShell({
     <div className="min-h-screen bg-bg flex">
       <aside className="hidden lg:block w-[270px] shrink-0 p-4">
         <div className="bg-surface border border-border rounded-3xl p-3 shadow-sm sticky top-4">
-          <Conmutador />
+          <ConmutadorPanel activo="marketplace" />
 
           <p className="text-[12px] font-extrabold text-hint px-3 mt-4 mb-1.5">Principal</p>
           <nav className="space-y-0.5">
@@ -93,47 +93,3 @@ export function MktShell({
   );
 }
 
-// Cambiar entre la Academia y el Marketplace.
-function Conmutador() {
-  const [abierto, setAbierto] = useState(false);
-
-  return (
-    <div className="relative">
-      <button onClick={() => setAbierto((v) => !v)}
-        aria-expanded={abierto}
-        className="w-full flex items-center gap-2.5 rounded-2xl border border-border px-3 py-2.5 text-left hover:bg-bg transition">
-        <span className="w-8 h-8 rounded-xl bg-accent-soft text-accent grid place-items-center text-[15px] shrink-0">🛍️</span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-[13.5px] font-extrabold truncate">Marketplace</span>
-          <span className="block text-[11.5px] text-hint truncate">Boost Academy</span>
-        </span>
-        <span className={`text-hint text-[11px] transition ${abierto ? "rotate-180" : ""}`}>▼</span>
-      </button>
-
-      {abierto && (
-        <div className="absolute z-20 left-0 right-0 mt-1.5 bg-surface border border-border rounded-2xl shadow-lg overflow-hidden">
-          <Opcion href="/app/admin" icono="🎓" titulo="Academia"
-            pie="Clases, estudiantes y comunidad" onIr={() => setAbierto(false)} />
-          <Opcion href="/app/admin/marketplace" icono="🛍️" titulo="Marketplace"
-            pie="Marcas, campañas y colaboraciones" activo onIr={() => setAbierto(false)} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Opcion({ href, icono, titulo, pie, activo, onIr }: {
-  href: string; icono: string; titulo: string; pie: string; activo?: boolean; onIr: () => void;
-}) {
-  return (
-    <Link href={href} onClick={onIr}
-      className={`flex items-center gap-2.5 px-3 py-2.5 transition ${activo ? "bg-accent-soft" : "hover:bg-bg"}`}>
-      <span className={`w-8 h-8 rounded-xl grid place-items-center text-[15px] shrink-0 ${
-        activo ? "bg-accent text-white" : "bg-bg"}`}>{icono}</span>
-      <span className="min-w-0">
-        <span className={`block text-[13.5px] font-extrabold truncate ${activo ? "text-accent" : ""}`}>{titulo}</span>
-        <span className="block text-[11.5px] text-hint truncate">{pie}</span>
-      </span>
-    </Link>
-  );
-}
