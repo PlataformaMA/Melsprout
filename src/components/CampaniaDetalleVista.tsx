@@ -65,6 +65,14 @@ export function CampaniaDetalleVista({
             {campania.publicadaAt ? `Publicado ${fechaLarga(campania.publicadaAt)}` : campania.marca}
           </p>
 
+          {/* Si es exclusiva de un curso, se dice: así quien la ve entiende
+              por qué le tocó a ella y no a toda la comunidad. */}
+          {campania.soloCurso && (
+            <p className="inline-flex items-center gap-2 bg-accent-soft text-accent rounded-full px-3.5 py-1.5 text-[13px] font-bold mt-3">
+              🎓 Exclusiva para alumnos de {campania.soloCurso}
+            </p>
+          )}
+
           {/* ————— De qué va la campaña ————— */}
           <section className="bg-surface border border-border rounded-3xl p-5 sm:p-7 mt-5 shadow-sm">
             <div className="flex items-center gap-3 flex-wrap">

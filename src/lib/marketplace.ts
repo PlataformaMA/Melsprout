@@ -92,12 +92,43 @@ async function conPro(user: { id: string; email?: string } | null): Promise<bool
   return !pro.activo || pro.pro;
 }
 
+// Una campaña puede ser exclusiva de un curso (la de embajadores de Boost Your
+// Web, por ejemplo). Entonces manda el curso, no el plan: la ve quien lo
+// compró —aunque no tenga Pro— y NO la ve quien no lo compró —aunque sí lo
+// tenga—, porque es una convocatoria cerrada, no un extra del plan.
+async function cursosQueTengo(userId: string): Promise<Set<string>> {
+  try {
+    const { data } = await createAdminClient()
+      .from("curso_accesos").select("modulo_id").eq("user_id", userId);
+    return new Set((data || []).map((a) => a.modulo_id as string));
+  } catch {
+    // Si la tabla fallara, mejor no enseñar de más.
+    return new Set();
+  }
+}
+
+async function puedoVerla(
+  user: { id: string; email?: string }, requiereCurso: string | null,
+): Promise<boolean> {
+  if (!requiereCurso) return conPro(user);
+  // El equipo entra siempre, para poder revisarla.
+  if (await esAdminUsuario(user.id, user.email)) return true;
+  return (await cursosQueTengo(user.id)).has(requiereCurso);
+}
+
 export async function listarCampanias(
   f: Filtros = {}
 ): Promise<{ campanias: Campania[]; paginas: number }> {
   const vacio = { campanias: [], paginas: 1 };
   const user = await quienSoy();
-  if (!user || !(await conPro(user))) return vacio;
+  if (!user) return vacio;
+
+  // Sin Pro todavía se puede entrar, pero solo a las campañas del curso que
+  // uno compró. Si no tiene ni lo uno ni lo otro, no hay nada que enseñar.
+  const esEquipo = await esAdminUsuario(user.id, user.email);
+  const pro = await conPro(user);
+  const misCursos = esEquipo ? null : await cursosQueTengo(user.id);
+  if (!pro && !misCursos?.size) return vacio;
 
   try {
     const admin = createAdminClient();
@@ -120,8 +151,16 @@ export async function listarCampanias(
         ? q.order("cierra_at", { ascending: true, nullsFirst: false })
         : q.order("created_at", { ascending: false });
 
-    const { data, error } = await q.limit(200);
-    if (error || !data) return vacio;
+    const { data: crudas, error } = await q.limit(200);
+    if (error || !crudas) return vacio;
+
+    // Las exclusivas de un curso solo salen para quien lo tiene; las normales,
+    // solo para quien tiene Pro.
+    const data = crudas.filter((c) => {
+      const curso = (c.requiere_curso as string) || null;
+      if (!curso) return pro;
+      return esEquipo || !!misCursos?.has(curso);
+    });
 
     // Cuántas personas aplicaron a cada una, y en cuáles estoy yo.
     const ids = data.map((c) => c.id as string);
@@ -523,6 +562,9 @@ export type CampaniaDetalle = {
   publicadaAt: string | null;
   activa: boolean;
   cierraAt: string | null;
+  // Nombre del curso al que es exclusiva, si lo es. Sirve para decirle a quien
+  // la está viendo POR QUÉ la está viendo.
+  soloCurso: string | null;
 
   // Perfil del creador objetivo
   nicho: string | null;
@@ -550,7 +592,7 @@ export type CampaniaDetalle = {
 
 export async function getCampaniaDetalle(id: string): Promise<CampaniaDetalle | null> {
   const user = await quienSoy();
-  if (!user || !(await conPro(user))) return null;
+  if (!user) return null;
 
   try {
     const admin = createAdminClient();
@@ -565,6 +607,10 @@ export async function getCampaniaDetalle(id: string): Promise<CampaniaDetalle | 
     const estado = (c.estado as string) || "aprobada";
     if (estado !== "aprobada" && estado !== "cerrada") return null;
 
+    // El candado va aquí y no arriba: hasta no leer la campaña no se sabe si
+    // es de Boost Pro o de un curso.
+    if (!(await puedoVerla(user, (c.requiere_curso as string) || null))) return null;
+
     const [{ count }, { data: mia }, { data: perfil }] = await Promise.all([
       admin.from("campania_aplicaciones")
         .select("id", { count: "exact", head: true }).eq("campania_id", id),
@@ -572,6 +618,11 @@ export async function getCampaniaDetalle(id: string): Promise<CampaniaDetalle | 
         .select("estado").eq("campania_id", id).eq("user_id", user.id).maybeSingle(),
       admin.from("profiles").select("xp").eq("id", user.id).maybeSingle(),
     ]);
+
+    const { data: curso } = (c.requiere_curso as string)
+      ? await admin.from("cursos_modulos").select("nombre")
+          .eq("id", c.requiere_curso as string).maybeSingle()
+      : { data: null };
 
     const marca = c.marcas as unknown as { id: string; nombre: string; logo_url: string | null };
     const miNivel = nivelPorXP((perfil?.xp as number) || 0).actual.nivel;
@@ -589,6 +640,7 @@ export async function getCampaniaDetalle(id: string): Promise<CampaniaDetalle | 
       publicadaAt: (c.publicada_at as string) || (c.created_at as string) || null,
       activa: c.activa !== false && estado === "aprobada",
       cierraAt: (c.cierra_at as string) || null,
+      soloCurso: (curso?.nombre as string) || null,
 
       nicho: (c.nicho as string) || (c.categoria as string) || null,
       genero: (c.genero as string) || null,
@@ -628,16 +680,29 @@ export async function postularme(
 ): Promise<{ ok: true } | { error: string }> {
   const user = await quienSoy();
   if (!user) return { error: "Inicia sesión." };
-  if (!(await conPro(user))) return { error: "Postularte a campañas es parte de Boost Pro." };
 
   try {
     const admin = createAdminClient();
     const { data: c } = await admin
       .from("campanias")
-      .select("id, titulo, activa, estado, nivel_minimo, preguntas, limite_postulaciones, marcas!inner(dueno_id)")
+      // Se pide "*" en vez de la lista de columnas: así, mientras la migración
+      // 80 no corra, `requiere_curso` sencillamente no viene y la campaña se
+      // comporta como antes, en vez de tronar por una columna que no existe.
+      .select("*, marcas!inner(dueno_id)")
       .eq("id", campaniaId).maybeSingle();
     if (!c || c.activa !== true || ((c.estado as string) || "aprobada") !== "aprobada") {
       return { error: "Esta campaña ya no está abierta." };
+    }
+
+    // El mismo candado que para verla, otra vez al postularse: esconder el
+    // botón no sirve si la acción se puede llamar por fuera.
+    const curso = (c.requiere_curso as string) || null;
+    if (!(await puedoVerla(user, curso))) {
+      return {
+        error: curso
+          ? "Esta convocatoria es solo para alumnos del curso."
+          : "Postularte a campañas es parte de Boost Pro.",
+      };
     }
 
     const { data: perfil } = await admin
