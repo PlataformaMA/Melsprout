@@ -233,6 +233,9 @@ export type ComentarioColab = {
 export type DetalleColaboracion = {
   id: string;
   campaniaId: string;
+  // En una campaña de afiliados no hay video que subir: lo que trabaja la
+  // creadora es su enlace. La pantalla cambia según esto.
+  esAfiliados: boolean;
   marca: string;
   marcaLogo: string | null;
   titulo: string;
@@ -267,7 +270,7 @@ export async function getColaboracion(id: string): Promise<DetalleColaboracion |
     const admin = createAdminClient();
     const { data: c } = await admin
       .from("campania_colaboraciones")
-      .select("*, campania_aplicaciones!inner(user_id, campanias!inner(id, titulo, imagen_url, marcas!inner(nombre, logo_url)))")
+      .select("*, campania_aplicaciones!inner(user_id, campanias!inner(id, titulo, imagen_url, tipos, marcas!inner(nombre, logo_url)))")
       .eq("id", id)
       .maybeSingle();
     if (!c) return null;
@@ -275,7 +278,7 @@ export async function getColaboracion(id: string): Promise<DetalleColaboracion |
     const a = c.campania_aplicaciones as unknown as {
       user_id: string;
       campanias: {
-        id: string; titulo: string; imagen_url: string | null;
+        id: string; titulo: string; imagen_url: string | null; tipos: string[] | null;
         marcas: { nombre: string; logo_url: string | null };
       };
     };
@@ -292,6 +295,7 @@ export async function getColaboracion(id: string): Promise<DetalleColaboracion |
     return {
       id: c.id as string,
       campaniaId: a.campanias.id,
+      esAfiliados: (a.campanias.tipos || []).includes("afiliados"),
       marca: a.campanias.marcas.nombre,
       marcaLogo: a.campanias.marcas.logo_url,
       titulo: a.campanias.titulo,

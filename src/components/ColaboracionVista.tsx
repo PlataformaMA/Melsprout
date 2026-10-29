@@ -1,5 +1,6 @@
 "use client";
 
+import { MiEnlaceEmbajador } from "@/components/MiEnlaceEmbajador";
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -83,7 +84,13 @@ export function ColaboracionVista({
           {/* ————— Envío ————— */}
           {(c.direccion || c.guia || c.pasos.preparacion) && <Envio c={c} />}
 
+          {/* En una campaña de afiliados lo que trabaja es su enlace: no hay
+              guion ni video que subir, así que esa parte sobra y en su lugar
+              va lo que de verdad necesita. */}
+          {c.esAfiliados && <MiEnlaceEmbajador campaniaId={c.campaniaId} />}
+
           {/* ————— Entregables ————— */}
+          {!c.esAfiliados && (
           <section className="bg-surface border border-border rounded-3xl p-5 sm:p-7 mt-4 shadow-sm">
             <div className="flex items-start gap-3">
               <span className="text-accent mt-0.5"><IcoDocumento /></span>
@@ -135,6 +142,7 @@ export function ColaboracionVista({
               </Entregable>
             </div>
           </section>
+          )}
         </div>
       </main>
 
