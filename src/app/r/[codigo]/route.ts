@@ -32,7 +32,13 @@ export async function GET(
     // Suma el clic y devuelve el destino de una sola vez: si se leyera y
     // luego se escribiera, dos clics al mismo tiempo contarían como uno.
     const { data, error } = await db.rpc("sumar_clic", { p_codigo: limpio });
-    const destino = Array.isArray(data) ? data[0]?.destino : (data as { destino?: string })?.destino;
+    // La función devuelve el destino pelón. Se aceptan las otras formas por si
+    // la base trae una versión anterior que devolvía una tabla.
+    const destino = typeof data === "string"
+      ? data
+      : Array.isArray(data)
+        ? (data[0] as { destino?: string })?.destino
+        : (data as { destino?: string } | null)?.destino;
 
     if (error || !destino) {
       // Código inexistente o campaña sin checkout configurado: a la casa, no
