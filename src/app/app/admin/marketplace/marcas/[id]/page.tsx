@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getMarcaFicha } from "@/lib/mkt-admin";
+import { getMarcaFicha, campaniasDelEquipo } from "@/lib/mkt-admin";
 import { MktMarcaFicha } from "@/components/MktMarcaFicha";
 
 export default async function MarcaFichaPage({
@@ -11,5 +11,9 @@ export default async function MarcaFichaPage({
   const m = await getMarcaFicha(id);
   if (!m) redirect("/app/admin/marketplace/marcas");
 
-  return <MktMarcaFicha m={m} />;
+  // Se filtran aquí en vez de pedir otra consulta: son pocas y ya vienen
+  // con postuladas y seleccionadas contadas.
+  const campanias = (await campaniasDelEquipo()).filter((c) => c.marcaId === id);
+
+  return <MktMarcaFicha m={m} campanias={campanias} />;
 }

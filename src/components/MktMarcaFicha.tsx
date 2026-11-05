@@ -8,7 +8,7 @@ import {
   guardarFichaMarca, urlParaSubirArchivoMarca, registrarArchivoMarca,
   urlDeArchivoMarca, borrarArchivoMarca, archivosDeMarca,
 } from "@/lib/mkt-admin";
-import type { MarcaFicha, ArchivoMarca } from "@/lib/mkt-admin";
+import type { MarcaFicha, ArchivoMarca, CampaniaEquipo } from "@/lib/mkt-admin";
 
 // La ficha de una marca: lo que el equipo necesita para trabajar con ella.
 // Cada bloque se edita por separado para no tener un formulario gigante que
@@ -28,9 +28,13 @@ const TIPOS_ARCHIVO = [
   ["otro", "Otro"],
 ] as const;
 
-export function MktMarcaFicha({ m }: { m: MarcaFicha }) {
+export function MktMarcaFicha({ m, campanias = [] }: {
+  m: MarcaFicha;
+  campanias?: CampaniaEquipo[];
+}) {
   const [ficha, setFicha] = useState(m);
   const [archivos, setArchivos] = useState<ArchivoMarca[]>(m.archivos);
+  const [tab, setTab] = useState<"info" | "campanias">("info");
 
   return (
     <>
@@ -73,7 +77,22 @@ export function MktMarcaFicha({ m }: { m: MarcaFicha }) {
         </div>
       </header>
 
-      <div className="grid lg:grid-cols-2 gap-3 mt-5 items-start">
+      <div className="flex gap-2 mt-5 flex-wrap">
+        {([["info", "Información"], ["campanias", "Campañas"]] as const).map(([k, txt]) => (
+          <button key={k} onClick={() => setTab(k)}
+            className={`rounded-xl px-4 py-2.5 text-[13.5px] font-bold transition ${
+              tab === k ? "bg-accent-soft text-accent" : "bg-surface border border-border text-sub hover:bg-bg"}`}>
+            {txt}
+            {k === "campanias" && campanias.length > 0 && (
+              <span className="ml-1.5 opacity-70">{campanias.length}</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {tab === "campanias" && <CampaniasDeLaMarca lista={campanias} />}
+
+      <div className={`grid lg:grid-cols-2 gap-3 mt-3 items-start ${tab === "info" ? "" : "hidden"}`}>
         <div className="space-y-3">
           <Bloque titulo="Información general" ficha={ficha} onGuardado={setFicha}
             campos={[
@@ -388,5 +407,72 @@ function Num({ icono, n, t }: { icono: string; n: number | string; t: string }) 
       </div>
       <div className="text-[11.5px] text-hint">{t}</div>
     </div>
+  );
+}
+
+// ————————————————— Las campañas de esta marca —————————————————
+// Separadas en tres porque son tres conversaciones distintas: lo que está
+// corriendo, lo que ya pasó y lo que todavía no sale de la marca.
+
+function CampaniasDeLaMarca({ lista }: { lista: CampaniaEquipo[] }) {
+  const [sub, setSub] = useState<"activas" | "cerradas" | "borradores">("activas");
+
+  const grupos = {
+    borradores: lista.filter((c) => c.estado === "borrador"),
+    activas: lista.filter((c) => c.estado !== "borrador" && c.activa),
+    cerradas: lista.filter((c) => c.estado !== "borrador" && !c.activa),
+  };
+  const visibles = grupos[sub];
+
+  return (
+    <section className="mt-3">
+      <div className="flex gap-7 border-b border-border">
+        {([["activas", "Activas"], ["cerradas", "Cerradas"], ["borradores", "Borradores"]] as const).map(([k, txt]) => (
+          <button key={k} onClick={() => setSub(k)}
+            className={`pb-3 text-[14.5px] font-bold -mb-px border-b-2 transition ${
+              sub === k ? "border-accent text-accent" : "border-transparent text-sub hover:text-ink"}`}>
+            {txt}
+            {grupos[k].length > 0 && <span className="ml-1.5 opacity-70">{grupos[k].length}</span>}
+          </button>
+        ))}
+      </div>
+
+      {visibles.length === 0 ? (
+        <div className="bg-surface border border-dashed border-border rounded-2xl p-8 text-center mt-4">
+          <p className="text-sub text-[13.5px] leading-snug">
+            {sub === "activas" ? "Esta marca no tiene campañas corriendo ahora."
+              : sub === "cerradas" ? "Todavía no cierra ninguna campaña."
+              : "No tiene campañas sin publicar."}
+          </p>
+        </div>
+      ) : (
+        <div className="grid sm:grid-cols-2 gap-3 mt-4">
+          {visibles.map((c) => (
+            <Link key={c.id} href={`/app/admin/marketplace/campanias/${c.id}`}
+              className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm hover:border-accent/40 transition">
+              {c.portada ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={c.portada} alt="" className="w-full h-32 object-cover" />
+              ) : (
+                <div className="w-full h-32 bg-accent-soft grid place-items-center text-2xl">📣</div>
+              )}
+              <div className="p-3.5">
+                <span className={`inline-block text-[11px] font-bold rounded-full px-2.5 py-1 ${
+                  c.estado === "borrador" ? "bg-bg text-sub border border-border"
+                    : c.activa ? "bg-green/10 text-green" : "bg-amber-100 text-amber-700"}`}>
+                  {c.estado === "borrador" ? "Borrador" : c.activa ? "Activa" : "Cerrada"}
+                </span>
+                <h3 className="font-display font-extrabold text-[14.5px] leading-tight mt-2">{c.titulo}</h3>
+                <p className="text-[12.5px] text-sub mt-1">{c.compensacion}</p>
+                <p className="text-[12px] text-hint mt-1.5">
+                  {c.postuladas} {c.postuladas === 1 ? "postulación" : "postulaciones"}
+                  {c.seleccionadas > 0 && ` · ${c.seleccionadas} seleccionada${c.seleccionadas === 1 ? "" : "s"}`}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
