@@ -5,6 +5,7 @@ import { getAvance, getClasesCompletadas } from "@/lib/progreso-actions";
 import { getCursos } from "@/lib/cursos-db";
 import { getSocial } from "@/lib/seguidores-actions";
 import { getAmigos } from "@/lib/chat-actions";
+import { misVideos } from "@/lib/portafolio";
 import { guardarMetricasInsightIQ, cuentaDeOtroUsuario } from "@/lib/social-store";
 import {
   INSIGHTIQ_CONFIGURADO,
@@ -38,6 +39,7 @@ export default async function PerfilPage() {
     : { nombre: "", hechas: 0, total: 0 };
   const social = await getSocial(user.id);
   const amigos = await getAmigos();
+  const portafolio = await misVideos();
   if (!perfil) redirect("/onboarding");
   if (!perfil.onboarding_completo) redirect("/onboarding");
 
@@ -107,6 +109,7 @@ export default async function PerfilPage() {
       social={social}
       amigos={amigos}
       insightiq={insightiq}
+      portafolio={portafolio}
     />
   );
 }

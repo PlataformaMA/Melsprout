@@ -4,15 +4,17 @@ import Link from "next/link";
 import { MarcaShell } from "@/components/MarcaShell";
 import type { MiMarca } from "@/lib/marca-cuenta";
 import type { CreadorFicha } from "@/lib/marca-creadores";
+import { TabPortafolio } from "@/components/TabPortafolio";
+import type { VideoPortafolio } from "@/lib/portafolio";
 
 // El perfil de una creadora, visto por una marca.
 //
 // Solo lo que ella ya muestra en la comunidad. Para contactarla, la marca
 // la agrega a su selección y el equipo hace el puente.
 export function MarcaCreadorPerfil({
-  marca, creador, bio,
+  marca, creador, bio, portafolio = [],
 }: {
-  marca: MiMarca; creador: CreadorFicha; bio: string | null;
+  marca: MiMarca; creador: CreadorFicha; bio: string | null; portafolio?: VideoPortafolio[];
 }) {
   return (
     <MarcaShell marca={marca} activo="marketplace">
@@ -89,6 +91,10 @@ export function MarcaCreadorPerfil({
                 Esta creadora todavía no conecta sus redes, así que no hay métricas que mostrar.
               </p>
             )}
+          </section>
+
+          <section className="bg-surface border border-border rounded-2xl p-5 shadow-sm">
+            <TabPortafolio videos={portafolio} propio={false} nombre={creador.nombre} />
           </section>
         </div>
 

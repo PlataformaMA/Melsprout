@@ -17,6 +17,8 @@ import { CampanaNotificaciones } from "@/components/CampanaNotificaciones";
 import { InvitarCard } from "@/components/InvitarCard";
 import { UserMenu } from "@/components/UserMenu";
 import { useConectarInsightIQ, type InsightIQConfig } from "@/components/ConectarInsightIQ";
+import { TabPortafolio } from "@/components/TabPortafolio";
+import type { VideoPortafolio } from "@/lib/portafolio";
 
 export type InsightIQProps = InsightIQConfig;
 
@@ -57,8 +59,8 @@ const REDES = [
 // ————————————— Componente principal —————————————
 export type Starter = { nombre: string; hechas: number; total: number };
 
-export function PerfilVista({ perfil, creadoEn, insightiq, avance, social, amigos = [], starter }: { perfil: Perfil; creadoEn: string | null; insightiq?: InsightIQProps | null; avance: Avance; social?: Social; amigos?: Amigo[]; starter?: Starter }) {
-  const [tab, setTab] = useState<"Resumen" | "Métricas" | "Amigos">("Resumen");
+export function PerfilVista({ perfil, creadoEn, insightiq, avance, social, amigos = [], starter, portafolio = [] }: { perfil: Perfil; creadoEn: string | null; insightiq?: InsightIQProps | null; avance: Avance; social?: Social; amigos?: Amigo[]; starter?: Starter; portafolio?: VideoPortafolio[] }) {
+  const [tab, setTab] = useState<"Resumen" | "Métricas" | "Portafolio" | "Amigos">("Resumen");
   // Conexión de redes: "Próximamente" (aún no habilitada). Mantenemos el hook activo.
   useConectarInsightIQ(insightiq ?? null);
 
@@ -280,7 +282,7 @@ export function PerfilVista({ perfil, creadoEn, insightiq, avance, social, amigo
 
               {/* Tabs */}
               <div className="mt-5 border-b border-border flex gap-8">
-                {(["Resumen", "Métricas", "Amigos"] as const).map((t) => (
+                {(["Resumen", "Métricas", "Portafolio", "Amigos"] as const).map((t) => (
                   <button key={t} onClick={() => setTab(t)}
                     className={`flex items-center gap-2 pb-3 text-[15px] font-bold -mb-px border-b-2 transition ${
                       tab === t ? "border-accent text-accent" : "border-transparent text-sub hover:text-text"
@@ -291,11 +293,17 @@ export function PerfilVista({ perfil, creadoEn, insightiq, avance, social, amigo
                         {amigos.length}
                       </span>
                     )}
+                    {t === "Portafolio" && portafolio.length > 0 && (
+                      <span className="w-5 h-5 rounded-full bg-accent text-white text-[11px] font-extrabold grid place-items-center">
+                        {portafolio.length}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
 
               {tab === "Métricas" ? <TabMetricas metricas={perfil.metricas} />
+                : tab === "Portafolio" ? <TabPortafolio videos={portafolio} propio />
                 : tab === "Amigos" ? <TabAmigos amigos={amigos} />
                 : <TabResumen perfil={perfil} nivel={nivel} avance={avance} starter={starter} />}
             </div>

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { fechaCorta } from "@/lib/formato-campanias";
 import { marcarDestacado } from "@/lib/mkt-admin";
 import type { CreadorFichaEquipo } from "@/lib/mkt-admin";
+import { TabPortafolio } from "@/components/TabPortafolio";
+import type { VideoPortafolio } from "@/lib/portafolio";
 
 // La ficha de un creador vista por el equipo: lo que necesita saber antes de
 // proponérselo a una marca, y con qué campañas ya ha trabajado.
@@ -15,9 +17,10 @@ const ETAPAS: Record<string, [string, string]> = {
   descartada: ["No quedó", "bg-bg text-sub border border-border"],
 };
 
-export function MktCreadorPerfil({ c, volverHref }: {
+export function MktCreadorPerfil({ c, volverHref, portafolio = [] }: {
   c: CreadorFichaEquipo;
   volverHref: string;
+  portafolio?: VideoPortafolio[];
 }) {
   const [destacado, setDestacado] = useState(c.destacado);
   const [error, setError] = useState("");
@@ -108,6 +111,10 @@ export function MktCreadorPerfil({ c, volverHref }: {
                 })}
               </ul>
             )}
+          </section>
+
+          <section className="bg-surface border border-border rounded-2xl p-4 sm:p-5">
+            <TabPortafolio videos={portafolio} propio={false} nombre={c.nombre} />
           </section>
 
           <section className="bg-surface border border-border rounded-2xl p-4 sm:p-5">

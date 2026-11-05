@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCreadorEquipo } from "@/lib/mkt-admin";
 import { MktCreadorPerfil } from "@/components/MktCreadorPerfil";
+import { videosDe } from "@/lib/portafolio";
 
 export default async function CreadorEquipoPage({
   params, searchParams,
@@ -19,5 +20,7 @@ export default async function CreadorEquipoPage({
     ? volver
     : "/app/admin/marketplace/creadores";
 
-  return <MktCreadorPerfil c={c} volverHref={destino} />;
+  const portafolio = await videosDe(id);
+
+  return <MktCreadorPerfil c={c} volverHref={destino} portafolio={portafolio} />;
 }

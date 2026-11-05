@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { miMarca } from "@/lib/marca-cuenta";
 import { getCreador } from "@/lib/marca-creadores";
 import { MarcaCreadorPerfil } from "@/components/MarcaCreadorPerfil";
+import { videosDe } from "@/lib/portafolio";
 
 export default async function CreadorParaMarcaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -15,7 +16,10 @@ export default async function CreadorParaMarcaPage({ params }: { params: Promise
   // La bio es lo único que no trae la ficha, y es pública en la comunidad.
   const { data } = await createAdminClient().from("profiles").select("bio").eq("id", id).maybeSingle();
 
+  // Su portafolio: para una marca es lo que de verdad decide, más que los seguidores.
+  const portafolio = await videosDe(id);
+
   return (
-    <MarcaCreadorPerfil marca={marca} creador={creador} bio={(data?.bio as string) || null} />
+    <MarcaCreadorPerfil marca={marca} creador={creador} bio={(data?.bio as string) || null} portafolio={portafolio} />
   );
 }
