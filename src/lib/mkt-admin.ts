@@ -692,7 +692,7 @@ export type CreadorEquipo = {
   pais: string | null;
   destacado: boolean;
   pro: boolean;
-  redes: { red: string; seguidores: number }[];
+  redes: { red: string; seguidores: number; usuario: string | null; url: string | null }[];
   seguidores: number;
   engagement: number | null;
   campanias: number;
@@ -700,17 +700,47 @@ export type CreadorEquipo = {
 
 // Qué tan buenas son las métricas de una red. Primero lo que trajo InsightIQ
 // (`metricas`), y si no hay, lo que la creadora escribió en sus redes.
+// El perfil público de una red, a partir del usuario. Se arma aquí y no en la
+// pantalla porque cada red escribe su URL distinto, y de nada sirve enseñar
+// "@fulana" si no se puede ir a verla.
+const PERFIL_RED: Record<string, (u: string) => string> = {
+  instagram: (u) => `https://www.instagram.com/${u}`,
+  tiktok: (u) => `https://www.tiktok.com/@${u}`,
+  youtube: (u) => `https://www.youtube.com/@${u}`,
+  facebook: (u) => `https://www.facebook.com/${u}`,
+  twitter: (u) => `https://x.com/${u}`,
+};
+
+function perfilDeRed(red: string, usuario: string | null, url: string | null): string | null {
+  if (url) return url;
+  if (!usuario) return null;
+  const armar = PERFIL_RED[red.toLowerCase()];
+  return armar ? armar(usuario.replace(/^@/, "")) : null;
+}
+
 function metricasDe(p: Record<string, unknown>): {
-  redes: { red: string; seguidores: number }[]; seguidores: number; engagement: number | null;
+  redes: { red: string; seguidores: number; usuario: string | null; url: string | null }[];
+  seguidores: number; engagement: number | null;
 } {
-  const met = (p.metricas as Record<string, { followers?: number; engagement?: number }>) || {};
-  const redes = (p.redes as Record<string, { seguidores?: number }>) || {};
+  const met = (p.metricas as Record<string, { followers?: number; engagement?: number; username?: string; url?: string }>) || {};
+  // `redes` guarda a veces el usuario como texto suelto y a veces un objeto;
+  // viene de dos épocas del onboarding. Aquí se aceptan las dos.
+  const crudas = (p.redes as Record<string, unknown>) || {};
+  const redes: Record<string, { seguidores?: number; usuario?: string }> = {};
+  for (const [k, v] of Object.entries(crudas)) {
+    redes[k] = typeof v === "string" ? { usuario: v } : (v as { seguidores?: number; usuario?: string }) || {};
+  }
 
   const nombres = [...new Set([...Object.keys(met), ...Object.keys(redes)])];
-  const lista = nombres.map((red) => ({
-    red,
-    seguidores: Number(met[red]?.followers ?? redes[red]?.seguidores ?? 0),
-  })).filter((r) => r.seguidores > 0);
+  const lista = nombres.map((red) => {
+    const usuario = met[red]?.username ?? redes[red]?.usuario ?? null;
+    return {
+      red,
+      seguidores: Number(met[red]?.followers ?? redes[red]?.seguidores ?? 0),
+      usuario,
+      url: perfilDeRed(red, usuario, met[red]?.url ?? null),
+    };
+  }).filter((r) => r.seguidores > 0);
 
   // El engagement se promedia entre las redes que lo reportan.
   const engs = Object.values(met).map((m) => m?.engagement).filter((e): e is number => !!e);

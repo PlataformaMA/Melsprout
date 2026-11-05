@@ -65,11 +65,12 @@ export function MktCreadores({ lista }: { lista: CreadorEquipo[] }) {
   // El CSV se arma aquí con lo que ya está cargado: no hace falta otro viaje.
   function exportar() {
     const filas = [
-      ["Nombre", "Usuario", "Nicho", "Ciudad", "País", "Seguidores", "Engagement", "Campañas", "Destacado"],
+      ["Nombre", "Usuario", "Nicho", "Ciudad", "País", "Seguidores", "Engagement", "Campañas", "Destacado", "Redes"],
       ...visibles.map((c) => [
         c.nombre, c.usuario ?? "", c.nicho ?? "", c.ciudad ?? "", c.pais ?? "",
         String(c.seguidores), c.engagement != null ? `${c.engagement}%` : "",
         String(c.campanias), c.destacado ? "sí" : "no",
+        c.redes.map((r) => r.url).filter(Boolean).join(" "),
       ]),
     ];
     const csv = filas
@@ -189,13 +190,33 @@ export function MktCreadores({ lista }: { lista: CreadorEquipo[] }) {
               </div>
 
               {c.redes.length > 0 && (
-                <ul className="mt-3 space-y-1.5">
-                  {c.redes.slice(0, 3).map((r) => (
-                    <li key={r.red} className="flex items-center justify-between text-[12.5px]">
-                      <span className="text-sub capitalize">{r.red}</span>
-                      <b>{abreviar(r.seguidores)}</b>
-                    </li>
-                  ))}
+                <ul className="mt-3 space-y-0.5">
+                  {c.redes.slice(0, 3).map((r) => {
+                    const fila = (
+                      <>
+                        <span className="flex items-center gap-1.5 min-w-0">
+                          <span className="capitalize truncate">{r.red}</span>
+                          {r.url && <span className="text-hint text-[11px] shrink-0">↗</span>}
+                        </span>
+                        <b className="shrink-0">{abreviar(r.seguidores)}</b>
+                      </>
+                    );
+                    // Sin usuario conocido no hay a dónde ir: se deja el dato,
+                    // pero no se finge un enlace que lleva a ningún lado.
+                    return r.url ? (
+                      <li key={r.red}>
+                        <a href={r.url} target="_blank" rel="noreferrer"
+                          title={r.usuario ? `Ver @${r.usuario.replace(/^@/, "")} en ${r.red}` : `Ver en ${r.red}`}
+                          className="flex items-center justify-between gap-2 text-[12.5px] text-sub rounded-lg -mx-1.5 px-1.5 py-1 hover:bg-accent-soft hover:text-accent transition">
+                          {fila}
+                        </a>
+                      </li>
+                    ) : (
+                      <li key={r.red} className="flex items-center justify-between gap-2 text-[12.5px] text-sub -mx-1.5 px-1.5 py-1">
+                        {fila}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
 

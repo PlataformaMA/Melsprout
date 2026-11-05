@@ -101,11 +101,29 @@ export function MktCreadorPerfil({ c, volverHref, portafolio = [] }: {
               <ul className="mt-4 divide-y divide-border">
                 {c.redes.map((r) => {
                   const u = c.usuarios.find((x) => x.red === r.red);
-                  return (
-                    <li key={r.red} className="flex items-center justify-between gap-3 py-2.5 text-[13.5px]">
+                  const usuario = r.usuario ?? u?.usuario ?? null;
+                  const cuerpo = (
+                    <>
                       <span className="capitalize font-semibold">{r.red}</span>
-                      {u?.usuario && <span className="text-hint truncate flex-1 text-left">@{u.usuario}</span>}
-                      <b>{abreviar(r.seguidores)}</b>
+                      {usuario && (
+                        <span className="text-hint truncate flex-1 text-left">@{usuario.replace(/^@/, "")}</span>
+                      )}
+                      {r.url && <span className="text-hint text-[12px] shrink-0">↗</span>}
+                      <b className="shrink-0">{abreviar(r.seguidores)}</b>
+                    </>
+                  );
+                  // Con enlace se entra a verla; sin él se queda como dato,
+                  // en vez de fingir un enlace que no lleva a ningún lado.
+                  return (
+                    <li key={r.red}>
+                      {r.url ? (
+                        <a href={r.url} target="_blank" rel="noreferrer"
+                          className="flex items-center gap-3 py-2.5 text-[13.5px] rounded-lg -mx-2 px-2 hover:bg-accent-soft hover:text-accent transition">
+                          {cuerpo}
+                        </a>
+                      ) : (
+                        <span className="flex items-center gap-3 py-2.5 text-[13.5px]">{cuerpo}</span>
+                      )}
                     </li>
                   );
                 })}
