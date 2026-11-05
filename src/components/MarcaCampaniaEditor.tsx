@@ -228,8 +228,20 @@ export function MarcaCampaniaEditor({
                 className={`${input} resize-none`} />
             </Campo>
 
-            <Titulo t="Selecciona las opciones de compensación"
-              s="Puedes elegir una o varias formas de compensación para esta campaña." />
+            <div className="flex items-end justify-between gap-4 flex-wrap">
+              <Titulo t="Selecciona las opciones de compensación"
+                s="Puedes elegir una o varias formas de compensación para esta campaña." />
+              {/* Hay marcas que prefieren hablar de dinero en privado. Apagarlo
+                  esconde el bloque entero en la campaña que ve la creadora; lo
+                  acordado no cambia, solo deja de anunciarse. */}
+              <label className="flex items-center gap-2.5 shrink-0 cursor-pointer">
+                <span className="text-[12.5px] font-bold text-accent">Mostrar en la campaña</span>
+                <input type="checkbox" className="sr-only peer"
+                  checked={c.compensacion.mostrar !== false}
+                  onChange={(e) => set("compensacion", { ...c.compensacion, mostrar: e.target.checked })} />
+                <span className="w-11 h-6 rounded-full bg-border peer-checked:bg-accent transition relative after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-5 after:h-5 after:rounded-full after:bg-white after:transition peer-checked:after:translate-x-5" />
+              </label>
+            </div>
 
             <Opcion icono="🎁" titulo="Intercambio de producto"
               sub="Enviarás productos de tu marca a los creadores seleccionados."

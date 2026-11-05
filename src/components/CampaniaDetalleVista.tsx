@@ -257,6 +257,9 @@ function ModalGracias({ onCerrar }: { onCerrar: () => void }) {
 
 function Compensacion({ c }: { c: CampaniaDetalle }) {
   const { intercambio, monto, afiliados } = c.compensacion;
+  // La marca puede preferir hablar de dinero en privado. Si apagó
+  // "Mostrar en la campaña", el bloque entero no se pinta.
+  if (c.compensacion.mostrar === false) return null;
   if (!intercambio && !monto && !afiliados && !c.compensacionDetalle) return null;
 
   return (

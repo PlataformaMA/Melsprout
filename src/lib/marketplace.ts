@@ -558,6 +558,8 @@ export type CompensacionDetalle = {
   intercambio?: { productos: string };
   monto?: { cantidad: number; moneda: string };
   afiliados?: { porcentaje: number; duracion: string };
+  // Si la marca apagó "Mostrar en la campaña", el bloque de pago no se pinta.
+  mostrar?: boolean;
 };
 
 export type CampaniaDetalle = {

@@ -106,6 +106,10 @@ export function FormularioDatos({ datos, campania, onListo, onCerrar }: {
   });
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
+  // Aceptar los términos no se guarda: no es un dato suyo, es el candado del
+  // botón. Al mandar los datos ya los aceptó, y eso queda en la colaboración.
+  const [acepto, setAcepto] = useState(false);
+  const [listo, setListo] = useState(false);
   const router = useRouter();
 
   const set = (k: keyof DatosCreador) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -117,9 +121,40 @@ export function FormularioDatos({ datos, campania, onListo, onCerrar }: {
     const r = await guardarMisDatos(v);
     setGuardando(false);
     if ("error" in r) { setError(r.error); return; }
+    // Antes se iba de golpe a «Campañas» y nunca quedaba claro si se había
+    // guardado. Ahora se le dice, y ella decide cuándo entrar.
+    setListo(true);
+  }
+
+  function verCampania() {
     onListo();
-    // Al terminar cae en «Campañas», que es donde va a seguir el proceso.
     router.push("/app/campanias");
+  }
+
+  if (listo) {
+    return (
+      <div className="fixed inset-0 z-[80] bg-black/45 grid place-items-center p-4 overflow-y-auto">
+        <div className="bg-surface rounded-3xl p-7 sm:p-8 max-w-md w-full text-center relative shadow-2xl my-6">
+          <button onClick={verCampania} className="absolute top-4 right-4 text-hint hover:text-sub text-xl" aria-label="Cerrar">✕</button>
+
+          <span className="w-20 h-20 rounded-full bg-accent-soft grid place-items-center mx-auto text-accent">
+            <IcoMegafono />
+          </span>
+
+          <h3 className="font-display text-2xl font-extrabold mt-4">¡Listo!</h3>
+          <p className="font-display text-[15.5px] font-extrabold mt-1">Ya puedes iniciar con la campaña</p>
+          <p className="text-sub text-[13.5px] mt-2.5 leading-snug">
+            Recibimos tu información correctamente. Revisa los detalles de la campaña
+            y comienza a crear tu contenido.
+          </p>
+
+          <button onClick={verCampania}
+            className="w-full mt-6 bg-accent text-white rounded-xl py-3.5 text-[15px] font-extrabold hover:brightness-110 transition">
+            Ver campaña →
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -172,8 +207,19 @@ export function FormularioDatos({ datos, campania, onListo, onCerrar }: {
 
         {error && <p className="text-[13px] text-pink bg-pink-soft rounded-lg px-3 py-2 mt-4">{error}</p>}
 
-        <button onClick={continuar} disabled={guardando}
-          className="w-full mt-6 bg-accent text-white rounded-xl py-3.5 text-[15px] font-extrabold hover:brightness-110 transition disabled:opacity-60">
+        <label className="flex items-start gap-2.5 mt-5 cursor-pointer">
+          <input type="checkbox" checked={acepto} onChange={(e) => setAcepto(e.target.checked)}
+            className="mt-0.5 w-4 h-4 accent-accent shrink-0" />
+          <span className="text-[13px] text-sub leading-snug">
+            Acepto los{" "}
+            <a href="/terminos" target="_blank" rel="noreferrer" className="text-accent font-semibold underline">
+              términos y condiciones
+            </a>
+          </span>
+        </label>
+
+        <button onClick={continuar} disabled={guardando || !acepto}
+          className="w-full mt-4 bg-accent text-white rounded-xl py-3.5 text-[15px] font-extrabold hover:brightness-110 transition disabled:opacity-60">
           {guardando ? "Guardando…" : "Continuar"}
         </button>
         <p className="text-hint text-[11.5px] text-center mt-2.5 leading-snug">
@@ -210,4 +256,5 @@ const ICO = {
 function IcoPersona() { return <svg {...ICO}><circle cx="12" cy="8" r="3.4" /><path d="M5.5 20a6.5 6.5 0 0 1 13 0" /></svg>; }
 function IcoTarjeta() { return <svg {...ICO}><rect x="3" y="6" width="18" height="12" rx="2.5" /><path d="M3 10.5h18M6.5 14.5h3" /></svg>; }
 function IcoSobre() { return <svg {...ICO}><rect x="3" y="5.5" width="18" height="13" rx="2.5" /><path d="m3.8 7 8.2 6 8.2-6" /></svg>; }
+function IcoMegafono() { return <svg {...ICO} width="38" height="38"><path d="M3.5 10.5v3a1.5 1.5 0 0 0 1.5 1.5h2l5.5 4V5l-5.5 4H5a1.5 1.5 0 0 0-1.5 1.5z" /><path d="M17 9.2a4 4 0 0 1 0 5.6M19.6 6.6a7.6 7.6 0 0 1 0 10.8" /><path d="M7.5 15.5 9 21" /></svg>; }
 function IcoPin() { return <svg {...ICO}><path d="M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11z" /><circle cx="12" cy="10" r="2.5" /></svg>; }

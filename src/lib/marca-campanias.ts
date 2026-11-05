@@ -24,6 +24,10 @@ export type Compensacion = {
   intercambio?: { productos: string };
   monto?: { cantidad: number; moneda: string };
   afiliados?: { porcentaje: number; duracion: string };
+  // ¿Se le enseña el desglose a la creadora, o se habla en privado?
+  // Va dentro del jsonb a propósito: es parte de la compensación, no una
+  // columna nueva. Sin bandera = se enseña, que es como estaba hasta hoy.
+  mostrar?: boolean;
 };
 
 export type CampaniaMarca = {
