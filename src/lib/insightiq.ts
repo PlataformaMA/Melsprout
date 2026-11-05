@@ -312,3 +312,65 @@ export async function obtenerMetricas(userId: string): Promise<MetricaRed[]> {
   }
   return out;
 }
+
+// ————————————— Contenido publicado (reels, posts) —————————————
+// Para las métricas del reel de una campaña: cuánto se vio, cuánto gustó.
+// InsightIQ solo devuelve el contenido de cuentas conectadas CON CONSENTIMIENTO,
+// que es justo el trato: la creadora conectó su red, no la estamos espiando.
+
+export type ContenidoIq = {
+  url: string | null;
+  titulo: string | null;
+  descripcion: string | null;
+  portada: string | null;
+  publicadoAt: string | null;
+  duracion: number | null;
+  vistas: number | null;
+  likes: number | null;
+  comentarios: number | null;
+  compartidos: number | null;
+};
+
+type IqContent = {
+  url?: string;
+  title?: string;
+  description?: string;
+  thumbnail_url?: string;
+  published_at?: string;
+  duration?: number;
+  engagement?: {
+    view_count?: number;
+    play_count?: number;
+    impression_organic_count?: number;
+    like_count?: number;
+    comment_count?: number;
+    share_count?: number;
+  };
+};
+
+export async function obtenerContenidos(
+  accountId: string, limite = 50
+): Promise<ContenidoIq[]> {
+  const r = await api<{ data: IqContent[] }>(
+    `/v1/social/contents?account_id=${encodeURIComponent(accountId)}&limit=${limite}`
+  );
+  if (!r?.data?.length) return [];
+
+  return r.data.map((c) => {
+    const e = c.engagement || {};
+    return {
+      url: c.url || null,
+      titulo: c.title || null,
+      descripcion: c.description || null,
+      portada: c.thumbnail_url || null,
+      publicadoAt: c.published_at || null,
+      duracion: num(c.duration),
+      // Instagram llama "plays" a lo que la gente entiende por reproducciones;
+      // en otras redes viene como views. Se toma el primero que exista.
+      vistas: num(e.play_count) ?? num(e.view_count) ?? num(e.impression_organic_count),
+      likes: num(e.like_count),
+      comentarios: num(e.comment_count),
+      compartidos: num(e.share_count),
+    };
+  });
+}

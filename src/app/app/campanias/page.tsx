@@ -4,6 +4,7 @@ import { getPerfil } from "@/lib/perfil-actions";
 import { esAdminUsuario } from "@/lib/admin";
 import { estadoPro } from "@/lib/pro";
 import { misColaboraciones, misPagos } from "@/lib/creador-campanias";
+import { misReels } from "@/lib/metricas-reel";
 import { MisCampaniasVista } from "@/components/MisCampaniasVista";
 
 export default async function CampaniasPage() {
@@ -20,6 +21,7 @@ export default async function CampaniasPage() {
   const [colaboraciones, pagos] = bloqueado
     ? [[], { filas: [], esteMes: 0, moneda: "MXN", variacion: null, serie: [], enCurso: 0 }]
     : await Promise.all([misColaboraciones(), misPagos("proceso")]);
+  const reels = bloqueado ? [] : await misReels();
 
   return (
     <MisCampaniasVista
@@ -29,6 +31,7 @@ export default async function CampaniasPage() {
       racha={perfil.racha}
       colaboraciones={colaboraciones}
       pagos={pagos}
+      reels={reels}
       bloqueado={bloqueado}
     />
   );

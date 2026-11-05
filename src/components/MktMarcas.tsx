@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { MarcaEquipo } from "@/lib/mkt-admin";
+import { MktTabsCampanias } from "@/components/MktTabsCampanias";
 
 // Todas las marcas registradas. Las que todavía no tienen dueño son las de
 // ejemplo que vinieron con la plataforma: se marcan para no confundirlas con
@@ -42,8 +43,9 @@ export function MktMarcas({ lista }: { lista: MarcaEquipo[] }) {
 
   return (
     <>
-      <h1 className="font-display text-2xl sm:text-3xl font-extrabold">Marcas</h1>
-      <p className="text-sub text-[14px] mt-1">Todas las marcas registradas en la plataforma.</p>
+      <h1 className="font-display text-2xl sm:text-3xl font-extrabold">Campañas</h1>
+      <p className="text-sub text-[14px] mt-1">Todas las empresas registradas en la plataforma.</p>
+      <MktTabsCampanias />
 
       <div className="flex gap-2.5 mt-5 flex-wrap">
         <label className="flex-1 min-w-[240px] flex items-center gap-2 bg-surface border border-border rounded-2xl px-3.5 h-11">

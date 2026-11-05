@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { fechaCorta } from "@/lib/formato-campanias";
 import type { CampaniaEquipo } from "@/lib/mkt-admin";
+import { MktTabsCampanias } from "@/components/MktTabsCampanias";
 
 // Todas las campañas de la plataforma, de cualquier marca. Es la vista del
 // equipo: el portal de cada empresa solo enseña las suyas.
@@ -43,6 +44,7 @@ export function MktCampanias({ lista }: { lista: CampaniaEquipo[] }) {
       <p className="text-sub text-[14px] mt-1">
         Campañas totales: <b className="text-accent">{lista.length}</b>
       </p>
+      <MktTabsCampanias />
 
       <div className="flex gap-2.5 mt-5 flex-wrap">
         <label className="flex-1 min-w-[220px] flex items-center gap-2 bg-surface border border-border rounded-2xl px-3.5 h-11">

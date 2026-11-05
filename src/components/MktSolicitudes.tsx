@@ -5,6 +5,7 @@ import Link from "next/link";
 import { moverPostulacion } from "@/lib/marca-creadores";
 import { fechaCorta } from "@/lib/formato-campanias";
 import type { Solicitud, PostulacionPendiente } from "@/lib/mkt-admin";
+import { MktTabsCampanias } from "@/components/MktTabsCampanias";
 
 // Las campañas que las marcas mandaron a revisión. El equipo entra a cada una
 // y decide: aprobar (sale al Marketplace) o regresarla con comentarios.
@@ -37,10 +38,11 @@ export function MktSolicitudes({ lista, postulaciones }: {
 
   return (
     <>
-      <h1 className="font-display text-2xl sm:text-3xl font-extrabold">Solicitudes</h1>
+      <h1 className="font-display text-2xl sm:text-3xl font-extrabold">Campañas</h1>
       <p className="text-sub text-[14px] mt-1">
         Lo que está esperando una respuesta del equipo.
       </p>
+      <MktTabsCampanias pendientes={lista.length} />
 
       <div className="flex gap-2 mt-4 flex-wrap">
         {([["campanias", "Campañas de marcas", lista.length],

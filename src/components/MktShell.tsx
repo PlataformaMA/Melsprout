@@ -10,11 +10,17 @@ import { ConmutadorPanel } from "@/components/ConmutadorPanel";
 // arriba se cambia de uno a otro, porque son dos operaciones distintas con la
 // misma cuenta (clases por un lado, marcas y campañas por el otro).
 
+// Campañas, Empresas y Solicitudes son el mismo trabajo visto en tres
+// momentos —lo que se va a publicar, quién lo publica y qué está esperando
+// respuesta—, así que viven como pestañas dentro de Campañas y no como tres
+// entradas sueltas en el menú.
 const MENU = [
   { href: "/app/admin/marketplace", texto: "Inicio", icono: "🏠", exacto: true },
-  { href: "/app/admin/marketplace/solicitudes", texto: "Solicitudes", icono: "📄" },
-  { href: "/app/admin/marketplace/campanias", texto: "Campañas", icono: "📣" },
-  { href: "/app/admin/marketplace/marcas", texto: "Marcas", icono: "🏷️" },
+  {
+    href: "/app/admin/marketplace/campanias", texto: "Campañas", icono: "📣",
+    // Estas rutas también encienden «Campañas»: son sus pestañas.
+    tambien: ["/app/admin/marketplace/marcas", "/app/admin/marketplace/solicitudes"],
+  },
   { href: "/app/admin/marketplace/creadores", texto: "Creadores destacados", icono: "⭐" },
   { href: "/app/admin/marketplace/mensajes", texto: "Mensajes", icono: "💬" },
 ];
@@ -40,7 +46,9 @@ export function MktShell({
           <p className="text-[12px] font-extrabold text-hint px-3 mt-4 mb-1.5">Principal</p>
           <nav className="space-y-0.5">
             {MENU.map((m) => {
-              const activo = m.exacto ? pathname === m.href : pathname.startsWith(m.href);
+              const activo = m.exacto
+                ? pathname === m.href
+                : pathname.startsWith(m.href) || (m.tambien || []).some((r) => pathname.startsWith(r));
               return (
                 <Link key={m.href} href={m.href}
                   className={`flex items-center gap-2.5 rounded-2xl px-3 py-2.5 text-[14px] transition ${
@@ -49,7 +57,7 @@ export function MktShell({
                       : "text-sub font-semibold hover:bg-bg"}`}>
                   <span className="text-[15px] leading-none">{m.icono}</span>
                   <span className="truncate">{m.texto}</span>
-                  {m.texto === "Solicitudes" && pendientes > 0 && (
+                  {m.texto === "Campañas" && pendientes > 0 && (
                     <span className="ml-auto shrink-0 bg-pink text-white text-[11px] font-extrabold rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
                       {pendientes}
                     </span>
@@ -74,7 +82,9 @@ export function MktShell({
           <div className="lg:hidden -mx-4 px-4 mb-4 overflow-x-auto">
             <div className="flex gap-2 w-max">
               {MENU.map((m) => {
-                const activo = m.exacto ? pathname === m.href : pathname.startsWith(m.href);
+                const activo = m.exacto
+                  ? pathname === m.href
+                  : pathname.startsWith(m.href) || (m.tambien || []).some((r) => pathname.startsWith(r));
                 return (
                   <Link key={m.href} href={m.href}
                     className={`shrink-0 rounded-full px-4 py-2 text-[13px] font-bold transition ${

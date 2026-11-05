@@ -9,21 +9,24 @@ import { ProSeccionModal } from "@/components/ProSeccionModal";
 import { misPagos } from "@/lib/creador-campanias";
 import { fechaCorta, dinero } from "@/lib/formato-campanias";
 import type { ColaboracionCreador, ResumenPagos } from "@/lib/creador-campanias";
+import { TabMetricasReel } from "@/components/TabMetricasReel";
+import type { Reel } from "@/lib/metricas-reel";
 
 // «Campañas» del creador: en qué colabora y cómo van sus pagos. Son las dos
 // pestañas del diseño; el detalle de cada colaboración vive en su propia
 // página.
 
 export function MisCampaniasVista({
-  nombre, avatarUrl, xp, racha, colaboraciones, pagos, bloqueado = false,
+  nombre, avatarUrl, xp, racha, colaboraciones, pagos, reels = [], bloqueado = false,
 }: {
   nombre: string; avatarUrl: string | null; xp: number; racha: number;
   colaboraciones: ColaboracionCreador[];
   pagos: ResumenPagos;
+  reels?: Reel[];
   bloqueado?: boolean;
 }) {
   const [proAbierto, setProAbierto] = useState(bloqueado);
-  const [tab, setTab] = useState<"colaboraciones" | "pagos">("colaboraciones");
+  const [tab, setTab] = useState<"colaboraciones" | "pagos" | "metricas">("colaboraciones");
 
   return (
     <div className="min-h-screen bg-bg flex">
@@ -47,6 +50,7 @@ export function MisCampaniasVista({
           <div className="flex gap-7 border-b border-border mt-6">
             <Tab txt="Colaboraciones" on={tab === "colaboraciones"} click={() => setTab("colaboraciones")} />
             <Tab txt="Pagos" on={tab === "pagos"} click={() => setTab("pagos")} />
+            <Tab txt="Métricas" on={tab === "metricas"} click={() => setTab("metricas")} />
           </div>
 
           <div className="mt-7">
@@ -57,6 +61,8 @@ export function MisCampaniasVista({
               />
             ) : tab === "colaboraciones" ? (
               <Colaboraciones lista={colaboraciones} />
+            ) : tab === "metricas" ? (
+              <TabMetricasReel reels={reels} />
             ) : (
               <Pagos inicial={pagos} />
             )}
