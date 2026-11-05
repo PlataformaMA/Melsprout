@@ -1,6 +1,8 @@
 "use client";
 
 import { MiEnlaceEmbajador } from "@/components/MiEnlaceEmbajador";
+import { ContratoImagen } from "@/components/ContratoImagen";
+import type { Contrato } from "@/lib/contrato-imagen";
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -16,10 +18,11 @@ import type { DetalleColaboracion, Entrega } from "@/lib/creador-campanias";
 // entregar y qué dijo la marca del material.
 
 export function ColaboracionVista({
-  nombre, avatarUrl, xp, racha, colaboracion,
+  nombre, avatarUrl, xp, racha, colaboracion, contrato = null,
 }: {
   nombre: string; avatarUrl: string | null; xp: number; racha: number;
   colaboracion: DetalleColaboracion;
+  contrato?: Contrato | null;
 }) {
   const c = colaboracion;
   const [entregando, setEntregando] = useState(false);
@@ -107,6 +110,8 @@ export function ColaboracionVista({
                 </p>
               </div>
             </div>
+
+            <ContratoImagen contrato={contrato} />
 
             <div className="space-y-4 mt-5">
               {!c.esAfiliados && (

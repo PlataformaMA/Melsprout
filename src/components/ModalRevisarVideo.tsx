@@ -8,6 +8,9 @@ import {
   comentarEntrega, urlParaCaptura,
 } from "@/lib/revision-entregas";
 import type { Entrega, ComentarioEntrega } from "@/lib/revision-entregas";
+import { ContratoImagen } from "@/components/ContratoImagen";
+import { contratoDe } from "@/lib/contrato-imagen";
+import type { Contrato } from "@/lib/contrato-imagen";
 
 // Revisar lo que entregó la creadora: verlo, bajarlo y decidir. Si hay que
 // corregir, se le mandan los comentarios con capturas marcadas, que es como
@@ -28,6 +31,7 @@ export function ModalRevisarVideo({ colaboracionId, creador, onCerrar }: {
   const [comentarios, setComentarios] = useState<ComentarioEntrega[]>([]);
   const [vista, setVista] = useState<"video" | "comentarios">("video");
   const [urlVideo, setUrlVideo] = useState<string | null>(null);
+  const [contrato, setContrato] = useState<Contrato | null>(null);
   const [error, setError] = useState("");
 
   // La carga va en un efecto porque es lo que el modal hace al abrirse; no
@@ -35,13 +39,15 @@ export function ModalRevisarVideo({ colaboracionId, creador, onCerrar }: {
   useEffect(() => {
     let vivo = true;
     (async () => {
-      const [e, c] = await Promise.all([
+      const [e, c, k] = await Promise.all([
         entregasDe(colaboracionId),
         comentariosDe(colaboracionId, "video"),
+        contratoDe(colaboracionId),
       ]);
       if (!vivo) return;
       setEntregas(e);
       setComentarios(c);
+      setContrato(k);
     })();
     return () => { vivo = false; };
   }, [colaboracionId]);
@@ -59,6 +65,10 @@ export function ModalRevisarVideo({ colaboracionId, creador, onCerrar }: {
     const url = await urlDeEntrega(colaboracionId, e.ruta);
     if (!url) { setError("No se pudo abrir el archivo."); return; }
     window.open(url, "_blank", "noopener");
+  }
+
+  async function recargarContrato() {
+    setContrato(await contratoDe(colaboracionId));
   }
 
   async function aprobar() {
@@ -115,6 +125,7 @@ export function ModalRevisarVideo({ colaboracionId, creador, onCerrar }: {
           ) : vista === "video" ? (
             <Entregas video={video} extras={extras} urlVideo={urlVideo}
               onVer={ver} onBajar={bajar} onAprobar={aprobar}
+              contrato={contrato} onContrato={recargarContrato}
               onPedirCambios={() => setVista("comentarios")} />
           ) : (
             <Comentarios colaboracionId={colaboracionId} lista={comentarios}
@@ -126,7 +137,7 @@ export function ModalRevisarVideo({ colaboracionId, creador, onCerrar }: {
   );
 }
 
-function Entregas({ video, extras, urlVideo, onVer, onBajar, onAprobar, onPedirCambios }: {
+function Entregas({ video, extras, urlVideo, onVer, onBajar, onAprobar, onPedirCambios, contrato, onContrato }: {
   video: Entrega | null;
   extras: Entrega[];
   urlVideo: string | null;
@@ -134,6 +145,8 @@ function Entregas({ video, extras, urlVideo, onVer, onBajar, onAprobar, onPedirC
   onBajar: (e: Entrega) => void;
   onAprobar: () => void;
   onPedirCambios: () => void;
+  contrato: Contrato | null;
+  onContrato: () => void;
 }) {
   if (!video) {
     return (
@@ -143,6 +156,9 @@ function Entregas({ video, extras, urlVideo, onVer, onBajar, onAprobar, onPedirC
         <p className="text-[13.5px] text-sub mt-1.5 max-w-sm mx-auto leading-snug">
           Cuando la creadora suba la entrega final, la vas a poder ver y aprobar desde aquí.
         </p>
+        <div className="text-left mt-5">
+          <ContratoImagen contrato={contrato} onCambio={onContrato} />
+        </div>
         {extras.length > 0 && <Extras lista={extras} onBajar={onBajar} />}
       </div>
     );
@@ -208,6 +224,8 @@ function Entregas({ video, extras, urlVideo, onVer, onBajar, onAprobar, onPedirC
           </div>
         </div>
       )}
+
+      <ContratoImagen contrato={contrato} onCambio={onContrato} />
     </>
   );
 }

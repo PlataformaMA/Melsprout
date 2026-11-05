@@ -4,6 +4,8 @@ import { getPerfil } from "@/lib/perfil-actions";
 import { getColaboracion } from "@/lib/creador-campanias";
 import { ColaboracionVista } from "@/components/ColaboracionVista";
 
+import { contratoDe } from "@/lib/contrato-imagen";
+
 export default async function ColaboracionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
@@ -18,6 +20,8 @@ export default async function ColaboracionPage({ params }: { params: Promise<{ i
   const colaboracion = await getColaboracion(id);
   if (!colaboracion) redirect("/app/campanias");
 
+  const contrato = await contratoDe(id);
+
   return (
     <ColaboracionVista
       nombre={perfil.full_name ?? "Creador"}
@@ -25,6 +29,7 @@ export default async function ColaboracionPage({ params }: { params: Promise<{ i
       xp={perfil.xp}
       racha={perfil.racha}
       colaboracion={colaboracion}
+      contrato={contrato}
     />
   );
 }
